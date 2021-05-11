@@ -168,6 +168,7 @@
     "eslint": "^7.25.0"
   },
   "lint-staged": {
+    "*.{md,json,yaml,yml,sh}": "prettier --write",
     "{src,__tests__}/**/*.js": "eslint --cache --fix",
     "*.ts": [
       "eslint --cache --fix"

@@ -33,23 +33,23 @@ This tool uses markdown comments as delimiting tokens within the `README.md` fil
   with:
     # The absolute or relative path to the `action.yml` file to read in from.
     # Default: action.yml
-    action: ""
+    action: ''
 
     # The absolute or relative path to the markdown output file that contains the
     # formatting tokens within it.
     # Default: README.md
-    readme: ""
+    readme: ''
 
     # The GitHub Action repository owner. i.e: `bitflight-devops`
-    owner: ""
+    owner: ''
 
     # The GitHub Action repository name. i.e: `github-action-readme-generator`
-    repo: ""
+    repo: ''
 
     # Save the provided values in a `.ghadocs.json` file. This will update any
     # existing `.ghdocs.json` file that is in place.
     # Default: false
-    save: ""
+    save: ''
 ```
 
 <!-- end usage -->

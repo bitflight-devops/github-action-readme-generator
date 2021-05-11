@@ -1,0 +1,9 @@
+[core]
+    autocrlf = false
+    ignorecase = false
+    whitespace = cr-at-eol
+[help]
+    autocorrect = 1
+
+[rebase]
+    autosquash = true

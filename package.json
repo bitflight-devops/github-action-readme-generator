@@ -1,0 +1,179 @@
+{
+  "name": "github-action-readme-generator",
+  "version": "1.0.0",
+  "description": "This is a CLI tool and GitHub Action that reads in the details from a \nGitHub Action's `action.yml` file and updates the `README.md` file\nwith the `name`, `description`, `usage`, `inputs`, `outputs`, and\nexamples of the action.\nConfiguration can be provided via a `.ghadocs.json` file stored in the\nroot directory of the Action's repository, via the command line when\nusing the cli, or via the `with:` section of this Action.\n\n\nThis tool uses markdown comments as delimiting tokens within the `README.md`\nfile to determine where to place the generated content.\n\n[`README.example.md`](README.example.md) example with all fields filled in, and no other free-form content.",
+  "main": "dist/index.js",
+  "bin": {
+    "ghadocs": "./dist/index.js"
+  },
+  "sideEffects": [
+    "./src/generate-docs.d.ts",
+    "./src/helpers.ts"
+  ],
+  "displayName": "Broadshield/github-action-transition-jira-ticket",
+  "repository": "github:bitflight-devops/github-action-readme-generator",
+  "bugs": {
+    "url": "https://github.com/Broadshield/github-action-transition-jira-ticket/issues"
+  },
+  "keywords": [
+    "actions",
+    "github",
+    "node12",
+    "documentation",
+    "github-actions",
+    "generator"
+  ],
+  "author": "Jamie Nelson <jamie@bitflight.io>",
+  "license": "APACHE",
+  "private": false,
+  "scripts": {
+    "test": "NODE_ENV=testing jest",
+    "test-ci": "NODE_ENV=testing jest --ci --reporters=default --reporters=jest-junit",
+    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
+    "format:fix": "prettier --write \"./**/*.{ts,js,json,md}\"",
+    "format": "prettier --list-different \"./**/*.{ts,js,json,md}\"",
+    "lint:fix": "yon run format:fix;eslint . --ext .js,.ts --fix",
+    "lint:markdown:fix": "yarn lint:markdown --fix",
+    "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
+    "lint": "eslint . --ext .js,.ts",
+    "all": "yon run build && yon run format && yon run lint && yon run package && yon test",
+    "postinstall": "is-ci || husky install",
+    "commit": "git-cz",
+    "pre-commit": "lint-staged && yon run build && git add dist",
+    "pre-push": "yon format",
+    "preversion": "echo 'Running test';yon test",
+    "version": "echo 'Run versioning commands';yon generate-docs;echo \"::set-output name=tag::v${npm_package_version}\"",
+    "postversion": "echo 'Running post versioning commands';git push --tags && git push && echo \"Successfully released version $npm_package_version!\"",
+    "generate-docs": "echo 'Generating docs';cd docs;npx ncc build generate-docs.ts -o \"../${npm_package_config_ghadocs_outpath}\";cd -; node \"${npm_package_config_ghadocs_outpath}/index.js\" --save=true --owner=Broadshield --repo=github-action-jira-transition-manager && git add README.md \"${npm_package_config_ghadocs_outpath}\"",
+    "prepare": "is-ci || husky install; yon run build"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    },
+    "ghadocs": {
+      "outpath": ".github/tools/generate-docs"
+    }
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ],
+    "rules": {
+      "body-max-length": [
+        0
+      ],
+      "body-max-line-length": [
+        0
+      ],
+      "footer-max-length": [
+        0
+      ],
+      "footer-max-line-length": [
+        0
+      ],
+      "header-max-length": [
+        0
+      ]
+    }
+  },
+  "engines": {
+    "node": "^10.12.0 || >=12.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "os": [
+    "!win32"
+  ],
+  "dependencies": {
+    "chalk": "^4.1.1",
+    "date-format": "^3.0.0",
+    "gulp": "^4.0.2",
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "js-yaml": "^4.1.0",
+    "nconf": "^0.11.2",
+    "node-emoji": "^1.10.0",
+    "prettier": "^2.2.1",
+    "reflect-metadata": "^0.1.13",
+    "remove": "^0.1.5",
+    "tslib": "^2.2.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^12.1.1",
+    "@commitlint/config-conventional": "^12.1.1",
+    "@commitlint/prompt": "^12.1.1",
+    "@github/prettier-config": "^0.0.4",
+    "@tsconfig/node12": "^1.0.7",
+    "@types/jest": "^26.0.23",
+    "@types/js-yaml": "^4.0.1",
+    "@types/nconf": "^0.10.0",
+    "@types/node": "^15.0.1",
+    "@typescript-eslint/eslint-plugin": "^4.22.1",
+    "@typescript-eslint/parser": "^4.22.0",
+    "@typescript-eslint/typescript-estree": "^4.22.1",
+    "@vercel/ncc": "^0.28.5",
+    "browserify": "^17.0.0",
+    "commitizen": "^4.2.3",
+    "cz-conventional-changelog": "^3.3.0",
+    "dotenv": "^8.2.0",
+    "eslint": "^7.25.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-github": "^4.1.3",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jest": "^24.3.6",
+    "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-security": "^1.4.0",
+    "eslint-plugin-simple-import-sort": "^7.0.0",
+    "husky": "^6.0.0",
+    "is-ci": "^3.0.0",
+    "jest": "^26.6.3",
+    "jest-circus": "^26.6.3",
+    "jest-junit": "^12.0.0",
+    "lint-staged": "^10.5.4",
+    "markdownlint-cli": "^0.27.1",
+    "semantic-release": "^17.4.2",
+    "ts-jest": "^26.5.5",
+    "ts-node": "^9.1.1",
+    "tsify": "^5.0.3",
+    "typescript": "^4.2.4",
+    "typescript-eslint-language-service": "^4.1.4",
+    "vinyl-source-stream": "^2.0.0",
+    "yarn-or-npm": "^3.0.1"
+  },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "/helpers/",
+      "/node_modules/"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ]
+  },
+  "jest-junit": {
+    "suiteNameTemplate": "{filepath}",
+    "classNameTemplate": "{classname}",
+    "titleTemplate": "{title}"
+  },
+  "prettier": "@github/prettier-config",
+  "peerDependencies": {
+    "eslint": "^7.25.0"
+  },
+  "lint-staged": {
+    "{src,__tests__}/**/*.js": "eslint --cache --fix",
+    "*.ts": [
+      "eslint --cache --fix"
+    ]
+  },
+  "resolutions": {
+    "typescript": "4.2.4"
+  }
+}

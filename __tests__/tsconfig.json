@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "rootDir": "./",
+    "composite": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "declarationDir": "../dist"
+  },
+  "references": [
+    // this is how we declare a dependency from
+    {"path": "../src"} // this project to the one at the root dir`
+  ],
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "GitHub Actions (Node 12)"
+}

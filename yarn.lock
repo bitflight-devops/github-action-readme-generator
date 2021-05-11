@@ -9339,10 +9339,10 @@ tsconfig@^5.0.3:
     strip-bom "^2.0.0"
     strip-json-comments "^2.0.0"
 
-tsify@^5.0.3:
-  version "5.0.3"
-  resolved "https://registry.yarnpkg.com/tsify/-/tsify-5.0.3.tgz#36305f19f16194ee890f8f9d01f063d6bb93dd95"
-  integrity sha512-Cg/3efnvTrU7L4gnAfXt8p6dp+WefE28qItDKQj4lN0X9Jw2KS2EWKh5/dizXwfVNbT0guAoUce8CqCDWjFDLg==
+tsify@^5.0.4:
+  version "5.0.4"
+  resolved "https://registry.yarnpkg.com/tsify/-/tsify-5.0.4.tgz#22163648d04c0c90bdb15704fb14947df2328547"
+  integrity sha512-XAZtQ5OMPsJFclkZ9xMZWkSNyMhMxEPsz3D2zu79yoKorH9j/DT4xCloJeXk5+cDhosEibu4bseMVjyPOAyLJA==
   dependencies:
     convert-source-map "^1.1.0"
     fs.realpath "^1.0.0"

@@ -1,4 +1,4 @@
-describe('jira ticket transition', () => {
+describe('test required environment variables', () => {
   beforeAll(() => {
     // GitHub workspace
     process.env.GHADOCS_OWNER = 'bitflight-devops'

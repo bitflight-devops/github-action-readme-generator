@@ -10,10 +10,10 @@
     "./src/generate-docs.d.ts",
     "./src/helpers.ts"
   ],
-  "displayName": "Broadshield/github-action-transition-jira-ticket",
+  "displayName": "bitflight-devops/github-action-readme-generator",
   "repository": "github:bitflight-devops/github-action-readme-generator",
   "bugs": {
-    "url": "https://github.com/Broadshield/github-action-transition-jira-ticket/issues"
+    "url": "https://github.com/bitflight-devops/github-action-readme-generator/issues"
   },
   "keywords": [
     "actions",

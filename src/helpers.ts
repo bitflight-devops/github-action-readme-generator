@@ -1,7 +1,7 @@
 import {Context} from '@actions/github/lib/context'
 import * as fs from 'fs'
 
-import {LogTask} from './logtask'
+import LogTask from './logtask'
 
 export function wrapText(text: string | undefined, content: string[], prepend = ''): string[] {
   // Constrain the width of the description

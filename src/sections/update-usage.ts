@@ -1,12 +1,11 @@
 import * as nconf from 'nconf'
 
-import {actionYaml} from '../action-loader'
 import {wrapText} from '../helpers'
-import {readmePath} from '../inputs'
-import {LogTask} from '../logtask'
-import {updateReadme} from '../readme-writer'
+import {action, readmePath} from '../inputs'
+import LogTask from '../logtask'
+import updateReadme from '../readme-writer'
 
-export function updateUsage(token: string): void {
+export default function updateUsage(token: string): void {
   const log = new LogTask(token)
   const actionName = `${nconf.get('owner') as string}/${nconf.get('repo')}`
   log.info(`Action name: ${actionName}`)
@@ -34,7 +33,7 @@ export function updateUsage(token: string): void {
   // Build the new usage section
   content.push('```yaml', `- uses: ${actionReference}`, '  with:')
 
-  const inputs = actionYaml.inputs
+  const inputs = action.inputs
   let firstInput = true
   for (const key of Object.keys(inputs)) {
     // eslint-disable-next-line security/detect-object-injection

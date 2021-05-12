@@ -1,9 +1,9 @@
-import {LogTask} from '../logtask'
-import {updateDescription} from './update-description'
-import {updateTitle} from './update-title'
-import {updateUsage} from './update-usage'
+import LogTask from '../logtask'
+import updateDescription from './update-description'
+import updateTitle from './update-title'
+import updateUsage from './update-usage'
 
-export function updateSection(section: string): void {
+export default function updateSection(section: string): void {
   const log = new LogTask(section)
   try {
     if (section === 'usage') {

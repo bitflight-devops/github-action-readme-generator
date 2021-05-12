@@ -1,1 +1,1 @@
-export declare function updateSection(section: string): void;
+export default function updateSection(section: string): void;

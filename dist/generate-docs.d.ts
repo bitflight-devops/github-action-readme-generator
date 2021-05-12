@@ -1,1 +1,1 @@
-export declare function generateDocs(): void;
+export default function generateDocs(): void;

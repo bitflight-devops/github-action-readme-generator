@@ -3,9 +3,9 @@ import {EOL} from 'os'
 import * as prettier from 'prettier'
 
 import {endTokenFormat, startTokenFormat} from './config'
-import {LogTask} from './logtask'
+import LogTask from './logtask'
 
-export function updateReadme(content: string[], tokenName: string, readmePath: string): void {
+export default function updateReadme(content: string[], tokenName: string, readmePath: string): void {
   const log = new LogTask('readme-writer')
 
   log.info(`Looking for the ${tokenName} token in ${readmePath}`)

@@ -1,1 +1,1 @@
-export declare function updateTitle(token: string): void;
+export default function updateTitle(token: string): void;

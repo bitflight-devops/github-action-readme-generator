@@ -1,1 +1,1 @@
-export declare function save(): void;
+export default function save(): void;

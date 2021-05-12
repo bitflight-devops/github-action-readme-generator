@@ -1,1 +1,2 @@
-export declare function updateTitle(token: string): void;
+import Inputs from '../inputs';
+export default function updateTitle(token: string, inputs: Inputs): void;

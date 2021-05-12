@@ -1,6 +1,6 @@
 {
   "name": "github-action-readme-generator",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "This is a CLI tool and GitHub Action that reads in the details from a \nGitHub Action's `action.yml` file and updates the `README.md` file\nwith the `name`, `description`, `usage`, `inputs`, `outputs`, and\nexamples of the action.\nConfiguration can be provided via a `.ghadocs.json` file stored in the\nroot directory of the Action's repository, via the command line when\nusing the cli, or via the `with:` section of this Action.\n\n\nThis tool uses markdown comments as delimiting tokens within the `README.md`\nfile to determine where to place the generated content.\n\n[`README.example.md`](README.example.md) example with all fields filled in, and no other free-form content.",
   "main": "dist/index.js",
   "bin": "dist/index.js",

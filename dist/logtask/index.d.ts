@@ -1,7 +1,7 @@
 export declare class LogTask {
     readonly name: string;
     constructor(name: string);
-    logStep(emojiStr: string, step: string, description: string): void;
+    logStep(emojiStr: string, step: string, description: string): string;
     start(description?: string): void;
     info(description?: string): void;
     success(description?: string): void;

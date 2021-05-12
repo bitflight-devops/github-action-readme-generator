@@ -1,3 +1,8 @@
+import {Context} from '@actions/github/lib/context'
+import * as fs from 'fs'
+
+import {LogTask} from './logtask'
+
 export function wrapText(text: string | undefined, content: string[], prepend = ''): string[] {
   // Constrain the width of the description
   if (!text) return content
@@ -35,4 +40,49 @@ export function wrapText(text: string | undefined, content: string[], prepend = 
     description = description.substr(segment.length)
   }
   return content
+}
+export interface Repo {
+  owner: string
+  repo: string
+}
+
+export function repositoryFinder(
+  inputRepo: string | undefined | null,
+  context: Context | undefined | null
+): Repo | null {
+  const log = new LogTask('repositoryFinder')
+  const result = {} as unknown as Repo
+  if (inputRepo) {
+    ;[result.owner, result.repo] = inputRepo.split('/')
+    log.info(`repositoryFinder using input ${inputRepo} and returns ${JSON.stringify(result)}`)
+    return result
+  } else if (process.env.GITHUB_REPOSITORY) {
+    ;[result.owner, result.repo] = process.env.GITHUB_REPOSITORY.split('/')
+    log.info(
+      `repositoryFinder using GITHUB_REPOSITORY ${process.env.GITHUB_REPOSITORY} and returns ${JSON.stringify(result)}`
+    )
+    return result
+  } else if (context) {
+    result.owner = context.repo.owner
+    result.repo = context.repo.repo
+
+    log.info(
+      `repositoryFinder using GITHUB_REPOSITORY ${process.env.GITHUB_REPOSITORY} and returns ${JSON.stringify(result)}`
+    )
+    return result
+  }
+  try {
+    const fileContent = fs.readFileSync('.git/config', 'utf8')
+    // eslint-disable-next-line security/detect-unsafe-regex
+    const pattern = /url(\s)?=(\s)(.*)github\.com[:/](?<owner>\w+)\/(?<repo>\w+)\.git$/
+    if (pattern.test(fileContent)) {
+      const results = pattern.exec(fileContent)
+      result.owner = results.groups.owner
+      result.repo = results.groups.repo
+      return result
+    }
+  } finally {
+    // can't find it
+  }
+  return result
 }

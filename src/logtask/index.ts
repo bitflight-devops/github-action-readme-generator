@@ -1,29 +1,33 @@
+import * as core from '@actions/core'
 import * as chalk from 'chalk'
 import * as emoji from 'node-emoji'
 
 export class LogTask {
   constructor(readonly name: string) {}
 
-  logStep(emojiStr: string, step: string, description: string): void {
-    console.log(`${emojiStr} ${step} ${this.name} ${description}`)
+  logStep(emojiStr: string, step: string, description: string): string {
+    return `${emojiStr} ${step} ${this.name} ${description}`
   }
 
   start(description = ''): void {
-    this.logStep(emoji.get('rocket'), 'START', description)
+    core.startGroup(this.logStep(emoji.get('rocket'), 'START', description))
   }
   info(description = ''): void {
-    this.logStep(emoji.get('sparkles'), 'INFO ', description)
+    core.info(this.logStep(emoji.get('sparkles'), 'INFO ', description))
   }
   success(description = ''): void {
-    this.logStep(emoji.get('white_check_mark'), 'END  ', chalk.green(description))
+    core.info(this.logStep(emoji.get('white_check_mark'), 'SUCCESS', chalk.green(description)))
+    core.endGroup()
   }
   fail(description = ''): void {
-    this.logStep(emoji.get('x'), 'END  ', chalk.red(description))
+    core.setFailed(this.logStep(emoji.get('x'), 'FAILURE', chalk.red(description)))
+    core.endGroup()
   }
+
   error(description = ''): void {
-    this.logStep(emoji.get('x'), 'ERROR', chalk.bgRedBright(description))
+    core.error(this.logStep(emoji.get('x'), 'ERROR', chalk.bgRedBright(description)))
   }
   title(description = ''): void {
-    this.logStep(emoji.get('target'), '#####', chalk.yellowBright(description))
+    core.info(this.logStep(emoji.get('target'), '#####', chalk.yellowBright(description)))
   }
 }

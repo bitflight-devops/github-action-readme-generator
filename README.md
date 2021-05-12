@@ -12,6 +12,72 @@ This tool uses markdown comments as delimiting tokens within the `README.md` fil
 
 <!-- end description -->
 
+## CLI usage
+
+| Usage Options                      | Description                                                                                 | Default          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------- | ---------------- |
+| --help                             | Show help                                                                                   | [boolean]        |
+| --paths:action, --action           | Path to the action.yml                                                                      | [default: ""]    |
+| --paths:readme, --readme           | Path to the README.md                                                                       | [default: ""]    |
+| --show_logo, --logo                | Display the action's logo in the README                                                     | [default: false] |
+| --prettier, --pretty               | Format the markdown using prettier formatter                                                | [default: false] |
+| --versioning:enabled, --versioning | Enable the update of the usage version to match the latest version in the package.json file | [default: false] |
+| --versioning:override, --version   | Show version number[boolean]                                                                | [default: ""]    |
+| --versioning:prefix, --vp          | Prefix the version with this value (if it isn't already prefixed)                           | [default: ""]    |
+| --versioning:branch, --branch      | If versioning is disabled show this branch instead                                          | [default: ""]    |
+| --title_prefix, --prefix           | Add a prefix to the README title                                                            | [default: ""]    |
+
+### Stand Alone Usage - if you have a Docker Action
+
+```sh
+npx github-action-readme-generator
+```
+
+### Install with Yarn or NPM as a dev dependency
+
+```sh
+yarn add -D github-action-readme-generator
+# or
+npm i --save-dev github-action-readme-generator
+```
+
+### Add a script to your project file
+
+You can modify the script below to include any extra variables you like
+or use none, and instead use a `.ghadocs.json` file.
+
+```json
+{
+  "scripts": {
+    "ghadocs": "github-action-readme-generator --readme README.md && git add README.md"
+  }
+}
+```
+
+## Configuration
+
+### Example `.ghdocs.json` with all possible values
+
+```json
+{
+  "paths": {
+    "action": "action.yml",
+    "readme": "README.md"
+  },
+  "show_logo": true,
+  "versioning": {
+    "enabled": true,
+    "override": "",
+    "prefix": "v",
+    "branch": "main"
+  },
+  "owner": "bitflight-devops",
+  "repo": "github-action-readme-generator",
+  "title_prefix": "GitHub Action: ",
+  "pretty": true
+}
+```
+
 ## TODO
 
 - [x] Add section for a title to the generator
@@ -26,6 +92,9 @@ This tool uses markdown comments as delimiting tokens within the `README.md` fil
 
 <!-- start contents -->
 <!-- end contents -->
+
+## Usage Example for running as an Action Step
+
 <!-- start usage -->
 
 ```yaml
@@ -48,8 +117,29 @@ This tool uses markdown comments as delimiting tokens within the `README.md` fil
 
     # Save the provided values in a `.ghadocs.json` file. This will update any
     # existing `.ghdocs.json` file that is in place.
-    # Default: false
     save: ''
+
+    # Use `prettier` to pretty print the new README.md file
+    pretty: ''
+
+    # Enable the update of the usage version to match the latest version in the
+    # `package.json` file
+    versioning_enabled: ''
+
+    # Set a specific version to display in the README.md
+    version_override: ''
+
+    # Prefix the version with this value (if it isn't already prefixed)
+    # Default: v
+    version_prefix: ''
+
+    # If versioning is disabled show this branch instead
+    # Default: main
+    versioning_default_branch: ''
+
+    # Add a prefix to the README title
+    # Default: GitHub Action:
+    title_prefix: ''
 ```
 
 <!-- end usage -->

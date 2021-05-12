@@ -29,13 +29,44 @@ inputs:
   owner:
     description: >
       The GitHub Action repository owner. i.e: `bitflight-devops`
-    required: true
+    required: false
   repo:
     description: >
       The GitHub Action repository name. i.e: `github-action-readme-generator`
+    required: false
   save:
     description: >
       Save the provided values in a `.ghadocs.json` file. This will update
       any existing `.ghdocs.json` file that is in place.
     required: false
-    default: false
+  pretty:
+    description: >
+      Use `prettier` to pretty print the new README.md file
+    required: false
+  versioning_enabled:
+    description: >
+      Enable the update of the usage version to match the latest version in the `package.json` file
+    required: false
+  version_override:
+    description: >
+      Set a specific version to display in the README.md
+    required: false
+  version_prefix:
+    description: >
+      Prefix the version with this value (if it isn't already prefixed)
+    required: false
+    default: v
+  versioning_default_branch:
+    description: >
+      If versioning is disabled show this branch instead
+    required: false
+    default: main
+  title_prefix:
+    description: >
+      Add a prefix to the README title
+    required: false
+    default: 'GitHub Action: '
+
+runs:
+  using: 'node12'
+  main: './dist/index.js'

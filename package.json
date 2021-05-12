@@ -3,13 +3,7 @@
   "version": "1.0.4",
   "description": "This is a CLI tool and GitHub Action that reads in the details from a \nGitHub Action's `action.yml` file and updates the `README.md` file\nwith the `name`, `description`, `usage`, `inputs`, `outputs`, and\nexamples of the action.\nConfiguration can be provided via a `.ghadocs.json` file stored in the\nroot directory of the Action's repository, via the command line when\nusing the cli, or via the `with:` section of this Action.\n\n\nThis tool uses markdown comments as delimiting tokens within the `README.md`\nfile to determine where to place the generated content.\n\n[`README.example.md`](README.example.md) example with all fields filled in, and no other free-form content.",
   "main": "dist/index.js",
-  "bin": {
-    "ghadocs": "./dist/index.js"
-  },
-  "sideEffects": [
-    "./src/generate-docs.d.ts",
-    "./src/helpers.ts"
-  ],
+  "bin": "dist/index.js",
   "displayName": "bitflight-devops/github-action-readme-generator",
   "repository": "github:bitflight-devops/github-action-readme-generator",
   "bugs": {
@@ -95,6 +89,8 @@
     "!win32"
   ],
   "dependencies": {
+    "@actions/core": "^1.2.7",
+    "@actions/github": "^4.0.0",
     "chalk": "^4.1.1",
     "date-format": "^3.0.0",
     "js-yaml": "^4.1.0",

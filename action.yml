@@ -1,0 +1,72 @@
+name: 📓 GitHub Action's Readme Generator
+author: Jamie Nelson <jamie@bitflight.io>
+description: >
+  This is a CLI tool and GitHub Action that reads in the details from a
+  GitHub Action's `action.yml` file and updates the `README.md` file
+  with the `name`, `description`, `usage`, `inputs`, `outputs`, and
+  examples of the action.
+  Configuration can be provided via a `.ghadocs.json` file stored in the
+  root directory of the Action's repository, via the command line when
+  using the cli, or via the `with:` section of this Action.
+
+  This tool uses markdown comments as delimiting tokens within the `README.md`
+  file to determine where to place the generated content.
+
+  [`README.example.md`](README.example.md) example with all fields filled in, and no other free-form content.
+
+inputs:
+  action:
+    description: >
+      The absolute or relative path to the `action.yml` file to read in from.
+    required: false
+    default: action.yml
+  readme:
+    description: >
+      The absolute or relative path to the markdown output file that contains
+      the formatting tokens within it.
+    required: false
+    default: README.md
+  owner:
+    description: >
+      The GitHub Action repository owner. i.e: `bitflight-devops`
+    required: false
+  repo:
+    description: >
+      The GitHub Action repository name. i.e: `github-action-readme-generator`
+    required: false
+  save:
+    description: >
+      Save the provided values in a `.ghadocs.json` file. This will update
+      any existing `.ghdocs.json` file that is in place.
+    required: false
+  pretty:
+    description: >
+      Use `prettier` to pretty print the new README.md file
+    required: false
+  versioning_enabled:
+    description: >
+      Enable the update of the usage version to match the latest version in the `package.json` file
+    required: false
+  version_override:
+    description: >
+      Set a specific version to display in the README.md
+    required: false
+  version_prefix:
+    description: >
+      Prefix the version with this value (if it isn't already prefixed)
+    required: false
+    default: v
+  versioning_default_branch:
+    description: >
+      If versioning is disabled show this branch instead
+    required: false
+    default: main
+  title_prefix:
+    description: >
+      Add a prefix to the README title
+    required: false
+    default: 'GitHub Action: '
+
+runs:
+  using: 'node12'
+  main: './dist/index.js'

@@ -93,7 +93,7 @@ or use none, and instead use a `.ghadocs.json` file.
 <!-- start contents -->
 <!-- end contents -->
 
-## Usage Example for running as an Action Step
+## Usage
 
 <!-- start usage -->
 
@@ -143,6 +143,9 @@ or use none, and instead use a `.ghadocs.json` file.
 ```
 
 <!-- end usage -->
+
+## Inputs
+
 <!-- start inputs -->
 
 | **Input**                       | **Description**                                                                                                         |    **Default**    | **Required** |

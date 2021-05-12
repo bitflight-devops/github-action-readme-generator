@@ -100,7 +100,7 @@ or use none, and instead use a `.ghadocs.json` file.
 <!-- start usage -->
 
 ```yaml
-- uses: bitflight-devops/github-action-readme-generator@v1.0.11
+- uses: bitflight-devops/github-action-readme-generator@v1.0.12
   with:
     # The absolute or relative path to the `action.yml` file to read in from.
     # Default: action.yml

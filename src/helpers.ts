@@ -51,7 +51,8 @@ export function repositoryFinder(
   context: Context | undefined | null
 ): Repo | null {
   const log = new LogTask('repositoryFinder')
-  const result = {} as unknown as Repo
+  const obj = {} as unknown
+  const result = obj as Repo
   if (inputRepo) {
     ;[result.owner, result.repo] = inputRepo.split('/')
     log.info(`repositoryFinder using input ${inputRepo} and returns ${JSON.stringify(result)}`)

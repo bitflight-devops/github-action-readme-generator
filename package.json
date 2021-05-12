@@ -23,10 +23,10 @@
   "scripts": {
     "test": "NODE_ENV=testing jest",
     "test-ci": "NODE_ENV=testing jest --ci --reporters=default --reporters=jest-junit",
-    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
+    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt && chmod +x ./dist/index.js",
     "format:fix": "prettier --write \"./**/*.{ts,js,json,md}\"",
     "format": "prettier --list-different \"./**/*.{ts,js,json,md}\"",
-    "lint:fix": "yon run format:fix;eslint . --ext .js,.ts --fix",
+    "lint:fix": "yon run format:fix;eslint src --ext .js,.ts --fix",
     "lint:markdown:fix": "yarn lint:markdown --fix",
     "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
     "lint": "eslint . --ext .js,.ts",

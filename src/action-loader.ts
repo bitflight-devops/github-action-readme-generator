@@ -4,11 +4,17 @@ import * as path from 'path'
 
 import {Action} from './generate-docs.d'
 import {actionPath} from './inputs'
-
-const actionDir = path.resolve(process.cwd())
-
+import {LogTask} from './logtask'
 // Load the action.yml
-const _actionYaml = yaml.load(fs.readFileSync(path.resolve(actionDir, actionPath), 'utf8').toString())
+const log = new LogTask('action.yml')
+const _actionPath = path.resolve(actionPath)
+let _actionYaml = null
+try {
+  _actionYaml = yaml.load(fs.readFileSync(_actionPath, 'utf8'))
+  log.info('Loaded successfully')
+} catch (err) {
+  log.fail('Failed to load')
+}
 if (typeof _actionYaml !== 'object' || _actionYaml === null) {
   throw new Error(`Yaml file read in isn't an object`)
 }

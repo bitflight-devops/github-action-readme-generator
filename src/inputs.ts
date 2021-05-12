@@ -2,9 +2,12 @@ import * as core from '@actions/core'
 import {Context} from '@actions/github/lib/context'
 import * as fs from 'fs'
 import * as nconf from 'nconf'
+import * as path from 'path'
 
 import {repositoryFinder} from './helpers'
+import {workingDirectory} from './working-directory'
 
+process.chdir(workingDirectory())
 const githubEventPath = process.env.GITHUB_EVENT_PATH
 let githubEvent = null
 try {
@@ -28,7 +31,7 @@ export const configKeys: string[] = [
   'pretty'
 ]
 
-nconf.use('file', {file: '.ghadocs.json', dir: process.cwd(), search: true})
+nconf.use('file', {file: '.ghadocs.json', dir: workingDirectory(), search: true})
 nconf
   .argv({
     save: {
@@ -123,5 +126,5 @@ nconf
   .required(['owner', 'repo'])
 
 export const sections = nconf.get('sections') as string[]
-export const readmePath = nconf.get('paths:readme') as string
-export const actionPath = nconf.get('paths:action') as string
+export const readmePath = path.resolve(workingDirectory(), nconf.get('paths:readme') as string)
+export const actionPath = path.resolve(workingDirectory(), nconf.get('paths:action') as string)

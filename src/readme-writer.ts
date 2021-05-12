@@ -10,6 +10,7 @@ export function updateReadme(content: string[], tokenName: string, readmePath: s
 
   log.info(`Looking for the ${tokenName} token in ${readmePath}`)
   // Load the README
+
   const originalReadme = fs.readFileSync(readmePath).toString()
 
   const startToken = startTokenFormat.replace('%s', tokenName)

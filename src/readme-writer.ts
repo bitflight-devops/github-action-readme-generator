@@ -8,6 +8,10 @@ import LogTask from './logtask'
 export default function updateReadme(content: string[], tokenName: string, readmePath: string): void {
   const log = new LogTask('readme-writer')
 
+  if (!content) {
+    log.info(`updateReadme passed no content from ${tokenName} parser`)
+    return
+  }
   log.info(`Looking for the ${tokenName} token in ${readmePath}`)
   // Load the README
 

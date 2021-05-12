@@ -1,19 +1,10 @@
 name: 📓 GitHub Action's Readme Generator
 author: Jamie Nelson <jamie@bitflight.io>
-description: >
-  This is a CLI tool and GitHub Action that reads in the details from a
-  GitHub Action's `action.yml` file and updates the `README.md` file
-  with the `name`, `description`, `usage`, `inputs`, `outputs`, and
-  examples of the action.
-  Configuration can be provided via a `.ghadocs.json` file stored in the
-  root directory of the Action's repository, via the command line when
-  using the cli, or via the `with:` section of this Action.
+description: Maintain a current README.md with content from the action.yml file
 
-  This tool uses markdown comments as delimiting tokens within the `README.md`
-  file to determine where to place the generated content.
-
-  [`README.example.md`](README.example.md) example with all fields filled in, and no other free-form content.
-
+branding:
+  icon: book-open
+  color: yellow
 inputs:
   action:
     description: >

@@ -1,5 +1,8 @@
 import Action from './Action';
 export declare const configKeys: string[];
-export declare const sections: string[];
-export declare const readmePath: string;
-export declare const action: Action;
+export default class Inputs {
+    constructor();
+    sections: string[];
+    readmePath: string;
+    action: Action;
+}

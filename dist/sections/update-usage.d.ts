@@ -1,1 +1,2 @@
-export default function updateUsage(token: string): void;
+import Inputs from '../inputs';
+export default function updateUsage(token: string, inputs: Inputs): void;

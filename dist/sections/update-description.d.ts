@@ -1,1 +1,2 @@
-export default function updateDescription(token: string): void;
+import Inputs from '../inputs';
+export default function updateDescription(token: string, inputs: Inputs): void;

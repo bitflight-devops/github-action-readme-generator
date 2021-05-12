@@ -1,11 +1,11 @@
 import * as nconf from 'nconf'
 
 import {wrapText} from '../helpers'
-import {action, readmePath} from '../inputs'
+import Inputs from '../inputs'
 import LogTask from '../logtask'
 import updateReadme from '../readme-writer'
 
-export default function updateUsage(token: string): void {
+export default function updateUsage(token: string, inputs: Inputs): void {
   const log = new LogTask(token)
   const actionName = `${nconf.get('owner') as string}/${nconf.get('repo')}`
   log.info(`Action name: ${actionName}`)
@@ -33,11 +33,11 @@ export default function updateUsage(token: string): void {
   // Build the new usage section
   content.push('```yaml', `- uses: ${actionReference}`, '  with:')
 
-  const inputs = action.inputs
+  const inp = inputs.action.inputs
   let firstInput = true
-  for (const key of Object.keys(inputs)) {
+  for (const key of Object.keys(inp)) {
     // eslint-disable-next-line security/detect-object-injection
-    const input = inputs[key]
+    const input = inp[key]
 
     // Line break between inputs
     if (!firstInput) {
@@ -65,5 +65,5 @@ export default function updateUsage(token: string): void {
 
   content.push('```\n')
 
-  updateReadme(content, token, readmePath)
+  updateReadme(content, token, inputs.readmePath)
 }

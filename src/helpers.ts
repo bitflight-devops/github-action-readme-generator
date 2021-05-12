@@ -71,19 +71,24 @@ export function repositoryFinder(
       `repositoryFinder using GITHUB_REPOSITORY ${process.env.GITHUB_REPOSITORY} and returns ${JSON.stringify(result)}`
     )
     return result
+  } else if (process.env.INPUT_OWNER && process.env.INPUT_REPO) {
+    result.owner = process.env.INPUT_OWNER
+    result.repo = process.env.INPUT_REPO
+    return result
   }
   try {
     const fileContent = fs.readFileSync('.git/config', 'utf8')
     // eslint-disable-next-line security/detect-unsafe-regex
-    const pattern = /url(\s)?=(\s)(.*)github\.com[:/](?<owner>\w+)\/(?<repo>\w+)\.git$/
-    if (pattern.test(fileContent)) {
-      const results = pattern.exec(fileContent)
-      result.owner = results.groups.owner
-      result.repo = results.groups.repo
-      return result
-    }
-  } finally {
+    const pattern = /url( )?=( )?.*github\.com[:/](?<owner>.*)\/(?<repo>.*)\.git/
+
+    const results = pattern.exec(fileContent)
+    log.debug(JSON.stringify(results.groups))
+    result.owner = results.groups.owner
+    result.repo = results.groups.repo
+    return result
+  } catch (err) {
     // can't find it
+    log.debug(`Couldn't find any owner or repo: ${err}`)
   }
   return result
 }

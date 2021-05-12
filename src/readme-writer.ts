@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import {EOL} from 'os'
-import * as prettier from 'prettier'
+import {format} from 'prettier'
 
 import {endTokenFormat, startTokenFormat} from './config'
 import LogTask from './logtask'
@@ -43,6 +43,6 @@ export default function updateReadme(content: string[], tokenName: string, readm
   newReadme.push(originalReadme.substr(endTokenIndex))
   const fileContent = newReadme.join(EOL)
   // Write the new README
-  fs.writeFileSync(readmePath, prettier.format(fileContent, {semi: false, parser: 'markdown'}))
+  fs.writeFileSync(readmePath, format(fileContent, {semi: false, parser: 'markdown'}))
   log.info(`successfully updated the ${tokenName} section`)
 }

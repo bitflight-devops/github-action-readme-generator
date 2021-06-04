@@ -1135,10 +1135,10 @@
   resolved "https://registry.yarnpkg.com/@types/nconf/-/nconf-0.10.0.tgz#a5c9753a09c59d44c8e6dc94b57d73f70eb12ebe"
   integrity sha512-Qh0/DWkz7fQm5h+IPFBIO5ixaFdv86V6gpbA8TPA1hhgXYtzGviv9yriqN1B+KTtmLweemKZD5XxY1cTAQPNMg==
 
-"@types/node@*", "@types/node@^15.0.2":
-  version "15.0.2"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-15.0.2.tgz#51e9c0920d1b45936ea04341aa3e2e58d339fb67"
-  integrity sha512-p68+a+KoxpoB47015IeYZYRrdqMUcpbK8re/zpFB8Ld46LHC1lPEbp3EXgkEhAYEcPvjJF6ZO+869SQ0aH1dcA==
+"@types/node@*", "@types/node@^15.6.1":
+  version "15.6.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-15.6.1.tgz#32d43390d5c62c5b6ec486a9bc9c59544de39a08"
+  integrity sha512-7EIraBEyRHEe7CH+Fm1XvgqU6uwZN8Q7jppJGcqjROMT29qhAuuOxYB1uEY5UMYQKEmA5D+5tBnhdaPXSsLONA==
 
 "@types/normalize-package-data@^2.4.0":
   version "2.4.0"
@@ -6926,10 +6926,10 @@ secure-keys@^1.0.0:
   resolved "https://registry.yarnpkg.com/secure-keys/-/secure-keys-1.0.0.tgz#f0c82d98a3b139a8776a8808050b824431087fca"
   integrity sha1-8MgtmKOxOah3aogIBQuCRDEIf8o=
 
-semantic-release@^17.4.2:
-  version "17.4.2"
-  resolved "https://registry.yarnpkg.com/semantic-release/-/semantic-release-17.4.2.tgz#b5147b5a629c227b7074ad4cc89920a14cb08c96"
-  integrity sha512-TPLWuoe2L2DmgnQEh+OLWW5V1T+ZAa1xWuHXsuPAWEko0BqSdLPl+5+BlQ+D5Bp27S5gDJ1//Y1tgbmvUhnOCw==
+semantic-release@^17.4.3:
+  version "17.4.3"
+  resolved "https://registry.yarnpkg.com/semantic-release/-/semantic-release-17.4.3.tgz#e01b2d0c0adaf5a6cc427359f1df755d1e908927"
+  integrity sha512-lTOUSrkbaQ+TRs3+BmtJhLtPSyiO7iTGmh5SyuEFqNO8HQbQ4nzXg4UlPrDQasO/C0eFK/V0eCbOzJdjtKBOYw==
   dependencies:
     "@semantic-release/commit-analyzer" "^8.0.0"
     "@semantic-release/error" "^2.2.0"
@@ -6947,7 +6947,7 @@ semantic-release@^17.4.2:
     git-log-parser "^1.2.0"
     hook-std "^2.0.0"
     hosted-git-info "^4.0.0"
-    lodash "^4.17.15"
+    lodash "^4.17.21"
     marked "^2.0.0"
     marked-terminal "^4.1.1"
     micromatch "^4.0.2"

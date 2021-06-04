@@ -90,7 +90,7 @@
   ],
   "dependencies": {
     "@actions/core": "^1.2.7",
-    "@actions/github": "^4.0.0",
+    "@actions/github": "^5.0.0",
     "chalk": "^4.1.1",
     "date-format": "^3.0.0",
     "js-yaml": "^4.1.0",

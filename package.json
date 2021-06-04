@@ -103,7 +103,7 @@
   },
   "devDependencies": {
     "@commitlint/cli": "^12.1.1",
-    "@commitlint/config-conventional": "^12.1.1",
+    "@commitlint/config-conventional": "^12.1.4",
     "@commitlint/prompt": "^12.1.1",
     "@github/prettier-config": "^0.0.4",
     "@tsconfig/node12": "^1.0.7",

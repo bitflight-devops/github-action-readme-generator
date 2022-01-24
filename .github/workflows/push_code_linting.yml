@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2.4.0
       - name: eslint
-        uses: reviewdog/action-eslint@v1.12.3
+        uses: reviewdog/action-eslint@v1.15
         with:
           reporter: github-pr-review # Change reporter.
           eslint_flags: . --ext .ts

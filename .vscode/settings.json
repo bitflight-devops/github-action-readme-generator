@@ -1,0 +1,22 @@
+  {
+    "eslint.validate": [
+      "javascript",
+      "typescript",
+      "javascriptreact",
+      "typescriptreact",
+      "html"
+    ],
+    "eslint.options": {
+      "extensions": [
+        ".js",
+        ".ts",
+        "html"
+      ]
+    },
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": true,
+    },
+    "github.copilot.advanced": {
+
+    },
+  }

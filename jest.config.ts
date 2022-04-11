@@ -1,5 +1,5 @@
 // jest.config.ts
-import type {Config} from '@jest/types'
+import type { Config } from '@jest/types';
 
 // Sync object
 const config: Config.InitialOptions = {
@@ -9,11 +9,12 @@ const config: Config.InitialOptions = {
   testMatch: ['**/__tests__/*.test.ts'],
   testRunner: 'jest-circus/runner',
   transform: {
-    '^.+\\.ts$': 'ts-jest'
+    '^.+\\.ts$': 'ts-jest',
   },
   setupFiles: ['dotenv/config'],
   reporters: ['default', 'jest-junit'],
-
-  verbose: true
-}
-export default config
+  testPathIgnorePatterns: ['/helpers/', '/node_modules/'],
+  coveragePathIgnorePatterns: ['/node_modules/'],
+  verbose: true,
+};
+export default config;

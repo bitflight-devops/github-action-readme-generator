@@ -1,30 +1,30 @@
 export interface Versioning {
-  enabled: boolean
-  prefixed: string
+  enabled: boolean;
+  prefixed: string;
 }
 export interface Paths {
-  action: string
-  readme: string
+  action: string;
+  readme: string;
 }
 export declare class GHActionDocsConfig {
-  owner: string
+  owner: string;
 
-  repo: string
+  repo: string;
 
-  title_prefix: string
+  title_prefix: string;
 
-  title: string
+  title: string;
 
-  paths: Paths
+  paths: Paths;
 
-  show_logo: boolean
+  show_logo: boolean;
 
-  versioning: Versioning
+  versioning: Versioning;
 
-  readmePath: string
+  readmePath: string;
 
-  outpath: string
+  outpath: string;
 }
 
-export const startTokenFormat = '<!-- start %s -->'
-export const endTokenFormat = '<!-- end %s -->'
+export const startTokenFormat = '<!-- start %s -->';
+export const endTokenFormat = '<!-- end %s -->';

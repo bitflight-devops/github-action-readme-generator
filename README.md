@@ -104,44 +104,44 @@ or use none, and instead use a `.ghadocs.json` file.
   with:
     # The absolute or relative path to the `action.yml` file to read in from.
     # Default: action.yml
-    action: ""
+    action: ''
 
     # The absolute or relative path to the markdown output file that contains the
     # formatting tokens within it.
     # Default: README.md
-    readme: ""
+    readme: ''
 
     # The GitHub Action repository owner. i.e: `bitflight-devops`
-    owner: ""
+    owner: ''
 
     # The GitHub Action repository name. i.e: `github-action-readme-generator`
-    repo: ""
+    repo: ''
 
     # Save the provided values in a `.ghadocs.json` file. This will update any
     # existing `.ghdocs.json` file that is in place.
-    save: ""
+    save: ''
 
     # Use `prettier` to pretty print the new README.md file
-    pretty: ""
+    pretty: ''
 
     # Enable the update of the usage version to match the latest version in the
     # `package.json` file
-    versioning_enabled: ""
+    versioning_enabled: ''
 
     # Set a specific version to display in the README.md
-    version_override: ""
+    version_override: ''
 
     # Prefix the version with this value (if it isn't already prefixed)
     # Default: v
-    version_prefix: ""
+    version_prefix: ''
 
     # If versioning is disabled show this branch instead
     # Default: main
-    versioning_default_branch: ""
+    versioning_default_branch: ''
 
     # Add a prefix to the README title
     # Default: GitHub Action:
-    title_prefix: ""
+    title_prefix: ''
 ```
 
 <!-- end usage -->

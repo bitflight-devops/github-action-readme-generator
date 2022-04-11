@@ -24,7 +24,7 @@
   // MD012/no-multiple-blanks - Multiple consecutive blank lines
   "MD012": false,
   // MD013/line-length - Line length
-  "MD013": {"line_length": 99999}, // no line length
+  "MD013": { "line_length": 99999 }, // no line length
   // MD014/commands-show-output - Dollar signs used before commands without showing output
   "MD014": false,
   // MD018/no-missing-space-atx - No space after hash on atx style heading
@@ -44,7 +44,7 @@
   // MD025/single-title/single-h1 - Multiple top level headings in the same document
   "MD025": true,
   // MD026/no-trailing-punctuation - Trailing punctuation in heading
-  "MD026": {"punctuation": ".,;:!。，；：！？"}, // specifically allow "?"
+  "MD026": { "punctuation": ".,;:!。，；：！？" }, // specifically allow "?"
   // MD027/no-multiple-space-blockquote - Multiple spaces after blockquote symbol
   "MD027": false,
   // MD028/no-blanks-blockquote - Blank line inside blockquote
@@ -89,9 +89,9 @@
   // MD045/no-alt-text - Images should have alternate text (alt text)
   "MD045": true,
   // MD046/code-block-style - Code block style
-  "MD046": {"style": "fenced"},
+  "MD046": { "style": "fenced" },
   // MD047/single-trailing-newline - Files should end with a single newline character
   "MD047": false,
   // MD048/code-fence-style - Code fence style
-  "MD048": {"style": "backtick"}
+  "MD048": { "style": "backtick" }
 }

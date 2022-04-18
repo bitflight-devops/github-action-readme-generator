@@ -85,7 +85,7 @@
     "@github/prettier-config": "^0.0.4",
     "@jest/types": "^27.5.1",
     "@prettier/plugin-ruby": "^2.1.0",
-    "@prettier/plugin-xml": "^2.0.1",
+    "@prettier/plugin-xml": "^2.1.0",
     "@trunkio/launcher": "^1.0.3-readme",
     "@tsconfig/node12": "^1.0.9",
     "@tsconfig/node16-strictest-esm": "^1.0.0",

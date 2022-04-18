@@ -88,7 +88,7 @@
     "@prettier/plugin-xml": "^2.0.1",
     "@trunkio/launcher": "^1.0.3-readme",
     "@tsconfig/node12": "^1.0.9",
-    "@tsconfig/node16-strictest-esm": "^1.0.0",
+    "@tsconfig/node16-strictest-esm": "^1.0.1",
     "@types/jest": "^27.4.1",
     "@types/js-yaml": "^4.0.5",
     "@types/nconf": "^0.10.2",

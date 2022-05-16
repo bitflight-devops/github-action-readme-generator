@@ -69,7 +69,7 @@
     "@actions/core": "^1.6.0",
     "@actions/github": "^5.0.1",
     "chalk": "^5.0.1",
-    "date-format": "^4.0.6",
+    "date-format": "^4.0.10",
     "js-yaml": "^4.1.0",
     "markdown-table": "^3.0.2",
     "nconf": "github:indexzero/nconf",

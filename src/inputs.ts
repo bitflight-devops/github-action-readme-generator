@@ -98,7 +98,7 @@ export default class Inputs {
           parseValues: true,
         },
         'versioning:override': {
-          alias: 'version',
+          alias: 'setversion',
           describe: 'Set a specific version to display in the README.md',
           parseValues: true,
         },

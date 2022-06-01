@@ -2,4 +2,4 @@
 # shellcheck source=./_/husky.sh
 . "$(dirname "$0")/_/husky.sh"
 
-npm run pre-push
+# npm run pre-push

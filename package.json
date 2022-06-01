@@ -26,6 +26,7 @@
     "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:16-alpine sh -c \"yarn run build\"",
     "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:16-alpine sh -c 'yarn run build'",
     "format": "yarn exec prettier --write . --config .prettierrc.js --ignore-unknown",
+    "format:fix": "yarn run format",
     "bump": "yarn version -i patch && yarn run release",
     "bump:minor": "yarn version -i minor && yarn run release",
     "release": "git add .yarn package.json && git commit -m 'chore(release): bump version to ${npm_package_version}' && git tag -a v${npm_package_version} -m 'v${npm_package_version}' && yarn run postversion && yarn run publish",

@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "github:bitflight-devops/github-action-readme-generator"
+    "url": "git+https://github.com/bitflight-devops/github-action-readme-generator"
   },
   "bugs": {
     "url": "https://github.com/bitflight-devops/github-action-readme-generator/issues"
@@ -46,7 +46,6 @@
     "postinstall": "echo '✨ Successfully Installed'",
     "commit": "git-cz",
     "pre-commit": "lint-staged && yon run build && git add dist && yon run generate-docs",
-    "pre-push": "yon format:fix",
     "preversion": "echo 'Running test';yon run test",
     "version": "echo 'Run versioning commands';echo \"::set-output name=tag::v${npm_package_version}\"",
     "generate-docs": "echo 'Generating docs';node dist/index.cjs && git add README.md dist"

@@ -590,6 +590,110 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@bitflight-devops/github-action-readme-generator@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@bitflight-devops/github-action-readme-generator@workspace:."
+  dependencies:
+    "@Broadshield/prettier-config": "github:Broadshield/prettier-config"
+    "@actions/core": ^1.8.2
+    "@actions/github": ^5.0.3
+    "@babel/eslint-parser": ^7.18.2
+    "@commitlint/cli": ^17.0.2
+    "@commitlint/config-conventional": ^17.0.2
+    "@commitlint/prompt": ^17.0.0
+    "@jest/types": ^28.1.0
+    "@prettier/plugin-xml": ^2.2.0
+    "@trunkio/launcher": ^1.1.1
+    "@tsconfig/node16-strictest-esm": ^1.0.1
+    "@types/esm": ^3
+    "@types/jest": ^27.5.1
+    "@types/js-yaml": ^4.0.5
+    "@types/nconf": ^0.10.2
+    "@types/node": ^17.0.38
+    "@types/node-emoji": ^1.8.1
+    "@types/prettier-package-json": ^2
+    "@types/rimraf": ^3
+    "@typescript-eslint/eslint-plugin": ^5.27.0
+    "@typescript-eslint/parser": ^5.27.0
+    "@typescript-eslint/typescript-estree": ^5.27.0
+    async: ^3.2.3
+    chalk: ^5.0.1
+    commitizen: ^4.2.4
+    cz-conventional-changelog: ^3.3.0
+    date-format: ^4.0.10
+    dotenv: ^16.0.1
+    esbuild: ^0.14.42
+    esbuild-plugin-eslint: ^0.0.1
+    eslint: ^8.16.0
+    eslint-config-adjunct: ^4.11.1
+    eslint-config-airbnb-babel: latest
+    eslint-config-airbnb-base: ^15.0.0
+    eslint-config-airbnb-typescript: ^17.0.0
+    eslint-config-auto: latest
+    eslint-config-google: ^0.14.0
+    eslint-config-prettier: ^8.5.0
+    eslint-formatter-codeframe: ^7.32.1
+    eslint-import-resolver-typescript: ^2.7.1
+    eslint-plugin-actions: ^2.0.0
+    eslint-plugin-array-func: ^3.1.7
+    eslint-plugin-babel: latest
+    eslint-plugin-eslint-comments: ^3.2.0
+    eslint-plugin-github: ^4.3.6
+    eslint-plugin-html: ^6.2.0
+    eslint-plugin-import: ^2.26.0
+    eslint-plugin-jest: ^26.4.6
+    eslint-plugin-jest-async: ^1.0.3
+    eslint-plugin-json: ^3.1.0
+    eslint-plugin-lodash: ^7.4.0
+    eslint-plugin-lodash-fp: ^2.2.0-a1
+    eslint-plugin-markdown: ^2.2.1
+    eslint-plugin-no-constructor-bind: ^2.0.4
+    eslint-plugin-no-secrets: ^0.8.9
+    eslint-plugin-no-unsanitized: ^4.0.1
+    eslint-plugin-no-use-extend-native: ^0.5.0
+    eslint-plugin-node: ^11.1.0
+    eslint-plugin-optimize-regex: ^1.2.1
+    eslint-plugin-prettier: latest
+    eslint-plugin-promise: ^6.0.0
+    eslint-plugin-scanjs-rules: ^0.2.1
+    eslint-plugin-security: ^1.5.0
+    eslint-plugin-simple-import-sort: ^7.0.0
+    eslint-plugin-sonarjs: ^0.13.0
+    eslint-plugin-sort-class-members: ^1.14.1
+    eslint-plugin-switch-case: ^1.1.2
+    eslint-plugin-unicorn: ^42.0.0
+    eslint-plugin-yml: latest
+    esm: ^3.2.25
+    husky: ^8.0.1
+    is-ci: ^3.0.1
+    jest: ^28.1.0
+    jest-circus: ^28.1.0
+    jest-junit: ^13.2.0
+    js-yaml: ^4.1.0
+    lint-staged: ^13.0.0
+    markdown-table: ^3.0.2
+    markdownlint-cli: ^0.31.1
+    minimal: ^0.2.1
+    nconf: "github:indexzero/nconf"
+    node-emoji: ^1.11.0
+    prettier: ^2.6.2
+    prettier-eslint: ^15.0.1
+    prettier-plugin-properties: ^0.1.0
+    reflect-metadata: ^0.1.13
+    rimraf: ^3.0.2
+    run-script-os: ^1.1.6
+    semantic-release: ^19.0.2
+    ts-jest: ^28.0.3
+    ts-node: ^10.8.0
+    tslib: ^2.4.0
+    typescript: ^4.7.2
+    typescript-eslint-language-service: ^5.0.0
+    yarn-or-npm: ^3.0.1
+  bin:
+    github-action-readme-generator: dist/index.cjs
+  languageName: unknown
+  linkType: soft
+
 "@commitlint/cli@npm:^17.0.2":
   version: 17.0.2
   resolution: "@commitlint/cli@npm:17.0.2"
@@ -5737,110 +5841,6 @@ __metadata:
   checksum: c178af43633684106179793b6e3473e1d2bb50bb41d04e2e285ea4eef342ca4090fee6bc8a737552fde879d22346c90de5c49f18c719a0f38d4c934f258a0f79
   languageName: node
   linkType: hard
-
-"github-action-readme-generator@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "github-action-readme-generator@workspace:."
-  dependencies:
-    "@Broadshield/prettier-config": "github:Broadshield/prettier-config"
-    "@actions/core": ^1.8.2
-    "@actions/github": ^5.0.3
-    "@babel/eslint-parser": ^7.18.2
-    "@commitlint/cli": ^17.0.2
-    "@commitlint/config-conventional": ^17.0.2
-    "@commitlint/prompt": ^17.0.0
-    "@jest/types": ^28.1.0
-    "@prettier/plugin-xml": ^2.2.0
-    "@trunkio/launcher": ^1.1.1
-    "@tsconfig/node16-strictest-esm": ^1.0.1
-    "@types/esm": ^3
-    "@types/jest": ^27.5.1
-    "@types/js-yaml": ^4.0.5
-    "@types/nconf": ^0.10.2
-    "@types/node": ^17.0.38
-    "@types/node-emoji": ^1.8.1
-    "@types/prettier-package-json": ^2
-    "@types/rimraf": ^3
-    "@typescript-eslint/eslint-plugin": ^5.27.0
-    "@typescript-eslint/parser": ^5.27.0
-    "@typescript-eslint/typescript-estree": ^5.27.0
-    async: ^3.2.3
-    chalk: ^5.0.1
-    commitizen: ^4.2.4
-    cz-conventional-changelog: ^3.3.0
-    date-format: ^4.0.10
-    dotenv: ^16.0.1
-    esbuild: ^0.14.42
-    esbuild-plugin-eslint: ^0.0.1
-    eslint: ^8.16.0
-    eslint-config-adjunct: ^4.11.1
-    eslint-config-airbnb-babel: latest
-    eslint-config-airbnb-base: ^15.0.0
-    eslint-config-airbnb-typescript: ^17.0.0
-    eslint-config-auto: latest
-    eslint-config-google: ^0.14.0
-    eslint-config-prettier: ^8.5.0
-    eslint-formatter-codeframe: ^7.32.1
-    eslint-import-resolver-typescript: ^2.7.1
-    eslint-plugin-actions: ^2.0.0
-    eslint-plugin-array-func: ^3.1.7
-    eslint-plugin-babel: latest
-    eslint-plugin-eslint-comments: ^3.2.0
-    eslint-plugin-github: ^4.3.6
-    eslint-plugin-html: ^6.2.0
-    eslint-plugin-import: ^2.26.0
-    eslint-plugin-jest: ^26.4.6
-    eslint-plugin-jest-async: ^1.0.3
-    eslint-plugin-json: ^3.1.0
-    eslint-plugin-lodash: ^7.4.0
-    eslint-plugin-lodash-fp: ^2.2.0-a1
-    eslint-plugin-markdown: ^2.2.1
-    eslint-plugin-no-constructor-bind: ^2.0.4
-    eslint-plugin-no-secrets: ^0.8.9
-    eslint-plugin-no-unsanitized: ^4.0.1
-    eslint-plugin-no-use-extend-native: ^0.5.0
-    eslint-plugin-node: ^11.1.0
-    eslint-plugin-optimize-regex: ^1.2.1
-    eslint-plugin-prettier: latest
-    eslint-plugin-promise: ^6.0.0
-    eslint-plugin-scanjs-rules: ^0.2.1
-    eslint-plugin-security: ^1.5.0
-    eslint-plugin-simple-import-sort: ^7.0.0
-    eslint-plugin-sonarjs: ^0.13.0
-    eslint-plugin-sort-class-members: ^1.14.1
-    eslint-plugin-switch-case: ^1.1.2
-    eslint-plugin-unicorn: ^42.0.0
-    eslint-plugin-yml: latest
-    esm: ^3.2.25
-    husky: ^8.0.1
-    is-ci: ^3.0.1
-    jest: ^28.1.0
-    jest-circus: ^28.1.0
-    jest-junit: ^13.2.0
-    js-yaml: ^4.1.0
-    lint-staged: ^13.0.0
-    markdown-table: ^3.0.2
-    markdownlint-cli: ^0.31.1
-    minimal: ^0.2.1
-    nconf: "github:indexzero/nconf"
-    node-emoji: ^1.11.0
-    prettier: ^2.6.2
-    prettier-eslint: ^15.0.1
-    prettier-plugin-properties: ^0.1.0
-    reflect-metadata: ^0.1.13
-    rimraf: ^3.0.2
-    run-script-os: ^1.1.6
-    semantic-release: ^19.0.2
-    ts-jest: ^28.0.3
-    ts-node: ^10.8.0
-    tslib: ^2.4.0
-    typescript: ^4.7.2
-    typescript-eslint-language-service: ^5.0.0
-    yarn-or-npm: ^3.0.1
-  bin:
-    github-action-readme-generator: dist/index.cjs
-  languageName: unknown
-  linkType: soft
 
 "glob-parent@npm:^5.1.2":
   version: 5.1.2

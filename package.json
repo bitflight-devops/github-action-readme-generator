@@ -39,7 +39,7 @@
     "lint": "eslint .",
     "lint:fix": "yarn run format && yarn exec eslint . --fix",
     "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
-    "lint:markdown:fix": "yarn lint:markdown --fix",
+    "lint:markdown:fix": "yarn run lint:markdown --fix",
     "all": "yon run build && yon run format && yon run lint && yon test",
     "postinstall": "echo '✨ Successfully Installed'",
     "commit": "git-cz",

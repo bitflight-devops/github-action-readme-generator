@@ -10,5 +10,5 @@
 <!-- end inputs -->
 <!-- start outputs -->
 <!-- end outputs -->
-<!-- start [.github/ghdocs/examples/] -->
-<!-- end [.github/ghdocs/examples/] -->
+<!-- start [.github/ghadocs/examples/] -->
+<!-- end [.github/ghadocs/examples/] -->

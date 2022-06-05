@@ -58,7 +58,7 @@ or use none, and instead use a `.ghadocs.json` file.
 
 ## Configuration
 
-### Example `.ghdocs.json` with all possible values
+### Example `.ghadocs.json` with all possible values
 
 ```json
 {
@@ -90,7 +90,7 @@ or use none, and instead use a `.ghadocs.json` file.
 - [ ] Add a markdown `contents` menu section to the generator
 - [ ] Allow for using a separate template for generating the readme file
 - [ ] Add section to embed other markdown files, or directories by path, so that documentation can be organised in the file system. <br />
-      i.e: `<!-- start [.github/ghdocs/examples/] -->` and `<!-- end [.github/ghdocs/examples/] -->`
+      i.e: `<!-- start [.github/ghadocs/examples/] -->` and `<!-- end [.github/ghadocs/examples/] -->`
 
 <!-- start contents -->
 <!-- end contents -->
@@ -126,7 +126,7 @@ or use none, and instead use a `.ghadocs.json` file.
 
     # Save the provided values in a `.ghadocs.json` file. This will update any
 
-    # existing `.ghdocs.json` file that is in place.
+    # existing `.ghadocs.json` file that is in place.
 
     save: ''
 
@@ -175,7 +175,7 @@ or use none, and instead use a `.ghadocs.json` file.
 | **`readme`**                    | The absolute or relative path to the markdown output file that contains the formatting tokens within it.                |    `README.md`    |  **false**   |
 | **`owner`**                     | The GitHub Action repository owner. i.e: `bitflight-devops`                                                             |                   |  **false**   |
 | **`repo`**                      | The GitHub Action repository name. i.e: `github-action-readme-generator`                                                |                   |  **false**   |
-| **`save`**                      | Save the provided values in a `.ghadocs.json` file. This will update any existing `.ghdocs.json` file that is in place. |                   |  **false**   |
+| **`save`**                      | Save the provided values in a `.ghadocs.json` file. This will update any existing `.ghadocs.json` file that is in place. |                   |  **false**   |
 | **`pretty`**                    | Use `prettier` to pretty print the new README.md file                                                                   |                   |  **false**   |
 | **`versioning_enabled`**        | Enable the update of the usage version to match the latest version in the `package.json` file                           |                   |  **false**   |
 | **`version_override`**          | Set a specific version to display in the README.md                                                                      |                   |  **false**   |
@@ -186,5 +186,5 @@ or use none, and instead use a `.ghadocs.json` file.
 <!-- end inputs -->
 <!-- start outputs -->
 <!-- end outputs -->
-<!-- start [.github/ghdocs/examples/] -->
-<!-- end [.github/ghdocs/examples/] -->
+<!-- start [.github/ghadocs/examples/] -->
+<!-- end [.github/ghadocs/examples/] -->

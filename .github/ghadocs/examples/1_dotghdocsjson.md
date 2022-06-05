@@ -1,4 +1,4 @@
-### Example `.ghdocs.json` with all possible values
+### Example `.ghadocs.json` with all possible values
 
 ```json
 {

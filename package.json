@@ -171,7 +171,7 @@
     "prettier-plugin-properties": "^0.1.0",
     "rimraf": "^3.0.2",
     "run-script-os": "^1.1.6",
-    "semantic-release": "^19.0.2",
+    "semantic-release": "^19.0.3",
     "ts-jest": "^28.0.3",
     "ts-node": "^10.8.0",
     "tslib": "^2.4.0",

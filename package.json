@@ -175,7 +175,7 @@
     "ts-jest": "^28.0.3",
     "ts-node": "^10.8.0",
     "tslib": "^2.4.0",
-    "typescript": "^4.7.2",
+    "typescript": "^4.7.4",
     "typescript-eslint-language-service": "^5.0.0",
     "yarn-or-npm": "^3.0.1"
   },

@@ -119,7 +119,7 @@
     "dotenv": "^16.0.1",
     "esbuild": "^0.14.42",
     "esbuild-plugin-eslint": "^0.0.1",
-    "eslint": "^8.16.0",
+    "eslint": "^8.19.0",
     "eslint-config-adjunct": "^4.11.1",
     "eslint-config-airbnb-babel": "latest",
     "eslint-config-airbnb-base": "^15.0.0",

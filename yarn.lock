@@ -7565,7 +7565,7 @@ __metadata:
     typescript-eslint-language-service: ^5.0.0
     yarn-or-npm: ^3.0.1
   bin:
-    github-action-readme-generator: dist/index.cjs
+    gha-readme-generator: dist/index.cjs
   languageName: unknown
   linkType: soft
 

@@ -8,13 +8,12 @@ export default function updateInputs(token: string, inputs: Inputs): void {
   const log = new LogTask(token);
   // Build the new README
   const content: string[] = [];
-  const markdownArray: string[][] = [
-    ['**Input**', '**Description**', '**Default**', '**Required**'],
-  ];
+  const markdownArray: string[][] = [['**Input**', '**Description**', '**Default**', '**Required**']];
   const vars = inputs.action.inputs;
   const tI = vars ? Object.keys(vars).length : 0;
   if (tI > 0) {
-    Object.keys(vars).forEach((key) => {
+    log.start();
+    for (const key of Object.keys(vars)) {
       // eslint-disable-next-line security/detect-object-injection
       const values = vars[key];
       const row: string[] = [
@@ -25,11 +24,12 @@ export default function updateInputs(token: string, inputs: Inputs): void {
       ];
       log.debug(JSON.stringify(row));
       markdownArray.push(row);
-    });
+    }
     content.push(markdownTable(markdownArray, { align: ['l', 'l', 'c', 'c'] }));
     log.info(`Action has ${tI} total ${token}`);
     updateReadme(content, token, inputs.readmePath);
+    log.success();
   } else {
-    log.info(`Action has no ${token}`);
+    log.debug(`Action has no ${token}`);
   }
 }

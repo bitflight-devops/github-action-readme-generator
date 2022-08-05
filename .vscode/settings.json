@@ -20,4 +20,5 @@
     "github.copilot.advanced": {
 
     },
+    "eslint.debug": true,
   }

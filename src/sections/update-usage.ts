@@ -1,19 +1,19 @@
-import nconf from 'nconf';
+import * as nconf from 'nconf';
 
 import { wrapText } from '../helpers';
 import type Inputs from '../inputs';
 import LogTask from '../logtask';
-import updateReadme from '../readme-writer';
+import readmeWriter from '../readme-writer';
 
 export default function updateUsage(token: string, inputs: Inputs): void {
   const log = new LogTask(token);
+  log.start();
   const actionName = `${nconf.get('owner') as string}/${nconf.get('repo')}`;
   log.info(`Action name: ${actionName}`);
   let versionString: string;
   if ((nconf.get('versioning:enabled') as string) === 'true') {
     const oRide = nconf.get('versioning:override') as string;
-    versionString =
-      oRide && oRide.length > 0 ? oRide : process.env['npm_package_version'] ?? '0.0.0';
+    versionString = oRide && oRide.length > 0 ? oRide : process.env['npm_package_version'] ?? '0.0.0';
 
     if (versionString && !versionString.startsWith(nconf.get('versioning:prefix') as string)) {
       versionString = `${nconf.get('versioning:prefix') as string}${versionString}`;
@@ -37,7 +37,7 @@ export default function updateUsage(token: string, inputs: Inputs): void {
   const inp = inputs.action.inputs;
   let firstInput = true;
   if (inp) {
-    Object.keys(inp).forEach((key) => {
+    for (const key of Object.keys(inp)) {
       // eslint-disable-next-line security/detect-object-injection
       const input = inp[key];
       if (input !== undefined) {
@@ -51,8 +51,8 @@ export default function updateUsage(token: string, inputs: Inputs): void {
 
         if (input.default !== undefined) {
           // Append blank line if description had paragraphs
-          if (input.description?.trimEnd().match(/\n[ ]*\r?\n/)) {
-            content.push(`    #`);
+          if (input.description?.trimEnd().match(/\n *\r?\n/)) {
+            content.push('    #');
           }
 
           // Default
@@ -64,10 +64,11 @@ export default function updateUsage(token: string, inputs: Inputs): void {
 
         firstInput = false;
       }
-    });
+    }
   }
 
   content.push('```\n');
 
-  updateReadme(content, token, inputs.readmePath);
+  readmeWriter(content, token, inputs.readmePath);
+  log.success();
 }

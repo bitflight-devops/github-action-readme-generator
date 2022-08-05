@@ -8,11 +8,11 @@ export const inputs = new Inputs();
 export default function generateDocs(): void {
   const log = new LogTask('generating readme');
   try {
-    Object.keys(inputs.sections).forEach((section) => {
+    for (const section of inputs.sections) {
       updateSection(section, inputs);
-    });
+    }
     save();
-  } catch (err: any) {
-    if (err && 'message' in err && err.message) log.error(err.message as string);
+  } catch (error: any) {
+    if (error && 'message' in error && error.message) log.error(error.message as string);
   }
 }

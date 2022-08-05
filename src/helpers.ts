@@ -1,5 +1,5 @@
-import { Context } from '@actions/github/lib/context';
-import * as fs from 'fs';
+import type { Context } from '@actions/github/lib/context';
+import * as fs from 'node:fs';
 
 import LogTask from './logtask';
 
@@ -9,7 +9,7 @@ export function wrapText(text: string | undefined, content: string[], prepend = 
 
   const width = 80;
   let description = text
-    .trimRight()
+    .trimEnd()
     .replace(/\r\n/g, '\n') // Convert CR to LF
     .replace(/ +/g, ' ') //    Squash consecutive spaces
     .replace(/ \n/g, '\n'); //  Squash space followed by newline
@@ -17,9 +17,9 @@ export function wrapText(text: string | undefined, content: string[], prepend = 
     // Longer than width? Find a space to break apart
     let segment: string;
     if (description.length > width) {
-      segment = description.substr(0, width + 1);
+      segment = description.slice(0, Math.max(0, width + 1));
       while (!segment.endsWith(' ') && !segment.endsWith('\n') && segment) {
-        segment = segment.substr(0, segment.length - 1);
+        segment = segment.slice(0, Math.max(0, segment.length - 1));
       }
 
       // Trimmed too much?
@@ -33,11 +33,11 @@ export function wrapText(text: string | undefined, content: string[], prepend = 
     // Check for newline
     const newlineIndex = segment.indexOf('\n');
     if (newlineIndex >= 0) {
-      segment = segment.substr(0, newlineIndex + 1);
+      segment = segment.slice(0, Math.max(0, newlineIndex + 1));
     }
-    content.push(`${prepend}${segment}`.trimRight());
+    content.push(`${prepend}${segment}`.trimEnd());
     // Remaining
-    description = description.substr(segment.length);
+    description = description.slice(segment.length);
   }
   return content;
 }
@@ -54,16 +54,16 @@ export function repositoryFinder(
   const obj = {} as unknown;
   const result = obj as Repo;
   if (inputRepo) {
-    [result.owner, result.repo] = inputRepo.split('/');
+    [result.owner, result.repo] = inputRepo.split('/') as [string, string];
     log.info(`repositoryFinder using input ${inputRepo} and returns ${JSON.stringify(result)}`);
     return result;
   }
-  if (process.env.GITHUB_REPOSITORY) {
-    [result.owner, result.repo] = process.env.GITHUB_REPOSITORY.split('/');
+  if (process.env['GITHUB_REPOSITORY']) {
+    [result.owner, result.repo] = process.env['GITHUB_REPOSITORY'].split('/') as [string, string];
     log.info(
-      `repositoryFinder using GITHUB_REPOSITORY ${
-        process.env.GITHUB_REPOSITORY
-      } and returns ${JSON.stringify(result)}`,
+      `repositoryFinder using GITHUB_REPOSITORY ${process.env['GITHUB_REPOSITORY']} and returns ${JSON.stringify(
+        result,
+      )}`,
     );
     return result;
   }
@@ -72,30 +72,40 @@ export function repositoryFinder(
     result.repo = context.repo.repo;
 
     log.info(
-      `repositoryFinder using GITHUB_REPOSITORY ${
-        process.env.GITHUB_REPOSITORY
-      } and returns ${JSON.stringify(result)}`,
+      `repositoryFinder using GITHUB_REPOSITORY ${process.env['GITHUB_REPOSITORY']} and returns ${JSON.stringify(
+        result,
+      )}`,
     );
     return result;
   }
-  if (process.env.INPUT_OWNER && process.env.INPUT_REPO) {
-    result.owner = process.env.INPUT_OWNER;
-    result.repo = process.env.INPUT_REPO;
+  if (process.env['INPUT_OWNER'] && process.env['INPUT_REPO']) {
+    result.owner = process.env['INPUT_OWNER'];
+    result.repo = process.env['INPUT_REPO'];
     return result;
   }
   try {
     const fileContent = fs.readFileSync('.git/config', 'utf8');
     // eslint-disable-next-line security/detect-unsafe-regex
-    const pattern = /url( )?=( )?.*github\.com[:/](?<owner>.*)\/(?<repo>.*)\.git/;
+    const pattern = /url( )?=( )?.*github\.com[/:](?<owner>.*)\/(?<repo>.*)\.git/;
 
-    const results = pattern.exec(fileContent);
-    log.debug(JSON.stringify(results.groups));
-    result.owner = results.groups.owner;
-    result.repo = results.groups.repo;
+    interface OwnerRepoInterface extends RegExpExecArray {
+      groups: {
+        [key: string]: string;
+        owner?: string;
+        repo?: string;
+      };
+    }
+
+    const results = fileContent.match(pattern) as OwnerRepoInterface;
+    if (results !== null) {
+      log.debug(JSON.stringify(results.groups));
+      result.owner = results.groups.owner ?? '';
+      result.repo = results.groups.repo ?? '';
+    }
     return result;
-  } catch (err) {
+  } catch (error) {
     // can't find it
-    log.debug(`Couldn't find any owner or repo: ${err}`);
+    log.debug(`Couldn't find any owner or repo: ${error}`);
   }
   return result;
 }

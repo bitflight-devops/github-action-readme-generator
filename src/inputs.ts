@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
 import * as core from '@actions/core';
 import type { Context } from '@actions/github/lib/context';
-import * as fs from 'fs';
-import nconf from 'nconf';
-import * as path from 'path';
+import * as nconf from 'nconf';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 import Action from './Action';
 import { repositoryFinder } from './helpers';
@@ -16,14 +16,15 @@ const githubEventPath = process.env['GITHUB_EVENT_PATH'] ?? '';
 let githubEvent: Context | null = null;
 try {
   githubEvent = JSON.parse(fs.readFileSync(githubEventPath, 'utf8')) as Context;
-} catch (err) {
+} catch {
   // File not there
   log.debug(`GITHUB_EVENT_PATH not found: ${githubEventPath}`);
 }
-
+const pathsAction = 'paths:action';
+const pathsReadme = 'paths:readme';
 export const configKeys: string[] = [
-  'paths:action',
-  'paths:readme',
+  pathsAction,
+  pathsReadme,
   'show_logo',
   'versioning:enabled',
   'versioning:override',
@@ -37,12 +38,12 @@ export const configKeys: string[] = [
 export default class Inputs {
   constructor() {
     nconf.use('file', { file: '.ghadocs.json', dir: workingDirectory(), search: true });
-    const repositryDetail = repositoryFinder(null, githubEvent);
+    const repositoryDetail = repositoryFinder(null, githubEvent);
 
     if (process.env['GITHUB_WORKSPACE']) {
       log.info('running in action');
-      nconf.set('paths:action', core.getInput('action'));
-      nconf.set('paths:readme', core.getInput('readme'));
+      nconf.set(pathsAction, core.getInput('action'));
+      nconf.set(pathsReadme, core.getInput('readme'));
       nconf.set('show_logo', core.getInput('logo'));
       nconf.set('pretty', core.getInput('pretty'));
       nconf.set('versioning:enabled', core.getInput('versioning_enabled'));
@@ -54,47 +55,46 @@ export default class Inputs {
 
     nconf
       .argv({
-        save: {
+        'save': {
           alias: 'save',
           describe: 'Save this config to .ghadocs.json',
           parseValues: true,
         },
-        'paths:action': {
+        'pathsAction': {
           alias: 'action',
           describe: 'Path to the action.yml',
           parseValues: true,
         },
-        'paths:readme': {
+        'pathsReadme': {
           alias: 'readme',
           describe: 'Path to the README.md',
           parseValues: true,
         },
-        show_logo: {
+        'show_logo': {
           alias: 'logo',
           describe: "Display the action's logo in the README",
           parseValues: true,
         },
-        owner: {
+        'owner': {
           alias: 'owner',
           describe: 'The GitHub Action repository owner. i.e: `bitflight-devops`',
-          default: repositryDetail?.owner,
+          default: repositoryDetail?.owner,
           parseValues: true,
         },
-        repo: {
+        'repo': {
           alias: 'repo',
           describe: 'The GitHub Action repository name. i.e: `github-action-readme-generator`',
-          default: repositryDetail?.repo,
+          default: repositoryDetail?.repo,
           parseValues: true,
         },
-        prettier: {
+        'prettier': {
           alias: 'pretty',
           describe: 'Format the markdown using prettier formatter',
           parseValues: true,
         },
         'versioning:enabled': {
           alias: 'versioning',
-          describe:
-            'Enable the update of the usage version to match the latest version in the package.json file',
+          describe: 'Enable the update of the usage version to match the latest version in the package.json file',
           parseValues: true,
         },
         'versioning:override': {
@@ -112,7 +112,7 @@ export default class Inputs {
           describe: 'If versioning is disabled show this branch instead',
           parseValues: true,
         },
-        title_prefix: {
+        'title_prefix': {
           alias: 'prefix',
           describe: 'Add a prefix to the README title',
           parseValues: true,
@@ -120,8 +120,8 @@ export default class Inputs {
       })
       .defaults({
         save: 'true',
-        owner: repositryDetail?.owner,
-        repo: repositryDetail?.repo,
+        owner: repositoryDetail?.owner,
+        repo: repositoryDetail?.repo,
         paths: {
           action: 'action.yml',
           readme: 'README.md',
@@ -139,10 +139,10 @@ export default class Inputs {
       })
       .required(['owner', 'repo']);
 
-    configKeys.forEach((k, v) => log.debug(`${k}: ${v}`));
+    for (const [v, k] of configKeys.entries()) log.debug(`${k}: ${v}`);
     this.sections = nconf.get('sections') as string[];
-    this.readmePath = path.resolve(workingDirectory(), nconf.get('paths:readme') as string);
-    const actionPath = path.resolve(workingDirectory(), nconf.get('paths:action') as string);
+    this.readmePath = path.relative(workingDirectory(), nconf.get(pathsReadme) as string);
+    const actionPath = path.relative(workingDirectory(), nconf.get(pathsAction) as string);
     this.action = new Action(actionPath);
   }
 

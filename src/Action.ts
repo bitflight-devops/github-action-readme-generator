@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
-import * as fs from 'fs';
 import * as yaml from 'js-yaml';
+import * as fs from 'node:fs';
 
 import LogTask from './logtask';
 
@@ -44,12 +44,12 @@ export default class Action {
     try {
       log.debug(`loading action.yml from ${actionPath}`);
       tmpActionYaml = yaml.load(fs.readFileSync(actionPath, 'utf8')) as Action;
-      log.success('loaded successfully', false);
-    } catch (err) {
-      log.fail(`failed to load ${actionPath}`, false);
+      log.success('loaded configuration successfully');
+    } catch {
+      log.error(`failed to load ${actionPath}`);
     }
     if (typeof tmpActionYaml !== 'object' || tmpActionYaml === null) {
-      log.fail(`action.yml file read in isn't an object (no yaml in it)`);
+      log.error("action.yml file read in isn't an object (no yaml in it)");
     }
     const actionYaml = tmpActionYaml as Action;
     this.name = actionYaml.name;

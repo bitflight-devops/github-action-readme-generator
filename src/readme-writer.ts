@@ -1,19 +1,15 @@
-import * as fs from 'fs';
-import { EOL } from 'os';
+import * as fs from 'node:fs';
+import { EOL } from 'node:os';
 import { format } from 'prettier';
 
 import { endTokenFormat, startTokenFormat } from './config';
 import LogTask from './logtask';
 
-export default function updateReadme(
-  content: string[],
-  tokenName: string,
-  readmePath: string,
-): void {
-  const log = new LogTask('readme-writer');
+export default function readmeWriter(content: string[], tokenName: string, readmePath: string): void {
+  const log = new LogTask(tokenName);
 
   if (!content) {
-    log.info(`updateReadme passed no content from ${tokenName} parser`);
+    log.info(`readmeWriter passed no content from ${tokenName} parser`);
     return;
   }
   log.info(`Looking for the ${tokenName} token in ${readmePath}`);
@@ -43,12 +39,12 @@ export default function updateReadme(
   const newReadme: string[] = [];
   const len: number = startToken.length;
 
-  // Append the beginning
-  newReadme.push(originalReadme.substr(0, startTokenIndex + len));
-  // Append the new contents
-  newReadme.push(...content);
-  // Append the end
-  newReadme.push(originalReadme.substr(endTokenIndex));
+  newReadme.push(
+    originalReadme.slice(0, Math.max(0, startTokenIndex + len)), // Append the beginning
+    ...content,
+    originalReadme.slice(endTokenIndex), // Append the end
+  );
+
   const fileContent = newReadme.join(EOL);
   // Write the new README
   fs.writeFileSync(readmePath, format(fileContent, { semi: false, parser: 'markdown' }));

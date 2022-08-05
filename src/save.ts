@@ -1,4 +1,4 @@
-import nconf from 'nconf';
+import * as nconf from 'nconf';
 
 import { configKeys } from './inputs';
 import LogTask from './logtask';
@@ -7,9 +7,9 @@ import LogTask from './logtask';
 export default function save(): void {
   const log = new LogTask('save');
   if (nconf.get('save').toString() === 'true') {
-    Object.keys(configKeys).forEach((k) => {
+    for (const k of Object.keys(configKeys)) {
       nconf.set(k, nconf.get(k));
-    });
+    }
     nconf.save((err: any) => {
       if (err && 'message' in err && err.message) {
         log.error(err.message as string);

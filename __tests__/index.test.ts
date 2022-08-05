@@ -2,6 +2,8 @@ describe('test required environment variables', () => {
   beforeAll(() => {
     // GitHub workspace
     // GitHub workspace
+    // GitHub workspace
+    // GitHub workspace
     process.env['GHADOCS_OWNER'] = 'bitflight-devops';
     process.env['GHADOCS_REPOSITORY'] = 'github-action-readme-generator';
   });

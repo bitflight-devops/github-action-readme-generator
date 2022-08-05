@@ -2832,6 +2832,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@prettier/plugin-ruby@npm:^3.2.0":
+  version: 3.2.0
+  resolution: "@prettier/plugin-ruby@npm:3.2.0"
+  dependencies:
+    prettier: ">=2.3.0"
+  checksum: 517d234c8b298d15e0054a3cb3af9912f1af9d67fc30dd3c782b9443f91688fc31c202aac8a0635fdbf739062f5d4b991a8c16174179c7f25a0882b3d7be67c4
+  languageName: node
+  linkType: hard
+
 "@prettier/plugin-xml@npm:^2.2.0":
   version: 2.2.0
   resolution: "@prettier/plugin-xml@npm:2.2.0"
@@ -7466,6 +7475,7 @@ __metadata:
     "@commitlint/config-conventional": ^17.0.3
     "@commitlint/prompt": ^17.0.3
     "@jest/types": ^28.1.3
+    "@prettier/plugin-ruby": ^3.2.0
     "@prettier/plugin-xml": ^2.2.0
     "@trunkio/launcher": ^1.1.1
     "@tsconfig/node16-strictest-esm": ^1.0.3
@@ -11368,21 +11378,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"prettier@npm:>=2.3.0, prettier@npm:^2.7.1":
+  version: 2.7.1
+  resolution: "prettier@npm:2.7.1"
+  bin:
+    prettier: bin-prettier.js
+  checksum: 55a4409182260866ab31284d929b3cb961e5fdb91fe0d2e099dac92eaecec890f36e524b4c19e6ceae839c99c6d7195817579cdffc8e2c80da0cb794463a748b
+  languageName: node
+  linkType: hard
+
 "prettier@npm:>=2.4.0, prettier@npm:^2.2.1, prettier@npm:^2.5.1":
   version: 2.6.2
   resolution: "prettier@npm:2.6.2"
   bin:
     prettier: bin-prettier.js
   checksum: 48d08dde8e9fb1f5bccdd205baa7f192e9fc8bc98f86e1b97d919de804e28c806b0e6cc685e4a88211aa7987fa9668f30baae19580d87ced3ed0f2ec6572106f
-  languageName: node
-  linkType: hard
-
-"prettier@npm:^2.7.1":
-  version: 2.7.1
-  resolution: "prettier@npm:2.7.1"
-  bin:
-    prettier: bin-prettier.js
-  checksum: 55a4409182260866ab31284d929b3cb961e5fdb91fe0d2e099dac92eaecec890f36e524b4c19e6ceae839c99c6d7195817579cdffc8e2c80da0cb794463a748b
   languageName: node
   linkType: hard
 

@@ -9,7 +9,9 @@ export default function updateOutputs(token: string, inputs: Inputs): void {
 
   // Build the new README
   const content: string[] = [];
-  const markdownArray: string[][] = [['**Output**', '**Description**', '**Default**', '**Required**']];
+  const markdownArray: string[][] = [
+    ['**Output**', '**Description**', '**Default**', '**Required**'],
+  ];
   const vars = inputs.action.outputs;
   const tI = vars ? Object.keys(vars).length : 0;
   if (tI > 0) {
@@ -17,7 +19,10 @@ export default function updateOutputs(token: string, inputs: Inputs): void {
     for (const key of Object.keys(vars)) {
       // eslint-disable-next-line security/detect-object-injection
       const values = vars[key];
-      const row: string[] = [`\`${key.trim()}\``, values?.description?.trim().replace('\n', ' ') ?? ''];
+      const row: string[] = [
+        `\`${key.trim()}\``,
+        values?.description?.trim().replace('\n', ' ') ?? '',
+      ];
       log.debug(JSON.stringify(row));
       markdownArray.push(row);
     }

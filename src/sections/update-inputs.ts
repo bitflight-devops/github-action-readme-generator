@@ -8,7 +8,9 @@ export default function updateInputs(token: string, inputs: Inputs): void {
   const log = new LogTask(token);
   // Build the new README
   const content: string[] = [];
-  const markdownArray: string[][] = [['**Input**', '**Description**', '**Default**', '**Required**']];
+  const markdownArray: string[][] = [
+    ['**Input**', '**Description**', '**Default**', '**Required**'],
+  ];
   const vars = inputs.action.inputs;
   const tI = vars ? Object.keys(vars).length : 0;
   if (tI > 0) {

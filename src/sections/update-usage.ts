@@ -13,7 +13,8 @@ export default function updateUsage(token: string, inputs: Inputs): void {
   let versionString: string;
   if ((nconf.get('versioning:enabled') as string) === 'true') {
     const oRide = nconf.get('versioning:override') as string;
-    versionString = oRide && oRide.length > 0 ? oRide : process.env['npm_package_version'] ?? '0.0.0';
+    versionString =
+      oRide && oRide.length > 0 ? oRide : process.env['npm_package_version'] ?? '0.0.0';
 
     if (versionString && !versionString.startsWith(nconf.get('versioning:prefix') as string)) {
       versionString = `${nconf.get('versioning:prefix') as string}${versionString}`;

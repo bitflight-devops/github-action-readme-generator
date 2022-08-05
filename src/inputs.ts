@@ -94,7 +94,8 @@ export default class Inputs {
         },
         'versioning:enabled': {
           alias: 'versioning',
-          describe: 'Enable the update of the usage version to match the latest version in the package.json file',
+          describe:
+            'Enable the update of the usage version to match the latest version in the package.json file',
           parseValues: true,
         },
         'versioning:override': {

@@ -5,7 +5,11 @@ import { format } from 'prettier';
 import { endTokenFormat, startTokenFormat } from './config';
 import LogTask from './logtask';
 
-export default function readmeWriter(content: string[], tokenName: string, readmePath: string): void {
+export default function readmeWriter(
+  content: string[],
+  tokenName: string,
+  readmePath: string,
+): void {
   const log = new LogTask(tokenName);
 
   if (!content) {

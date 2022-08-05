@@ -60,7 +60,10 @@ class LogTask {
       const indentStr = [...Array.from({ length: LogTask.indentWidth }).fill(' ')].join('');
       return chalk.gray(`${indentStr}   ${emojiStr}: ${this.name} > ${desc}`);
     }
-    const stepStr = [...step, ...Array.from({ length: LogTask.indentWidth - step.length }).fill(' ')].join('');
+    const stepStr = [
+      ...step,
+      ...Array.from({ length: LogTask.indentWidth - step.length }).fill(' '),
+    ].join('');
     return `[${stepStr}] ${emojiStr}: ${desc}`;
   }
 

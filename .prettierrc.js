@@ -1,7 +1,7 @@
 module.exports = {
   tabWidth: 2,
   useTabs: false,
-  printWidth: 120,
+  printWidth: 100,
   bracketSameLine: true,
   proseWrap: 'preserve',
   endOfLine: 'lf',

@@ -53,7 +53,14 @@ module.exports = {
     },
     {
       files: ['*.ts'],
-      plugins: ['simple-import-sort', 'import', 'jest', '@typescript-eslint', 'security', 'optimize-regex'],
+      plugins: [
+        'simple-import-sort',
+        'import',
+        'jest',
+        '@typescript-eslint',
+        'security',
+        'optimize-regex',
+      ],
       extends: [
         'eslint:recommended',
         'plugin:@typescript-eslint/recommended',
@@ -74,14 +81,17 @@ module.exports = {
         tsconfigRootDir: __dirname,
       },
       rules: {
-        "dot-notation": "off",
-        "@typescript-eslint/dot-notation": ["error"],
+        'dot-notation': 'off',
+        '@typescript-eslint/dot-notation': ['error'],
         '@typescript-eslint/array-type': 'error',
         '@typescript-eslint/await-thenable': 'error',
         '@typescript-eslint/ban-ts-comment': 'error',
         '@typescript-eslint/consistent-type-assertions': 'error',
         '@typescript-eslint/explicit-function-return-type': ['error', { allowExpressions: true }],
-        '@typescript-eslint/explicit-member-accessibility': ['error', { accessibility: 'no-public' }],
+        '@typescript-eslint/explicit-member-accessibility': [
+          'error',
+          { accessibility: 'no-public' },
+        ],
         '@typescript-eslint/func-call-spacing': ['error', 'never'],
         '@typescript-eslint/lines-between-class-members': ['error'],
         '@typescript-eslint/no-explicit-any': 'off',

@@ -61,9 +61,9 @@ export function repositoryFinder(
   if (process.env['GITHUB_REPOSITORY']) {
     [result.owner, result.repo] = process.env['GITHUB_REPOSITORY'].split('/') as [string, string];
     log.info(
-      `repositoryFinder using GITHUB_REPOSITORY ${process.env['GITHUB_REPOSITORY']} and returns ${JSON.stringify(
-        result,
-      )}`,
+      `repositoryFinder using GITHUB_REPOSITORY ${
+        process.env['GITHUB_REPOSITORY']
+      } and returns ${JSON.stringify(result)}`,
     );
     return result;
   }
@@ -72,9 +72,9 @@ export function repositoryFinder(
     result.repo = context.repo.repo;
 
     log.info(
-      `repositoryFinder using GITHUB_REPOSITORY ${process.env['GITHUB_REPOSITORY']} and returns ${JSON.stringify(
-        result,
-      )}`,
+      `repositoryFinder using GITHUB_REPOSITORY ${
+        process.env['GITHUB_REPOSITORY']
+      } and returns ${JSON.stringify(result)}`,
     );
     return result;
   }

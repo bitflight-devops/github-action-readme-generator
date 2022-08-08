@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 git fetch --tags
 
-newtag="$(git semver next --dryrun)"
+bump="${1:-patch}"
+newtag="$(git semver "${bump}" --dryrun)"
+yarntag="$(jq -r '.version' package.json)"
+if [[ ${yarntag} != "${newtag#v}" ]]; then
 yarn version -i "${newtag}" || true
 yarn build
+fi
+
 git add dist package.json yarn.lock .yarn
-git commit -m "chore(release): bump version to ${newtag}"
-git semver "${1:-next}"
+git commit -m "chore(release): bump version to ${newtag}" --no-verify
+git semver "${bump}"
 newtag2="$(git semver get)"
 if [[ "${newtag}" != "${newtag2}" ]]; then
   echo "ERROR: new tag does not match expected tag"

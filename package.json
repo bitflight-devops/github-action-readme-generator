@@ -48,6 +48,7 @@
     "all": "yarn run build && yarn run format && yarn run lint && yarn test",
     "postinstall": "echo '✨ Successfully Installed'",
     "commit": "git-cz",
+    "current-version": "yarn npm version --parseable",
     "pre-commit": "lint-staged && yarn run build && git add dist && yarn run generate-docs",
     "preversion": "echo 'Running test';yarn run test",
     "version": "echo 'Run versioning commands';echo \"::set-output name=tag::v${npm_package_version}\"",

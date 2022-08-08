@@ -1,11 +1,12 @@
 {
   "name": "github-action-readme-generator",
-  "version": "1.1.9",
+  "version": "1.1.10",
   "description": "This is a CLI tool and GitHub Action that reads in the details from a \nGitHub Action's `action.yml` file and updates the `README.md` file\nwith the `name`, `description`, `usage`, `inputs`, `outputs`, and\nexamples of the action.\nConfiguration can be provided via a `.ghadocs.json` file stored in the\nroot directory of the Action's repository, via the command line when\nusing the cli, or via the `with:` section of this Action.\n\n\nThis tool uses markdown comments as delimiting tokens within the `README.md`\nfile to determine where to place the generated content.\n\n[`README.example.md`](README.example.md) example with all fields filled in, and no other free-form content.",
   "main": "dist/index.cjs",
   "type": "commonjs",
   "bin": {
-    "gha-readme-generator": "dist/index.cjs"
+    "gha-readme-generator": "dist/index.cjs",
+    "github-action-readme-generator": "dist/index.cjs"
   },
   "displayName": "bitflight-devops/github-action-readme-generator",
   "publishConfig": {
@@ -24,7 +25,7 @@
   "scripts": {
     "test": "NODE_ENV=testing jest",
     "test-ci": "NODE_ENV=testing jest --ci --reporters=default --reporters=jest-junit",
-    "build": "rimraf dist out;esbuild --bundle src/index.ts --sourcemap=inline --platform=node --outfile=dist/index.cjs --target=node16 && git add dist",
+    "build": "rimraf dist out;esbuild --bundle src/index.ts --sourcemap=inline --platform=node --outfile=dist/index.cjs --target=node16 && chmod +x dist/index.cjs && git add dist",
     "build:docker": "run-script-os",
     "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:16-alpine sh -c \"yarn run build\"",
     "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:16-alpine sh -c 'yarn run build'",
@@ -32,8 +33,9 @@
     "format:fix": "yarn run format",
     "bump": "yarn version -i patch && yarn run release",
     "bump:minor": "yarn version -i minor && yarn run release",
-    "release": "git add .yarn package.json && git commit -m 'chore(release): bump version to ${npm_package_version}' && git tag -a v${npm_package_version} -m 'v${npm_package_version}' && yarn run postversion && yarn run publish",
-    "publish": "yarn npm publish --access public --tag v${npm_package_version}",
+
+    "release": "./release.sh",
+    "postrelease": "yarn npm publish --access public --tag v${npm_package_version} --tag latest",
     "postversion": "git push origin --follow-tags && git push --tags",
     "precommit": "pretty-quick --staged",
     "prepare": "is-ci || husky install; yarn run build",
@@ -44,11 +46,11 @@
     "lint:fix": "yarn run format && eslint --fix -c .eslintrc.cjs ./src/index.ts ./__tests__/index.test.ts",
     "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
     "lint:markdown:fix": "yarn run lint:markdown --fix",
-    "all": "yon run build && yon run format && yon run lint && yon test",
+    "all": "yarn run build && yarn run format && yarn run lint && yarn test",
     "postinstall": "echo '✨ Successfully Installed'",
     "commit": "git-cz",
-    "pre-commit": "lint-staged && yon run build && git add dist && yon run generate-docs",
-    "preversion": "echo 'Running test';yon run test",
+    "pre-commit": "lint-staged && yarn run build && git add dist && yarn run generate-docs",
+    "preversion": "echo 'Running test';yarn run test",
     "version": "echo 'Run versioning commands';echo \"::set-output name=tag::v${npm_package_version}\"",
     "generate-docs": "echo 'Generating docs';node dist/index.cjs && git add README.md dist"
   },
@@ -95,7 +97,7 @@
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
-    "@babel/core": "^7.18.6",
+    "@babel/core": "^7.18.10",
     "@babel/eslint-parser": "^7.18.9",
     "@babel/plugin-proposal-decorators": "^7.18.10",
     "@babel/preset-env": "^7.18.10",
@@ -123,7 +125,7 @@
     "commitizen": "^4.2.5",
     "cz-conventional-changelog": "^3.3.0",
     "dotenv": "^16.0.1",
-    "esbuild": "^0.14.53",
+    "esbuild": "^0.14.54",
     "esbuild-plugin-eslint": "^0.0.1",
     "eslint": "^8.21.0",
     "eslint-config-adjunct": "^4.11.2",
@@ -140,7 +142,7 @@
     "eslint-plugin-github": "^4.3.7",
     "eslint-plugin-html": "^7.1.0",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-jest": "^26.7.0",
+    "eslint-plugin-jest": "^26.8.0",
     "eslint-plugin-jest-async": "^1.0.3",
     "eslint-plugin-json": "^3.1.0",
     "eslint-plugin-lodash": "^7.4.0",
@@ -157,7 +159,7 @@
     "eslint-plugin-scanjs-rules": "^0.2.1",
     "eslint-plugin-security": "^1.5.0",
     "eslint-plugin-simple-import-sort": "^7.0.0",
-    "eslint-plugin-sonarjs": "^0.14.0",
+    "eslint-plugin-sonarjs": "^0.15.0",
     "eslint-plugin-sort-class-members": "^1.14.1",
     "eslint-plugin-switch-case": "^1.1.2",
     "eslint-plugin-unicorn": "^43.0.2",

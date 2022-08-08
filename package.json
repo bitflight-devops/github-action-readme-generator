@@ -33,7 +33,6 @@
     "format:fix": "yarn run format",
     "bump": "yarn version -i patch && yarn run release",
     "bump:minor": "yarn version -i minor && yarn run release",
-
     "release": "./release.sh",
     "postrelease": "yarn npm publish --access public --tag v${npm_package_version} --tag latest",
     "postversion": "git push origin --follow-tags && git push --tags",

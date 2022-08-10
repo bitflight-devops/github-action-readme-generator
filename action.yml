@@ -28,7 +28,7 @@ inputs:
   save:
     description: >
       Save the provided values in a `.ghadocs.json` file. This will update
-      any existing `.ghdocs.json` file that is in place.
+      any existing `.ghadocs.json` file that is in place.
     required: false
   pretty:
     description: >

@@ -1,5 +1,3 @@
-import * as nconf from 'nconf';
-
 import { wrapText } from '../helpers';
 import type Inputs from '../inputs';
 import LogTask from '../logtask';
@@ -8,19 +6,22 @@ import readmeWriter from '../readme-writer';
 export default function updateUsage(token: string, inputs: Inputs): void {
   const log = new LogTask(token);
   log.start();
-  const actionName = `${nconf.get('owner') as string}/${nconf.get('repo')}`;
+  const actionName = `${inputs.config.get('owner') as string}/${inputs.config.get('repo')}`;
   log.info(`Action name: ${actionName}`);
   let versionString: string;
-  if ((nconf.get('versioning:enabled') as string) === 'true') {
-    const oRide = nconf.get('versioning:override') as string;
+  if ((inputs.config.get('versioning:enabled') as string) === 'true') {
+    const oRide = inputs.config.get('versioning:override') as string;
     versionString =
       oRide && oRide.length > 0 ? oRide : process.env['npm_package_version'] ?? '0.0.0';
 
-    if (versionString && !versionString.startsWith(nconf.get('versioning:prefix') as string)) {
-      versionString = `${nconf.get('versioning:prefix') as string}${versionString}`;
+    if (
+      versionString &&
+      !versionString.startsWith(inputs.config.get('versioning:prefix') as string)
+    ) {
+      versionString = `${inputs.config.get('versioning:prefix') as string}${versionString}`;
     }
   } else {
-    versionString = nconf.get('versioning:branch') as string;
+    versionString = inputs.config.get('versioning:branch') as string;
   }
   log.info(`Version string: ${versionString}`);
 

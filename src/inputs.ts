@@ -42,17 +42,20 @@ interface KVPairType {
   value: string | undefined;
 }
 export default class Inputs {
+  public config: nconf.Provider;
+
   constructor() {
+    this.config = new nconf.Provider();
     const repositoryDetail = repositoryFinder(null, githubEvent);
     if (process.env['GITHUB_ACTION']) {
       log.info('running in GitHub action');
     }
-    nconf.use('memory');
-    nconf.env({
+    this.config.use('memory');
+    this.config.env({
       lowerCase: true,
       parseValues: true,
       match: /^INPUT_/,
-      transform(obj: KVPairType): undefined | KVPairType {
+      transform: (obj: KVPairType): undefined | KVPairType => {
         if (obj.key.startsWith('input_')) {
           const newObj: KVPairType = {
             key: obj.key,
@@ -82,12 +85,13 @@ export default class Inputs {
               newObj.key = keyParsed;
               break;
           }
-          nconf.set(newObj.key, newObj.value);
+          this.config.set(newObj.key, newObj.value);
           return newObj;
         }
+        return undefined;
       },
     });
-    nconf.argv({
+    this.config.argv({
       'save': {
         alias: 'save',
         describe: `Save this config to ${configFileName}`,
@@ -151,8 +155,8 @@ export default class Inputs {
       },
     });
 
-    nconf.file({ file: configFileName, dir: workingDirectory() });
-    nconf.defaults({
+    this.config.file({ file: configFileName, dir: workingDirectory() });
+    this.config.defaults({
       save: true,
       owner: repositoryDetail?.owner,
       repo: repositoryDetail?.repo,
@@ -171,14 +175,14 @@ export default class Inputs {
       title_prefix: 'GitHub Action: ',
       sections: ['title', 'description', 'usage', 'inputs', 'outputs', 'contents'],
     });
-    nconf.required(['owner', 'repo']);
+    this.config.required(['owner', 'repo']);
     for (const k of configKeys) {
-      log.debug(`${k}: ${nconf.get(k)}`);
+      log.debug(`${k}: ${this.config.get(k)}`);
     }
 
-    this.sections = nconf.get('sections') as string[];
-    this.readmePath = path.relative(workingDirectory(), nconf.get(pathsReadme) as string);
-    const actionPath = path.relative(workingDirectory(), nconf.get(pathsAction) as string);
+    this.sections = this.config.get('sections') as string[];
+    this.readmePath = path.relative(workingDirectory(), this.config.get(pathsReadme) as string);
+    const actionPath = path.relative(workingDirectory(), this.config.get(pathsAction) as string);
 
     this.action = new Action(actionPath);
   }

@@ -3,11 +3,8 @@
   "version": "1.2.0",
   "description": "This is a CLI tool and GitHub Action that reads in the details from a \nGitHub Action's `action.yml` file and updates the `README.md` file\nwith the `name`, `description`, `usage`, `inputs`, `outputs`, and\nexamples of the action.\nConfiguration can be provided via a `.ghadocs.json` file stored in the\nroot directory of the Action's repository, via the command line when\nusing the cli, or via the `with:` section of this Action.\n\n\nThis tool uses markdown comments as delimiting tokens within the `README.md`\nfile to determine where to place the generated content.\n\n[`README.example.md`](README.example.md) example with all fields filled in, and no other free-form content.",
   "main": "dist/index.cjs",
-  "type": "commonjs",
-  "bin": {
-    "gha-readme-generator": "./dist/index.cjs",
-    "github-action-readme-generator": "./dist/index.cjs"
-  },
+  "types": "dist/index.d.ts",
+  "bin": "dist/index.cjs",
   "displayName": "bitflight-devops/github-action-readme-generator",
   "publishConfig": {
     "access": "public"
@@ -19,20 +16,14 @@
   "bugs": {
     "url": "https://github.com/bitflight-devops/github-action-readme-generator/issues"
   },
-  "keywords": [
-    "actions",
-    "github",
-    "node16",
-    "documentation",
-    "github-actions",
-    "generator"
-  ],
+  "keywords": ["actions", "github", "node16", "documentation", "github-actions", "generator"],
   "author": "Jamie Nelson <jamie@bitflight.io>",
   "license": "APACHE",
   "scripts": {
     "test": "NODE_ENV=testing jest",
     "test-ci": "NODE_ENV=testing jest --ci --reporters=default --reporters=jest-junit",
-    "build": "rimraf dist out;esbuild --bundle src/index.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --target=node16 && chmod +x dist/index.cjs && git add dist",
+    "build": "rimraf dist out;esbuild --bundle src/index.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --target=node16 && chmod +x dist/index.cjs && yarn postbuild && git add dist",
+    "postbuild": "tsc --project tsconfig.json --emitDeclarationOnly --declaration --outFile dist/index.d.ts",
     "build:inputs": "rimraf dist out;esbuild --bundle src/testInputs.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --target=node16 && chmod -R +x dist/",
     "build:docker": "run-script-os",
     "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:16-alpine sh -c \"yarn run build\"",
@@ -70,26 +61,17 @@
       "outpath": ".github/tools/generate-docs"
     }
   },
+  "oclif": {
+    "bin": "github-action-readme-generator"
+  },
   "commitlint": {
-    "extends": [
-      "@commitlint/config-conventional"
-    ],
+    "extends": ["@commitlint/config-conventional"],
     "rules": {
-      "body-max-length": [
-        0
-      ],
-      "body-max-line-length": [
-        0
-      ],
-      "footer-max-length": [
-        0
-      ],
-      "footer-max-line-length": [
-        0
-      ],
-      "header-max-length": [
-        0
-      ]
+      "body-max-length": [0],
+      "body-max-line-length": [0],
+      "footer-max-length": [0],
+      "footer-max-line-length": [0],
+      "header-max-length": [0]
     }
   },
   "engines": {
@@ -99,22 +81,18 @@
     ".": "./dist/index.cjs",
     "./package.json": "./package.json"
   },
-  "files": [
-    "package.json",
-    "README.md",
-    "src",
-    "dist"
-  ],
-  "os": [
-    "!win32"
-  ],
+  "files": ["package.json", "README.md", "/bin", "/dist"],
+  "os": ["!win32"],
   "dependencies": {
     "@actions/core": "^1.9.0",
     "@actions/github": "^5.0.3",
-    "chalk": "^5.0.1",
+    "@oclif/command": "^1.8.16",
+    "@oclif/config": "^1.18.3",
+    "@oclif/errors": "^1.3.5",
+    "@oclif/plugin-help": "^5.1.12",
+    "chalk": "4.1.2",
     "date-format": "^4.0.13",
     "js-yaml": "^4.1.0",
-    "markdown-table": "^3.0.2",
     "nconf": "github:indexzero/nconf",
     "node-emoji": "^1.11.0",
     "prettier": "^2.7.1",
@@ -129,8 +107,11 @@
     "@commitlint/config-conventional": "^17.0.3",
     "@commitlint/prompt": "^17.0.3",
     "@jest/types": "^28.1.3",
+    "@oclif/dev-cli": "^1.26.10",
     "@prettier/plugin-ruby": "^3.2.0",
     "@prettier/plugin-xml": "^2.2.0",
+    "@swc/helpers": "^0.4.3",
+    "@swc/wasm": "^1.2.224",
     "@trunkio/launcher": "^1.1.1",
     "@tsconfig/node16-strictest-esm": "^1.0.3",
     "@types/babel__preset-env": "^7",
@@ -201,6 +182,7 @@
     "prettier-plugin-package": "^1.3.0",
     "prettier-plugin-properties": "^0.2.0",
     "pretty-quick": "^3.1.3",
+    "regenerator-runtime": "^0.13.9",
     "rimraf": "^3.0.2",
     "run-script-os": "^1.1.6",
     "semantic-release": "^19.0.3",
@@ -218,9 +200,7 @@
   "lint-staged": {
     "*.{md,json,yaml,yml,sh}": "prettier --write",
     "{src,__tests__}/**/*.js": "eslint --cache --fix",
-    "*.ts": [
-      "eslint --cache --fix"
-    ]
+    "*.ts": ["eslint --cache --fix"]
   },
   "resolutions": {
     "typescript": "^4.7.4"

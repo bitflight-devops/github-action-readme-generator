@@ -11,7 +11,7 @@ export default function generateDocs(): void {
     for (const section of inputs.sections) {
       updateSection(section, inputs);
     }
-    save();
+    save(inputs);
   } catch (error: any) {
     if (error && 'message' in error && error.message) log.error(error.message as string);
   }

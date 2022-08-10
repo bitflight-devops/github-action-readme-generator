@@ -1,16 +1,14 @@
-import * as nconf from 'nconf';
-
-import { configKeys } from './inputs';
+import Inputs, { configKeys } from './inputs';
 import LogTask from './logtask';
 
 // This script rebuilds the usage section in the README.md to be consistent with the action.yml
-export default function save(): void {
+export default function save(inputs: Inputs): void {
   const log = new LogTask('save');
-  if (nconf.get('save').toString() === 'true') {
+  if (inputs.config.get('save').toString() === 'true') {
     for (const k of Object.keys(configKeys)) {
-      nconf.set(k, nconf.get(k));
+      inputs.config.set(k, inputs.config.get(k));
     }
-    nconf.save((err: any) => {
+    inputs.config.save((err: any) => {
       if (err && 'message' in err && err.message) {
         log.error(err.message as string);
         return;

@@ -1,7 +1,6 @@
-import { markdownTable } from 'markdown-table';
-
 import type Inputs from '../inputs';
 import LogTask from '../logtask';
+import markdowner from '../markdowner';
 import updateReadme from '../readme-writer';
 
 export default function updateOutputs(token: string, inputs: Inputs): void {
@@ -26,7 +25,7 @@ export default function updateOutputs(token: string, inputs: Inputs): void {
       log.debug(JSON.stringify(row));
       markdownArray.push(row);
     }
-    content.push(markdownTable(markdownArray, { align: ['l', 'l'] }));
+    content.push(markdowner(markdownArray));
     log.info(`Action has ${tI} total ${token}`);
     updateReadme(content, token, inputs.readmePath);
     log.success();

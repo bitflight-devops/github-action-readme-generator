@@ -16,14 +16,7 @@
   "bugs": {
     "url": "https://github.com/bitflight-devops/github-action-readme-generator/issues"
   },
-  "keywords": [
-    "actions",
-    "github",
-    "node16",
-    "documentation",
-    "github-actions",
-    "generator"
-  ],
+  "keywords": ["actions", "github", "node16", "documentation", "github-actions", "generator"],
   "author": "Jamie Nelson <jamie@bitflight.io>",
   "license": "APACHE",
   "scripts": {
@@ -72,43 +65,20 @@
     "bin": "github-action-readme-generator"
   },
   "commitlint": {
-    "extends": [
-      "@commitlint/config-conventional"
-    ],
+    "extends": ["@commitlint/config-conventional"],
     "rules": {
-      "body-max-length": [
-        0
-      ],
-      "body-max-line-length": [
-        0
-      ],
-      "footer-max-length": [
-        0
-      ],
-      "footer-max-line-length": [
-        0
-      ],
-      "header-max-length": [
-        0
-      ]
+      "body-max-length": [0],
+      "body-max-line-length": [0],
+      "footer-max-length": [0],
+      "footer-max-line-length": [0],
+      "header-max-length": [0]
     }
   },
   "engines": {
     "node": ">=14.0.0"
   },
-  "exports": {
-    ".": "./dist/index.cjs",
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "package.json",
-    "README.md",
-    "/bin",
-    "/dist"
-  ],
-  "os": [
-    "!win32"
-  ],
+  "files": ["package.json", "README.md", "/bin", "/dist"],
+  "os": ["!win32"],
   "dependencies": {
     "@actions/core": "^1.9.0",
     "@actions/github": "^5.0.3",
@@ -226,9 +196,7 @@
   "lint-staged": {
     "*.{md,json,yaml,yml,sh}": "prettier --write",
     "{src,__tests__}/**/*.js": "eslint --cache --fix",
-    "*.ts": [
-      "eslint --cache --fix"
-    ]
+    "*.ts": ["eslint --cache --fix"]
   },
   "resolutions": {
     "typescript": "^4.7.4"

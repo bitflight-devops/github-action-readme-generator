@@ -113,6 +113,7 @@ module.exports = {
         '@typescript-eslint/strict-boolean-expressions': 'off',
         '@typescript-eslint/type-annotation-spacing': 'error',
         '@typescript-eslint/unbound-method': 'error',
+        'quote-props': 'off',
         'camelcase': 'off',
         'consistent-return': 'off',
         'eslint-comments/no-use': 'off',

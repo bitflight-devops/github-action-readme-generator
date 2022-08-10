@@ -1,6 +1,8 @@
 export interface Versioning {
   enabled: boolean;
-  prefixed: string;
+  prefix: string;
+  override: string;
+  branch: string;
 }
 export interface Paths {
   action: string;
@@ -24,6 +26,8 @@ export declare class GHActionDocsConfig {
   readmePath: string;
 
   outpath: string;
+
+  pretty: boolean;
 }
 
 export const startTokenFormat = '<!-- start %s -->';

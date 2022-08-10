@@ -3,22 +3,24 @@ name: publish-action
 on:
   push:
     tags:
-      - '**'
+      - "v*.*.*"
 
 jobs:
   release:
     name: Release GitHub Actions
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
       - name: Update README.md
         uses: bitflight-devops/github-action-readme-generator@v1
-
+      - run: git config --global init.defaultBranch main
       - name: Release GitHub Actions
         uses: technote-space/release-github-actions@v7.2.4
         with:
           PACKAGE_MANAGER: yarn
           BUILD_COMMAND: yarn build
-          COMMIT_MESSAGE: 'chore(release): ${{github.tag_name}}'
+          COMMIT_MESSAGE: "chore(release): ${{github.tag_name}}"
           BRANCH_NAME: main
           CREATE_MAJOR_VERSION_TAG: true

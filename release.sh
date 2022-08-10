@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 git fetch --tags
+git push --tags
+git push
 
 bump="${1:-patch}"
 newtag="$(git semver "${bump}" --dryrun)"

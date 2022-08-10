@@ -89,7 +89,7 @@ or use none, and instead use a `.ghadocs.json` file.
 - [x] Add section to generate the `action.yml` outputs to a table to the generator
 - [ ] Add a markdown `contents` menu section to the generator
 - [ ] Allow for using a separate template for generating the readme file
-- [ ] Add section to embed other markdown files, or directories by path, so that documentation can be organised in the file system. <br />
+- [ ] Add section to embed other markdown files, or directories by path, so that documentation can be organized in the file system. <br />
       i.e: `<!-- start [.github/ghdocs/examples/] -->` and `<!-- end [.github/ghdocs/examples/] -->`
 
 <!-- start contents -->

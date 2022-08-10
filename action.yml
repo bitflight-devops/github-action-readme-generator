@@ -19,7 +19,7 @@ inputs:
     default: README.md
   owner:
     description: >
-      The GitHub Action repository owner. i.e: `bitflight-devops`
+      The GitHub Action repository owner. i.e: `bitflight-devops`|`your-gh-username`
     required: false
   repo:
     description: >

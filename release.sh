@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+git pull
 git fetch --tags
 git push --tags
 git push
@@ -26,5 +27,4 @@ git tag -a "${stub_major_minor}" -m "Release ${newtag}"
 git push origin ":${stub_major}" 2>/dev/null || true
 git push origin ":${stub_major_minor}" 2>/dev/null || true
 yarn postversion
-git push
 yarn release:post

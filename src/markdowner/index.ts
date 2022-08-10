@@ -45,13 +45,14 @@ export function ArrayOfArraysToMarkdownTable(providedTableContent: MarkdownArray
     const idx = i > 1 ? i - 1 : 0;
     const dataRow = tableContent[idx] as string[];
     for (const [j] of row.entries()) {
+      const content = dataRow[col]?.replace(/\|/g, '&#124;').replace(/\n/, '<br />') ?? '';
       if (j % 2 === 1) {
         if (i === 0) {
-          (markdownArrays[i] as string[])[j] = ` **${dataRow[col] ?? ''}** `;
+          (markdownArrays[i] as string[])[j] = ` **${content}** `;
         } else if (i === 1) {
           (markdownArrays[i] as string[])[j] = '---';
         } else {
-          (markdownArrays[i] as string[])[j] = ` ${dataRow[col] ?? ''} `;
+          (markdownArrays[i] as string[])[j] = ` ${content} `;
         }
         col += 1;
       }

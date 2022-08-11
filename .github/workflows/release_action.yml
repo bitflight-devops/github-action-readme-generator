@@ -55,6 +55,7 @@ jobs:
             yarn generate-docs
             yarn "lint:markdown:fix" || true
             git add .
+            git add -f dist
             git commit -m "build(release): v${newtag#v}" --no-verify
             git push origin main
           fi

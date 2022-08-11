@@ -45,7 +45,24 @@ export function ArrayOfArraysToMarkdownTable(providedTableContent: MarkdownArray
     const idx = i > 1 ? i - 1 : 0;
     const dataRow = tableContent[idx] as string[];
     for (const [j] of row.entries()) {
-      const content = dataRow[col]?.replace(/\|/g, '&#124;').replace(/\n/, '<br />') ?? '';
+      let content = dataRow[col]?.replace(/\n/, '<br />') ?? '';
+
+      // vertical pipe has to be escaped in markdown table
+      if (content.includes('|')) {
+        content = content.replace(/\|/g, '&#124;');
+
+        // replace grave accents with <code> HTML element to resolve unicode character in markdown
+        let isClosingTag = false;
+        content.match(/`/g)?.forEach((match) => {
+          if (!isClosingTag) {
+            content = content.replace(match, '<code>');
+          } else {
+            content = content.replace(match, '</code>');
+          }
+          isClosingTag = !isClosingTag;
+        });
+      }
+
       if (j % 2 === 1) {
         if (i === 0) {
           (markdownArrays[i] as string[])[j] = ` **${content}** `;

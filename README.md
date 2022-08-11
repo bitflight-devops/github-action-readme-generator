@@ -154,7 +154,7 @@ or use none, and instead use a `.ghadocs.json` file.
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------- | ------------ |
 | **`action`**                    | The absolute or relative path to the `action.yml` file to read in from.                                                  | `action.yml`      | **false**    |
 | **`readme`**                    | The absolute or relative path to the markdown output file that contains the formatting tokens within it.                 | `README.md`       | **false**    |
-| **`owner`**                     | The GitHub Action repository owner. i.e: `bitflight-devops`&#124;`your-gh-username`                                      |                   | **false**    |
+| **`owner`**                     | The GitHub Action repository owner. i.e: <code>bitflight-devops</code>&#124;<code>your-gh-username</code>                |                   | **false**    |
 | **`repo`**                      | The GitHub Action repository name. i.e: `github-action-readme-generator`                                                 |                   | **false**    |
 | **`save`**                      | Save the provided values in a `.ghadocs.json` file. This will update any existing `.ghadocs.json` file that is in place. |                   | **false**    |
 | **`pretty`**                    | Use `prettier` to pretty print the new README.md file                                                                    |                   | **false**    |

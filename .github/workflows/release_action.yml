@@ -25,6 +25,7 @@ jobs:
         with:
           node-version: '16.x'
           registry-url: 'https://registry.npmjs.org'
+          always-auth: true
       - run: git config --global init.defaultBranch main
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path

@@ -45,7 +45,12 @@ export function ArrayOfArraysToMarkdownTable(providedTableContent: MarkdownArray
     const idx = i > 1 ? i - 1 : 0;
     const dataRow = tableContent[idx] as string[];
     for (const [j] of row.entries()) {
-      const content = dataRow[col]?.replace(/\|/g, '&#124;').replace(/\n/, '<br />') ?? '';
+      let content = dataRow[col]?.replace(/\n/, '<br />') ?? '';
+      if (content.includes('|')) {
+        content = content.replace(/\|/g, '&#124;');
+        content = content.replace(/`/g, '');
+      }
+
       if (j % 2 === 1) {
         if (i === 0) {
           (markdownArrays[i] as string[])[j] = ` **${content}** `;

@@ -7,7 +7,8 @@
   "bin": "dist/index.cjs",
   "displayName": "bitflight-devops/github-action-readme-generator",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "repository": {
     "type": "git",

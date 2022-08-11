@@ -19,6 +19,10 @@ jobs:
           token: ${{ secrets.RELEASE_TOKEN }}
           fetch-depth: '0'
           ref: ${{ github.ref }}
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+          registry-url: 'https://registry.npmjs.org'
       - run: git config --global init.defaultBranch main
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path

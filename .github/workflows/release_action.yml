@@ -43,6 +43,11 @@ jobs:
           yarn test
           yarn "lint:markdown:fix"
           yarn "lint:fix"
+      - name: Configure Git
+        run: |
+          git config --global user.email "${{github.event.pusher.email}}"
+          git config --global user.name "${{github.event.pusher.name}}"
+
       - name: Bump Package Version
         id: bump-yarn
         env:

@@ -72,10 +72,10 @@ jobs:
           newtag: '${{ steps.next_version.outputs.version }}'
         run: |
           git switch -C gh-action --no-guess ${{ steps.bump-yarn.outputs.sha }}
-          rm -rf __tests__ src node_modules .yarn yarn.lock .github
-          rm -rf .husky .trunk .vscode ./.*rc.* ./.*rc .cspell.json
+          rm -rf __tests__ src node_modules .github
+          rm -rf .husky .trunk .vscode .cspell.json
           rm -rf ./eslint* ./prettier* ./.lint* ./.markdown*
-          rm -rf junit.xml README.example.md ./.tsconfig.json yarn.lock
+          rm -rf junit.xml README.example.md ./.tsconfig.json
           git add .
           git add -f dist
           git commit -m "build(release): v${newtag#v}"

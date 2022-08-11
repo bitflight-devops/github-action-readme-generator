@@ -10,12 +10,12 @@ jobs:
     name: Release GitHub Actions
     runs-on: ubuntu-latest
     permissions:
-      actions: read
+      actions: write
       contents: write
-      workflow: write
     steps:
       - uses: actions/checkout@v3
         with:
+          token: ${{ secrets.RELEASE_TOKEN }}
           fetch-depth: '0'
           ref: ${{ github.ref }}
       - run: git config --global init.defaultBranch main

@@ -3,7 +3,7 @@ name: Tag and Release Updated GitHub Action
 on:
   push:
     branches:
-      - "main"
+      - 'main'
 
 jobs:
   release:
@@ -53,7 +53,7 @@ jobs:
       - name: Bump Package Version
         id: bump-yarn
         env:
-          newtag: "${{ steps.next_version.outputs.new_version }}"
+          newtag: '${{ steps.next_version.outputs.new_version }}'
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
         run: |
           yarntag="$(jq -r '.version' package.json)"
@@ -70,7 +70,7 @@ jobs:
       - name: Create Release Branch
         id: release-branch
         env:
-          newtag: "${{ steps.next_version.outputs.version }}"
+          newtag: '${{ steps.next_version.outputs.version }}'
         run: |
           git switch -C gh-action --no-guess ${{ steps.bump-yarn.outputs.sha }}
           rm -rf __tests__ src node_modules .yarn yarn.lock .github
@@ -86,7 +86,7 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.0
         with:
           commit_sha: ${{ steps.release-branch.outputs.sha }}
-          custom_tag: "${{ steps.next_version.outputs.new_version }}"
+          custom_tag: '${{ steps.next_version.outputs.new_version }}'
           github_token: ${{ secrets.RELEASE_TOKEN }}
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
@@ -111,4 +111,3 @@ jobs:
           git push -f origin v${stub_major}
           git tag v${stub_major_minor}
           git push -f origin v${stub_major_minor}
-

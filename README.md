@@ -150,19 +150,19 @@ or use none, and instead use a `.ghadocs.json` file.
 
 <!-- start inputs -->
 
-| **Input**                       | **Description**                                                                                                          | **Default**       | **Required** |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------- | ------------ |
-| **`action`**                    | The absolute or relative path to the `action.yml` file to read in from.                                                  | `action.yml`      | **false**    |
-| **`readme`**                    | The absolute or relative path to the markdown output file that contains the formatting tokens within it.                 | `README.md`       | **false**    |
-| **`owner`**                     | The GitHub Action repository owner. i.e: <code>bitflight-devops</code>&#124;<code>your-gh-username</code>                |                   | **false**    |
-| **`repo`**                      | The GitHub Action repository name. i.e: `github-action-readme-generator`                                                 |                   | **false**    |
-| **`save`**                      | Save the provided values in a `.ghadocs.json` file. This will update any existing `.ghadocs.json` file that is in place. |                   | **false**    |
-| **`pretty`**                    | Use `prettier` to pretty print the new README.md file                                                                    |                   | **false**    |
-| **`versioning_enabled`**        | Enable the update of the usage version to match the latest version in the `package.json` file                            |                   | **false**    |
-| **`version_override`**          | Set a specific version to display in the README.md                                                                       |                   | **false**    |
-| **`version_prefix`**            | Prefix the version with this value (if it isn't already prefixed)                                                        | `v`               | **false**    |
-| **`versioning_default_branch`** | If versioning is disabled show this branch instead                                                                       | `main`            | **false**    |
-| **`title_prefix`**              | Add a prefix to the README title                                                                                         | `GitHub Action: ` | **false**    |
+| **Input**                                  | **Description**                                                                                                                                | **Default**                  | **Required** |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------------ |
+| **<code>action</code>**                    | The absolute or relative path to the <code>action.yml</code> file to read in from.                                                             | <code>action.yml</code>      | **false**    |
+| **<code>readme</code>**                    | The absolute or relative path to the markdown output file that contains the formatting tokens within it.                                       | <code>README.md</code>       | **false**    |
+| **<code>owner</code>**                     | The GitHub Action repository owner. i.e: `bitflight-devops`\|`your-gh-username`                                                                |                              | **false**    |
+| **<code>repo</code>**                      | The GitHub Action repository name. i.e: <code>github-action-readme-generator</code>                                                            |                              | **false**    |
+| **<code>save</code>**                      | Save the provided values in a <code>.ghadocs.json</code> file. This will update any existing <code>.ghadocs.json</code> file that is in place. |                              | **false**    |
+| **<code>pretty</code>**                    | Use <code>prettier</code> to pretty print the new README.md file                                                                               |                              | **false**    |
+| **<code>versioning_enabled</code>**        | Enable the update of the usage version to match the latest version in the <code>package.json</code> file                                       |                              | **false**    |
+| **<code>version_override</code>**          | Set a specific version to display in the README.md                                                                                             |                              | **false**    |
+| **<code>version_prefix</code>**            | Prefix the version with this value (if it isn't already prefixed)                                                                              | <code>v</code>               | **false**    |
+| **<code>versioning_default_branch</code>** | If versioning is disabled show this branch instead                                                                                             | <code>main</code>            | **false**    |
+| **<code>title_prefix</code>**              | Add a prefix to the README title                                                                                                               | <code>GitHub Action: </code> | **false**    |
 
 <!-- end inputs -->
 <!-- start outputs -->

@@ -62,7 +62,6 @@ jobs:
             yarn generate-docs
             yarn "lint:markdown:fix" || true
             git add .
-            git add -f dist
             git commit -m "build(release): v${newtag#v}" --no-verify
             git push origin main
           fi
@@ -78,6 +77,7 @@ jobs:
           rm -rf ./eslint* ./prettier* ./.lint* ./.markdown*
           rm -rf junit.xml README.example.md ./.tsconfig.json yarn.lock
           git add .
+          git add -f dist
           git commit -m "build(release): v${newtag#v}"
           git push origin gh-action -u --force
           echo ::set-output name=sha::$(git rev-parse HEAD)

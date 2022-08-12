@@ -26,6 +26,7 @@ jobs:
           node-version: '16.x'
           registry-url: 'https://registry.npmjs.org'
           always-auth: true
+          cache: npm
       - run: git config --global init.defaultBranch main
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -46,6 +47,7 @@ jobs:
       - name: Build
         run: |
           yarn install
+          npm install --no-package-lock --prefer-offline --no-audit --no-progress --no-bin-links --ignore-scripts --ignore-engines --ignore-platform
           yarn build
       - name: Run tests
         run: |
@@ -105,7 +107,7 @@ jobs:
           token: ${{ secrets.RELEASE_TOKEN }}
       - name: Publish to NPM
         run: |
-          yarn npm publish --access public --tag ${{ steps.tag_version.outputs.new_tag }} --tag latest
+          npm publish --access public --tag ${{ steps.tag_version.outputs.new_tag }}
       - name: Update Label Tags
         env:
           newtag: ${{ steps.tag_version.outputs.new_version }}

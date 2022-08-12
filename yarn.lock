@@ -5599,17 +5599,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-babel@npm:latest":
-  version: 5.3.1
-  resolution: "eslint-plugin-babel@npm:5.3.1"
-  dependencies:
-    eslint-rule-composer: ^0.3.0
-  peerDependencies:
-    eslint: ">=4.0.0"
-  checksum: 18b0bfda53deab4056160a4f3a89a4649b6ae17e4970cc836f7d586c8abab5ebb492440e2acf4770a463138a44a4ee7f9b22b4ed1fdbe69c652f714c1d973e38
-  languageName: node
-  linkType: hard
-
 "eslint-plugin-es@npm:^3.0.0":
   version: 3.0.1
   resolution: "eslint-plugin-es@npm:3.0.1"
@@ -5998,27 +5987,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-yml@npm:latest":
-  version: 1.1.0
-  resolution: "eslint-plugin-yml@npm:1.1.0"
-  dependencies:
-    debug: ^4.3.2
-    lodash: ^4.17.21
-    natural-compare: ^1.4.0
-    yaml-eslint-parser: ^1.1.0
-  peerDependencies:
-    eslint: ">=6.0.0"
-  checksum: 08a72ec2235fdebe0c4f3c9a2525c5a565f5029f9034bfe25c9727b3a2ac3ca9bfe90c1690e008e802991aff62f38edeb2ca1f81e268ea0b332bd1179d2d96b5
-  languageName: node
-  linkType: hard
-
-"eslint-rule-composer@npm:^0.3.0":
-  version: 0.3.0
-  resolution: "eslint-rule-composer@npm:0.3.0"
-  checksum: c2f57cded8d1c8f82483e0ce28861214347e24fd79fd4144667974cd334d718f4ba05080aaef2399e3bbe36f7d6632865110227e6b176ed6daa2d676df9281b1
-  languageName: node
-  linkType: hard
-
 "eslint-rule-documentation@npm:>=1.0.0":
   version: 1.0.23
   resolution: "eslint-rule-documentation@npm:1.0.23"
@@ -6080,7 +6048,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-visitor-keys@npm:^3.0.0, eslint-visitor-keys@npm:^3.1.0, eslint-visitor-keys@npm:^3.3.0":
+"eslint-visitor-keys@npm:^3.1.0, eslint-visitor-keys@npm:^3.3.0":
   version: 3.3.0
   resolution: "eslint-visitor-keys@npm:3.3.0"
   checksum: d59e68a7c5a6d0146526b0eec16ce87fbf97fe46b8281e0d41384224375c4e52f5ffb9e16d48f4ea50785cde93f766b0c898e31ab89978d88b0e1720fbfb7808
@@ -6844,7 +6812,6 @@ __metadata:
     eslint-import-resolver-typescript: ^3.4.0
     eslint-plugin-actions: ^2.0.0
     eslint-plugin-array-func: ^3.1.7
-    eslint-plugin-babel: latest
     eslint-plugin-eslint-comments: ^3.2.0
     eslint-plugin-github: ^4.3.7
     eslint-plugin-html: ^7.1.0
@@ -6870,7 +6837,6 @@ __metadata:
     eslint-plugin-sort-class-members: ^1.14.1
     eslint-plugin-switch-case: ^1.1.2
     eslint-plugin-unicorn: ^43.0.2
-    eslint-plugin-yml: latest
     esm: ^3.2.25
     husky: ^8.0.1
     is-ci: ^3.0.1
@@ -12895,17 +12861,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yaml-eslint-parser@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "yaml-eslint-parser@npm:1.1.0"
-  dependencies:
-    eslint-visitor-keys: ^3.0.0
-    lodash: ^4.17.21
-    yaml: ^2.0.0
-  checksum: ee9c164ef3cff040566ec774bb35bd5bc351427225f80b92525e7e028a5c0d906bf370003d1357323d04ebcfe91c27a40ab45d27326b01dcfdfff74bfefbb5ae
-  languageName: node
-  linkType: hard
-
 "yaml@npm:^1.10.0, yaml@npm:^1.10.2":
   version: 1.10.2
   resolution: "yaml@npm:1.10.2"
@@ -12913,7 +12868,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yaml@npm:^2.0.0, yaml@npm:^2.1.1":
+"yaml@npm:^2.1.1":
   version: 2.1.1
   resolution: "yaml@npm:2.1.1"
   checksum: f48bb209918aa57cfaf78ef6448d1a1f8187f45c746f933268b7023dc59e5456004611879126c9bb5ea55b0a2b1c2b392dfde436931ece0c703a3d754562bb96

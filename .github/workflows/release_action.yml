@@ -117,7 +117,7 @@ jobs:
           git add -f dist
           git commit -m "build(release): v${newtag#v}"
           git push origin gh-action -u --force
-          npx auto shipit -m 'docs: Update CHANGELOG.md [skip ci]' --name "${{github.event.pusher.name}}" --email "${{github.event.pusher.email}}"
+          npx auto shipit --base-branch gh-actions -m 'docs: Update CHANGELOG.md [skip ci]' --name "${{github.event.pusher.name}}" --email "${{github.event.pusher.email}}"
           echo ::set-output name=sha::$(git rev-parse HEAD)
       - name: Bump version and push tag
         if: steps.bump.outputs.bump != ''

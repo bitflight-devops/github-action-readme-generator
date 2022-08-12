@@ -4,9 +4,9 @@ updates:
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
-      interval: 'weekly'
+      interval: 'monthly'
     assignees:
-      - jamie-wearsafe
+      - jamie-bitflight
     labels:
       - 'github-actions'
       - 'dependencies'
@@ -15,7 +15,7 @@ updates:
     schedule:
       interval: 'weekly'
     assignees:
-      - jamie-wearsafe
+      - jamie-bitflight
     labels:
       - 'docker'
       - 'dependencies'
@@ -24,7 +24,7 @@ updates:
     schedule:
       interval: 'weekly'
     assignees:
-      - jamie-wearsafe
+      - jamie-bitflight
     labels:
       - 'npm'
       - 'dependencies'

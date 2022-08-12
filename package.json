@@ -21,38 +21,39 @@
   "author": "Jamie Nelson <jamie@bitflight.io>",
   "license": "APACHE",
   "scripts": {
-    "test": "NODE_ENV=testing jest",
-    "test-ci": "NODE_ENV=testing jest --ci --reporters=default --reporters=jest-junit",
+    "all": "yarn run build && yarn run format && yarn run lint && yarn test",
+    "auto": "auto",
     "build": "rimraf dist out;esbuild --bundle src/index.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --target=node16 && chmod +x dist/index.cjs && yarn postbuild",
-    "postbuild": "tsc --project tsconfig.json --emitDeclarationOnly --declaration --outFile dist/index.d.ts",
-    "build:inputs": "rimraf dist out;esbuild --bundle src/testInputs.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --target=node16 && chmod -R +x dist/",
     "build:docker": "run-script-os",
-    "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:16-alpine sh -c \"yarn run build\"",
     "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:16-alpine sh -c 'yarn run build'",
-    "format": "prettier --write . --config .prettierrc.js --ignore-unknown",
-    "format:fix": "yarn run format",
+    "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:16-alpine sh -c \"yarn run build\"",
+    "build:inputs": "rimraf dist out;esbuild --bundle src/testInputs.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --target=node16 && chmod -R +x dist/",
     "bump": "yarn version -i patch && yarn run release",
     "bump:minor": "yarn version -i minor && yarn run release",
-    "release": "./release.sh",
-    "release:post": "yarn npm publish --access public --tag v${npm_package_version} --tag latest",
-    "postversion": "git push --tags origin && git push origin",
-    "precommit": "pretty-quick --staged",
-    "prepare": "[[ -n ${GITHUB_ACTIONS:-} ]] || husky install",
-    "corepack": "corepack enable",
     "cachefolder": "corepack yarn config get cacheFolder",
     "clean": "rimraf dist",
+    "commit": "git-cz",
+    "corepack": "corepack enable",
+    "current-version": "yarn npm version --parseable",
+    "format": "prettier --write . --config .prettierrc.js --ignore-unknown",
+    "format:fix": "yarn run format",
+    "generate-docs": "echo 'Generating docs';node dist/index.cjs && git add README.md",
     "lint": "tsc --project tsconfig.json --noemit && eslint -c .eslintrc.cjs ./src/ ./__tests__/",
     "lint:fix": "yarn run format && eslint --fix -c .eslintrc.cjs ./src/index.ts ./__tests__/index.test.ts",
     "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
     "lint:markdown:fix": "yarn run lint:markdown --fix",
-    "all": "yarn run build && yarn run format && yarn run lint && yarn test",
+    "postbuild": "tsc --project tsconfig.json --emitDeclarationOnly --declaration --outFile dist/index.d.ts",
     "postinstall": "echo '✨ Successfully Installed'",
-    "commit": "git-cz",
-    "current-version": "yarn npm version --parseable",
-    "pre-commit": "lint-staged && yarn run build && yarn run generate-docs",
+    "postpublish": "git push --follow-tags --set-upstream origin $branch && auto release",
+    "postversion": "git push --tags origin && git push origin",
+    "pre-commit": "lint-staged",
+    "prepare": "[[ -n ${GITHUB_ACTIONS:-} ]] || husky install",
     "preversion": "echo 'Running test';yarn run test",
-    "version": "echo 'Run versioning commands';echo \"::set-output name=tag::v${npm_package_version}\"",
-    "generate-docs": "echo 'Generating docs';node dist/index.cjs && git add README.md"
+    "release": "./release.sh",
+    "release:post": "yarn npm publish --access public --tag v${npm_package_version} --tag latest",
+    "test": "NODE_ENV=testing jest",
+    "test-ci": "NODE_ENV=testing jest --ci --reporters=default --reporters=jest-junit",
+    "version": "echo 'Run versioning commands';echo \"::set-output name=tag::v${npm_package_version}\""
   },
   "config": {
     "commitizen": {
@@ -61,9 +62,6 @@
     "ghadocs": {
       "outpath": ".github/tools/generate-docs"
     }
-  },
-  "oclif": {
-    "bin": "github-action-readme-generator"
   },
   "commitlint": {
     "extends": ["@commitlint/config-conventional"],
@@ -78,24 +76,30 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "files": ["package.json", "README.md", "/bin", "/dist"],
+  "files": ["package.json", "README.md", "LICENSE", "CHANGELOG.md", "/dist"],
   "os": ["!win32"],
   "dependencies": {
     "@actions/core": "^1.9.0",
     "@actions/github": "^5.0.3",
-    "@oclif/command": "^1.8.16",
-    "@oclif/config": "^1.18.3",
-    "@oclif/errors": "^1.3.5",
-    "@oclif/plugin-help": "^5.1.12",
+    "async": "^3.2.4",
     "chalk": "4.1.2",
     "date-format": "^4.0.13",
     "js-yaml": "^4.1.0",
     "nconf": "github:indexzero/nconf",
     "node-emoji": "^1.11.0",
     "prettier": "^2.7.1",
-    "reflect-metadata": "^0.1.13"
+    "reflect-metadata": "^0.1.13",
+    "tslib": "^2.4.0"
   },
   "devDependencies": {
+    "@auto-it/all-contributors": "^10.37.4",
+    "@auto-it/conventional-commits": "^10.37.4",
+    "@auto-it/exec": "^10.37.4",
+    "@auto-it/first-time-contributor": "^10.37.4",
+    "@auto-it/npm": "^10.37.4",
+    "@auto-it/omit-commits": "^10.37.4",
+    "@auto-it/released": "^10.37.4",
+    "@auto-it/upload-assets": "^10.37.4",
     "@babel/core": "^7.18.10",
     "@babel/eslint-parser": "^7.18.9",
     "@babel/plugin-proposal-decorators": "^7.18.10",
@@ -104,9 +108,9 @@
     "@commitlint/config-conventional": "^17.0.3",
     "@commitlint/prompt": "^17.0.3",
     "@jest/types": "^28.1.3",
-    "@oclif/dev-cli": "^1.26.10",
     "@prettier/plugin-ruby": "^3.2.0",
     "@prettier/plugin-xml": "^2.2.0",
+    "@semantic-release/commit-analyzer": "^9.0.2",
     "@swc/helpers": "^0.4.3",
     "@swc/wasm": "^1.2.224",
     "@trunkio/launcher": "^1.1.1",
@@ -124,8 +128,9 @@
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "@typescript-eslint/typescript-estree": "^5.32.0",
-    "async": "^3.2.4",
+    "auto": "^10.37.4",
     "commitizen": "^4.2.5",
+    "conventional-commits": "^1.6.0",
     "cz-conventional-changelog": "^3.3.0",
     "dotenv": "^16.0.1",
     "esbuild": "^0.14.54",
@@ -183,7 +188,6 @@
     "semantic-release": "^19.0.3",
     "ts-jest": "^28.0.7",
     "ts-node": "^10.9.1",
-    "tslib": "^2.4.0",
     "typescript": "^4.7.4",
     "typescript-eslint-language-service": "^5.0.0"
   },
@@ -197,8 +201,10 @@
     "{src,__tests__}/**/*.js": "eslint --cache --fix",
     "*.ts": ["eslint --cache --fix"]
   },
-  "resolutions": {
-    "typescript": "^4.7.4"
-  },
-  "packageManager": "yarn@3.2.2"
+  "packageManager": "yarn@3.2.2",
+  "auto": {
+    "plugins": ["npm", "all-contributors", ["conventional-commits", { "preset": "angular" }], "first-time-contributor", "released", ["upload-assets", ["./dist/index.cjs"]]],
+    "onlyPublishWithReleaseLabel": true,
+    "versionBranches": true
+  }
 }

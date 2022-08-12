@@ -67,10 +67,9 @@ jobs:
           yarn test
 
       - name: Configure Git
-        if: steps.bump.outputs.bump != ''
         run: |
-          git config --global user.email "${{github.event.pusher.email}}"
-          git config --global user.name "${{github.event.pusher.name}}"
+          git config --global user.email "${{github.event.pusher.email || 'stack@bitflight.io'}}"
+          git config --global user.name "${{github.event.pusher.name || 'GitHub[bot]'}}"
 
       - name: Update PR Body
         id: update-pr-body

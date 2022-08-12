@@ -203,7 +203,19 @@
   },
   "packageManager": "yarn@3.2.2",
   "auto": {
-    "plugins": ["npm", "all-contributors", ["conventional-commits", { "preset": "angular" }], "first-time-contributor", "released", ["upload-assets", ["./dist/index.cjs"]]],
+    "plugins": [
+      "npm",
+      "all-contributors",
+      [
+        "conventional-commits",
+        {
+          "preset": "angular"
+        }
+      ],
+      "first-time-contributor",
+      "released",
+      ["upload-assets", ["./dist/index.cjs"]]
+    ],
     "onlyPublishWithReleaseLabel": true,
     "versionBranches": true
   }

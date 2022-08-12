@@ -50,20 +50,38 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
       - name: Build
+        id: build
         run: |
           yarn install
-          npm install --no-package-lock --prefer-offline --no-audit --no-progress --no-bin-links --ignore-scripts --ignore-engines --ignore-platform
           yarn build
+          # npm install --no-package-lock --prefer-offline --no-audit --no-progress --no-bin-links --ignore-scripts --ignore-engines --ignore-platform
+      - name: Check If Bumpable
+        id: bump
+        run: |
+          BUMP="$(yarn auto version)"
+          if [[ -n ${BUMP:-}]]; then
+            echo "::set-output name=bump::$BUMP"
+          fi
+
       - name: Run tests
         run: |
           yarn test
 
       - name: Configure Git
+        if: steps.build.outputs.bump != ''
         run: |
           git config --global user.email "${{github.event.pusher.email}}"
           git config --global user.name "${{github.event.pusher.name}}"
 
+      - name: Update PR Body
+        id: update-pr-body
+        if: github.event_name == 'pull_request'
+        run: |
+          yarn auto canary
+          # yarn auto changelog
+
       - name: Bump Package Version
+        if: steps.build.outputs.bump != ''
         id: bump-yarn
         env:
           newtag: '${{ steps.next_version.outputs.new_version }}'
@@ -78,12 +96,14 @@ jobs:
               --email "${{github.event.pusher.email}}" \
               --name "${{github.event.pusher.name}}" \
               --baseBranch "${{ github.event.pull_request.base.ref || github.ref }}" \
+              --prerelease
             git add .
             git commit -m "build(release): v${newtag#v}" --no-verify
             git push origin main
           fi
           echo ::set-output name=sha::$(git rev-parse HEAD)
       - name: Create Release Branch
+        if: steps.build.outputs.bump != ''
         id: release-branch
         env:
           newtag: '${{ steps.next_version.outputs.version }}'
@@ -100,6 +120,7 @@ jobs:
           npx auto shipit -m 'docs: Update CHANGELOG.md [skip ci]' --name "${{github.event.pusher.name}}" --email "${{github.event.pusher.email}}"
           echo ::set-output name=sha::$(git rev-parse HEAD)
       - name: Bump version and push tag
+        if: steps.build.outputs.bump != ''
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.0
         with:
@@ -107,6 +128,7 @@ jobs:
           custom_tag: '${{ steps.next_version.outputs.new_version }}'
           github_token: ${{ secrets.RELEASE_TOKEN }}
       - name: Create a GitHub release
+        if: steps.build.outputs.bump != ''
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.tag_version.outputs.new_tag }}
@@ -116,9 +138,11 @@ jobs:
           generateReleaseNotes: true
           token: ${{ secrets.RELEASE_TOKEN }}
       - name: Publish to NPM
+        if: steps.build.outputs.bump != ''
         run: |
           npm publish --no-package-lock --prefer-offline --no-audit --no-progress --no-bin-links --ignore-scripts --ignore-engines --ignore-platform
       - name: Update Label Tags
+        if: steps.build.outputs.bump != ''
         env:
           newtag: ${{ steps.tag_version.outputs.new_version }}
         run: |

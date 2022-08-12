@@ -41,7 +41,7 @@ jobs:
       - uses: actions/cache@v3
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
-          paths: |
+          path: |
             ${{ steps.yarn-cache-dir-path.outputs.dir }}
             .yarn
             .node_modules

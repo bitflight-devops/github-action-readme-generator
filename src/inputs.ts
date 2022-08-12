@@ -85,7 +85,9 @@ export default class Inputs {
               newObj.key = keyParsed;
               break;
           }
-          this.config.set(newObj.key, newObj.value);
+          if (newObj.value) {
+            this.config.set(newObj.key, newObj.value);
+          }
           return newObj;
         }
         return undefined;

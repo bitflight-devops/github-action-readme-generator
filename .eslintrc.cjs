@@ -8,8 +8,7 @@ module.exports = {
   overrides: [
     {
       files: ['*.yml', '*.yaml'],
-      parser: 'yaml-eslint-parser',
-      extends: ['plugin:yml/recommended', 'plugin:yml/prettier', pp],
+      extends: [pp],
     },
     {
       files: ['*.js', '*.cjs'],
@@ -81,6 +80,7 @@ module.exports = {
         tsconfigRootDir: __dirname,
       },
       rules: {
+        'operator-linebreak': ['error', 'after'],
         'dot-notation': 'off',
         '@typescript-eslint/dot-notation': ['error'],
         '@typescript-eslint/array-type': 'error',

@@ -207,8 +207,10 @@
       [
         "exec",
         {
-          "release": "yarn build",
-          "publish": "yarn build"
+          "canary": "yarn build",
+          "next": "yarn build",
+          "publish": "yarn build",
+          "version": "yarn build && yarn generate-docs git add README.md"
         }
       ],
       "npm",

@@ -107,7 +107,7 @@ jobs:
           token: ${{ secrets.RELEASE_TOKEN }}
       - name: Publish to NPM
         run: |
-          npm publish --access public --tag ${{ steps.tag_version.outputs.new_tag }}
+          npm publish --access public --tag ${{ steps.tag_version.outputs.new_version }}
       - name: Update Label Tags
         env:
           newtag: ${{ steps.tag_version.outputs.new_version }}

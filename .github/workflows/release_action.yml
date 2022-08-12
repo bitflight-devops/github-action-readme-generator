@@ -77,6 +77,8 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           yarn version -i prerelease
+          git add .
+          git commit -m "build(prerelease): v${GITHUB_REF}" --no-verify
           yarn auto canary
           # yarn auto changelog
 

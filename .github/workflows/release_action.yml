@@ -58,7 +58,7 @@ jobs:
         id: bump
         run: |
           BUMP="$(yarn auto version)"
-          if [[ -n ${BUMP:-} ]]; then
+          if [ -n ${BUMP:-} ]; then
             echo "::set-output name=bump::$BUMP"
           fi
 

@@ -34,10 +34,13 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           always-auth: true
           cache: npm
+
       - run: git config --global init.defaultBranch main
+
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+
       - uses: actions/cache@v3
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
@@ -48,13 +51,31 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "${{github.event.pusher.email || 'stack@bitflight.io'}}"
+          git config --global user.name "${{github.event.pusher.name || 'GitHub[bot]'}}"
+
+      - name: Install Deps
+        id: deps
+        run: |
+          yarn install
+          npm install --no-package-lock --prefer-offline --no-audit --no-progress --no-bin-links --ignore-scripts --ignore-engines --ignore-platform
+
+      - name: Test
+        id: test
+        run: |
+          yarn test
+
       - name: Build
         id: build
         run: |
-          yarn install
           yarn build
-          # npm install --no-package-lock --prefer-offline --no-audit --no-progress --no-bin-links --ignore-scripts --ignore-engines --ignore-platform
+
+
       - name: Check If Bumpable
+        if: github.event_name == 'push'
         id: bump
         run: |
           BUMP="$(yarn auto version)"
@@ -66,91 +87,81 @@ jobs:
         run: |
           yarn test
 
-      - name: Configure Git
+      - name: Ship It
         run: |
-          git config --global user.email "${{github.event.pusher.email || 'stack@bitflight.io'}}"
-          git config --global user.name "${{github.event.pusher.name || 'GitHub[bot]'}}"
+          yarn auto shipit
 
-      - name: Update PR Body
-        id: update-pr-body
-        if: github.event_name == 'pull_request'
-        run: |
-          yarn version -i prerelease
-          git add .
-          git commit -m "build(prerelease): v${GITHUB_REF}" --no-verify
-          yarn auto canary
-          # yarn auto changelog
+      # - name: Bump Package Version
+      #   if: github.event_name == 'push' && steps.next_version.outputs.new_version != ''
+      #   id: bump-yarn
+      #   env:
+      #     newtag: '${{ steps.next_version.outputs.new_version }}'
+      #   run: |
+      #     yarntag="$(jq -r '.version' package.json)"
+      #     if [[ ${yarntag#v} != "${newtag#v}" ]]; then
+      #       yarn version -i "${newtag#v}" || true
+      #       yarn generate-docs
+      #       yarn "lint:markdown:fix"
+      #       yarn "lint:fix"
+      #       yarn auto changelog \
+      #         --email "${{github.event.pusher.email}}" \
+      #         --name "${{github.event.pusher.name}}" \
+      #         --baseBranch "${{ github.event.pull_request.base.ref || github.ref }}" \
+      #         --prerelease
+      #       git add .
+      #       git commit -m "build(release): v${newtag#v}" --no-verify
+      #       git push origin main || true
+      #     fi
+      #     echo ::set-output name=sha::$(git rev-parse HEAD)
 
-      - name: Bump Package Version
-        if: steps.bump.outputs.bump != ''
-        id: bump-yarn
-        env:
-          newtag: '${{ steps.next_version.outputs.new_version }}'
-        run: |
-          yarntag="$(jq -r '.version' package.json)"
-          if [[ ${yarntag#v} != "${newtag#v}" ]]; then
-            yarn version -i "${newtag#v}" || true
-            yarn generate-docs
-            yarn "lint:markdown:fix"
-            yarn "lint:fix"
-            yarn auto changelog \
-              --email "${{github.event.pusher.email}}" \
-              --name "${{github.event.pusher.name}}" \
-              --baseBranch "${{ github.event.pull_request.base.ref || github.ref }}" \
-              --prerelease
-            git add .
-            git commit -m "build(release): v${newtag#v}" --no-verify
-            git push origin main
-          fi
-          echo ::set-output name=sha::$(git rev-parse HEAD)
-      - name: Create Release Branch
-        if: steps.bump.outputs.bump != ''
-        id: release-branch
-        env:
-          newtag: '${{ steps.next_version.outputs.version }}'
-        run: |
-          git switch -C gh-action --no-guess ${{ steps.bump-yarn.outputs.sha }}
-          rm -rf __tests__ src node_modules .github
-          rm -rf .husky .trunk .vscode .cspell.json
-          rm -rf ./eslint* ./prettier* ./.lint* ./.markdown*
-          rm -rf junit.xml README.example.md ./.tsconfig.json
-          git add .
-          git add -f dist
-          git commit -m "build(release): v${newtag#v}"
-          git push origin gh-action -u --force
-          npx auto shipit --base-branch gh-actions -m 'docs: Update CHANGELOG.md [skip ci]' --name "${{github.event.pusher.name}}" --email "${{github.event.pusher.email}}"
-          echo ::set-output name=sha::$(git rev-parse HEAD)
-      - name: Bump version and push tag
-        if: steps.bump.outputs.bump != ''
-        id: tag_version
-        uses: mathieudutour/github-tag-action@v6.0
-        with:
-          commit_sha: ${{ steps.release-branch.outputs.sha }}
-          custom_tag: '${{ steps.next_version.outputs.new_version }}'
-          github_token: ${{ secrets.RELEASE_TOKEN }}
-      - name: Create a GitHub release
-        if: steps.bump.outputs.bump != ''
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ steps.tag_version.outputs.new_tag }}
-          name: Release ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ steps.tag_version.outputs.changelog }}
-          artifacts: dist/index.cjs
-          generateReleaseNotes: true
-          token: ${{ secrets.RELEASE_TOKEN }}
-      - name: Publish to NPM
-        if: steps.bump.outputs.bump != ''
-        run: |
-          npm publish --no-package-lock --prefer-offline --no-audit --no-progress --no-bin-links --ignore-scripts --ignore-engines --ignore-platform
-      - name: Update Label Tags
-        if: steps.bump.outputs.bump != ''
-        env:
-          newtag: ${{ steps.tag_version.outputs.new_version }}
-        run: |
-          git fetch --tags
-          stub_major="${newtag%%\.*}"
-          stub_major_minor="${newtag%\.*}"
-          git tag -f v${stub_major}
-          git push -f origin v${stub_major}
-          git tag v${stub_major_minor}
-          git push -f origin v${stub_major_minor}
+      # - name: Create Release Branch
+      #   if: github.event_name == 'push'
+      #   id: release-branch
+      #   env:
+      #     newtag: '${{ steps.next_version.outputs.version }}'
+      #   run: |
+      #     git switch -C gh-action --no-guess ${{ steps.bump-yarn.outputs.sha }}
+      #     rm -rf __tests__ src node_modules .github
+      #     rm -rf .husky .trunk .vscode .cspell.json
+      #     rm -rf ./eslint* ./prettier* ./.lint* ./.markdown*
+      #     rm -rf junit.xml README.example.md ./.tsconfig.json
+      #     git add .
+      #     git add -f dist
+      #     git commit -m "build(release): v${newtag#v}"
+      #     git push origin gh-action -u --force
+      #     npx auto shipit --base-branch gh-actions -m 'docs: Update CHANGELOG.md [skip ci]' --name "${{github.event.pusher.name}}" --email "${{github.event.pusher.email}}"
+      #     echo ::set-output name=sha::$(git rev-parse HEAD)
+      # - name: Bump version and push tag
+      #   if: steps.bump.outputs.bump != ''
+      #   id: tag_version
+      #   uses: mathieudutour/github-tag-action@v6.0
+      #   with:
+      #     commit_sha: ${{ steps.release-branch.outputs.sha }}
+      #     custom_tag: '${{ steps.next_version.outputs.new_version }}'
+      #     github_token: ${{ secrets.RELEASE_TOKEN }}
+      # - name: Create a GitHub release
+      #   if: steps.bump.outputs.bump != ''
+      #   uses: ncipollo/release-action@v1
+      #   with:
+      #     tag: ${{ steps.tag_version.outputs.new_tag }}
+      #     name: Release ${{ steps.tag_version.outputs.new_tag }}
+      #     body: ${{ steps.tag_version.outputs.changelog }}
+      #     artifacts: dist/index.cjs
+      #     generateReleaseNotes: true
+      #     token: ${{ secrets.RELEASE_TOKEN }}
+      # - name: Publish to NPM
+      #   if: steps.bump.outputs.bump != ''
+      #   run: |
+      #     npm publish --no-package-lock --prefer-offline --no-audit --no-progress --no-bin-links --ignore-scripts --ignore-engines --ignore-platform
+      # - name: Update Label Tags
+      #   if: steps.bump.outputs.bump != ''
+      #   env:
+      #     newtag: ${{ steps.tag_version.outputs.new_version }}
+      #   run: |
+      #     git fetch --tags
+      #     stub_major="${newtag%%\.*}"
+      #     stub_major_minor="${newtag%\.*}"
+      #     git tag -f v${stub_major}
+      #     git push -f origin v${stub_major}
+      #     git tag v${stub_major_minor}
+      #     git push -f origin v${stub_major_minor}

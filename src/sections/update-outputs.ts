@@ -19,7 +19,7 @@ export default function updateOutputs(token: string, inputs: Inputs): void {
       // eslint-disable-next-line security/detect-object-injection
       const values = vars[key];
       const row: string[] = [
-        `\`${key.trim()}\``,
+        `**\`${key.trim()}\`**`,
         values?.description?.trim().replace('\n', ' ') ?? '',
       ];
       log.debug(JSON.stringify(row));

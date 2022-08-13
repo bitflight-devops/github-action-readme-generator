@@ -22,7 +22,10 @@ export function markdownEscapeTableCell(text: string): string {
 export function markdownEscapeInlineCode(content: string): string {
   // replace grave accents with <code> HTML element to resolve unicode character in markdown
   // let isClosingTag = false;
-  return content.replace(/([\s*_]|^)`([^`]+)`([\s*_]|$)/g, '$1<code>$2</code>$3');
+  if (content.includes('|')) {
+    content = content.replace(/([\s*_]|^)`([^`]+)`([\s*_]|$)/g, '$1<code>$2</code>$3');
+  }
+  return content
 
   // ?.forEach((match) => {
   //   if (!isClosingTag) {

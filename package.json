@@ -170,7 +170,7 @@
     "eslint-plugin-github": "^4.3.7",
     "eslint-plugin-html": "^7.1.0",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-jest": "^26.8.0",
+    "eslint-plugin-jest": "^26.8.3",
     "eslint-plugin-jest-async": "^1.0.3",
     "eslint-plugin-json": "^3.1.0",
     "eslint-plugin-lodash": "^7.4.0",

@@ -73,8 +73,6 @@ jobs:
         run: |
           yarn build
 
-
-
       - name: Check If Bumpable
         if: github.event_name == 'push'
         id: bump
@@ -91,7 +89,7 @@ jobs:
 
       - name: Ship It
         run: |
-          yarn auto shipit --baseBranch "${{ github.event.pull_request.base.ref || github.ref }}"
+          yarn auto shipit --base-branch "${{ github.event.pull_request.base.ref || github.ref }}"
           git push origin main || true
       # - name: Bump Package Version
       #   if: github.event_name == 'push' && steps.next_version.outputs.new_version != ''

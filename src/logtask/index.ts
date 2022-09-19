@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as Chalk from 'chalk';
 import * as emoji from 'node-emoji';
 
-const chalk = new Chalk.Instance();
+const chalk = Chalk.default;
 class LogTask {
   name: string;
 

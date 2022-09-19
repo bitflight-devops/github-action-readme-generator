@@ -1,5 +1,6 @@
 import type Inputs from '../inputs';
 import LogTask from '../logtask';
+import updateBadges from './update-badges';
 import updateDescription from './update-description';
 import updateInputs from './update-inputs';
 import updateOutputs from './update-outputs';
@@ -10,6 +11,10 @@ export default function updateSection(section: string, inputs: Inputs): void {
   const log = new LogTask('updateSection');
   try {
     switch (section) {
+      case 'badges': {
+        updateBadges(section, inputs);
+        break;
+      }
       case 'usage': {
         updateUsage(section, inputs);
         break;

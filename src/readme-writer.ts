@@ -12,7 +12,7 @@ export default function readmeWriter(
 ): void {
   const log = new LogTask(tokenName);
 
-  if (!content) {
+  if (!content || content.length === 0) {
     log.info(`readmeWriter passed no content from ${tokenName} parser`);
     return;
   }

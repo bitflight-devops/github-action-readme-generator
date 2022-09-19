@@ -36,6 +36,7 @@ export const configKeys: string[] = [
   'repo',
   'title_prefix',
   'pretty',
+  'include_github_version_badge',
 ];
 interface KVPairType {
   key: string;
@@ -80,6 +81,9 @@ export default class Inputs {
               break;
             case 'version_override':
               newObj.key = 'versioning:override';
+              break;
+            case 'include_github_version_badge':
+              newObj.key = 'versioning:badge';
               break;
             default:
               newObj.key = keyParsed;
@@ -150,6 +154,12 @@ export default class Inputs {
         describe: 'If versioning is disabled show this branch instead',
         parseValues: true,
       },
+      'versioning:badge': {
+        alias: ['version-badge', 'versioning_badge'],
+        describe: 'Display the current version as a badge',
+        parseValues: true,
+        type: 'boolean',
+      },
       'title_prefix': {
         alias: ['prefix', 'title_prefix'],
         describe: 'Add a prefix to the README title',
@@ -173,9 +183,10 @@ export default class Inputs {
         override: '',
         prefix: 'v',
         branch: 'main',
+        badges: true,
       },
       title_prefix: 'GitHub Action: ',
-      sections: ['title', 'description', 'usage', 'inputs', 'outputs', 'contents'],
+      sections: ['title', 'description', 'usage', 'inputs', 'outputs', 'contents', 'badges'],
     });
     this.config.required(['owner', 'repo']);
     for (const k of configKeys) {

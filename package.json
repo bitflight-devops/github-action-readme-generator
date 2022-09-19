@@ -215,9 +215,9 @@
       [
         "exec",
         {
-          "canary": "yarn build",
-          "next": "yarn build",
-          "publish": "yarn build",
+          "canary": "yarn build && yarn generate-docs && git add . && git commit -m 'build(canary): new version'",
+          "next": "yarn build && yarn generate-docs && git add . && git commit -m 'build(next): new version'",
+          "publish": "yarn build && yarn generate-docs && git add . && git commit -m 'build(publish): new version'",
           "version": "yarn build && yarn generate-docs && git add . && git commit -m 'build(release): new version'"
         }
       ],

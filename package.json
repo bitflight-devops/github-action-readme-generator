@@ -218,19 +218,17 @@
           "canary": "yarn build",
           "next": "yarn build",
           "publish": "yarn build",
-          "version": "yarn build && yarn generate-docs && git add . && git commit -m 'build(releae): new version'"
+          "version": "yarn build && yarn generate-docs && git add . && git commit -m 'build(release): new version'"
         }
       ],
       "git-tag",
       "npm",
-      "all-contributors",
       [
         "conventional-commits",
         {
           "preset": "angular"
         }
       ],
-      "first-time-contributor",
       "released",
       ["upload-assets", ["./dist/index.cjs"]]
     ],

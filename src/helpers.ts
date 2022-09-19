@@ -62,10 +62,11 @@ export function wrapText(text: string | undefined, content: string[], prepend = 
 
   const width = ec.props.max_line_length;
   let description = text
-    .trimEnd()
+    .trim()
     .replace(/\r\n/g, '\n') // Convert CR to LF
     .replace(/ +/g, ' ') //    Squash consecutive spaces
     .replace(/ \n/g, '\n'); //  Squash space followed by newline
+
   while (description) {
     // Longer than width? Find a space to break apart
     let segment: string;

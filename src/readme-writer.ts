@@ -1,9 +1,9 @@
 import * as fs from 'node:fs';
 import { EOL } from 'node:os';
-import { format } from 'prettier';
 
 import { endTokenFormat, startTokenFormat } from './config';
 import LogTask from './logtask';
+import { formatMarkdown } from './prettier';
 
 export default function readmeWriter(
   content: string[],
@@ -51,6 +51,6 @@ export default function readmeWriter(
 
   const fileContent = newReadme.join(EOL);
   // Write the new README
-  fs.writeFileSync(readmePath, format(fileContent, { semi: false, parser: 'markdown' }));
+  fs.writeFileSync(readmePath, formatMarkdown(fileContent));
   log.info(`successfully updated the ${tokenName} section`);
 }

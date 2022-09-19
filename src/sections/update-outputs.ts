@@ -1,3 +1,4 @@
+import { columnHeader, rowHeader } from '../helpers';
 import type Inputs from '../inputs';
 import LogTask from '../logtask';
 import markdowner from '../markdowner';
@@ -8,7 +9,14 @@ export default function updateOutputs(token: string, inputs: Inputs): void {
 
   // Build the new README
   const content: string[] = [];
-  const markdownArray: string[][] = [['Output', 'Description']];
+
+  const markdownArray: string[][] = [];
+  const titleArray = ['Output', 'Description'];
+  const titles: string[] = [];
+  for (const t of titleArray) {
+    titles.push(columnHeader(t));
+  }
+  markdownArray.push(titles);
   const vars = inputs.action.outputs;
   const tI = vars ? Object.keys(vars).length : 0;
   if (tI > 0) {
@@ -16,10 +24,7 @@ export default function updateOutputs(token: string, inputs: Inputs): void {
     for (const key of Object.keys(vars)) {
       // eslint-disable-next-line security/detect-object-injection
       const values = vars[key];
-      const row: string[] = [
-        `\`${key.trim()}\``,
-        values?.description?.trim().replace('\n', ' ') ?? '',
-      ];
+      const row: string[] = [rowHeader(key), values?.description?.trim().replace('\n', ' ') ?? ''];
       log.debug(JSON.stringify(row));
       markdownArray.push(row);
     }

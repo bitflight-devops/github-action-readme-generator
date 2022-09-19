@@ -74,14 +74,16 @@ jobs:
           yarn build
 
 
+
       - name: Check If Bumpable
         if: github.event_name == 'push'
         id: bump
         run: |
           BUMP="$(yarn auto version)"
           if [ -n ${BUMP:-} ]; then
-            echo "::set-output name=bump::$BUMP"
+            echo "::set-output name=bump::${BUMP}"
           fi
+          git commit -m "build(release): ${BUMP}"
 
       - name: Run tests
         run: |

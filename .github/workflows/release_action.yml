@@ -91,8 +91,8 @@ jobs:
 
       - name: Ship It
         run: |
-          yarn auto shipit
-
+          yarn auto shipit --baseBranch "${{ github.event.pull_request.base.ref || github.ref }}"
+          git push origin main || true
       # - name: Bump Package Version
       #   if: github.event_name == 'push' && steps.next_version.outputs.new_version != ''
       #   id: bump-yarn

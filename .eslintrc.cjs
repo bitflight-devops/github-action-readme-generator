@@ -12,8 +12,8 @@ module.exports = {
     },
     {
       files: ['*.js', '*.cjs'],
-      plugins: ["editorconfig"],
-      extends: ["plugin:editorconfig/all", pp],
+      plugins: ['editorconfig'],
+      extends: ['plugin:editorconfig/all', pp],
       rules: {
         'no-plusplus': 'off',
         'unicorn/prefer-module': 'off',
@@ -34,8 +34,8 @@ module.exports = {
     },
     {
       files: ['*.html', '*.json'],
-      plugins: ["editorconfig"],
-      extends: ["plugin:editorconfig/all",pp],
+      plugins: ['editorconfig'],
+      extends: ['plugin:editorconfig/all', pp],
       rules: {
         'no-plusplus': 'off',
       },
@@ -61,8 +61,10 @@ module.exports = {
         '@typescript-eslint',
         'security',
         'optimize-regex',
-        "editorconfig"],
-        extends: ["plugin:editorconfig/all",
+        'editorconfig',
+      ],
+      extends: [
+        'plugin:editorconfig/all',
         'eslint:recommended',
         'plugin:@typescript-eslint/recommended',
         'plugin:security/recommended',
@@ -73,7 +75,7 @@ module.exports = {
         'plugin:sonarjs/recommended',
         'plugin:unicorn/recommended',
         'plugin:optimize-regex/recommended',
-        pp
+        pp,
       ],
       parser: '@typescript-eslint/parser',
       parserOptions: {

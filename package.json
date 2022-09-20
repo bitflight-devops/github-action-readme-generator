@@ -23,6 +23,10 @@
   "scripts": {
     "all": "yarn run build && yarn run format && yarn run lint && yarn test",
     "auto": "auto",
+    "auto:canary": "",
+    "auto:next": "",
+    "auto:publish": "",
+    "auto:version": "",
     "build": "rimraf dist out;esbuild --bundle src/index.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --target=node16 && chmod +x dist/index.cjs && yarn postbuild",
     "build:docker": "run-script-os",
     "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:16-alpine sh -c 'yarn run build'",
@@ -34,7 +38,7 @@
     "clean": "rimraf dist",
     "commit": "git-cz",
     "corepack": "corepack enable",
-    "current-version": "yarn npm version --parseable",
+    "current-version": "jq -r '.version' package.json",
     "format": "prettier --write . --config .prettierrc.js --ignore-unknown",
     "format:fix": "yarn run format",
     "generate-docs": "echo 'Generating docs';node dist/index.cjs && git add README.md",
@@ -44,16 +48,17 @@
     "lint:markdown:fix": "yarn run lint:markdown --fix",
     "postbuild": "tsc --project tsconfig.json --emitDeclarationOnly --declaration --outFile dist/index.d.ts",
     "postinstall": "echo '✨ Successfully Installed'",
-    "postpublish": "git push --follow-tags --set-upstream origin $branch && auto release",
+    "publish": "yarn run build",
+    "postpublish:manual": "git push --follow-tags --set-upstream origin $branch",
     "postversion": "git push --tags origin && git push origin",
     "pre-commit": "lint-staged",
     "prepare": "[ -n ${GITHUB_ACTIONS:-} ] || husky install",
     "preversion": "echo 'Running test';yarn run test",
-    "release": "./release.sh",
+    "release:script": "./release.sh",
     "release:post": "yarn npm publish --access public --tag v${npm_package_version} --tag latest",
     "test": "NODE_ENV=testing jest",
     "test-ci": "NODE_ENV=testing jest --ci --reporters=default --reporters=jest-junit",
-    "version": "echo 'Run versioning commands';echo \"::set-output name=tag::v${npm_package_version}\""
+    "version": "echo 'Run versioning commands';git semver \"v${npm_package_version}\";echo \"::set-output name=tag::v${npm_package_version}\""
   },
   "config": {
     "commitizen": {
@@ -215,10 +220,10 @@
       [
         "exec",
         {
-          "canary": "yarn build && yarn generate-docs && git add . && git commit -m 'build(canary): new version'",
-          "next": "yarn build && yarn generate-docs && git add . && git commit -m 'build(next): new version'",
-          "publish": "yarn build && yarn generate-docs && git add . && git commit -m 'build(publish): new version'",
-          "version": "yarn build && yarn generate-docs && git add . && git commit -m 'build(release): new version'"
+          "canary": "yarn run auto:canary",
+          "next": "yarn run auto:next",
+          "publish": "yarn run auto:publish",
+          "version": "yarn run auto:version"
         }
       ],
       "git-tag",
@@ -230,7 +235,7 @@
         }
       ],
       "released",
-      ["upload-assets", ["./dist/index.cjs"]]
+      ["upload-assets", ["./dist/index.cjs", "./dist/index.d.ts"]]
     ],
     "onlyPublishWithReleaseLabel": true,
     "versionBranches": true,

@@ -11,8 +11,8 @@ if [[ ${yarntag} != "${newtag#v}" ]]; then
 yarn version -i "${newtag#v}" || true
 fi
 yarn build
-git add dist package.json yarn.lock .yarn
-git commit -m "chore(release): bump version to ${newtag}" --no-verify
+git add dist package.json yarn.lock .yarn README.md
+git commit -m "build(release): bump version to ${newtag}" --no-verify
 git semver "${bump}"
 
 # newtag2="$(git semver get)"

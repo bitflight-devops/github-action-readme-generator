@@ -105,3 +105,4 @@ typings/
 
 # TernJS port file
 .tern-port
+.yarn/cache

@@ -35,62 +35,81 @@ jobs:
           always-auth: true
           cache: npm
 
-      - run: git config --global init.defaultBranch main
+      - name: Configure PATH
+        run: |
+          git config --global init.defaultBranch main
+          echo "$HOME/.local/bin" >> "${GITHUB_PATH}"
+
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+        run: |
+          echo "::set-output name=dir::$(yarn config get cacheFolder)"
 
       - uses: actions/cache@v3
+        if: always()
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
           path: |
             ${{ steps.yarn-cache-dir-path.outputs.dir }}
             .yarn
-            .node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+            node_modules
+            ${{env.HOME}}/.cache/yarn
+            ${{env.HOME}}/.local
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}-${{hashFiles('.github/workflows/release_action.yml'}}
           restore-keys: |
+            ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}-${{hashFiles('.github/workflows/release_action.yml'}}
+            ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}-
             ${{ runner.os }}-yarn-
 
       - name: Configure Git
         run: |
           git config --global user.email "${{github.event.pusher.email || 'stack@bitflight.io'}}"
           git config --global user.name "${{github.event.pusher.name || 'GitHub[bot]'}}"
+          git fetch --tags
+
+
+      # - name: Install git-semver
+      #   run: |
+      #     if grep -q -v "This script automates semantic versioning" <<<"$(git semver)"; then
+      #       if [[ -d "${HOME}/.cache/git-semver" ]]; then
+      #         git  -C "${HOME}/.cache/git-semver" reset --hard HEAD
+      #         git  -C "${HOME}/.cache/git-semver" pull
+      #       else
+      #         git clone https://github.com/markchalloner/git-semver.git "${HOME}/.cache/git-semver"
+      #       fi
+      #       sudo "$HOME/.cache/git-semver/install.sh"
+      #     fi
 
       - name: Install Deps
         id: deps
         run: |
-          yarn install
-          npm install --no-package-lock --prefer-offline --no-audit --no-progress --no-bin-links --ignore-scripts --ignore-engines --ignore-platform
+          yarn install --frozen-lockfile --non-interactive --cache-folder=~/.cache/yarn
+          # yarntag="$(jq -r '.version' package.json)"
+          # npm install --no-package-lock --prefer-offline --no-audit --no-progress --no-bin-links --ignore-scripts --ignore-engines --ignore-platform
 
-      - name: Test
-        id: test
-        run: |
-          yarn test
-
+      # - name: Check If Bumpable
+      #   if: github.event_name == 'push'
+      #   id: bump
+      #   run: |
+      #     BUMP="$(yarn auto version)"
+      #     if [ -n ${BUMP:-} ]; then
+      #       echo "::set-output name=bump::${BUMP}"
+      #     fi
+      #     git commit -m "build(release): ${BUMP}"
       - name: Build
         id: build
         run: |
-          yarn build
-
-      - name: Check If Bumpable
-        if: github.event_name == 'push'
-        id: bump
-        run: |
-          BUMP="$(yarn auto version)"
-          if [ -n ${BUMP:-} ]; then
-            echo "::set-output name=bump::${BUMP}"
-          fi
-          git commit -m "build(release): ${BUMP}"
+          yarn run build
 
       - name: Run tests
         run: |
-          yarn test
+          yarn run test
 
       - name: Ship It
         run: |
-          yarn auto shipit --base-branch "${{ github.event.pull_request.base.ref || github.ref }}"
-          git push origin main || true
+          yarn auto shipit -vv
+
       # - name: Bump Package Version
       #   if: github.event_name == 'push' && steps.next_version.outputs.new_version != ''
       #   id: bump-yarn

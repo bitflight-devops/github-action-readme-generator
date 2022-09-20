@@ -10,3 +10,4 @@ node_modules/
 CHANGELOG.md
 **/.trunk/**
 **/.husky
+package.json

@@ -133,7 +133,7 @@
     "@oclif/dev-cli": "^1.26.10",
     "@prettier/plugin-ruby": "^3.2.0",
     "@prettier/plugin-xml": "^2.2.0",
-    "@swc/helpers": "^0.4.3",
+    "@swc/helpers": "^0.4.11",
     "@swc/wasm": "^1.2.224",
     "@trunkio/launcher": "^1.1.1",
     "@tsconfig/node16-strictest-esm": "^1.0.3",

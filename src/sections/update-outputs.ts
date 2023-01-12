@@ -20,7 +20,7 @@ export default function updateOutputs(token: string, inputs: Inputs): void {
       const values = vars[key];
       const row: string[] = [
         `\`${key.trim()}\``,
-        values?.description?.trim().replace('\n', ' ') ?? '',
+        values?.description?.trim().replace('\n', '<br />') ?? '',
       ];
       log.debug(JSON.stringify(row));
       markdownArray.push(row);

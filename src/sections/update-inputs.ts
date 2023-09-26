@@ -20,7 +20,7 @@ export default function updateInputs(token: string, inputs: Inputs): void {
 
       // Check if only first line should be added (only subject without body)
       // eslint-disable-next-line no-useless-escape
-      const matches = description.match('(.*?)\n\n([\S\s]*)');
+      const matches = description.match('(.*?)\n\n([Ss]*)');
       if (matches && matches.length >= 2) {
         description = matches[1] || description;
       }

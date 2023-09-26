@@ -23,17 +23,14 @@ export default function updateOutputs(token: string, inputs: Inputs): void {
 
       // Check if only first line should be added (only subject without body)
       // eslint-disable-next-line no-useless-escape
-      const matches = description.match('(.*?)\n\n([\S\s]*)');
+      const matches = description.match('(.*?)\n\n([Ss]*)');
       if (matches && matches.length >= 2) {
         description = matches[1] || description;
       }
 
       description = description.trim().replace('\n', '<br />');
 
-      const row: string[] = [
-        `\`${key.trim()}\``,
-        description,
-      ];
+      const row: string[] = [`\`${key.trim()}\``, description];
       log.debug(JSON.stringify(row));
       markdownArray.push(row);
     }

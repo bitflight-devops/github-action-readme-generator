@@ -15,9 +15,21 @@ export default function updateInputs(token: string, inputs: Inputs): void {
     for (const key of Object.keys(vars)) {
       // eslint-disable-next-line security/detect-object-injection
       const values = vars[key];
+
+      let description = values?.description ?? '';
+
+      // Check if only first line should be added (only subject without body)
+      // eslint-disable-next-line no-useless-escape
+      const matches = description.match('(.*?)\n\n([\S\s]*)');
+      if (matches && matches.length >= 2) {
+        description = matches[1] || description;
+      }
+
+      description = description.trim().replace('\n', '<br />');
+
       const row: string[] = [
         `**\`${key.trim()}\`**`,
-        values?.description?.trim().replace('\n', '<br />') ?? '',
+        description,
         values?.default ? `\`${values.default}\`` : '',
         values?.required ? '**true**' : '__false__',
       ];

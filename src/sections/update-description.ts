@@ -2,7 +2,7 @@ import type Inputs from '../inputs';
 import LogTask from '../logtask';
 import updateReadme from '../readme-writer';
 
-export default function updateDescription(token: string, inputs: Inputs): void {
+export default async function updateDescription(token: string, inputs: Inputs): Promise<void> {
   const log = new LogTask(token);
   // Build the new README
   const content: string[] = [];
@@ -18,7 +18,7 @@ export default function updateDescription(token: string, inputs: Inputs): void {
 
     log.info(`Writing ${desc.length} characters to the description section`);
     content.push(desc);
-    updateReadme(content, token, inputs.readmePath);
+    await updateReadme(content, token, inputs.readmePath);
     log.success();
   }
 }

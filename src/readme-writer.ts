@@ -5,11 +5,11 @@ import { endTokenFormat, startTokenFormat } from './config';
 import LogTask from './logtask';
 import { formatMarkdown } from './prettier';
 
-export default function readmeWriter(
+export default async function readmeWriter(
   content: string[],
   tokenName: string,
   readmePath: string,
-): void {
+): Promise<void> {
   const log = new LogTask(tokenName);
 
   if (!content || content.length === 0) {
@@ -51,6 +51,7 @@ export default function readmeWriter(
 
   const fileContent = newReadme.join(EOL);
   // Write the new README
-  fs.writeFileSync(readmePath, formatMarkdown(fileContent));
+  const formattedReadme = await formatMarkdown(fileContent);
+  fs.writeFileSync(readmePath, formattedReadme);
   log.info(`successfully updated the ${tokenName} section`);
 }

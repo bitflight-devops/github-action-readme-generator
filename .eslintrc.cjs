@@ -4,6 +4,7 @@ module.exports = {
   env: {
     node: true,
     es6: true,
+    browser: false,
   },
   overrides: [
     {
@@ -11,9 +12,9 @@ module.exports = {
       extends: [pp],
     },
     {
-      files: ['*.js', '*.cjs'],
+      files: ['*.js', '*.cjs', '*.jsx'],
       plugins: ['editorconfig'],
-      extends: ['plugin:editorconfig/all', pp],
+      extends: ['airbnb-base', 'eslint:recommended', 'plugin:editorconfig/all', pp],
       rules: {
         'no-plusplus': 'off',
         'unicorn/prefer-module': 'off',
@@ -21,11 +22,14 @@ module.exports = {
         'no-console': 'off',
         'sonarjs/cognitive-complexity': 'off',
         'camelcase': 'off',
+        'import/extensions': 'off',
+        'sonarjs/no-duplicate-string': 'off',
       },
       parser: '@babel/eslint-parser',
+      env: { es2022: true, node: true },
       parserOptions: {
         requireConfigFile: false,
-        sourceType: 'module',
+        sourceType: 'script',
         ecmaVersion: 'latest',
         ecmaFeatures: {
           impliedStrict: true,
@@ -58,16 +62,19 @@ module.exports = {
         'simple-import-sort',
         'import',
         'jest',
+        'jest-async',
         '@typescript-eslint',
-        'security',
         'optimize-regex',
         'editorconfig',
+        'promise',
       ],
       extends: [
+        'plugin:promise/recommended',
+        'plugin:no-use-extend-native/recommended',
+        'plugin:jest/recommended',
         'plugin:editorconfig/all',
         'eslint:recommended',
         'plugin:@typescript-eslint/recommended',
-        'plugin:security/recommended',
         'airbnb-base',
         'plugin:import/errors',
         'plugin:import/warnings',
@@ -85,6 +92,7 @@ module.exports = {
         tsconfigRootDir: __dirname,
       },
       rules: {
+        'jest-async/expect-return': 'error',
         'operator-linebreak': ['error', 'after'],
         'dot-notation': 'off',
         '@typescript-eslint/dot-notation': ['error'],
@@ -97,6 +105,7 @@ module.exports = {
           'error',
           { accessibility: 'no-public' },
         ],
+        'import/no-unresolved': 'error',
         '@typescript-eslint/func-call-spacing': ['error', 'never'],
         '@typescript-eslint/lines-between-class-members': ['error'],
         '@typescript-eslint/no-explicit-any': 'off',
@@ -122,14 +131,12 @@ module.exports = {
         'camelcase': 'off',
         'consistent-return': 'off',
         'eslint-comments/no-use': 'off',
-        'github/no-then': 'off',
         'import/extensions': 'off',
         'import/first': 'error',
         'import/newline-after-import': 'error',
         'import/no-duplicates': 'error',
         'import/no-namespace': 'off',
         'import/prefer-default-export': 'off',
-        'import/prefer-default-import': 'off',
         'lines-between-class-members': 'off',
         'no-console': 'off',
         'no-plusplus': 'off',
@@ -137,8 +144,6 @@ module.exports = {
         'no-unused-vars': 'off',
         'no-restricted-syntax': 'off',
         'one-var': 'off',
-        'security/detect-non-literal-fs-filename': 'off',
-        'security/detect-object-injection': 'off',
         'semi': 'off',
         'simple-import-sort/exports': 'error',
         'simple-import-sort/imports': 'error',
@@ -146,7 +151,6 @@ module.exports = {
         'sonarjs/cognitive-complexity': 'off',
         'space-before-function-paren': 'off',
         'unicorn/filename-case': 'off',
-        'unicorn/import': 'off',
         'unicorn/import-style': 'off',
         'unicorn/no-null': 'off',
         'unicorn/prefer-module': 'off',
@@ -162,11 +166,25 @@ module.exports = {
         '@typescript-eslint/no-namespace': 'error',
         '@typescript-eslint/no-non-null-assertion': 'warn',
       },
+      globals: {
+        NodeJS: true,
+      },
       env: {
+        'browser': false,
         'node': true,
         'es6': true,
-        'es2021': true,
+        'es2022': true,
         'jest/globals': true,
+      },
+      settings: {
+        'import/parsers': {
+          '@typescript-eslint/parser': ['.ts', '.tsx'],
+        },
+        'import/resolver': {
+          typescript: {
+            alwaysTryTypes: true, // always try to resolve types under `<root>@types` directory even it doesn't contain any source code, like `@types/unist`
+          },
+        },
       },
     },
   ],

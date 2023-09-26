@@ -51,7 +51,6 @@
     // "removeComments": true,                           /* Disable emitting comments. */
     // "noEmit": true,                                   /* Disable emitting files from a compilation. */
     "importHelpers": true /* Allow importing helper functions from tslib once per project, instead of including them per-file. */,
-    // "importsNotUsedAsValues": "remove",               /* Specify emit/checking behavior for imports that are only used for types */
     // "downlevelIteration": true,                       /* Emit more compliant, but verbose and less performant JavaScript for iteration. */
     // "sourceRoot": "",                                 /* Specify the root path for debuggers to find the reference source code. */
     // "mapRoot": "",                                    /* Specify the location where debugger should locate map files instead of generated locations. */
@@ -94,6 +93,7 @@
     /* Completeness */
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     // "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
+    "ignoreDeprecations": "5.0",
     "plugins": [
       {
         "name": "typescript-eslint-language-service"
@@ -115,7 +115,6 @@
   ],
   "ts-node": {
     // Tell ts-node CLI to install the --loader automatically, explained below
-    "esm": true,
-    "swc": true
+    "esm": true
   }
 }

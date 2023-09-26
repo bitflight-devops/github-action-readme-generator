@@ -3,7 +3,7 @@ import type Inputs from '../inputs';
 import LogTask from '../logtask';
 import readmeWriter from '../readme-writer';
 
-export default function updateUsage(token: string, inputs: Inputs): void {
+export default async function updateUsage(token: string, inputs: Inputs): Promise<void> {
   const log = new LogTask(token);
   log.start();
   const actionName = `${inputs.config.get('owner') as string}/${inputs.config.get('repo')}`;
@@ -27,7 +27,6 @@ export default function updateUsage(token: string, inputs: Inputs): void {
   let firstInput = true;
   if (inp) {
     for (const key of Object.keys(inp)) {
-      // eslint-disable-next-line security/detect-object-injection
       const input = inp[key];
       if (input !== undefined) {
         // Line break between inputs
@@ -58,6 +57,6 @@ export default function updateUsage(token: string, inputs: Inputs): void {
 
   content.push('```\n');
 
-  readmeWriter(content, token, inputs.readmePath);
+  await readmeWriter(content, token, inputs.readmePath);
   log.success();
 }

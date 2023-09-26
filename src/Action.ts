@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
-import * as yaml from 'js-yaml';
 import * as fs from 'node:fs';
+
+import * as yaml from 'js-yaml';
 
 import LogTask from './logtask';
 

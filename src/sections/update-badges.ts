@@ -8,7 +8,7 @@ export interface IBadge {
   img: string;
   url?: string;
 }
-export default function updateBadges(token: string, inputs: Inputs): void {
+export default async function updateBadges(token: string, inputs: Inputs): Promise<void> {
   const log = new LogTask(token);
   const enableVersioning = inputs.config.get('versioning:badges');
   const badges: IBadge[] = [];
@@ -77,6 +77,6 @@ export default function updateBadges(token: string, inputs: Inputs): void {
     badges.push(...githubBadges());
   }
   const content = generateBadges();
-  updateReadme(content, token, inputs.readmePath);
+  await updateReadme(content, token, inputs.readmePath);
   log.success();
 }

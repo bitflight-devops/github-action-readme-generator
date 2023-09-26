@@ -1,6 +1,6 @@
 import { format } from 'prettier';
 
-export function formatYaml(value: string, filepath?: string): string {
+export async function formatYaml(value: string, filepath?: string): Promise<string> {
   const fp = filepath ? { filepath } : {};
   return format(value, {
     semi: false,
@@ -9,7 +9,7 @@ export function formatYaml(value: string, filepath?: string): string {
     ...fp,
   });
 }
-export function formatMarkdown(value: string, filepath?: string): string {
+export async function formatMarkdown(value: string, filepath?: string): Promise<string> {
   const fp = filepath ? { filepath } : {};
   return format(value, {
     semi: false,

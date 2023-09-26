@@ -7,32 +7,32 @@ import updateOutputs from './update-outputs';
 import updateTitle from './update-title';
 import updateUsage from './update-usage';
 
-export default function updateSection(section: string, inputs: Inputs): void {
+export default async function updateSection(section: string, inputs: Inputs): Promise<void> {
   const log = new LogTask('updateSection');
   try {
     switch (section) {
       case 'badges': {
-        updateBadges(section, inputs);
+        await updateBadges(section, inputs);
         break;
       }
       case 'usage': {
-        updateUsage(section, inputs);
+        await updateUsage(section, inputs);
         break;
       }
       case 'title': {
-        updateTitle(section, inputs);
+        await updateTitle(section, inputs);
         break;
       }
       case 'description': {
-        updateDescription(section, inputs);
+        await updateDescription(section, inputs);
         break;
       }
       case 'inputs': {
-        updateInputs(section, inputs);
+        await updateInputs(section, inputs);
         break;
       }
       case 'outputs': {
-        updateOutputs(section, inputs);
+        await updateOutputs(section, inputs);
         break;
       }
       default: {

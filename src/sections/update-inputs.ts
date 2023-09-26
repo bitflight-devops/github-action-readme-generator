@@ -4,7 +4,7 @@ import LogTask from '../logtask';
 import markdowner from '../markdowner';
 import updateReadme from '../readme-writer';
 
-export default function updateInputs(token: string, inputs: Inputs): void {
+export default async function updateInputs(token: string, inputs: Inputs): Promise<void> {
   const log = new LogTask(token);
   // Build the new README
   const content: string[] = [];
@@ -20,7 +20,6 @@ export default function updateInputs(token: string, inputs: Inputs): void {
   if (tI > 0) {
     log.start();
     for (const key of Object.keys(vars)) {
-      // eslint-disable-next-line security/detect-object-injection
       const values = vars[key];
       const row: string[] = [
         rowHeader(key),
@@ -33,7 +32,7 @@ export default function updateInputs(token: string, inputs: Inputs): void {
     }
     content.push(markdowner(markdownArray));
     log.info(`Action has ${tI} total ${token}`);
-    updateReadme(content, token, inputs.readmePath);
+    await updateReadme(content, token, inputs.readmePath);
     log.success();
   } else {
     log.debug(`Action has no ${token}`);

@@ -1,8 +1,14 @@
 import * as core from '@actions/core';
-import * as Chalk from 'chalk';
+import * as chalkClass from 'chalk';
 import * as emoji from 'node-emoji';
 
-const chalk = Chalk.default;
+const NO_GROUP = 0;
+const START_GROUP = 1;
+const END_GROUP = 2;
+const IS_ERROR = 3;
+const IS_FAILED = 5;
+const IS_TITLE = 6;
+const chalk = chalkClass.default;
 class LogTask {
   name: string;
 
@@ -18,94 +24,145 @@ class LogTask {
   }
 
   get ingroup(): boolean {
-    return LogTask.ingroup_setting[this.name] || false;
+    return LogTask.ingroup_setting[this.name] ?? false;
   }
 
   set ingroup(value: boolean) {
     LogTask.ingroup_setting[this.name] = value;
   }
 
-  logStep(emojiStr: string, step: string, description: string): string {
+  async logStep(
+    emojiStr: string,
+    step: string,
+    description: string,
+    startGroup = NO_GROUP,
+  ): Promise<void> {
     if (step.length > LogTask.indentWidth) {
       LogTask.indentWidth = step.length;
     }
-    let desc;
+    let desc: string;
     switch (step) {
-      case 'START':
+      case 'START': {
         desc = chalk.yellowBright(`${description}`);
         break;
-      case 'INFO':
+      }
+      case 'INFO': {
         desc = chalk.green(`${description}`);
         break;
-      case 'WARN':
+      }
+      case 'WARN': {
         desc = chalk.yellow(`${description}`);
         break;
-      case 'SUCCESS':
+      }
+      case 'SUCCESS': {
         desc = chalk.greenBright(`${description}`);
         break;
-      case 'FAILURE':
+      }
+      case 'FAILURE': {
         desc = chalk.redBright(`${description}`);
         break;
-      case 'ERROR':
+      }
+      case 'ERROR': {
         desc = chalk.redBright(`${description}`);
         break;
-      case '#####':
+      }
+      case '#####': {
         desc = chalk.cyan(`${description}`);
         break;
-      default:
+      }
+      default: {
         desc = chalk.white(`${description}`);
         break;
+      }
     }
 
+    let msg: string;
     if (this.ingroup && !process.env['GITHUB_ACTIONS']) {
       const indentStr = [...Array.from({ length: LogTask.indentWidth }).fill(' ')].join('');
-      return chalk.gray(`${indentStr}   ${emojiStr}: ${this.name} > ${desc}`);
+      msg = `${indentStr}   ${emojiStr}: ${this.name} > ${desc}`;
+    } else {
+      const stepStr = [
+        ...step,
+        ...Array.from({ length: LogTask.indentWidth - step.length }).fill(' '),
+      ].join('');
+
+      msg = `[${stepStr}] ${emojiStr}: ${desc}`;
     }
-    const stepStr = [
-      ...step,
-      ...Array.from({ length: LogTask.indentWidth - step.length }).fill(' '),
-    ].join('');
-    return `[${stepStr}] ${emojiStr}: ${desc}`;
+    switch (step) {
+      case 'START': {
+        msg = chalk.yellowBright(`${msg}`);
+        break;
+      }
+      case 'SUCCESS': {
+        msg = chalk.whiteBright(`${msg}`);
+        break;
+      }
+      case 'FAILURE': {
+        msg = chalk.red(`${msg}`);
+        break;
+      }
+      case 'ERROR': {
+        msg = chalk.red(`${msg}`);
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+    const isErroring = startGroup === IS_ERROR || startGroup === IS_FAILED;
+
+    if (!process.env['GITHUB_ACTIONS']) {
+      if (isErroring) {
+        core.error(msg);
+      } else {
+        core.info(msg);
+      }
+    } else
+      switch (startGroup) {
+        case START_GROUP: {
+          core.startGroup(msg);
+
+          break;
+        }
+        case END_GROUP: {
+          core.endGroup();
+
+          break;
+        }
+        case IS_ERROR: {
+          core.error(chalk.bgRedBright(msg));
+
+          break;
+        }
+        case IS_FAILED: {
+          core.setFailed(chalk.bgRedBright(msg));
+
+          break;
+        }
+        default: {
+          core.info(msg);
+        }
+      }
   }
 
   debug(description = ''): void {
     if (process.env['DEBUG'] === 'true') {
-      const msg = this.logStep('👁️‍🗨️', 'DEBUG', description);
-      if (!process.env['GITHUB_ACTIONS']) {
-        console.debug(msg);
-      } else {
-        core.debug(msg);
-      }
+      this.logStep('👁️‍🗨️', 'DEBUG', description);
     }
   }
 
   start(description = ''): void {
     const desc = description === '' ? `Starting ${this.name}...` : description;
-    const msg = this.logStep(emoji.get('rocket'), 'START', desc);
-    this.ingroup = true;
-    if (!process.env['GITHUB_ACTIONS']) {
-      console.info(msg);
-    } else {
-      core.startGroup(msg);
-    }
+
+    this.logStep(emoji.get('rocket') ?? '', 'START', desc, START_GROUP);
   }
 
   info(description = ''): void {
-    const msg = this.logStep(emoji.get('sparkles'), 'INFO', description);
-    if (!process.env['GITHUB_ACTIONS']) {
-      console.info(msg);
-    } else {
-      core.info(msg);
-    }
+    this.logStep(emoji.get('sparkles') ?? '', 'INFO', description);
   }
 
   warn(description = ''): void {
-    const msg = this.logStep(emoji.get('anger'), 'WARN', description);
-    if (!process.env['GITHUB_ACTIONS']) {
-      console.info(msg);
-    } else {
-      core.info(msg);
-    }
+    this.logStep(emoji.get('anger') ?? '', 'WARN', description);
   }
 
   success(description = '', ingroup = true): void {
@@ -116,12 +173,7 @@ class LogTask {
         core.endGroup();
       }
     }
-    const msg = this.logStep(emoji.get('white_check_mark'), 'SUCCESS', chalk.green(desc));
-    if (!process.env['GITHUB_ACTIONS']) {
-      console.info(msg);
-    } else {
-      core.info(msg);
-    }
+    this.logStep(emoji.get('white_check_mark') ?? '', 'SUCCESS', desc);
   }
 
   fail(description = '', ingroup = true): void {
@@ -132,30 +184,16 @@ class LogTask {
         core.endGroup();
       }
     }
-    const msg = this.logStep(emoji.get('x'), 'FAILURE', chalk.red(desc));
-    if (!process.env['GITHUB_ACTIONS']) {
-      console.error(msg);
-    } else {
-      core.setFailed(msg);
-    }
+    const msgtype = !process.env['GITHUB_ACTIONS'] ? IS_ERROR : IS_FAILED;
+    this.logStep(emoji.get('x') ?? '', 'FAILURE', desc, msgtype);
   }
 
   error(description = ''): void {
-    const msg = this.logStep(emoji.get('x'), 'ERROR', chalk.bgRedBright(description));
-    if (!process.env['GITHUB_ACTIONS']) {
-      console.error(msg);
-    } else {
-      core.error(msg);
-    }
+    this.logStep(emoji.get('x') ?? '', 'ERROR', description, IS_ERROR);
   }
 
   title(description = ''): void {
-    const msg = this.logStep('📓', '#####', chalk.yellowBright(description));
-    if (!process.env['GITHUB_ACTIONS']) {
-      console.info(msg);
-    } else {
-      core.info(msg);
-    }
+    this.logStep('📓', '#####', description, IS_TITLE);
   }
 }
 

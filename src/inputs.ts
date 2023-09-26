@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
 
-import type { Context } from '@actions/github/lib/context';
-import * as nconf from 'nconf';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+
+import type { Context } from '@actions/github/lib/context';
+import * as nconf from 'nconf';
 
 import Action from './Action';
 import { repositoryFinder } from './helpers';
@@ -64,30 +65,38 @@ export default class Inputs {
           };
           const keyParsed = obj.key.replace(/^(INPUT|input)_/, '');
           switch (keyParsed) {
-            case 'readme':
+            case 'readme': {
               newObj.key = pathsReadme;
               break;
-            case 'action':
+            }
+            case 'action': {
               newObj.key = pathsAction;
               break;
-            case 'versioning_enabled':
+            }
+            case 'versioning_enabled': {
               newObj.key = 'versioning:enabled';
               break;
-            case 'version_prefix':
+            }
+            case 'version_prefix': {
               newObj.key = 'versioning:prefix';
               break;
-            case 'versioning_default_branch':
+            }
+            case 'versioning_default_branch': {
               newObj.key = 'versioning:branch';
               break;
-            case 'version_override':
+            }
+            case 'version_override': {
               newObj.key = 'versioning:override';
               break;
-            case 'include_github_version_badge':
+            }
+            case 'include_github_version_badge': {
               newObj.key = 'versioning:badge';
               break;
-            default:
+            }
+            default: {
               newObj.key = keyParsed;
               break;
+            }
           }
           if (newObj.value) {
             this.config.set(newObj.key, newObj.value);

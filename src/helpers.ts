@@ -1,5 +1,6 @@
-import type { Context } from '@actions/github/lib/context';
 import * as fs from 'node:fs';
+
+import type { Context } from '@actions/github/lib/context';
 
 import ec from './editorconfig';
 import type Inputs from './inputs';
@@ -139,7 +140,6 @@ export function repositoryFinder(
   }
   try {
     const fileContent = fs.readFileSync('.git/config', 'utf8');
-    // eslint-disable-next-line security/detect-unsafe-regex
     const pattern = /url( )?=( )?.*github\.com[/:](?<owner>.*)\/(?<repo>.*)\.git/;
 
     interface OwnerRepoInterface extends RegExpExecArray {

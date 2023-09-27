@@ -16,13 +16,13 @@ export function fillWidth(text: string, width: number, paddingStart: number): st
  * @param text
  */
 export function markdownEscapeTableCell(text: string): string {
-  return text.replace(/\n/g, '<br />').replace(/\|/g, '\\|');
+  return text.replaceAll('\n', '<br />').replaceAll('|', '\\|');
 }
 
 export function markdownEscapeInlineCode(content: string): string {
   // replace grave accents with <code> HTML element to resolve unicode character in markdown
   // let isClosingTag = false;
-  return content.replace(/([\s*_]|^)`([^`]+)`([\s*_]|$)/g, '$1<code>$2</code>$3');
+  return content.replaceAll(/([\s*_]|^)`([^`]+)`([\s*_]|$)/g, '$1<code>$2</code>$3');
 
   // ?.forEach((match) => {
   //   if (!isClosingTag) {
@@ -59,7 +59,7 @@ export function ArrayOfArraysToMarkdownTable(providedTableContent: MarkdownArray
   }
   if (maxCols !== minCols) {
     for (const [i, e] of tableContent.entries()) {
-      if (typeof tableContent[i] === 'undefined') {
+      if (tableContent[i] === undefined) {
         tableContent[i] = Array.from({ length: maxCols }).fill('') as string[];
       } else if (e.length < maxCols) {
         tableContent[i] = [

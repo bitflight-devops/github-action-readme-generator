@@ -45,7 +45,7 @@ export function titlecase(text: string): string | undefined {
   if (typeof text !== 'string') {
     throw new TypeError(`Invalid argument type provided to titlecase(): ${typeof text}`);
   }
-  return text.replace(unicodeWordMatch, (txt) =>
+  return text.replaceAll(unicodeWordMatch, (txt) =>
     txt[0] ? txt[0].toUpperCase() + txt.slice(1).toLowerCase() : txt,
   );
 }
@@ -64,9 +64,9 @@ export function wrapText(text: string | undefined, content: string[], prepend = 
   const width = ec.props.max_line_length;
   let description = text
     .trim()
-    .replace(/\r\n/g, '\n') // Convert CR to LF
-    .replace(/ +/g, ' ') //    Squash consecutive spaces
-    .replace(/ \n/g, '\n'); //  Squash space followed by newline
+    .replaceAll('\r\n', '\n') // Convert CR to LF
+    .replaceAll(/ +/g, ' ') //    Squash consecutive spaces
+    .replaceAll(' \n', '\n'); //  Squash space followed by newline
 
   while (description) {
     // Longer than width? Find a space to break apart

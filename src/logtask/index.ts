@@ -111,13 +111,7 @@ class LogTask {
     }
     const isErroring = startGroup === IS_ERROR || startGroup === IS_FAILED;
 
-    if (!process.env['GITHUB_ACTIONS']) {
-      if (isErroring) {
-        core.error(msg);
-      } else {
-        core.info(msg);
-      }
-    } else
+    if (process.env['GITHUB_ACTIONS']) {
       switch (startGroup) {
         case START_GROUP: {
           core.startGroup(msg);
@@ -143,6 +137,11 @@ class LogTask {
           core.info(msg);
         }
       }
+    } else if (isErroring) {
+      core.error(msg);
+    } else {
+      core.info(msg);
+    }
   }
 
   debug(description = ''): void {
@@ -184,7 +183,7 @@ class LogTask {
         core.endGroup();
       }
     }
-    const msgtype = !process.env['GITHUB_ACTIONS'] ? IS_ERROR : IS_FAILED;
+    const msgtype = process.env['GITHUB_ACTIONS'] ? IS_FAILED : IS_ERROR;
     this.logStep(emoji.get('x') ?? '', 'FAILURE', desc, msgtype);
   }
 

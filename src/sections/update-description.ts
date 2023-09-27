@@ -11,9 +11,9 @@ export default async function updateDescription(token: string, inputs: Inputs): 
     log.start();
     const desc: string = inputs.action.description
       .trim()
-      .replace(/\r\n/g, '\n') // Convert CR to LF
-      .replace(/ +/g, ' ') //    Squash consecutive spaces
-      .replace(/ \n/g, '\n') //  Squash space followed by newline
+      .replaceAll('\r\n', '\n') // Convert CR to LF
+      .replaceAll(/ +/g, ' ') //    Squash consecutive spaces
+      .replaceAll(' \n', '\n') //  Squash space followed by newline
       .replace('\n', '<br />'); // convert double return to a break
 
     log.info(`Writing ${desc.length} characters to the description section`);

@@ -226,11 +226,13 @@
   },
   "packageManager": "yarn@3.2.2",
   "auto": {
+    "baseBranch": "main",
     "author": {
       "name": "Jamie Nelson",
       "email": "jamie@bitflight.io"
     },
     "plugins": [
+      "first-time-contributor",
       [
         "exec",
         {}

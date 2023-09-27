@@ -30,9 +30,9 @@
   "scripts": {
     "all": "yarn run build && yarn run format && yarn run lint && yarn test",
     "auto": "auto",
-    "auto:canary": "[ -f dist ] && git add -f dist",
-    "auto:next": "[ -f dist ] && git add -f dist",
-    "auto:publish": "[ -f dist ] && git add -f dist",
+    "auto:canary": "[ -d dist ] && git add -f dist",
+    "auto:next": "[ -d dist ] && git add -f dist",
+    "auto:publish": "[ -d dist ] && git add -f dist",
     "auto:version": "yarn run generate-docs",
     "build": "rimraf dist out;esbuild --bundle src/index.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --target=node16 && chmod +x dist/index.cjs && yarn postbuild",
     "build:docker": "run-script-os",

@@ -23,7 +23,19 @@ export default async function updateOutputs(token: string, inputs: Inputs): Prom
     log.start();
     for (const key of Object.keys(vars)) {
       const values = vars[key];
-      const row: string[] = [rowHeader(key), values?.description?.trim().replace('\n', ' ') ?? ''];
+
+      let description = values?.description ?? '';
+
+      // Check if only first line should be added (only subject without body)
+      // eslint-disable-next-line no-useless-escape
+      const matches = description.match('(.*?)\n\n([Ss]*)');
+      if (matches && matches.length >= 2) {
+        description = matches[1] || description;
+      }
+
+      description = description.trim().replace('\n', '<br />');
+      const row: string[] = [rowHeader(key), description];
+
       log.debug(JSON.stringify(row));
       markdownArray.push(row);
     }

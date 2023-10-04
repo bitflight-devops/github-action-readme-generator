@@ -61,7 +61,6 @@
     "postversion:manual": "git push --tags origin && git push origin",
     "pre-commit": "yarn build;lint-staged",
     "prepare": "[ -n ${GITHUB_ACTIONS:-} ] || husky install",
-    "release:script": "./release.sh",
     "release:post": "yarn npm publish --access public --tag v${npm_package_version} --tag latest",
     "test": "NODE_ENV=testing jest --runInBand",
     "test-ci": "NODE_ENV=testing jest --ci --reporters=default --reporters=jest-junit",

@@ -6,7 +6,7 @@ on:
       - 'v*.*.*'
 
 jobs:
-  release:
+  github-release:
     if: (!contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
     name: Release GitHub Actions
     runs-on: ubuntu-latest

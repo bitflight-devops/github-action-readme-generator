@@ -10,8 +10,8 @@ on:
       - 'next'
 
 jobs:
-  release:
-    if: (!contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci') && !contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
+  npm-release:
+    if: (!contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
     name: Release GitHub Actions
     runs-on: ubuntu-latest
     permissions:
@@ -96,11 +96,12 @@ jobs:
 
       - name: Ship It
         run: |
-          git add -f dist package.json && \
-            git commit --allow-empty -m "build(release): version $(jq -r '.version' package.json)"
-          yarn auto shipit -vv && \
-            git tag -a "v$(jq -r '.version' package.json)" -m "build(release): version $(jq -r '.version' package.json)"
-            yarn postversion:manual
+          set -e
+          yarn auto shipit -vv
+          git add -f dist package.json
+          git commit --allow-empty -m "build(release): version $(jq -r '.version' package.json)"
+          git tag -a "v$(jq -r '.version' package.json)"
+          yarn postversion:manual
 
 
       # - name: Bump Package Version

@@ -1,13 +1,6 @@
 name: Tag and Release Updated NPM Package
 
-on:
-  push:
-    branches:
-      - 'main'
-  pull_request:
-    branches:
-      - 'main'
-      - 'next'
+on: [push]
 
 jobs:
   npm-release:

@@ -7435,7 +7435,7 @@ __metadata:
     typescript-eslint-language-service: ^5.0.5
     yaml: ^2.3.2
   bin:
-    github-action-readme-generator: dist/index.cjs
+    github-action-readme-generator: dist/index.js
   languageName: unknown
   linkType: soft
 

@@ -230,10 +230,6 @@
     "plugins": [
       "first-time-contributor",
       [
-        "exec",
-        {}
-      ],
-      [
         "npm",
         {
           "setRcToken": false
@@ -249,12 +245,11 @@
       [
         "upload-assets",
         [
-          "./dist/index.cjs",
-          "./dist/index.d.ts"
+          "./dist/index.js",
+          "./action.yml"
         ]
       ]
     ],
-    "onlyPublishWithReleaseLabel": true,
     "versionBranches": true,
     "canary": {
       "target": "pr-body",

@@ -1,18 +1,18 @@
 import * as fs from 'node:fs';
 import { EOL } from 'node:os';
-import { format } from 'prettier';
 
 import { endTokenFormat, startTokenFormat } from './config';
 import LogTask from './logtask';
+import { formatMarkdown } from './prettier';
 
-export default function readmeWriter(
+export default async function readmeWriter(
   content: string[],
   tokenName: string,
   readmePath: string,
-): void {
+): Promise<void> {
   const log = new LogTask(tokenName);
 
-  if (!content) {
+  if (!content || content.length === 0) {
     log.info(`readmeWriter passed no content from ${tokenName} parser`);
     return;
   }
@@ -51,6 +51,7 @@ export default function readmeWriter(
 
   const fileContent = newReadme.join(EOL);
   // Write the new README
-  fs.writeFileSync(readmePath, format(fileContent, { semi: false, parser: 'markdown' }));
+  const formattedReadme = await formatMarkdown(fileContent);
+  fs.writeFileSync(readmePath, formattedReadme);
   log.info(`successfully updated the ${tokenName} section`);
 }

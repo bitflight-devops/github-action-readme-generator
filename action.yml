@@ -57,7 +57,11 @@ inputs:
       Add a prefix to the README title
     required: false
     default: 'GitHub Action: '
-
+  include_github_version_badge:
+    description: >
+      Include additional badge showing latest tag
+    required: false
+    default: true
 runs:
-  using: 'node16'
-  main: './dist/index.cjs'
+  using: 'node20'
+  main: './dist/index.js'

@@ -8,9 +8,8 @@ const config: Config.InitialOptions = {
   testEnvironment: 'node',
   testMatch: ['**/__tests__/*.test.ts'],
   testRunner: 'jest-circus/runner',
-  transform: {
-    '^.+\\.ts$': 'ts-jest',
-  },
+
+  preset: 'ts-jest',
   setupFiles: ['dotenv/config'],
   reporters: ['default', 'jest-junit'],
   testPathIgnorePatterns: ['/helpers/', '/node_modules/'],

@@ -3,3 +3,4 @@ lib/
 node_modules/
 jest.config.ts
 .gulpfile.js
+esbuild.js

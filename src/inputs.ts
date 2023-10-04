@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
 
-import type { Context } from '@actions/github/lib/context';
-import * as nconf from 'nconf';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+
+import type { Context } from '@actions/github/lib/context';
+import * as nconf from 'nconf';
 
 import Action from './Action';
 import { repositoryFinder } from './helpers';
@@ -12,7 +13,7 @@ import { workingDirectory } from './working-directory';
 
 const log = new LogTask('inputs');
 process.chdir(workingDirectory());
-const githubEventPath = process.env['GITHUB_EVENT_PATH'] ?? '';
+const githubEventPath = process.env.GITHUB_EVENT_PATH ?? '';
 let githubEvent: Context | null = null;
 try {
   githubEvent = JSON.parse(fs.readFileSync(githubEventPath, 'utf8')) as Context;
@@ -36,6 +37,7 @@ export const configKeys: string[] = [
   'repo',
   'title_prefix',
   'pretty',
+  'include_github_version_badge',
 ];
 interface KVPairType {
   key: string;
@@ -47,7 +49,7 @@ export default class Inputs {
   constructor() {
     this.config = new nconf.Provider();
     const repositoryDetail = repositoryFinder(null, githubEvent);
-    if (process.env['GITHUB_ACTION']) {
+    if (process.env.GITHUB_ACTION) {
       log.info('running in GitHub action');
     }
     this.config.use('memory');
@@ -63,27 +65,38 @@ export default class Inputs {
           };
           const keyParsed = obj.key.replace(/^(INPUT|input)_/, '');
           switch (keyParsed) {
-            case 'readme':
+            case 'readme': {
               newObj.key = pathsReadme;
               break;
-            case 'action':
+            }
+            case 'action': {
               newObj.key = pathsAction;
               break;
-            case 'versioning_enabled':
+            }
+            case 'versioning_enabled': {
               newObj.key = 'versioning:enabled';
               break;
-            case 'version_prefix':
+            }
+            case 'version_prefix': {
               newObj.key = 'versioning:prefix';
               break;
-            case 'versioning_default_branch':
+            }
+            case 'versioning_default_branch': {
               newObj.key = 'versioning:branch';
               break;
-            case 'version_override':
+            }
+            case 'version_override': {
               newObj.key = 'versioning:override';
               break;
-            default:
+            }
+            case 'include_github_version_badge': {
+              newObj.key = 'versioning:badge';
+              break;
+            }
+            default: {
               newObj.key = keyParsed;
               break;
+            }
           }
           if (newObj.value) {
             this.config.set(newObj.key, newObj.value);
@@ -150,6 +163,12 @@ export default class Inputs {
         describe: 'If versioning is disabled show this branch instead',
         parseValues: true,
       },
+      'versioning:badge': {
+        alias: ['version-badge', 'versioning_badge'],
+        describe: 'Display the current version as a badge',
+        parseValues: true,
+        type: 'boolean',
+      },
       'title_prefix': {
         alias: ['prefix', 'title_prefix'],
         describe: 'Add a prefix to the README title',
@@ -173,9 +192,10 @@ export default class Inputs {
         override: '',
         prefix: 'v',
         branch: 'main',
+        badges: true,
       },
       title_prefix: 'GitHub Action: ',
-      sections: ['title', 'description', 'usage', 'inputs', 'outputs', 'contents'],
+      sections: ['title', 'description', 'usage', 'inputs', 'outputs', 'contents', 'badges'],
     });
     this.config.required(['owner', 'repo']);
     for (const k of configKeys) {

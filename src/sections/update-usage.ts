@@ -1,28 +1,16 @@
-import { wrapText } from '../helpers';
+import { getCurrentVersionString } from '../helpers';
 import type Inputs from '../inputs';
 import LogTask from '../logtask';
+import { wrapDescription } from '../prettier';
 import readmeWriter from '../readme-writer';
 
-export default function updateUsage(token: string, inputs: Inputs): void {
+export default async function updateUsage(token: string, inputs: Inputs): Promise<void> {
   const log = new LogTask(token);
   log.start();
   const actionName = `${inputs.config.get('owner') as string}/${inputs.config.get('repo')}`;
   log.info(`Action name: ${actionName}`);
-  let versionString: string;
-  if ((inputs.config.get('versioning:enabled') as string) === 'true') {
-    const oRide = inputs.config.get('versioning:override') as string;
-    versionString =
-      oRide && oRide.length > 0 ? oRide : process.env['npm_package_version'] ?? '0.0.0';
+  const versionString: string = getCurrentVersionString(inputs);
 
-    if (
-      versionString &&
-      !versionString.startsWith(inputs.config.get('versioning:prefix') as string)
-    ) {
-      versionString = `${inputs.config.get('versioning:prefix') as string}${versionString}`;
-    }
-  } else {
-    versionString = inputs.config.get('versioning:branch') as string;
-  }
   log.info(`Version string: ${versionString}`);
 
   const actionReference = `${actionName}@${versionString}`;
@@ -40,7 +28,6 @@ export default function updateUsage(token: string, inputs: Inputs): void {
   let firstInput = true;
   if (inp) {
     for (const key of Object.keys(inp)) {
-      // eslint-disable-next-line security/detect-object-injection
       const input = inp[key];
       if (input !== undefined) {
         // Line break between inputs
@@ -49,7 +36,7 @@ export default function updateUsage(token: string, inputs: Inputs): void {
         }
 
         // Constrain the width of the description, and append it
-        wrapText(input.description, content, '    # ');
+        wrapDescription(input.description, content, '    # ');
 
         if (input.default !== undefined) {
           // Append blank line if description had paragraphs
@@ -71,6 +58,6 @@ export default function updateUsage(token: string, inputs: Inputs): void {
 
   content.push('```\n');
 
-  readmeWriter(content, token, inputs.readmePath);
+  await readmeWriter(content, token, inputs.readmePath);
   log.success();
 }

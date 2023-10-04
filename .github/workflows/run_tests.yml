@@ -1,4 +1,4 @@
-name: Tag and Release Updated NPM Package
+name: Run unit tests for dependabot pull requests
 
 on: [push]
 

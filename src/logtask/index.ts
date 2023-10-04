@@ -77,12 +77,12 @@ class LogTask {
     }
 
     let msg: string;
-    if (this.ingroup && !process.env['GITHUB_ACTIONS']) {
+    if (this.ingroup && !process.env.GITHUB_ACTIONS) {
       const indentStr = [...Array.from({ length: LogTask.indentWidth }).fill(' ')].join('');
       msg = `${indentStr}   ${emojiStr}: ${this.name} > ${desc}`;
     } else {
       const stepStr = [
-        ...step,
+        step,
         ...Array.from({ length: LogTask.indentWidth - step.length }).fill(' '),
       ].join('');
 
@@ -111,7 +111,7 @@ class LogTask {
     }
     const isErroring = startGroup === IS_ERROR || startGroup === IS_FAILED;
 
-    if (process.env['GITHUB_ACTIONS']) {
+    if (process.env.GITHUB_ACTIONS) {
       switch (startGroup) {
         case START_GROUP: {
           core.startGroup(msg);
@@ -145,7 +145,7 @@ class LogTask {
   }
 
   debug(description = ''): void {
-    if (process.env['DEBUG'] === 'true') {
+    if (process.env.DEBUG !== undefined) {
       this.logStep('👁️‍🗨️', 'DEBUG', description);
     }
   }
@@ -168,7 +168,7 @@ class LogTask {
     const desc = description === '' ? `Completed ${this.name}.` : description;
     if (ingroup) {
       this.ingroup = false;
-      if (process.env['GITHUB_ACTIONS']) {
+      if (process.env.GITHUB_ACTIONS) {
         core.endGroup();
       }
     }
@@ -179,11 +179,11 @@ class LogTask {
     const desc = description === '' ? `Failed ${this.name}.` : description;
     if (ingroup) {
       this.ingroup = false;
-      if (process.env['GITHUB_ACTIONS']) {
+      if (process.env.GITHUB_ACTIONS) {
         core.endGroup();
       }
     }
-    const msgtype = process.env['GITHUB_ACTIONS'] ? IS_FAILED : IS_ERROR;
+    const msgtype = process.env.GITHUB_ACTIONS ? IS_FAILED : IS_ERROR;
     this.logStep(emoji.get('x') ?? '', 'FAILURE', desc, msgtype);
   }
 

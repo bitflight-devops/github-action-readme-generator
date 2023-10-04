@@ -4,27 +4,32 @@ runtimes:
     - go@1.18.3
     - node@16.14.2
 actions:
+  disabled:
+    - git-lfs
+    - trunk-announce
+    - trunk-check-pre-push
+    - trunk-fmt-pre-commit
   enabled:
     - trunk-cache-prune
     - trunk-upgrade-available
 plugins:
   sources:
     - id: trunk
-      ref: v0.0.5
+      ref: v1.2.1
       uri: https://github.com/trunk-io/plugins
 cli:
-  version: 1.0.1
+  version: 1.16.1
 lint:
   disabled:
     - git-diff-check
   enabled:
-    - cspell@6.12.0
-    - actionlint@1.6.21
-    - eslint@8.25.0
-    - gitleaks@8.15.0
-    - markdownlint@0.32.2
-    - prettier@2.7.1
-    - shellcheck@0.8.0
+    - cspell@7.3.6
+    - actionlint@1.6.26
+    - eslint@8.50.0
+    - gitleaks@8.18.0
+    - markdownlint@0.37.0
+    - prettier@3.0.3
+    - shellcheck@0.9.0
     - shfmt@3.5.0
   ignore:
     - linters: [ALL]

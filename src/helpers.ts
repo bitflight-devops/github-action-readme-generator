@@ -1,8 +1,8 @@
 import * as fs from 'node:fs';
 
 import type { Context } from '@actions/github/lib/context';
+import type { PackageJson } from 'types-package-json';
 
-import ec from './editorconfig';
 import type Inputs from './inputs';
 import LogTask from './logtask';
 
@@ -60,8 +60,8 @@ export function prefixParser(text: string | undefined): string | undefined {
 export function wrapText(text: string | undefined, content: string[], prepend = ''): string[] {
   // Constrain the width of the description
   if (!text) return content;
+  const width = 80;
 
-  const width = ec.props.max_line_length;
   let description = text
     .trim()
     .replaceAll('\r\n', '\n') // Convert CR to LF
@@ -113,11 +113,11 @@ export function repositoryFinder(
     log.info(`repositoryFinder using input ${inputRepo} and returns ${JSON.stringify(result)}`);
     return result;
   }
-  if (process.env['GITHUB_REPOSITORY']) {
-    [result.owner, result.repo] = process.env['GITHUB_REPOSITORY'].split('/') as [string, string];
+  if (process.env.GITHUB_REPOSITORY) {
+    [result.owner, result.repo] = process.env.GITHUB_REPOSITORY.split('/') as [string, string];
     log.info(
       `repositoryFinder using GITHUB_REPOSITORY ${
-        process.env['GITHUB_REPOSITORY']
+        process.env.GITHUB_REPOSITORY
       } and returns ${JSON.stringify(result)}`,
     );
     return result;
@@ -128,14 +128,14 @@ export function repositoryFinder(
 
     log.info(
       `repositoryFinder using GITHUB_REPOSITORY ${
-        process.env['GITHUB_REPOSITORY']
+        process.env.GITHUB_REPOSITORY
       } and returns ${JSON.stringify(result)}`,
     );
     return result;
   }
-  if (process.env['INPUT_OWNER'] && process.env['INPUT_REPO']) {
-    result.owner = process.env['INPUT_OWNER'];
-    result.repo = process.env['INPUT_REPO'];
+  if (process.env.INPUT_OWNER && process.env.INPUT_REPO) {
+    result.owner = process.env.INPUT_OWNER;
+    result.repo = process.env.INPUT_REPO;
     return result;
   }
   try {
@@ -143,18 +143,18 @@ export function repositoryFinder(
     const pattern = /url( )?=( )?.*github\.com[/:](?<owner>.*)\/(?<repo>.*)\.git/;
 
     interface OwnerRepoInterface extends RegExpExecArray {
-      groups: {
+      groups?: {
         [key: string]: string;
-        owner?: string;
-        repo?: string;
+        owner: string;
+        repo: string;
       };
     }
 
     const results = fileContent.match(pattern) as OwnerRepoInterface;
     if (results !== null) {
       log.debug(JSON.stringify(results.groups));
-      result.owner = results.groups.owner ?? '';
-      result.repo = results.groups.repo ?? '';
+      result.owner = results.groups?.owner ?? '';
+      result.repo = results.groups?.repo ?? '';
     }
     return result;
   } catch (error) {
@@ -194,10 +194,27 @@ export function rowHeader(value: string): string {
 
 export function getCurrentVersionString(inputs: Inputs): string {
   let versionString = '';
+  const log = new LogTask('getCurrentVersionString');
   if (inputs.config.get('versioning:enabled')) {
+    log.debug('version string in generated example is enabled');
     const oRide = inputs.config.get('versioning:override') as string;
-    versionString =
-      oRide && oRide.length > 0 ? oRide : process.env['npm_package_version'] ?? '0.0.0';
+    let packageVersion = process.env.npm_package_version;
+    log.debug(`version string in env:npm_package_version is ${packageVersion ?? 'not found'}`);
+    if (!packageVersion) {
+      log.debug('version string in env:npm_package_version is not found, trying to use git');
+      try {
+        fs.accessSync('package.json');
+        const packageData: Partial<PackageJson> = JSON.parse(
+          fs.readFileSync('package.json', 'utf8'),
+        );
+        packageVersion = packageData.version;
+      } catch (error) {
+        log.debug(`package.json not found. ${error}`);
+      }
+      log.debug(`version string in package.json:version is ${packageVersion ?? 'not found'}`);
+    }
+
+    versionString = oRide && oRide.length > 0 ? oRide : packageVersion ?? '0.0.0';
 
     if (
       versionString &&
@@ -208,5 +225,6 @@ export function getCurrentVersionString(inputs: Inputs): string {
   } else {
     versionString = inputs.config.get('versioning:branch') as string;
   }
+  log.debug(`version to use in generated example is ${versionString}`);
   return versionString;
 }

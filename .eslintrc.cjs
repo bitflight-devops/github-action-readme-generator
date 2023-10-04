@@ -12,9 +12,26 @@ module.exports = {
       extends: [pp],
     },
     {
+      files: ['*.mjs'],
+      extends: ['airbnb-base', 'eslint:recommended', pp],
+      parser: '@babel/eslint-parser',
+      env: { es2022: true, node: true },
+      parserOptions: {
+        requireConfigFile: false,
+        sourceType: 'script',
+        ecmaVersion: 'latest',
+        ecmaFeatures: {
+          impliedStrict: true,
+        },
+      },
+      rules: {
+        'import/no-extraneous-dependencies': 'off',
+      },
+    },
+    {
       files: ['*.js', '*.cjs', '*.jsx'],
-      plugins: ['editorconfig'],
-      extends: ['airbnb-base', 'eslint:recommended', 'plugin:editorconfig/all', pp],
+
+      extends: ['airbnb-base', 'eslint:recommended', pp],
       rules: {
         'no-plusplus': 'off',
         'unicorn/prefer-module': 'off',
@@ -38,8 +55,8 @@ module.exports = {
     },
     {
       files: ['*.html', '*.json'],
-      plugins: ['editorconfig'],
-      extends: ['plugin:editorconfig/all', pp],
+
+      extends: [pp],
       rules: {
         'no-plusplus': 'off',
       },
@@ -65,14 +82,12 @@ module.exports = {
         'jest-async',
         '@typescript-eslint',
         'optimize-regex',
-        'editorconfig',
         'promise',
       ],
       extends: [
         'plugin:promise/recommended',
         'plugin:no-use-extend-native/recommended',
         'plugin:jest/recommended',
-        'plugin:editorconfig/all',
         'eslint:recommended',
         'plugin:@typescript-eslint/recommended',
         'airbnb-base',

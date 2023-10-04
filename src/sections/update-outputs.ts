@@ -28,7 +28,7 @@ export default async function updateOutputs(token: string, inputs: Inputs): Prom
 
       // Check if only first line should be added (only subject without body)
       // eslint-disable-next-line no-useless-escape
-      const matches = description.match('(.*?)\n\n([Ss]*)');
+      const matches = /(.*?)\n\n([Ss]*)/.exec(description);
       if (matches && matches.length >= 2) {
         description = matches[1] || description;
       }

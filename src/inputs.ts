@@ -13,7 +13,7 @@ import { workingDirectory } from './working-directory';
 
 const log = new LogTask('inputs');
 process.chdir(workingDirectory());
-const githubEventPath = process.env['GITHUB_EVENT_PATH'] ?? '';
+const githubEventPath = process.env.GITHUB_EVENT_PATH ?? '';
 let githubEvent: Context | null = null;
 try {
   githubEvent = JSON.parse(fs.readFileSync(githubEventPath, 'utf8')) as Context;
@@ -49,7 +49,7 @@ export default class Inputs {
   constructor() {
     this.config = new nconf.Provider();
     const repositoryDetail = repositoryFinder(null, githubEvent);
-    if (process.env['GITHUB_ACTION']) {
+    if (process.env.GITHUB_ACTION) {
       log.info('running in GitHub action');
     }
     this.config.use('memory');

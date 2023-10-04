@@ -17,7 +17,8 @@ module.exports = {
     {
       files: ['**/*.yml', '**/*.yaml'],
       options: {
-        printWidth: 1000,
+        singleQuote: false,
+        printWidth: 100,
         parser: 'yaml',
       },
     },

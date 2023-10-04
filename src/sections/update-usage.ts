@@ -1,6 +1,7 @@
-import { getCurrentVersionString, wrapText } from '../helpers';
+import { getCurrentVersionString } from '../helpers';
 import type Inputs from '../inputs';
 import LogTask from '../logtask';
+import { wrapDescription } from '../prettier';
 import readmeWriter from '../readme-writer';
 
 export default async function updateUsage(token: string, inputs: Inputs): Promise<void> {
@@ -35,7 +36,7 @@ export default async function updateUsage(token: string, inputs: Inputs): Promis
         }
 
         // Constrain the width of the description, and append it
-        wrapText(input.description, content, '    # ');
+        wrapDescription(input.description, content, '    # ');
 
         if (input.default !== undefined) {
           // Append blank line if description had paragraphs

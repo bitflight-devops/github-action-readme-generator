@@ -10,6 +10,7 @@ updates:
     labels:
       - 'github-actions'
       - 'dependencies'
+      - 'patch'
   - package-ecosystem: 'docker'
     directory: '/'
     schedule:
@@ -19,6 +20,7 @@ updates:
     labels:
       - 'docker'
       - 'dependencies'
+      - 'patch'
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
@@ -28,3 +30,4 @@ updates:
     labels:
       - 'npm'
       - 'dependencies'
+      - 'patch'

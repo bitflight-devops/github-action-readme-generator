@@ -1,0 +1,70 @@
+name: Tag and Release Updated NPM Package
+
+on: [push]
+
+jobs:
+  run-tests:
+    if: (github.actor == 'dependabot[bot]' && !contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
+    name: Run unit tests
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+          always-auth: true
+          cache: yarn
+
+      - name: Configure PATH
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "${GITHUB_PATH}"
+          echo "HOME=$HOME" >> "${GITHUB_ENV}"
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "${{github.event.pusher.email || 'stack@bitflight.io'}}"
+          git config --global user.name "${{github.event.pusher.name || 'GitHub[bot]'}}"
+          git fetch --tags
+          git status --porcelain -u
+
+      # - name: Install git-semver
+      #   run: |
+      #     if grep -q -v "This script automates semantic versioning" <<<"$(git semver)"; then
+      #       if [[ -d "${HOME}/.cache/git-semver" ]]; then
+      #         git  -C "${HOME}/.cache/git-semver" reset --hard HEAD
+      #         git  -C "${HOME}/.cache/git-semver" pull
+      #       else
+      #         git clone https://github.com/markchalloner/git-semver.git "${HOME}/.cache/git-semver"
+      #       fi
+      #       sudo "$HOME/.cache/git-semver/install.sh"
+      #     fi
+
+      - name: Install Deps
+        id: deps
+        run: |
+          yarn install
+          git status --porcelain -u
+          git diff package.json
+
+      - name: Test
+        run: |
+          set -e
+          yarn test
+          yarn build:inputs
+
+      - name: Build
+        id: build
+        run: |
+          set -e
+          yarn run build
+
+      - name: Generate Docs
+        run: |
+            set -e
+            yarn generate-docs

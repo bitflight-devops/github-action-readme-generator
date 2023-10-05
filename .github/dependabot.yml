@@ -28,4 +28,3 @@ updates:
     labels:
       - 'npm'
       - 'dependencies'
-      - 'patch'

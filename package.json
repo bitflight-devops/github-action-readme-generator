@@ -30,20 +30,19 @@
   "author": "Jamie Nelson <jamie@bitflight.io>",
   "license": "APACHE",
   "scripts": {
-    "all": "yarn run build && yarn run format && yarn run lint && yarn test",
+    "all": "npm run build && npm run format && npm run lint && npm run test",
     "auto": "auto",
     "auto:canary": "[ -d dist ] && git add -f dist",
     "auto:next": "[ -d dist ] && git add -f dist",
     "auto:publish": "[ -d dist ] && git add -f dist",
-    "auto:version": "yarn run generate-docs",
-    "build": "rimraf dist out;node ./scripts/esbuild.mjs && chmod +x dist/index.js && yarn postbuild",
+    "auto:version": "npm run generate-docs",
+    "build": "rimraf dist out;node ./scripts/esbuild.mjs && chmod +x dist/index.js && npm run postbuild",
     "build:docker": "run-script-os",
-    "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:20-alpine sh -c 'yarn run build'",
-    "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:20-alpine sh -c \"yarn run build\"",
+    "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:20-alpine sh -c 'npm run build'",
+    "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:20-alpine sh -c \"npm run build\"",
     "build:inputs": "esbuild --bundle src/testInputs.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --target=node20 && chmod -R +x dist/ && node ./dist/testInputs.cjs",
-    "bump": "yarn npm version -i patch && yarn run release",
-    "bump:minor": "yarn version -i minor && yarn run release",
-    "cachefolder": "corepack yarn config get cacheFolder",
+    "bump": "npm version -i patch && npm run release",
+    "bump:minor": "version -i minor && npm run release",
     "clean": "rimraf dist",
     "commit": "git-cz",
     "corepack": "corepack enable",
@@ -51,17 +50,17 @@
     "generate-docs": "echo 'Generating docs';node dist/index.js && git add README.md",
     "format": "prettier --write . --config .prettierrc.cjs --ignore-unknown",
     "lint": "eslint -c .eslintrc.cjs --color ./src/ ./__tests__/",
-    "prelint": "yarn run format && tsc --project tsconfig.json --noemit",
-    "lint:fix": "yarn lint --fix",
+    "prelint": "npm run format && tsc --project tsconfig.json --noemit",
+    "lint:fix": "npm run lint --fix",
     "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
-    "lint:markdown:fix": "yarn run lint:markdown --fix",
+    "lint:markdown:fix": "npm run lint:markdown --fix",
     "postbuild": "echo postbuild;tsc --project tsconfig.json --emitDeclarationOnly --declaration --outFile dist/index.d.ts",
     "postinstall": "echo '✨ Successfully Installed'",
     "postpublish:manual": "git push --follow-tags --set-upstream origin $branch && auto release",
     "postversion:manual": "git push --tags origin && git push origin",
-    "pre-commit": "yarn build && git add dist && yarn generate-docs && lint-staged",
+    "pre-commit": "npm run build && git add dist && npm run generate-docs && lint-staged",
     "prepare": "[ -n ${GITHUB_ACTIONS:-} ] || husky install",
-    "release:post": "yarn npm publish --access public --tag v${npm_package_version} --tag latest",
+    "release:post": "npm publish --access public --tag v${npm_package_version} --tag latest",
     "test": "NODE_ENV=testing jest --runInBand",
     "test-ci": "NODE_ENV=testing jest --ci --reporters=default --reporters=jest-junit",
     "version:manual": "echo 'Run versioning commands';echo \"::set-output name=tag::v${npm_package_version}\""
@@ -220,7 +219,7 @@
       "eslint --cache --fix"
     ]
   },
-  "packageManager": "yarn@3.6.3",
+  "packageManager": "npm",
   "auto": {
     "baseBranch": "main",
     "release": {
@@ -262,7 +261,7 @@
     "versionBranches": true,
     "canary": {
       "target": "pr-body",
-      "message": "Install PR version via: `yarn add -D github-action-readme-generator@%v`",
+      "message": "Install PR version via: `npm install -D github-action-readme-generator@%v`",
       "force": true
     }
   }

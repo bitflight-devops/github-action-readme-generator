@@ -19,12 +19,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
-          cache: 'yarn'
+          node-version: 20
+          cache: 'npm'
       - name: Auto Pull Release Check
         run: |
-          yarn install
-          yarn auto pr-check --url ${{ github.event.pull_request.url }}
+          npm ci
+          npx auto pr-check --url ${{ github.event.pull_request.url }}
   eslint:
     name: runner / eslint
     if: (!contains(github.event.head_commit.message, 'build(release)'))
@@ -37,21 +37,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
-          cache: 'yarn'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v3
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          node-version: 20
+          cache: 'npm'
       - name: Install Deps
         run: |
-          yarn install
+          npm ci
       - name: eslint
         uses: reviewdog/action-eslint@v1.17.0
         with:

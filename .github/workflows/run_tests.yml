@@ -17,7 +17,7 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
           always-auth: true
-          cache: yarn
+          cache: npm
 
       - name: Configure PATH
         run: |
@@ -47,23 +47,23 @@ jobs:
       - name: Install Deps
         id: deps
         run: |
-          yarn install
+          npm ci
           git status --porcelain -u
           git diff package.json
 
       - name: Test
         run: |
           set -e
-          yarn test
-          yarn build:inputs
+          npm run test
+          npm run build:inputs
 
       - name: Build
         id: build
         run: |
           set -e
-          yarn run build
+          npm run build
 
       - name: Generate Docs
         run: |
             set -e
-            yarn generate-docs
+            npm run generate-docs

@@ -9,7 +9,7 @@ on:
 jobs:
   npm-release:
     if: (github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
-    name: Release GitHub Actions
+    name: Release NPM Actions
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -78,7 +78,8 @@ jobs:
       - name: Ship It
         run: |
           git describe --tags
-          VERSION="$(auto version)"
+          yarn auto version
+          VERSION="$(yarn auto version)"
           if [ ! -z "$VERSION" ]; then
             yarn auto shipit -vv
             git describe --tags

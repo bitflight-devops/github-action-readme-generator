@@ -14,12 +14,13 @@ Maintain a current README.md with content from the action.yml file
 
 <!-- end description -->
 
-This is a CLI tool and GitHub Action that reads in the details from a GitHub Action's `action.yml` file and updates the `README.md` file with the `name`, `description`, `usage`, `inputs`, `outputs`, and examples of the action. Configuration can be provided via a `.ghadocs.json` file stored in the root directory of the Action's repository, via the command line when using the cli, or via the `with:` section of this Action.
+This is a CLI tool and GitHub Action that reads the details from a GitHub Action's `action.yml` file. It updates the `README.md` file with the `name`, `description`, `usage`, `inputs`, `outputs`, and examples of the action. Configuration can be provided through a `.ghadocs.json` file stored in the root directory of the Action's repository, via the command line when using the CLI, or through the `with:` section of this Action.
 
-This tool uses markdown comments as delimiting tokens within the `README.md` file to determine where to place the generated content.
-[`README.example.md`](README.example.md) example with all fields filled in, and no other free-form content.
+📝 This tool uses markdown comments as delimiting tokens within the README.md file to determine where to place the generated content.
 
-## CLI usage
+🔗 You can find an example with all fields filled in, and no other free-form content, in the [`README.example.md`](README.example.md) file.
+
+## CLI Usage
 
 | Usage Options                      | Description                                                                                 | Default          |
 | ---------------------------------- | ------------------------------------------------------------------------------------------- | ---------------- |
@@ -37,6 +38,7 @@ This tool uses markdown comments as delimiting tokens within the `README.md` fil
 ### Stand Alone Usage - if you have a Docker Action
 
 ```sh
+sh
 npx github-action-readme-generator
 ```
 
@@ -50,8 +52,7 @@ npm i --save-dev github-action-readme-generator
 
 ### Add a script to your project file
 
-You can modify the script below to include any extra variables you like
-or use none, and instead use a `.ghadocs.json` file.
+You can modify the script below to include any extra variables you like or use none, and instead use a `.ghadocs.json` file.
 
 ```json
 {
@@ -89,13 +90,13 @@ or use none, and instead use a `.ghadocs.json` file.
 
 - [x] Add section for a title to the generator
 - [x] Add section for a description to the generator
-- [x] Add word wrapping to multi line text
+- [x] Add word wrapping to multi-line text
 - [x] Add section to generate the `action.yml` inputs to a table to the generator
 - [x] Add section to generate the `action.yml` outputs to a table to the generator
 - [ ] Add a markdown `contents` menu section to the generator
 - [ ] Allow for using a separate template for generating the readme file
-- [ ] Add section to embed other markdown files, or directories by path, so that documentation can be organized in the file system. <br />
-      i.e: `<!-- start [.github/ghadocs/examples/] -->` and `<!-- end [.github/ghadocs/examples/] -->`
+- [ ] Add section to embed other markdown files or directories by path, so that documentation can be organized in the file system. <br />
+      i.e., `<!-- start [.github/ghadocs/examples/] -->` and `<!-- end [.github/ghadocs/examples/] -->`
 
 <!-- start contents -->
 <!-- end contents -->

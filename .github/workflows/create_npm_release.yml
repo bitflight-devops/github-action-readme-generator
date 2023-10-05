@@ -2,9 +2,9 @@ name: Tag and Release Updated NPM Package
 
 on:
   push:
-    branches:
-      - main
-      - next
+    # branches:
+    #   - main
+    #   - next
 
 jobs:
   npm-release:
@@ -77,13 +77,19 @@ jobs:
 
       - name: Ship It
         run: |
-          set -e
-          yarn auto shipit -vv
-          git add -f dist package.json
-          git tag "v$(jq -r '.version' package.json)"
-          yarn generate-docs
-          git commit --allow-empty -m "build(release): version $(jq -r '.version' package.json)"
-          yarn postversion:manual
+          git describe --tags
+          VERSION="$(auto version)"
+          if [ ! -z "$VERSION" ]; then
+            yarn auto shipit -vv
+            git describe --tags
+            git push -f --follow-tags --set-upstream origin "$GIT_BRANCH"
+            git describe --tags
+            # git add -f dist package.json
+            # git tag "v$(jq -r '.version' package.json)"
+            # yarn generate-docs
+            # git commit --allow-empty -m "build(release): version $(jq -r '.version' package.json) [skip ci]"
+            # yarn postversion:manual
+          fi
 
 
       # - name: Bump Package Version

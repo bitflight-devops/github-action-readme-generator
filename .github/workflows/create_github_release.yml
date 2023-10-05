@@ -2,27 +2,24 @@ name: Release Updated GitHub Action
 
 on:
   push:
-    branches-ignore:
-      - '*'
     tags:
       - 'v*.*.*'
 
 jobs:
   github-release:
-    if: (!contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
+    if: (false && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
     name: Release GitHub Actions
     runs-on: ubuntu-latest
     permissions:
       actions: write
       contents: write
     env:
-      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-      NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-      GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.RELEASE_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v3
         with:
@@ -43,6 +40,7 @@ jobs:
           git config --global user.name "${{github.event.pusher.name || 'GitHub[bot]'}}"
           git fetch --tags
           git status --porcelain -u
+          npx auto version
 
       - name: Release It
         run: |

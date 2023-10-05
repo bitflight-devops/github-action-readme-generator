@@ -223,6 +223,12 @@
   "packageManager": "yarn@3.6.3",
   "auto": {
     "baseBranch": "main",
+    "release": {
+      "prerelease": true
+    },
+    "shipit": {
+      "prerelease": true
+    },
     "author": {
       "name": "Jamie Nelson",
       "email": "jamie@bitflight.io"

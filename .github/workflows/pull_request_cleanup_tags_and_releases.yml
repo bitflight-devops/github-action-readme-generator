@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       regex:
-        description: 'Regex to search by'
+        description: "Regex to search by"
         required: false
       pr_number:
-        description: 'PR Number to search by'
+        description: "PR Number to search by"
         required: false
 
 jobs:

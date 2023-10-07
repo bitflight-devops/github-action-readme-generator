@@ -3,7 +3,7 @@ name: Release Updated GitHub Action
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 jobs:
   github-release:
@@ -16,6 +16,8 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
       GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+      NODE_OPTIONS: "--no-network-family-autoselection"
+      SKIP_PREFLIGHT_CHECK: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,8 +25,8 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: '20.x'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
           always-auth: true
           cache: npm
 
@@ -40,12 +42,10 @@ jobs:
           git config --global user.name "${{github.event.pusher.name || 'GitHub[bot]'}}"
           git fetch --tags
           git status --porcelain -u
-          npx auto version
 
       - name: Release It
         run: |
           set -e
-          npx auto release -vv
 
           stub_major="${GITHUB_TAG%%\.*}"
           stub_major_minor="${GITHUB_TAG%\.*}"

@@ -1,7 +1,7 @@
 name: Issue assignment
 on:
   issues:
-    types: [ opened ]
+    types: [opened]
 jobs:
   auto-assign:
     runs-on: ubuntu-latest
@@ -10,4 +10,4 @@ jobs:
         if: github.actor != 'dependabot[bot]'
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          assignees: 'Jamie-BitFlight'
+          assignees: "Jamie-BitFlight"

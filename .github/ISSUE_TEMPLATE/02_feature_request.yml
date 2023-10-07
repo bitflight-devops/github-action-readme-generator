@@ -1,0 +1,23 @@
+name: Feature request
+description: Wouldn't it be nice if `github-action-readme-generator` could ...
+body:
+  - type: textarea
+    attributes:
+      label: New feature motivation
+      description: Describe the context, the use-case and the advantages of the feature request.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: New feature description
+      description: Describe the functional changes that would have to be made in `github-action-readme-generator`.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: New feature implementation
+      description: Optionally describe the technical changes to be made in `github-action-readme-generator` or its plugins.
+    validations:
+      required: false

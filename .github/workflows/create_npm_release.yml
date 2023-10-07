@@ -2,10 +2,16 @@ name: Tag and Release Updated NPM Package
 
 on:
   push:
-    # branches:
-    #   - main
-    #   - next
+    branches:
+      - main
+      - next
+      - beta
+      - "*.x"
+  repository_dispatch:
+    types: [semantic-release]
 
+permissions:
+  contents: read # for checkout
 jobs:
   npm-release:
     if: (github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
@@ -13,23 +19,28 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: write
-      contents: write
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for npm provenance
     env:
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      NODE_OPTIONS: "--no-network-family-autoselection"
+      SKIP_PREFLIGHT_CHECK: true
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
 
-      - name: Prepare repository
-        run: git fetch --unshallow --tags
+      # - name: Prepare repository
+      #   run: git fetch --unshallow --tags
 
       - uses: actions/setup-node@v3
         with:
-          node-version: '20.x'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
           always-auth: true
           cache: npm
 
@@ -62,36 +73,23 @@ jobs:
         id: deps
         run: |
           npm ci
-          git status --porcelain -u
-          git diff package.json
+      - name: Ensure dependencies are compatible with the version of node
+        run: npx --yes ls-engines
+      - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
+        run: npm audit signatures
 
       - name: Test
         run: |
-            npm run test
-            npm run build:inputs
+          npm run test
+          npm run build:inputs
 
       - name: Build
         id: build
         run: |
           npm run build
 
-      - name: Ship It
-        run: |
-          git describe --tags
-          # npx auto version
-          # VERSION="$(npx auto version)"
-          # if [ ! -z "$VERSION" ]; then
-            npx auto shipit -vv
-            git describe --tags
-            git push -f --follow-tags --set-upstream origin "$GIT_BRANCH"
-            git describe --tags
-            # git add -f dist package.json
-            # git tag "v$(jq -r '.version' package.json)"
-            # npm run generate-docs
-            # git commit --allow-empty -m "build(release): version $(jq -r '.version' package.json) [skip ci]"
-            # npm run postversion:manual
-          # fi
-
+      - name: Release
+        run: npx --yes semantic-release@latest
 
       # - name: Bump Package Version
       #   if: github.event_name == 'push' && steps.next_version.outputs.new_version != ''

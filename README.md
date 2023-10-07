@@ -39,7 +39,7 @@ This is a CLI tool and GitHub Action that reads the details from a GitHub Action
 
 ```sh
 sh
-npx github-action-readme-generator
+npx --yes github-action-readme-generator@latest
 ```
 
 ### Install with Yarn or NPM as a dev dependency

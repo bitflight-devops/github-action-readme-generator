@@ -9,13 +9,16 @@ jobs:
     permissions:
       actions: write
       contents: write
+    env:
+      NODE_OPTIONS: "--no-network-family-autoselection"
+      SKIP_PREFLIGHT_CHECK: trues
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v3
         with:
-          node-version: '20.x'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
           always-auth: true
           cache: npm
 
@@ -32,38 +35,10 @@ jobs:
           git fetch --tags
           git status --porcelain -u
 
-      # - name: Install git-semver
-      #   run: |
-      #     if grep -q -v "This script automates semantic versioning" <<<"$(git semver)"; then
-      #       if [[ -d "${HOME}/.cache/git-semver" ]]; then
-      #         git  -C "${HOME}/.cache/git-semver" reset --hard HEAD
-      #         git  -C "${HOME}/.cache/git-semver" pull
-      #       else
-      #         git clone https://github.com/markchalloner/git-semver.git "${HOME}/.cache/git-semver"
-      #       fi
-      #       sudo "$HOME/.cache/git-semver/install.sh"
-      #     fi
-
-      - name: Install Deps
-        id: deps
-        run: |
-          npm ci
-          git status --porcelain -u
-          git diff package.json
-
-      - name: Test
-        run: |
-          set -e
-          npm run test
-          npm run build:inputs
-
-      - name: Build
-        id: build
-        run: |
-          set -e
-          npm run build
-
-      - name: Generate Docs
-        run: |
-            set -e
-            npm run generate-docs
+      - run: npm ci
+      - run: npm run test
+      - run: npm run build:inputs
+      - run: npm run lint
+      - run: npm run build
+      - run: git status --porcelain -u
+      - run: npm run generate-docs

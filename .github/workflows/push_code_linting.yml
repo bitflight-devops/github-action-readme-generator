@@ -9,6 +9,8 @@ jobs:
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      NODE_OPTIONS: "--no-network-family-autoselection"
+      SKIP_PREFLIGHT_CHECK: true
     permissions:
       issues: write
       pull-requests: write
@@ -20,11 +22,10 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
       - name: Auto Pull Release Check
         run: |
           npm ci
-          npx auto pr-check --url ${{ github.event.pull_request.url }}
   eslint:
     name: runner / eslint
     if: (!contains(github.event.head_commit.message, 'build(release)'))
@@ -38,7 +39,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
       - name: Install Deps
         run: |
           npm ci

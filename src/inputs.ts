@@ -46,6 +46,12 @@ interface KVPairType {
 export default class Inputs {
   public config: nconf.Provider;
 
+  public sections: string[];
+
+  public readmePath: string;
+
+  public action: Action;
+
   constructor() {
     this.config = new nconf.Provider();
     const repositoryDetail = repositoryFinder(null, githubEvent);
@@ -208,10 +214,4 @@ export default class Inputs {
 
     this.action = new Action(actionPath);
   }
-
-  public sections: string[];
-
-  public readmePath: string;
-
-  public action: Action;
 }

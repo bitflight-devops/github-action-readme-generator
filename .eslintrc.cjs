@@ -70,7 +70,7 @@ module.exports = {
     },
     {
       plugins: ['actions'],
-      files: ['.github/workflows/*.{yml,yaml}'],
+      files: ['.github/workflows/*.{yml,yaml}', './action.yml'],
       processor: 'actions/actions',
     },
     {
@@ -83,6 +83,7 @@ module.exports = {
         '@typescript-eslint',
         'optimize-regex',
         'promise',
+        'sort-class-members',
       ],
       extends: [
         'plugin:promise/recommended',
@@ -101,12 +102,27 @@ module.exports = {
       ],
       parser: '@typescript-eslint/parser',
       parserOptions: {
-        ecmaVersion: 'es2021',
+        ecmaVersion: 'latest',
         sourceType: 'module',
         project: ['./tsconfig.json'],
         tsconfigRootDir: __dirname,
       },
       rules: {
+        'sort-class-members/sort-class-members': [
+          2,
+          {
+            order: [
+              '[static-properties]',
+              '[static-methods]',
+              '[properties]',
+              '[conventional-private-properties]',
+              'constructor',
+              '[methods]',
+              '[conventional-private-methods]',
+            ],
+            accessorPairPositioning: 'getThenSet',
+          },
+        ],
         'jest-async/expect-return': 'error',
         'operator-linebreak': ['error', 'after'],
         'dot-notation': 'off',

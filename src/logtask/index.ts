@@ -10,11 +10,11 @@ const IS_FAILED = 5;
 const IS_TITLE = 6;
 const chalk = chalkClass.default;
 class LogTask {
-  name: string;
-
   static ingroup_setting: { [key: string]: boolean } = {};
 
   static indentWidth = 5;
+
+  name: string;
 
   constructor(name: string) {
     this.name = name.trim();

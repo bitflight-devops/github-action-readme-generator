@@ -151,7 +151,7 @@
     "@types/node": "^20.7.0",
     "@types/node-emoji": "^1.8.2",
     "@types/rimraf": "^3",
-    "@types/yargs": "^17.0.25",
+    "@types/yargs": "^17.0.28",
     "@typescript-eslint/eslint-plugin": "^6.7.3",
     "@typescript-eslint/parser": "^6.7.3",
     "@typescript-eslint/typescript-estree": "^6.7.3",

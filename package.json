@@ -148,7 +148,7 @@
     "@types/jest": "^29.5.5",
     "@types/js-yaml": "^4.0.6",
     "@types/nconf": "^0.10.4",
-    "@types/node": "^20.7.0",
+    "@types/node": "^20.8.3",
     "@types/node-emoji": "^1.8.2",
     "@types/rimraf": "^3",
     "@types/yargs": "^17.0.25",

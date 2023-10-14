@@ -9,7 +9,6 @@ jobs:
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-      NODE_OPTIONS: "--no-network-family-autoselection"
       SKIP_PREFLIGHT_CHECK: true
     permissions:
       issues: write
@@ -41,10 +40,13 @@ jobs:
           node-version: 20
           cache: "npm"
       - name: Install Deps
-        run: |
-          npm ci
+        run: npm install
+      - uses: xt0rted/markdownlint-problem-matcher@v2
+      - run: markdownlint **/*.md --ignore node_modules
+        continue-on-error: true
       - name: eslint
-        uses: reviewdog/action-eslint@v1.17.0
+        uses: reviewdog/action-eslint@v1.20.0
         with:
           reporter: github-pr-review # Change reporter.
-          eslint_flags: src --ext .ts
+          eslint_flags: src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}

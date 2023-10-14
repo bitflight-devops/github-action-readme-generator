@@ -7,11 +7,11 @@ declare module "jest.config" {
 declare module "__tests__/index.test" { }
 declare module "src/logtask/index" {
     class LogTask {
-        name: string;
         static ingroup_setting: {
             [key: string]: boolean;
         };
         static indentWidth: number;
+        name: string;
         constructor(name: string);
         get ingroup(): boolean;
         set ingroup(value: boolean);
@@ -115,10 +115,10 @@ declare module "src/inputs" {
     export const configKeys: string[];
     export default class Inputs {
         config: nconf.Provider;
-        constructor();
         sections: string[];
         readmePath: string;
         action: Action;
+        constructor();
     }
 }
 declare module "src/save" {

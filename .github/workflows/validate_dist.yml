@@ -1,0 +1,7 @@
+name: Check the dist directory has the latest build
+
+on: [pull_request_target]
+
+jobs:
+  check-dist-call:
+    uses: actions/reusable-workflows/.github/workflows/check-dist.yml@main

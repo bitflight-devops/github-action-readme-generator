@@ -1,0 +1,44 @@
+name: Bug Report
+description: Something not working as expected
+body:
+  - type: textarea
+    attributes:
+      label: Current behavior
+      description: Describe how the issue manifests.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Expected behavior
+      description: Describe what the desired behavior would be.
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: "`github-action-readme-generator` version"
+      description: Version set in `package.json` `devDependencies`.
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: CI environment
+      description: CI service name.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: "`github-action-readme-generator` configuration i.e: `.ghadocs.json`"
+      description: Link to your repository or relevant part of the `github-action-readme-generator` config.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: CI logs
+      description: Link to your CI logs or `github-action-readme-generator` logs.
+    validations:
+      required: true

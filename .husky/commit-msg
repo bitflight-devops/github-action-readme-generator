@@ -1,5 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # shellcheck source=./_/husky.sh
 . "$(dirname "$0")/_/husky.sh"
-
-npx --no-install commitlint --edit "$1"
+# --no-install
+npx --yes commitlint@latest --edit "$1"

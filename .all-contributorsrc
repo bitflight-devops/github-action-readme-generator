@@ -3,21 +3,16 @@
   "projectOwner": "bitflight-devops",
   "repoType": "github",
   "repoHost": "https://github.com",
-  "files": [
-    "README.md"
-  ],
+  "files": ["README.md"],
   "imageSize": 100,
   "commit": true,
-  "contributors": [{
-    "login": "Jamie-BitFlight",
-    "name": "Jamie Nelson",
-    "avatar_url": "https://avatars.githubusercontent.com/u/25075504?v=4",
-    "profile": "https://bitflight.io",
-    "contributions": [
-      "code",
-      "doc",
-      "ideas",
-      "test"
-    ]
-  }]
+  "contributors": [
+    {
+      "login": "Jamie-BitFlight",
+      "name": "Jamie Nelson",
+      "avatar_url": "https://avatars.githubusercontent.com/u/25075504?v=4",
+      "profile": "https://bitflight.io",
+      "contributions": ["code", "doc", "ideas", "test"]
+    }
+  ]
 }

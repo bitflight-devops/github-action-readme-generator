@@ -31,7 +31,6 @@ jobs:
       actions: write
       contents: write
     env:
-      NODE_OPTIONS: "--no-network-family-autoselection"
       SKIP_PREFLIGHT_CHECK: trues
     steps:
       - uses: actions/checkout@v4
@@ -82,7 +81,6 @@ jobs:
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-      NODE_OPTIONS: "--no-network-family-autoselection"
       SKIP_PREFLIGHT_CHECK: true
     steps:
       - uses: actions/checkout@v4

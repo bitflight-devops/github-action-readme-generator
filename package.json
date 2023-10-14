@@ -149,7 +149,7 @@
     "@types/jest": "^29.5.5",
     "@types/js-yaml": "^4.0.6",
     "@types/nconf": "^0.10.4",
-    "@types/node": "^20.8.3",
+    "@types/node": "^20.8.6",
     "@types/node-emoji": "^1.8.2",
     "@typescript-eslint/eslint-plugin": "^6.7.4",
     "@typescript-eslint/parser": "^6.7.4",

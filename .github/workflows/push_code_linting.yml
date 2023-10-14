@@ -1,34 +1,16 @@
-name: Code Linting and PR Checks
+name: Code Linting Annotation
 on: [pull_request]
 jobs:
-  pr_label:
-    name: PR Semantic Label
-    runs-on: ubuntu-latest
+  eslint_annotation:
+    name: runner / eslint
     if: (!contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
-    env:
-      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-      NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-      GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-      SKIP_PREFLIGHT_CHECK: true
+    runs-on: ubuntu-latest
     permissions:
       issues: write
       pull-requests: write
       actions: write
       statuses: write
       checks: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 20
-          cache: "npm"
-      - name: Auto Pull Release Check
-        run: |
-          npm ci
-  eslint:
-    name: runner / eslint
-    if: (!contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
-    runs-on: ubuntu-latest
     env:
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}

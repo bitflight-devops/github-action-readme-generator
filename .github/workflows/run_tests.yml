@@ -1,12 +1,16 @@
-name: Run unit tests for dependabot pull requests
+name: Run tests
 
-on: [pull_request_target]
+on: [push]
 
 jobs:
   run-tests:
     name: Run unit tests
     runs-on: ubuntu-latest
     permissions:
+      issues: write
+      pull-requests: write
+      statuses: write
+      checks: write
       actions: write
       contents: write
     env:
@@ -37,8 +41,9 @@ jobs:
 
       - run: npm ci
       - run: npm run test
-      - run: npm run build:inputs
+      - run: npm run "build:inputs"
       - run: npm run lint
+      - run: npm run "lint:markdown"
       - run: npm run build
       - run: git status --porcelain -u
       - run: npm run generate-docs

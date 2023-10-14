@@ -212,7 +212,8 @@
     ]
   },
   "release": {
-    "branches": ["main", "next"],
+    "preset": "angular",
+    "branches": ["main", "next", { "name": "alpha", "prerelease": true}],
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",

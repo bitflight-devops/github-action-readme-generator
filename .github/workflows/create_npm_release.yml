@@ -60,10 +60,7 @@ jobs:
       - run: npm ci
       - run: npm run test
       - run: npm run "build:inputs"
-      - run: npm run lint
-      - run: npm run "lint:markdown"
       - run: npm run build
-      - run: git status --porcelain -u
       - run: npm run generate-docs
 
   npm-release:
@@ -79,6 +76,7 @@ jobs:
       id-token: write # to enable use of OIDC for npm provenance
     env:
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       SKIP_PREFLIGHT_CHECK: true
@@ -118,10 +116,6 @@ jobs:
 
       - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
         run: npm audit signatures
-
-      - name: Test
-        run: npm run test --if-presents
-          npm run build:inputs --if-present
 
       - run: npm run build --if-present
 

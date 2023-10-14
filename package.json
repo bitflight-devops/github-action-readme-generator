@@ -154,7 +154,6 @@
     "@typescript-eslint/eslint-plugin": "^6.7.4",
     "@typescript-eslint/parser": "^6.7.4",
     "@typescript-eslint/typescript-estree": "^6.7.4",
-    "auto": "^11.0.4",
     "commitizen": "^4.3.0",
     "conventional-commits": "^1.6.0",
     "cz-conventional-changelog": "^3.3.0",
@@ -213,7 +212,14 @@
   },
   "release": {
     "preset": "angular",
-    "branches": ["main", "next", { "name": "alpha", "prerelease": true}],
+    "branches": [
+      "main",
+      "next",
+      {
+        "name": "alpha",
+        "prerelease": true
+      }
+    ],
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
@@ -222,11 +228,14 @@
       [
         "@semantic-release/github",
         {
-          "assets": ["dist/**", "action.yml", "package.json"]
+          "assets": [
+            "dist/**",
+            "action.yml",
+            "package.json"
+          ]
         }
       ],
       "@semantic-release/git"
     ]
-  },
-  "packageManager": "npm"
+  }
 }

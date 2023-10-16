@@ -65,9 +65,12 @@ export default class Inputs {
     if (process.env.GITHUB_ACTION) {
       log.info('running in GitHub action');
     }
+    if (fs.existsSync(this.configPath)) {
+      log.info(`config file found: ${this.configPath}`);
+    } else {
+      log.error(`config file not found: ${this.configPath}`);
+    }
     this.config
-      .use('memory')
-      .file({ file: this.configPath })
       .env({
         lowerCase: true,
         parseValues: true,
@@ -190,6 +193,7 @@ export default class Inputs {
           parseValues: true,
         },
       })
+      .file(this.configPath)
       .defaults({
         save: true,
         owner: repositoryDetail?.owner,

@@ -40,7 +40,7 @@
     "build:docker": "run-script-os",
     "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:20-alpine sh -c 'npm run build'",
     "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:20-alpine sh -c \"npm run build\"",
-    "build:inputs": "esbuild --bundle src/testInputs.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --target=node20 && chmod -R +x dist/ && node ./dist/testInputs.cjs",
+    "build:inputs": "esbuild --bundle src/testInputs.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --packages=external --target=node20 && chmod -R +x dist/ && node ./dist/testInputs.cjs",
     "bump": "npm version -i patch && npm run release",
     "bump:minor": "version -i minor && npm run release",
     "clean": "rimraf dist",
@@ -116,7 +116,7 @@
     "async": "^3.2.4",
     "chalk": "^4",
     "js-yaml": "^4.1.0",
-    "nconf": "github:indexzero/nconf",
+    "nconf": "^0.12.0",
     "node-emoji": "^2.1.0",
     "prettier": "^3.0.3",
     "tslib": "^2.6.2"

@@ -97,7 +97,7 @@
     }
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">= 18"
   },
   "files": [
     "package.json",
@@ -115,7 +115,7 @@
     "async": "^3.2.4",
     "chalk": "^4",
     "js-yaml": "^4.1.0",
-    "nconf": "github:indexzero/nconf",
+    "nconf": "^0.12.0",
     "node-emoji": "^2.1.0",
     "prettier": "^3.0.3",
     "tslib": "^2.6.2"

@@ -2,9 +2,8 @@ import { getCurrentVersionString } from '../helpers';
 import type Inputs from '../inputs';
 import LogTask from '../logtask';
 import { wrapDescription } from '../prettier';
-import readmeWriter from '../readme-writer';
 
-export default async function updateUsage(token: string, inputs: Inputs): Promise<void> {
+export default function updateUsage(token: string, inputs: Inputs): void {
   const log = new LogTask(token);
   log.start();
   const actionName = `${inputs.config.get('owner') as string}/${inputs.config.get('repo')}`;
@@ -58,6 +57,6 @@ export default async function updateUsage(token: string, inputs: Inputs): Promis
 
   content.push('```\n');
 
-  await readmeWriter(content, token, inputs.readmePath);
+  inputs.readmeEditor.updateSection(token, content);
   log.success();
 }

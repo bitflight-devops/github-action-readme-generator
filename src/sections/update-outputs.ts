@@ -2,9 +2,8 @@ import { columnHeader, rowHeader } from '../helpers';
 import type Inputs from '../inputs';
 import LogTask from '../logtask';
 import markdowner from '../markdowner';
-import updateReadme from '../readme-writer';
 
-export default async function updateOutputs(token: string, inputs: Inputs): Promise<void> {
+export default function updateOutputs(token: string, inputs: Inputs): void {
   const log = new LogTask(token);
 
   // Build the new README
@@ -41,7 +40,7 @@ export default async function updateOutputs(token: string, inputs: Inputs): Prom
     }
     content.push(markdowner(markdownArray));
     log.info(`Action has ${tI} total ${token}`);
-    await updateReadme(content, token, inputs.readmePath);
+    inputs.readmeEditor.updateSection(token, content);
     log.success();
   } else {
     log.debug(`Action has no ${token}`);

@@ -60,4 +60,16 @@ export default class Action {
     this.outputs = actionYaml.outputs;
     this.runs = actionYaml.runs;
   }
+
+  stringify(): string {
+    try {
+      return yaml.dump(this, {
+        skipInvalid: true,
+      });
+    } catch {
+      const log = new LogTask('action:stringify');
+      log.error('failed to stringify action.yml');
+      return '';
+    }
+  }
 }

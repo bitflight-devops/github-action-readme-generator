@@ -11,6 +11,7 @@ declare module "src/logtask/index" {
             [key: string]: boolean;
         };
         static indentWidth: number;
+        static isDebug(): boolean;
         name: string;
         constructor(name: string);
         get ingroup(): boolean;
@@ -58,33 +59,8 @@ declare module "src/Action" {
         outputs: OutputsType;
         runs: Runs;
         constructor(actionPath: string);
+        stringify(): string;
     }
-}
-declare module "src/config" {
-    export interface Versioning {
-        enabled: boolean;
-        prefix: string;
-        override: string;
-        branch: string;
-    }
-    export interface Paths {
-        action: string;
-        readme: string;
-    }
-    export class GHActionDocsConfig {
-        owner: string;
-        repo: string;
-        title_prefix: string;
-        title: string;
-        paths: Paths;
-        show_logo: boolean;
-        versioning: Versioning;
-        readmePath: string;
-        outpath: string;
-        pretty: boolean;
-    }
-    export const startTokenFormat = "<!-- start %s -->";
-    export const endTokenFormat = "<!-- end %s -->";
 }
 declare module "src/helpers" {
     import type { Context } from '@actions/github/lib/context';
@@ -105,6 +81,22 @@ declare module "src/helpers" {
     export function rowHeader(value: string): string;
     export function getCurrentVersionString(inputs: Inputs): string;
 }
+declare module "src/prettier" {
+    export function formatYaml(value: string, filepath?: string): Promise<string>;
+    export function formatMarkdown(value: string, filepath?: string): Promise<string>;
+    export function wrapDescription(value: string | undefined, content: string[], prefix: string): Promise<string[]>;
+}
+declare module "src/readme-editor" {
+    export const startTokenFormat = "<!-- start %s -->";
+    export const endTokenFormat = "<!-- end %s -->";
+    export default class ReadmeEditor {
+        private readonly filePath;
+        private fileContent;
+        constructor(filePath: string);
+        updateSection(name: string, providedContent: string | string[]): void;
+        dumpToFile(): Promise<void>;
+    }
+}
 declare module "src/working-directory" {
     export function workingDirectory(): string;
     export default workingDirectory;
@@ -112,26 +104,55 @@ declare module "src/working-directory" {
 declare module "src/inputs" {
     import * as nconf from 'nconf';
     import Action from "src/Action";
+    import ReadmeEditor from "src/readme-editor";
+    export const configFileName = ".ghadocs.json";
     export const configKeys: string[];
     export default class Inputs {
         config: nconf.Provider;
         sections: string[];
         readmePath: string;
+        configPath: string;
         action: Action;
+        readmeEditor: ReadmeEditor;
         constructor();
+        stringify(): string;
+    }
+}
+declare module "src/config" {
+    import type Inputs from "src/inputs";
+    export interface Versioning {
+        enabled?: boolean;
+        prefix?: string;
+        override?: string;
+        branch?: string;
+    }
+    export interface Paths {
+        action: string;
+        readme: string;
+    }
+    export class GHActionDocsConfig {
+        owner?: string;
+        repo?: string;
+        title_prefix?: string;
+        title?: string;
+        paths?: Paths;
+        show_logo?: boolean;
+        versioning?: Versioning;
+        readmePath?: string;
+        outpath?: string;
+        pretty?: boolean;
+        loadInputs(inputs: Inputs): void;
+        /**
+         *
+         * @param configPath {string}
+         * @description Saves the config to a file,if the file exists it will be overwritten.
+         */
+        save(configPath: string): void;
     }
 }
 declare module "src/save" {
     import Inputs from "src/inputs";
     export default function save(inputs: Inputs): void;
-}
-declare module "src/prettier" {
-    export function formatYaml(value: string, filepath?: string): Promise<string>;
-    export function formatMarkdown(value: string, filepath?: string): Promise<string>;
-    export function wrapDescription(value: string | undefined, content: string[], prefix: string): Promise<string[]>;
-}
-declare module "src/readme-writer" {
-    export default function readmeWriter(content: string[], tokenName: string, readmePath: string): Promise<void>;
 }
 declare module "src/sections/update-badges" {
     import type Inputs from "src/inputs";
@@ -140,11 +161,11 @@ declare module "src/sections/update-badges" {
         img: string;
         url?: string;
     }
-    export default function updateBadges(token: string, inputs: Inputs): Promise<void>;
+    export default function updateBadges(token: string, inputs: Inputs): void;
 }
 declare module "src/sections/update-description" {
     import type Inputs from "src/inputs";
-    export default function updateDescription(token: string, inputs: Inputs): Promise<void>;
+    export default function updateDescription(token: string, inputs: Inputs): void;
 }
 declare module "src/markdowner/index" {
     export type MarkdownArrayRowType = string[][];
@@ -167,28 +188,28 @@ declare module "src/markdowner/index" {
 }
 declare module "src/sections/update-inputs" {
     import type Inputs from "src/inputs";
-    export default function updateInputs(token: string, inputs: Inputs): Promise<void>;
+    export default function updateInputs(token: string, inputs: Inputs): void;
 }
 declare module "src/sections/update-outputs" {
     import type Inputs from "src/inputs";
-    export default function updateOutputs(token: string, inputs: Inputs): Promise<void>;
+    export default function updateOutputs(token: string, inputs: Inputs): void;
 }
 declare module "src/sections/update-title" {
     import type Inputs from "src/inputs";
-    export default function updateTitle(token: string, inputs: Inputs): Promise<void>;
+    export default function updateTitle(token: string, inputs: Inputs): void;
 }
 declare module "src/sections/update-usage" {
     import type Inputs from "src/inputs";
-    export default function updateUsage(token: string, inputs: Inputs): Promise<void>;
+    export default function updateUsage(token: string, inputs: Inputs): void;
 }
 declare module "src/sections/index" {
     import type Inputs from "src/inputs";
-    export default function updateSection(section: string, inputs: Inputs): Promise<void>;
+    export default function updateSection(section: string, inputs: Inputs): void;
 }
 declare module "src/generate-docs" {
     import Inputs from "src/inputs";
     export const inputs: Inputs;
-    export default function generateDocs(): Promise<void>;
+    export default function generateDocs(): void;
 }
 declare module "src/index" { }
 declare module "src/testInputs" {

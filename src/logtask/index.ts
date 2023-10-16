@@ -14,13 +14,15 @@ class LogTask {
 
   static indentWidth = 5;
 
+  static isDebug(): boolean {
+    return core.isDebug() || !!process.env.DEBUG;
+  }
+
   name: string;
 
   constructor(name: string) {
-    this.name = name.trim();
-    if (LogTask.ingroup_setting[this.name] === undefined) {
-      LogTask.ingroup_setting[this.name] = false;
-    }
+    this.name = name?.trim();
+    this.ingroup = false;
   }
 
   get ingroup(): boolean {
@@ -145,7 +147,7 @@ class LogTask {
   }
 
   debug(description = ''): void {
-    if (process.env.DEBUG !== undefined) {
+    if (LogTask.isDebug() && description !== '') {
       this.logStep('👁️‍🗨️', 'DEBUG', description);
     }
   }

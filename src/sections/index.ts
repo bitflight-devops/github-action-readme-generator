@@ -7,39 +7,35 @@ import updateOutputs from './update-outputs';
 import updateTitle from './update-title';
 import updateUsage from './update-usage';
 
-export default async function updateSection(section: string, inputs: Inputs): Promise<void> {
+export default function updateSection(section: string, inputs: Inputs): void {
   const log = new LogTask('updateSection');
-  try {
-    switch (section) {
-      case 'badges': {
-        await updateBadges(section, inputs);
-        break;
-      }
-      case 'usage': {
-        await updateUsage(section, inputs);
-        break;
-      }
-      case 'title': {
-        await updateTitle(section, inputs);
-        break;
-      }
-      case 'description': {
-        await updateDescription(section, inputs);
-        break;
-      }
-      case 'inputs': {
-        await updateInputs(section, inputs);
-        break;
-      }
-      case 'outputs': {
-        await updateOutputs(section, inputs);
-        break;
-      }
-      default: {
-        log.debug(`unknown section ${section}`);
-      }
+  switch (section) {
+    case 'badges': {
+      updateBadges(section, inputs);
+      break;
     }
-  } catch (error: any) {
-    if (error && 'message' in error && error.message) log.fail(error.message as string);
+    case 'usage': {
+      updateUsage(section, inputs);
+      break;
+    }
+    case 'title': {
+      updateTitle(section, inputs);
+      break;
+    }
+    case 'description': {
+      updateDescription(section, inputs);
+      break;
+    }
+    case 'inputs': {
+      updateInputs(section, inputs);
+      break;
+    }
+    case 'outputs': {
+      updateOutputs(section, inputs);
+      break;
+    }
+    default: {
+      log.debug(`unknown section ${section}`);
+    }
   }
 }

@@ -31,7 +31,7 @@ export default class ReadmeEditor {
       const beforeContent = this.fileContent.slice(0, Math.max(0, startIndex + startToken.length));
       const afterContent = this.fileContent.slice(stopIndex);
 
-      this.fileContent = beforeContent + content + afterContent;
+      this.fileContent = `${beforeContent}\n${content}\n${afterContent}`;
     } else if (stopIndex < startIndex) {
       throw new Error(`Start token for section '${name} must appear before end token`);
     }

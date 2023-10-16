@@ -1,14 +1,13 @@
 import type { Repo } from '../helpers';
 import type Inputs from '../inputs';
 import LogTask from '../logtask';
-import updateReadme from '../readme-writer';
 
 export interface IBadge {
   alt: string;
   img: string;
   url?: string;
 }
-export default async function updateBadges(token: string, inputs: Inputs): Promise<void> {
+export default function updateBadges(token: string, inputs: Inputs): void {
   const log = new LogTask(token);
   const enableVersioning = inputs.config.get('versioning:badges');
   const badges: IBadge[] = [];
@@ -77,6 +76,7 @@ export default async function updateBadges(token: string, inputs: Inputs): Promi
     badges.push(...githubBadges());
   }
   const content = generateBadges();
-  await updateReadme(content, token, inputs.readmePath);
+  inputs.readmeEditor.updateSection(token, content);
+
   log.success();
 }

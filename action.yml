@@ -1,6 +1,8 @@
 name: 📓 GitHub Action's Readme Generator
 author: Jamie Nelson <jamie@bitflight.io>
-description: Maintain a current README.md with content from the action.yml file
+description: |
+  Keep the README.md `usage`, `inputs` and `outputs` in sync with the `action.yml` file.
+  Additionally the Action's usage example is updated to match the Action's current release.
 
 branding:
   icon: book-open

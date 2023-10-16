@@ -5,15 +5,18 @@ import updateSection from './sections';
 
 export const inputs = new Inputs();
 // This script rebuilds the usage section in the README.md to be consistent with the action.yml
-export default async function generateDocs(): Promise<void> {
+export default function generateDocs(): void {
   const log = new LogTask('generating readme');
-  try {
-    const sectionsPromises = [];
-    for (const section of inputs.sections) {
-      sectionsPromises.push(updateSection(section, inputs));
+
+  for (const section of inputs.sections) {
+    try {
+      updateSection(section, inputs);
+    } catch (error: any) {
+      if (error && 'message' in error && error.message)
+        log.error(`Error occured in section ${section}. ${error.message}`);
     }
-    return Promise.all(sectionsPromises).then(() => save(inputs));
-  } catch (error: any) {
-    if (error && 'message' in error && error.message) log.error(error.message as string);
   }
+  inputs.readmeEditor.dumpToFile();
+
+  save(inputs);
 }

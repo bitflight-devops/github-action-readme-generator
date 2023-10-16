@@ -1,3 +1,2 @@
 upgrade: true
-filter: []
 reject: ["chalk"]

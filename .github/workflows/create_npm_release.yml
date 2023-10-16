@@ -57,7 +57,7 @@ jobs:
           git fetch --tags
           git status --porcelain -u
 
-      - run: npm ci
+      - run: npm install
       - run: npm run test
       - run: npm run "build:inputs"
       - run: npm run build

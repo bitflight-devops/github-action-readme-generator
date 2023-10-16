@@ -12,3 +12,4 @@ CHANGELOG.md
 **/.trunk/**
 **/.husky
 package.json
+.ghadocs.json

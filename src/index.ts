@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
-import generateDocs from './generate-docs';
+import { generateDocs } from './generate-docs.js';
 
 generateDocs();

@@ -11,17 +11,32 @@
       "extensions": [
         ".js",
         ".ts",
+        ".mts",
+        ".mjs",
+        ".cjs",
+        ".cts",
         "html"
       ]
     },
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": true,
     },
-    "github.copilot.advanced": {
-
-    },
+    "github.copilot.advanced": {},
     "eslint.debug": true,
     "json.schemas": [
+      {
+        "fileMatch": [
+          "/.github/workflows/*.yml",
+          "/.github/workflows/*.yaml"
+        ],
+        "url": "https://json.schemastore.org/github-workflow.json"
+      },
+      {
+        "fileMatch": [
+          "/package.json"
+        ],
+        "url": "https://json.schemastore.org/package.json"
+      },
       {
         "fileMatch": [
           ".ncurc",
@@ -32,7 +47,8 @@
     ],
     "yaml.schemas": {
       "https://raw.githubusercontent.com/raineorshine/npm-check-updates/main/src/types/RunOptions.json": [
-          ".ncurc.yml",
+        ".ncurc.yml",
       ]
-    }
+    },
+    "typescript.tsdk": "./node_modules/typescript/lib"
   }

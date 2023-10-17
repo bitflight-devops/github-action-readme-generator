@@ -1,11 +1,11 @@
-import Inputs from './inputs';
-import LogTask from './logtask';
-import save from './save';
-import updateSection from './sections';
+import Inputs from './inputs.js';
+import LogTask from './logtask/index.js';
+import save from './save.js';
+import updateSection from './sections/index.js';
 
 export const inputs = new Inputs();
 // This script rebuilds the usage section in the README.md to be consistent with the action.yml
-export default function generateDocs(): void {
+export function generateDocs(): void {
   const log = new LogTask('generating readme');
 
   for (const section of inputs.sections) {

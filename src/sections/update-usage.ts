@@ -1,7 +1,7 @@
-import { getCurrentVersionString } from '../helpers';
-import type Inputs from '../inputs';
-import LogTask from '../logtask';
-import { wrapDescription } from '../prettier';
+import { getCurrentVersionString } from '../helpers.js';
+import type Inputs from '../inputs.js';
+import LogTask from '../logtask/index.js';
+import { wrapDescription } from '../prettier.js';
 
 export default function updateUsage(token: string, inputs: Inputs): void {
   const log = new LogTask(token);

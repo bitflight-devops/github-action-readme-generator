@@ -1,15 +1,20 @@
-import type Inputs from '../inputs';
-import LogTask from '../logtask';
-import updateBadges from './update-badges';
-import updateDescription from './update-description';
-import updateInputs from './update-inputs';
-import updateOutputs from './update-outputs';
-import updateTitle from './update-title';
-import updateUsage from './update-usage';
+import type Inputs from '../inputs.js';
+import LogTask from '../logtask/index.js';
+import updateBadges from './update-badges.js';
+import updateBranding from './update-branding.js';
+import updateDescription from './update-description.js';
+import updateInputs from './update-inputs.js';
+import updateOutputs from './update-outputs.js';
+import updateTitle from './update-title.js';
+import updateUsage from './update-usage.js';
 
 export default function updateSection(section: string, inputs: Inputs): void {
   const log = new LogTask('updateSection');
   switch (section) {
+    case 'branding': {
+      updateBranding(section, inputs);
+      break;
+    }
     case 'badges': {
       updateBadges(section, inputs);
       break;

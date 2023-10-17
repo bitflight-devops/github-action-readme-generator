@@ -1,5 +1,7 @@
 <!-- start title -->
 <!-- end title -->
+<!-- start branding -->
+<!-- end branding -->
 <!-- start description -->
 <!-- end description -->
 <!-- start contents -->

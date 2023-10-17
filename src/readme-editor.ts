@@ -1,8 +1,8 @@
 import * as fs from 'node:fs';
 import { EOL } from 'node:os';
 
-import LogTask from './logtask';
-import { formatMarkdown } from './prettier';
+import LogTask from './logtask/index.js';
+import { formatMarkdown } from './prettier.js';
 
 export const startTokenFormat = '<!-- start %s -->';
 export const endTokenFormat = '<!-- end %s -->';

@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import type Inputs from './inputs';
-import LogTask from './logtask';
+import type Inputs from './inputs.js';
+import LogTask from './logtask/index.js';
 
 export interface Versioning {
   enabled?: boolean;
@@ -25,7 +25,7 @@ export class GHActionDocsConfig {
 
   paths?: Paths;
 
-  show_logo?: boolean;
+  github_action_branding_svg_path?: string;
 
   versioning?: Versioning;
 
@@ -41,7 +41,9 @@ export class GHActionDocsConfig {
     this.title_prefix = inputs.config.get('title_prefix') as string;
     this.title = inputs.config.get('title') as string;
     this.paths = inputs.config.get('paths') as Paths;
-    this.show_logo = inputs.config.get('show_logo') as boolean;
+    this.github_action_branding_svg_path = inputs.config.get(
+      'github_action_branding_svg_path',
+    ) as string;
     this.versioning = {
       enabled: inputs.config.get('versioning:enabled') as boolean,
       prefix: inputs.config.get('versioning:prefix') as string,

@@ -166,7 +166,3 @@ You can modify the script below to include any extra variables you like or use n
 <!-- end outputs -->
 <!-- start [.github/ghadocs/examples/] -->
 <!-- end [.github/ghadocs/examples/] -->
-
-```
-
-```

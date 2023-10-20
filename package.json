@@ -51,7 +51,7 @@
     "build:docker": "run-script-os",
     "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:20-alpine sh -c 'npm run build'",
     "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:20-alpine sh -c \"npm run build\"",
-    "build:inputs": "esbuild --bundle src/inputs.test.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --target=node20 && chmod -R +x dist/ && node ./dist/testInputs.cjs",
+    "build:inputs": "node scripts/esbuild-inputs-test.mjs && node ./out/inputs.test.js",
     "bump": "npm version -i patch && npm run release",
     "bump:minor": "version -i minor && npm run release",
     "clean": "rimraf dist",

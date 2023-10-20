@@ -6,8 +6,8 @@ await(async()=>{let{dirname:e}=await import("path"),{fileURLToPath:i}=await impo
 `;
 await esbuild
   .build({
-    entryPoints: ['./src/index.ts'],
-    outdir: './dist/bin/',
+    entryPoints: ['./src/inputs.test.ts'],
+    outdir: './out',
     bundle: true,
     minify: false,
     treeShaking: true,

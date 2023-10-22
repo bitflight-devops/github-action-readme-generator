@@ -1,6 +1,6 @@
-import type { Repo } from '../helpers';
-import type Inputs from '../inputs';
-import LogTask from '../logtask';
+import type { Repo } from '../helpers.js';
+import type Inputs from '../inputs.js';
+import LogTask from '../logtask/index.js';
 
 export interface IBadge {
   alt: string;

@@ -13,3 +13,4 @@ CHANGELOG.md
 **/.husky
 package.json
 .ghadocs.json
+package-lock.json

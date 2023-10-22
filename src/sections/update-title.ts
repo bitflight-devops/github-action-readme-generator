@@ -1,5 +1,5 @@
-import type Inputs from '../inputs';
-import LogTask from '../logtask';
+import type Inputs from '../inputs.js';
+import LogTask from '../logtask/index.js';
 
 export default function updateTitle(token: string, inputs: Inputs): void {
   const log = new LogTask(token);

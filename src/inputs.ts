@@ -1,19 +1,22 @@
+/* eslint-disable import/no-extraneous-dependencies */
+/* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import type { Context } from '@actions/github/lib/context';
-import * as yaml from 'js-yaml';
-import * as nconf from 'nconf';
+import type { Context } from '@actions/github/lib/context.js';
+import YAML from 'yaml';
 
-import Action from './Action';
-import { repositoryFinder } from './helpers';
-import LogTask from './logtask';
-import ReadmeEditor from './readme-editor';
-import { workingDirectory } from './working-directory';
+import Action from './Action.js';
+import { repositoryFinder } from './helpers.js';
+import LogTask from './logtask/index.js';
+import { Provider } from './nconf/nconf.cjs';
+import ReadmeEditor from './readme-editor.js';
+import { workingDirectory } from './working-directory.js';
 
 const log = new LogTask('inputs');
+
 process.chdir(workingDirectory());
 const githubEventPath = process.env.GITHUB_EVENT_PATH ?? '';
 let githubEvent: Context | null = null;
@@ -30,7 +33,7 @@ export const configKeys: string[] = [
   'save',
   pathsAction,
   pathsReadme,
-  'show_logo',
+  'branding_svg_path',
   'versioning:enabled',
   'versioning:override',
   'versioning:prefix',
@@ -45,8 +48,9 @@ interface KVPairType {
   key: string;
   value: string | undefined;
 }
+type ProviderInstance = InstanceType<typeof Provider>;
 export default class Inputs {
-  public config: nconf.Provider;
+  public config: ProviderInstance;
 
   public sections: string[];
 
@@ -60,7 +64,7 @@ export default class Inputs {
 
   constructor() {
     this.configPath = path.resolve(configFileName);
-    this.config = new nconf.Provider();
+    this.config = new Provider();
     const repositoryDetail = repositoryFinder(null, githubEvent);
     if (process.env.GITHUB_ACTION) {
       log.info('running in GitHub action');
@@ -141,9 +145,10 @@ export default class Inputs {
           type: 'string',
           describe: 'Path to the README file',
         },
-        'show_logo': {
-          alias: 'logo',
-          describe: "Display the action's logo in the README",
+        'branding_svg_path': {
+          alias: 'svg',
+          type: 'string',
+          describe: 'Save and load the branding svg image in the README from this path',
         },
         'owner': {
           alias: 'owner',
@@ -195,38 +200,84 @@ export default class Inputs {
       })
       .file(this.configPath)
       .defaults({
-        save: true,
         owner: repositoryDetail?.owner,
         repo: repositoryDetail?.repo,
-        paths: {
-          action: 'action.yml',
-          readme: 'README.md',
-        },
-        show_logo: true,
-        pretty: true,
-        versioning: {
-          enabled: true,
-          override: '',
-          prefix: 'v',
-          branch: 'main',
-          badges: true,
-        },
-        title_prefix: 'GitHub Action: ',
-        sections: ['title', 'description', 'usage', 'inputs', 'outputs', 'contents', 'badges'],
+        sections: [
+          'title',
+          'branding',
+          'description',
+          'usage',
+          'inputs',
+          'outputs',
+          'contents',
+          'badges',
+        ],
       })
       .required(['owner', 'repo']);
 
     this.sections = this.config.get('sections') as string[];
-    this.readmePath = path.resolve(this.config.get(pathsReadme) as string);
+
     const actionPath = path.resolve(this.config.get(pathsAction) as string);
     this.action = new Action(actionPath);
+    this.readmePath = path.resolve(this.config.get(pathsReadme) as string);
+    try {
+      const thisActionPath = path.join(__dirname, '../../action.yml');
+      const thisAction = new Action(thisActionPath);
+      this.setConfigValueFromActionFileDefault(thisAction, 'readme', pathsReadme);
+      this.setConfigValueFromActionFileDefault(thisAction, 'title_prefix');
+      this.setConfigValueFromActionFileDefault(thisAction, 'save');
+      this.setConfigValueFromActionFileDefault(thisAction, 'pretty');
+      this.setConfigValueFromActionFileDefault(
+        thisAction,
+        'versioning_enabled',
+        'versioning:enabled',
+      );
+      this.setConfigValueFromActionFileDefault(
+        thisAction,
+        'versioning_default_branch',
+        'versioning:branch',
+      );
+      this.setConfigValueFromActionFileDefault(
+        thisAction,
+        'version_override',
+        'versioning:override',
+      );
+      this.setConfigValueFromActionFileDefault(thisAction, 'version_prefix', 'versioning:prefix');
+      this.setConfigValueFromActionFileDefault(
+        thisAction,
+        'include_github_version_badge',
+        'versioning:badges',
+      );
+      this.setConfigValueFromActionFileDefault(thisAction, 'branding_svg_path');
+    } catch (error) {
+      log.info(`failed to load defaults from action's action.yml: ${error}`);
+    }
+
     this.readmeEditor = new ReadmeEditor(this.readmePath);
     if (LogTask.isDebug()) {
-      log.debug('resolved inputs:');
-      log.debug(this.stringify());
-      log.debug('resolved action:');
-      log.debug(this.action.stringify());
+      try {
+        log.debug('resolved inputs:');
+        log.debug(this.stringify());
+        log.debug('resolved action:');
+        log.debug(this.action.stringify());
+      } catch (error) {
+        if (typeof error === 'string') {
+          log.debug(error);
+        }
+      }
     }
+  }
+
+  setConfigValueFromActionFileDefault(
+    actionInstance: Action,
+    inputName: string,
+    providedConfigName?: string,
+  ): void {
+    const configName = providedConfigName ?? inputName;
+    this.config.set(
+      configName,
+      this.config.get(configName) ?? actionInstance.inputDefault(inputName),
+    );
   }
 
   stringify(): string {
@@ -235,9 +286,7 @@ export default class Inputs {
       for (const k of configKeys) {
         output.push(`${k}: ${this.config.get(k)}`);
       }
-      return yaml.dump(output, {
-        skipInvalid: true,
-      });
+      return YAML.stringify(output);
     }
     return '';
   }

@@ -1,7 +1,7 @@
-import { columnHeader, rowHeader } from '../helpers';
-import type Inputs from '../inputs';
-import LogTask from '../logtask';
-import markdowner from '../markdowner';
+import { columnHeader, rowHeader } from '../helpers.js';
+import type Inputs from '../inputs.js';
+import LogTask from '../logtask/index.js';
+import markdowner from '../markdowner/index.js';
 
 export default function updateOutputs(token: string, inputs: Inputs): void {
   const log = new LogTask(token);

@@ -1,10 +1,10 @@
 import * as fs from 'node:fs';
 
-import type { Context } from '@actions/github/lib/context';
+import type { Context } from '@actions/github/lib/context.js';
 import type { PackageJson } from 'types-package-json';
 
-import type Inputs from './inputs';
-import LogTask from './logtask';
+import type Inputs from './inputs.js';
+import LogTask from './logtask/index.js';
 
 //
 // Regex below matches any Unicode word and number compatible with ES5. In ES2018 the same result

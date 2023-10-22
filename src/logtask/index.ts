@@ -1,15 +1,27 @@
 import * as core from '@actions/core';
-import * as chalkClass from 'chalk';
+import chalkPkg from 'chalk';
 import * as emoji from 'node-emoji';
 
+const {
+  bgRedBright,
+  cyan,
+  green,
+  greenBright,
+  red,
+  redBright,
+  white,
+  whiteBright,
+  yellow,
+  yellowBright,
+} = chalkPkg;
 const NO_GROUP = 0;
 const START_GROUP = 1;
 const END_GROUP = 2;
 const IS_ERROR = 3;
 const IS_FAILED = 5;
 const IS_TITLE = 6;
-const chalk = chalkClass.default;
-class LogTask {
+
+export default class LogTask {
   static ingroup_setting: { [key: string]: boolean } = {};
 
   static indentWidth = 5;
@@ -42,38 +54,40 @@ class LogTask {
     if (step.length > LogTask.indentWidth) {
       LogTask.indentWidth = step.length;
     }
+    let failed = false;
     let desc: string;
     switch (step) {
       case 'START': {
-        desc = chalk.yellowBright(`${description}`);
+        desc = yellowBright(`${description}`);
         break;
       }
       case 'INFO': {
-        desc = chalk.green(`${description}`);
+        desc = green(`${description}`);
         break;
       }
       case 'WARN': {
-        desc = chalk.yellow(`${description}`);
+        desc = yellow(`${description}`);
         break;
       }
       case 'SUCCESS': {
-        desc = chalk.greenBright(`${description}`);
+        desc = greenBright(`${description}`);
         break;
       }
       case 'FAILURE': {
-        desc = chalk.redBright(`${description}`);
+        desc = redBright(`${description}`);
+        failed = true;
         break;
       }
       case 'ERROR': {
-        desc = chalk.redBright(`${description}`);
+        desc = redBright(`${description}`);
         break;
       }
       case '#####': {
-        desc = chalk.cyan(`${description}`);
+        desc = cyan(`${description}`);
         break;
       }
       default: {
-        desc = chalk.white(`${description}`);
+        desc = white(`${description}`);
         break;
       }
     }
@@ -92,19 +106,19 @@ class LogTask {
     }
     switch (step) {
       case 'START': {
-        msg = chalk.yellowBright(`${msg}`);
+        msg = yellowBright(`${msg}`);
         break;
       }
       case 'SUCCESS': {
-        msg = chalk.whiteBright(`${msg}`);
+        msg = whiteBright(`${msg}`);
         break;
       }
       case 'FAILURE': {
-        msg = chalk.red(`${msg}`);
+        msg = red(`${msg}`);
         break;
       }
       case 'ERROR': {
-        msg = chalk.red(`${msg}`);
+        msg = red(`${msg}`);
         break;
       }
       default: {
@@ -126,12 +140,12 @@ class LogTask {
           break;
         }
         case IS_ERROR: {
-          core.error(chalk.bgRedBright(msg));
+          core.error(bgRedBright(msg));
 
           break;
         }
         case IS_FAILED: {
-          core.setFailed(chalk.bgRedBright(msg));
+          core.setFailed(bgRedBright(msg));
 
           break;
         }
@@ -140,7 +154,11 @@ class LogTask {
         }
       }
     } else if (isErroring) {
-      core.error(msg);
+      if (failed) {
+        core.setFailed(msg);
+      } else {
+        core.error(msg);
+      }
     } else {
       core.info(msg);
     }
@@ -197,5 +215,3 @@ class LogTask {
     this.logStep('📓', '#####', description, IS_TITLE);
   }
 }
-
-export default LogTask;

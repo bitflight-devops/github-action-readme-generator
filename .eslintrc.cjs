@@ -1,9 +1,17 @@
 const pp = 'plugin:prettier/recommended';
+
+/**
+ * note: these rules are disabled because they are handled by prettier
+ * - @typescript-eslint/func-call-spacing
+ * - @typescript-eslint/semi
+ * - @typescript-eslint/type-annotation-spacing
+ * - operator-linebreak
+ */
 module.exports = {
   root: true,
   env: {
     node: true,
-    es6: true,
+    es2022: true,
     browser: false,
   },
   overrides: [
@@ -29,7 +37,7 @@ module.exports = {
       },
     },
     {
-      files: ['*.js', '*.cjs', '*.jsx'],
+      files: ['*.cjs', '*.jsx'],
 
       extends: ['airbnb-base', 'eslint:recommended', pp],
       rules: {
@@ -74,7 +82,7 @@ module.exports = {
       processor: 'actions/actions',
     },
     {
-      files: ['*.ts'],
+      files: ['**/*.ts', '**/*.mts'],
       plugins: [
         'simple-import-sort',
         'import',
@@ -102,7 +110,7 @@ module.exports = {
       ],
       parser: '@typescript-eslint/parser',
       parserOptions: {
-        ecmaVersion: 'latest',
+        ecmaVersion: 2020,
         sourceType: 'module',
         project: ['./tsconfig.json'],
         tsconfigRootDir: __dirname,
@@ -124,7 +132,7 @@ module.exports = {
           },
         ],
         'jest-async/expect-return': 'error',
-        'operator-linebreak': ['error', 'after'],
+        'operator-linebreak': 'off',
         'dot-notation': 'off',
         '@typescript-eslint/dot-notation': ['error'],
         '@typescript-eslint/array-type': 'error',
@@ -137,7 +145,7 @@ module.exports = {
           { accessibility: 'no-public' },
         ],
         'import/no-unresolved': 'error',
-        '@typescript-eslint/func-call-spacing': ['error', 'never'],
+        '@typescript-eslint/func-call-spacing': 'off',
         '@typescript-eslint/lines-between-class-members': ['error'],
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-require-imports': 'error',
@@ -154,9 +162,9 @@ module.exports = {
         '@typescript-eslint/require-array-sort-compare': 'error',
         '@typescript-eslint/restrict-plus-operands': 'error',
         '@typescript-eslint/restrict-template-expressions': 'off',
-        '@typescript-eslint/semi': 'error',
+        '@typescript-eslint/semi': 'off',
         '@typescript-eslint/strict-boolean-expressions': 'off',
-        '@typescript-eslint/type-annotation-spacing': 'error',
+        '@typescript-eslint/type-annotation-spacing': 'off',
         '@typescript-eslint/unbound-method': 'error',
         'quote-props': 'off',
         'camelcase': 'off',
@@ -203,7 +211,6 @@ module.exports = {
       env: {
         'browser': false,
         'node': true,
-        'es6': true,
         'es2022': true,
         'jest/globals': true,
       },

@@ -1,9 +1,10 @@
+/* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
 import * as fs from 'node:fs';
 
-import * as yaml from 'js-yaml';
+import YAML from 'yaml';
 
-import LogTask from './logtask';
+import LogTask from './logtask/index.js';
 
 export interface InputType {
   description?: string;
@@ -44,7 +45,8 @@ export default class Action {
     let tmpActionYaml = null;
     try {
       log.debug(`loading action.yml from ${actionPath}`);
-      tmpActionYaml = yaml.load(fs.readFileSync(actionPath, 'utf8')) as Action;
+      const actionString = fs.readFileSync(actionPath, 'utf8');
+      tmpActionYaml = YAML.parse(actionString) as Action;
       log.success('loaded configuration successfully');
     } catch {
       log.error(`failed to load ${actionPath}`);
@@ -61,11 +63,13 @@ export default class Action {
     this.runs = actionYaml.runs;
   }
 
+  inputDefault(inputName: string): string | undefined {
+    return this.inputs[inputName]?.default;
+  }
+
   stringify(): string {
     try {
-      return yaml.dump(this, {
-        skipInvalid: true,
-      });
+      return YAML.stringify(this);
     } catch {
       const log = new LogTask('action:stringify');
       log.error('failed to stringify action.yml');

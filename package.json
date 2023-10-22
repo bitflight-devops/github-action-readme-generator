@@ -1,22 +1,8 @@
 {
   "name": "github-action-readme-generator",
+  "displayName": "bitflight-devops/github-action-readme-generator",
   "version": "1.6.0",
   "description": "This is a CLI tool and GitHub Action that reads in the details from a \nGitHub Action's `action.yml` file and updates the `README.md` file\nwith the `name`, `description`, `usage`, `inputs`, `outputs`, and\nexamples of the action.\nConfiguration can be provided via a `.ghadocs.json` file stored in the\nroot directory of the Action's repository, via the command line when\nusing the cli, or via the `with:` section of this Action.\n\n\nThis tool uses markdown comments as delimiting tokens within the `README.md`\nfile to determine where to place the generated content.\n\n[`README.example.md`](README.example.md) example with all fields filled in, and no other free-form content.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "bin": "dist/index.js",
-  "displayName": "bitflight-devops/github-action-readme-generator",
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/bitflight-devops/github-action-readme-generator"
-  },
-  "bugs": {
-    "url": "https://github.com/bitflight-devops/github-action-readme-generator/issues"
-  },
   "keywords": [
     "actions",
     "github",
@@ -27,53 +13,59 @@
     "generator",
     "readme-generator"
   ],
-  "author": "Jamie Nelson <jamie@bitflight.io>",
+  "bugs": {
+    "url": "https://github.com/bitflight-devops/github-action-readme-generator/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bitflight-devops/github-action-readme-generator"
+  },
   "license": "APACHE",
+  "author": "Jamie Nelson <jamie@bitflight.io>",
+  "type": "module",
+  "exports": {
+    "import": "./dist/mjs/index.js",
+    "require": "./dist/cjs/index.js"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/mjs/index.js",
+  "types": "dist/types/index.d.ts",
+  "bin": "dist/bin/index.js",
+  "files": [
+    "package.json",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "/dist"
+  ],
   "scripts": {
     "all": "npm run build && npm run format && npm run lint && npm run test",
-    "auto": "auto",
-    "auto:canary": "[ -d dist ] && git add -f dist",
-    "auto:next": "[ -d dist ] && git add -f dist",
-    "auto:publish": "[ -d dist ] && git add -f dist",
-    "auto:version": "npm run generate-docs",
-    "build": "rimraf dist out;node ./scripts/esbuild.mjs && chmod +x dist/index.js",
+    "prebuild": "tsc --project tsconfig.json --noemit",
+    "build": "rimraf dist out;node ./scripts/esbuild.mjs && chmod +x dist/bin/index.js",
+    "postbuild": "tsc --project tsconfig.json --emitDeclarationOnly --declaration --outFile dist/types/index.d.ts && tsc -p tsconfig-mjs.json && ./scripts/set_package_type.sh",
     "build:docker": "run-script-os",
     "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:20-alpine sh -c 'npm run build'",
     "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:20-alpine sh -c \"npm run build\"",
-    "build:inputs": "esbuild --bundle src/testInputs.ts  --out-extension:.js=.cjs --color=true --sourcemap=inline --platform=node --outdir=dist --packages=external --target=node20 && chmod -R +x dist/ && node ./dist/testInputs.cjs",
-    "bump": "npm version -i patch && npm run release",
-    "bump:minor": "version -i minor && npm run release",
+    "build:inputs": "node scripts/esbuild-inputs-test.mjs && node ./out/inputs.test.js;rm -f ./out/inputs.test.js",
     "clean": "rimraf dist",
     "commit": "git-cz",
     "corepack": "corepack enable",
     "current-version": "jq -r '.version' package.json",
-    "generate-docs": "echo 'Generating docs';node dist/index.js && git add README.md",
     "format": "prettier --write . --config .prettierrc.cjs --ignore-unknown",
-    "lint": "eslint -c .eslintrc.cjs --color ./src/ ./__tests__/",
-    "prelint": "npm run format && tsc --project tsconfig.json --noemit",
-    "lint:fix": "npm run lint --fix",
-    "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
-    "lint:markdown:fix": "npm run lint:markdown --fix",
-    "prebuild": "tsc --project tsconfig.json --noemit",
-    "postbuild": "tsc --project tsconfig.json --emitDeclarationOnly --declaration --outFile dist/index.d.ts",
+    "generate-docs": "echo 'Generating docs';node dist/bin/index.js && git add README.md ./.github/ghadocs .ghadocs.json",
     "postinstall": "echo '✨ Successfully Installed'",
-    "postpublish:manual": "git push --follow-tags --set-upstream origin $branch && auto release",
-    "postversion:manual": "git push --tags origin && git push origin",
+    "prelint": "npm run format && tsc --project tsconfig.json --noemit",
+    "lint": "eslint -c .eslintrc.cjs --color ./src/ ./__tests__/",
+    "lint:fix": "npm run lint -- --fix",
+    "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
+    "lint:markdown:fix": "npm run lint:markdown -- --fix",
     "pre-commit": "npm run build && git add dist && npm run generate-docs && lint-staged",
     "prepare": "[ -n ${GITHUB_ACTIONS:-} ] || husky install",
-    "release:post": "npm publish --access public --tag v${npm_package_version} --tag latest",
+    "semantic-release": "semantic-release",
     "test": "NODE_ENV=testing jest --runInBand",
     "test-ci": "NODE_ENV=testing jest --ci --reporters=default --reporters=jest-junit",
     "version:manual": "echo 'Run versioning commands';echo \"::set-output name=tag::v${npm_package_version}\"",
-    "semantic-release": "semantic-release"
-  },
-  "config": {
-    "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
-    },
-    "ghadocs": {
-      "outpath": ".github/tools/generate-docs"
-    }
+    "postversion:manual": "git push --tags origin && git push origin"
   },
   "commitlint": {
     "extends": [
@@ -97,70 +89,91 @@
       ]
     }
   },
-  "engines": {
-    "node": ">= 18"
+  "lint-staged": {
+    "*.{md,json,yaml,yml,sh}": "prettier --write",
+    "{src,__tests__}/**/*.js": "eslint --cache --fix",
+    "*.{ts,mts}": [
+      "eslint --cache --fix"
+    ]
   },
-  "files": [
-    "package.json",
-    "README.md",
-    "LICENSE",
-    "CHANGELOG.md",
-    "/dist"
-  ],
-  "os": [
-    "!win32"
-  ],
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    },
+    "ghadocs": {
+      "outpath": ".github/tools/generate-docs"
+    }
+  },
+  "release": {
+    "branches": [
+      "main",
+      "next",
+      {
+        "name": "alpha",
+        "prerelease": true
+      }
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/changelog",
+      "@semantic-release/npm",
+      [
+        "@semantic-release/github",
+        {
+          "assets": [
+            "dist/**",
+            "action.yml",
+            "package.json"
+          ]
+        }
+      ],
+      "@semantic-release/git"
+    ],
+    "preset": "angular"
+  },
+  "jest-junit": {
+    "classNameTemplate": "{classname}",
+    "suiteNameTemplate": "{filepath}",
+    "titleTemplate": "{title}"
+  },
   "dependencies": {
     "@actions/core": "^1.10.1",
     "@actions/github": "^6.0.0",
-    "async": "^3.2.4",
-    "chalk": "^4",
-    "js-yaml": "^4.1.0",
-    "nconf": "^0.12.0",
+    "@svgdotjs/svg.js": "^3.2.0",
+    "@types/feather-icons": "^4.29.3",
+    "@types/svgdom": "^0.1.1",
+    "chalk": "^5",
+    "feather-icons": "^4.29.1",
     "node-emoji": "^2.1.0",
     "prettier": "^3.0.3",
-    "tslib": "^2.6.2"
+    "svgdom": "^0.1.18",
+    "yaml": "^2.3.3"
   },
   "devDependencies": {
-    "@auto-it/all-contributors": "^11.0.4",
-    "@auto-it/conventional-commits": "^11.0.4",
-    "@auto-it/exec": "^11.0.4",
-    "@auto-it/first-time-contributor": "^11.0.4",
-    "@auto-it/git-tag": "^11.0.4",
-    "@auto-it/npm": "^11.0.4",
-    "@auto-it/omit-commits": "^11.0.4",
-    "@auto-it/released": "^11.0.4",
-    "@auto-it/upload-assets": "^11.0.4",
     "@babel/core": "^7.23.2",
     "@babel/eslint-parser": "^7.22.15",
     "@babel/plugin-proposal-decorators": "^7.23.2",
     "@babel/preset-env": "^7.23.2",
-    "@commitlint/cli": "^17.8.0",
-    "@commitlint/config-conventional": "^17.8.0",
-    "@commitlint/prompt": "^17.8.0",
+    "@commitlint/cli": "^18.0.0",
+    "@commitlint/config-conventional": "^18.0.0",
+    "@commitlint/prompt": "^18.0.0",
     "@jest/types": "^29.6.3",
-    "@prettier/plugin-ruby": "^4.0.2",
-    "@prettier/plugin-xml": "^3.2.1",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
-    "@trunkio/launcher": "^1.2.7",
     "@tsconfig/node20": "^20.1.2",
     "@types/babel__preset-env": "^7",
     "@types/esm": "^3",
-    "@types/jest": "^29.5.5",
-    "@types/js-yaml": "^4.0.7",
-    "@types/nconf": "^0.10.4",
-    "@types/node": "^20.8.6",
-    "@types/node-emoji": "^1.8.2",
-    "@typescript-eslint/eslint-plugin": "^6.7.5",
-    "@typescript-eslint/parser": "^6.7.5",
-    "@typescript-eslint/typescript-estree": "^6.7.5",
+    "@types/jest": "^29.5.6",
+    "@types/node": "^20.8.7",
+    "@types/node-emoji": "^2.1.0",
+    "@typescript-eslint/eslint-plugin": "^6.8.0",
+    "@typescript-eslint/parser": "^6.8.0",
     "commitizen": "^4.3.0",
     "conventional-commits": "^1.6.0",
     "cz-conventional-changelog": "^3.3.0",
-    "date-format": "^4.0.14",
     "dotenv": "^16.3.1",
-    "esbuild": "^0.19.4",
+    "esbuild": "^0.19.5",
     "esbuild-node-externals": "^1.9.0",
     "eslint": "^8.51.0",
     "eslint-config-airbnb-base": "^15.0.0",
@@ -186,57 +199,24 @@
     "jest": "^29.7.0",
     "jest-circus": "^29.7.0",
     "jest-junit": "^16.0.0",
-    "lint-staged": "^15.0.1",
+    "lint-staged": "^15.0.2",
     "markdownlint-cli": "^0.37.0",
-    "prettier-eslint": "^16.1.1",
-    "prettier-plugin-properties": "^0.3.0",
     "rimraf": "^5.0.5",
     "run-script-os": "^1.1.6",
     "semantic-release": "^22.0.5",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.1",
     "types-package-json": "^2.0.39",
-    "typescript": "^5.2.2",
-    "yaml": "^2.3.3"
+    "typescript": "^5.2.2"
   },
-  "jest-junit": {
-    "suiteNameTemplate": "{filepath}",
-    "classNameTemplate": "{classname}",
-    "titleTemplate": "{title}"
+  "engines": {
+    "node": ">= 18"
   },
-  "lint-staged": {
-    "*.{md,json,yaml,yml,sh}": "prettier --write",
-    "{src,__tests__}/**/*.js": "eslint --cache --fix",
-    "*.ts": [
-      "eslint --cache --fix"
-    ]
-  },
-  "release": {
-    "preset": "angular",
-    "branches": [
-      "main",
-      "next",
-      {
-        "name": "alpha",
-        "prerelease": true
-      }
-    ],
-    "plugins": [
-      "@semantic-release/commit-analyzer",
-      "@semantic-release/release-notes-generator",
-      "@semantic-release/changelog",
-      "@semantic-release/npm",
-      [
-        "@semantic-release/github",
-        {
-          "assets": [
-            "dist/**",
-            "action.yml",
-            "package.json"
-          ]
-        }
-      ],
-      "@semantic-release/git"
-    ]
+  "os": [
+    "!win32"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

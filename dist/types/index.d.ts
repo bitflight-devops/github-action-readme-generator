@@ -92,7 +92,8 @@ declare module "src/readme-editor" {
         private readonly filePath;
         private fileContent;
         constructor(filePath: string);
-        updateSection(name: string, providedContent: string | string[]): void;
+        getTokenIndexes(token: string): number[];
+        updateSection(name: string, providedContent: string | string[], addNewlines?: boolean): void;
         dumpToFile(): Promise<void>;
     }
 }
@@ -115,7 +116,7 @@ declare module "src/inputs" {
         action: Action;
         readmeEditor: ReadmeEditor;
         constructor();
-        setConfigValueFromActionFileDefault(inputName: string, providedConfigName?: string): void;
+        setConfigValueFromActionFileDefault(actionInstance: Action, inputName: string, providedConfigName?: string): void;
         stringify(): string;
     }
 }
@@ -137,7 +138,7 @@ declare module "src/config" {
         title_prefix?: string;
         title?: string;
         paths?: Paths;
-        github_action_branding_svg_path?: string;
+        branding_svg_path?: string;
         versioning?: Versioning;
         readmePath?: string;
         outpath?: string;
@@ -165,7 +166,9 @@ declare module "src/sections/update-badges" {
     export default function updateBadges(token: string, inputs: Inputs): void;
 }
 declare module "src/svg-editor" {
+    import type { Container } from '@svgdotjs/svg.js';
     import * as feather from 'feather-icons';
+    import { SVGDocument, SVGWindow } from 'svgdom';
     import LogTask from "src/logtask/index";
     type conforms<T, V> = T extends V ? T : V;
     type FeatherIconKeysArray = keyof typeof feather.icons;
@@ -174,15 +177,15 @@ declare module "src/svg-editor" {
     export const GITHUB_ACTIONS_BRANDING_COLORS: string[];
     export default class SVGEditor {
         log: LogTask;
-        window: any;
-        canvas: any;
-        document: any;
+        window?: SVGWindow;
+        canvas?: Container;
+        document?: SVGDocument;
         constructor();
         init(): Promise<void>;
         /**
          * Generates a svg branding image.
          */
-        generateSvgImage(svgPath?: string, icon?: FeatherIconKeys<keyof typeof feather.icons>, bgcolor?: string): void;
+        generateSvgImage(svgPath: string | undefined, icon?: FeatherIconKeys<keyof typeof feather.icons>, bgcolor?: string): void;
     }
 }
 declare module "src/sections/update-branding" {

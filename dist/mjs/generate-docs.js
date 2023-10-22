@@ -12,7 +12,7 @@ export function generateDocs() {
         }
         catch (error) {
             if (error && 'message' in error && error.message)
-                log.error(`Error occured in section ${section}. ${error.message}`);
+                return log.fail(`Error occured in section ${section}. ${error.message}`);
         }
     }
     inputs.readmeEditor.dumpToFile();

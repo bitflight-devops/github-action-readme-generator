@@ -25,7 +25,7 @@ export class GHActionDocsConfig {
 
   paths?: Paths;
 
-  github_action_branding_svg_path?: string;
+  branding_svg_path?: string;
 
   versioning?: Versioning;
 
@@ -41,9 +41,7 @@ export class GHActionDocsConfig {
     this.title_prefix = inputs.config.get('title_prefix') as string;
     this.title = inputs.config.get('title') as string;
     this.paths = inputs.config.get('paths') as Paths;
-    this.github_action_branding_svg_path = inputs.config.get(
-      'github_action_branding_svg_path',
-    ) as string;
+    this.branding_svg_path = inputs.config.get('branding_svg_path') as string;
     this.versioning = {
       enabled: inputs.config.get('versioning:enabled') as boolean,
       prefix: inputs.config.get('versioning:prefix') as string,

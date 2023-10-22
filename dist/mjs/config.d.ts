@@ -15,7 +15,7 @@ export declare class GHActionDocsConfig {
     title_prefix?: string;
     title?: string;
     paths?: Paths;
-    github_action_branding_svg_path?: string;
+    branding_svg_path?: string;
     versioning?: Versioning;
     readmePath?: string;
     outpath?: string;

@@ -8,8 +8,10 @@ import updateOutputs from './update-outputs.js';
 import updateTitle from './update-title.js';
 import updateUsage from './update-usage.js';
 
+const log = new LogTask('updateSection');
 export default function updateSection(section: string, inputs: Inputs): void {
-  const log = new LogTask('updateSection');
+  const [startToken, stopToken] = inputs.readmeEditor.getTokenIndexes(section);
+  if (startToken === -1 || stopToken === -1) return;
   switch (section) {
     case 'branding': {
       updateBranding(section, inputs);

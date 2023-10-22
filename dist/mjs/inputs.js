@@ -28,7 +28,7 @@ export const configKeys = [
     'save',
     pathsAction,
     pathsReadme,
-    'github_action_branding_svg_path',
+    'branding_svg_path',
     'versioning:enabled',
     'versioning:override',
     'versioning:prefix',
@@ -130,7 +130,7 @@ export default class Inputs {
                 type: 'string',
                 describe: 'Path to the README file',
             },
-            'github_action_branding_svg_path': {
+            'branding_svg_path': {
                 alias: 'svg',
                 type: 'string',
                 describe: 'Save and load the branding svg image in the README from this path',
@@ -201,28 +201,42 @@ export default class Inputs {
         this.sections = this.config.get('sections');
         const actionPath = path.resolve(this.config.get(pathsAction));
         this.action = new Action(actionPath);
-        this.setConfigValueFromActionFileDefault('readme', pathsReadme);
         this.readmePath = path.resolve(this.config.get(pathsReadme));
-        this.setConfigValueFromActionFileDefault('title_prefix');
-        this.setConfigValueFromActionFileDefault('save');
-        this.setConfigValueFromActionFileDefault('pretty');
-        this.setConfigValueFromActionFileDefault('versioning_enabled', 'versioning:enabled');
-        this.setConfigValueFromActionFileDefault('versioning_default_branch', 'versioning:branch');
-        this.setConfigValueFromActionFileDefault('version_override', 'versioning:override');
-        this.setConfigValueFromActionFileDefault('version_prefix', 'versioning:prefix');
-        this.setConfigValueFromActionFileDefault('include_github_version_badge', 'versioning:badges');
-        this.setConfigValueFromActionFileDefault('github_action_branding_svg_path');
+        try {
+            const thisActionPath = path.join(__dirname, '../../action.yml');
+            const thisAction = new Action(thisActionPath);
+            this.setConfigValueFromActionFileDefault(thisAction, 'readme', pathsReadme);
+            this.setConfigValueFromActionFileDefault(thisAction, 'title_prefix');
+            this.setConfigValueFromActionFileDefault(thisAction, 'save');
+            this.setConfigValueFromActionFileDefault(thisAction, 'pretty');
+            this.setConfigValueFromActionFileDefault(thisAction, 'versioning_enabled', 'versioning:enabled');
+            this.setConfigValueFromActionFileDefault(thisAction, 'versioning_default_branch', 'versioning:branch');
+            this.setConfigValueFromActionFileDefault(thisAction, 'version_override', 'versioning:override');
+            this.setConfigValueFromActionFileDefault(thisAction, 'version_prefix', 'versioning:prefix');
+            this.setConfigValueFromActionFileDefault(thisAction, 'include_github_version_badge', 'versioning:badges');
+            this.setConfigValueFromActionFileDefault(thisAction, 'branding_svg_path');
+        }
+        catch (error) {
+            log.info(`failed to load defaults from action's action.yml: ${error}`);
+        }
         this.readmeEditor = new ReadmeEditor(this.readmePath);
         if (LogTask.isDebug()) {
-            log.debug('resolved inputs:');
-            log.debug(this.stringify());
-            log.debug('resolved action:');
-            log.debug(this.action.stringify());
+            try {
+                log.debug('resolved inputs:');
+                log.debug(this.stringify());
+                log.debug('resolved action:');
+                log.debug(this.action.stringify());
+            }
+            catch (error) {
+                if (typeof error === 'string') {
+                    log.debug(error);
+                }
+            }
         }
     }
-    setConfigValueFromActionFileDefault(inputName, providedConfigName) {
+    setConfigValueFromActionFileDefault(actionInstance, inputName, providedConfigName) {
         const configName = providedConfigName ?? inputName;
-        this.config.set(configName, this.config.get(configName) ?? this.action.inputDefault(inputName));
+        this.config.set(configName, this.config.get(configName) ?? actionInstance.inputDefault(inputName));
     }
     stringify() {
         if (this) {

@@ -50,7 +50,7 @@ function generateImgMarkup(svgPath: string, brand: Branding): string {
 }
 export default function updateBranding(token: string, inputs: Inputs): void {
   const log = new LogTask(token);
-  const svgPath = inputs.config.get('github_action_branding_svg_path') as string;
+  const svgPath = inputs.config.get('branding_svg_path') as string;
 
   log.info(`Brand details: ${JSON.stringify(inputs.action.branding)}`);
 

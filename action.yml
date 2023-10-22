@@ -64,7 +64,7 @@ inputs:
       Include additional badge showing latest tag
     required: false
     default: true
-  github_action_branding_svg_path:
+  branding_svg_path:
     description: >
       Save and load the branding svg image in the README from this path
     required: false

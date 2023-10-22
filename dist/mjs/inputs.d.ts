@@ -12,7 +12,7 @@ export default class Inputs {
     action: Action;
     readmeEditor: ReadmeEditor;
     constructor();
-    setConfigValueFromActionFileDefault(inputName: string, providedConfigName?: string): void;
+    setConfigValueFromActionFileDefault(actionInstance: Action, inputName: string, providedConfigName?: string): void;
     stringify(): string;
 }
 export {};

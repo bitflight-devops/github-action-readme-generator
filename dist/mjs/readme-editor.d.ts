@@ -4,6 +4,7 @@ export default class ReadmeEditor {
     private readonly filePath;
     private fileContent;
     constructor(filePath: string);
-    updateSection(name: string, providedContent: string | string[]): void;
+    getTokenIndexes(token: string): number[];
+    updateSection(name: string, providedContent: string | string[], addNewlines?: boolean): void;
     dumpToFile(): Promise<void>;
 }

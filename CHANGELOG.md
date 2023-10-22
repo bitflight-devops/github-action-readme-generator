@@ -1,3 +1,18 @@
+# [1.7.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.6.0...v1.7.0) (2023-10-22)
+
+
+### Bug Fixes
+
+* **readme:** newlines missing around content sections in readme ([0ca9980](https://github.com/bitflight-devops/github-action-readme-generator/commit/0ca99809b643d5e82958dda81c6db5d7bdb1c423))
+
+
+### Features
+
+* **branding:** icons now correctly centered on circle ([2c26d93](https://github.com/bitflight-devops/github-action-readme-generator/commit/2c26d93f8452d77bf8516260f6fcfd45196e9590))
+* **branding:** new segment for readme generates action.yml branding svg ([07c3bbe](https://github.com/bitflight-devops/github-action-readme-generator/commit/07c3bbecc903787613d3ffcae016673785b1016d))
+* **engines:** update node engines to be >= 18, from 14 ([35b5d08](https://github.com/bitflight-devops/github-action-readme-generator/commit/35b5d089a2cb83cdf6bfe88a2bc45cf6aba90a12))
+* improve devx ([9f34cf8](https://github.com/bitflight-devops/github-action-readme-generator/commit/9f34cf8926303b84d2040ddb072ebe6bb6f9820d))
+
 # [1.6.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.5.1...v1.6.0) (2023-10-16)
 
 

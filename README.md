@@ -103,7 +103,7 @@ You can modify the script below to include any extra variables you like or use n
 <!-- start usage -->
 
 ```yaml
-- uses: bitflight-devops/github-action-readme-generator@v1.6.0
+- uses: bitflight-devops/github-action-readme-generator@v1.7.0
   with:
     # Default: action.yml
     action: ''

@@ -6,12 +6,12 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import type { Context } from '@actions/github/lib/context.js';
+import { Provider } from 'nconf';
 import YAML from 'yaml';
 
 import Action from './Action.js';
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
-import { Provider } from './nconf/nconf.cjs';
 import ReadmeEditor from './readme-editor.js';
 import { workingDirectory } from './working-directory.js';
 

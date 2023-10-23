@@ -1,5 +1,5 @@
+import { Provider } from 'nconf';
 import Action from './Action.js';
-import { Provider } from './nconf/nconf.cjs';
 import ReadmeEditor from './readme-editor.js';
 export declare const configFileName = ".ghadocs.json";
 export declare const configKeys: string[];

@@ -3,7 +3,8 @@ import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import { wrapDescription } from '../prettier.js';
 
-export default function updateUsage(token: string, inputs: Inputs): void {
+type DescriptionType = Record<string, string[]>;
+export default async function updateUsage(token: string, inputs: Inputs): Promise<void> {
   const log = new LogTask(token);
   log.start();
   const actionName = `${inputs.config.get('owner') as string}/${inputs.config.get('repo')}`;
@@ -25,6 +26,24 @@ export default function updateUsage(token: string, inputs: Inputs): void {
 
   const inp = inputs.action.inputs;
   let firstInput = true;
+  const descriptionPromises: Record<string, Promise<string[]>> = {};
+  for (const key of Object.keys(inp)) {
+    const input = inp[key];
+    if (input !== undefined) {
+      descriptionPromises[key] = wrapDescription(`Description: ${input.description}`, [], '    # ');
+    }
+  }
+  const descriptions: DescriptionType = {};
+  const kvArray = await Promise.all(
+    Object.keys(descriptionPromises).map(async (key) => {
+      return { key, value: await descriptionPromises[key] };
+    }),
+  );
+  for (const e of kvArray) {
+    descriptions[e.key] = e.value;
+    log.info(`${e.key}: ${descriptions[e.key].join('\n')}`);
+  }
+
   if (inp) {
     for (const key of Object.keys(inp)) {
       const input = inp[key];
@@ -35,13 +54,13 @@ export default function updateUsage(token: string, inputs: Inputs): void {
         }
 
         // Constrain the width of the description, and append it
-        wrapDescription(input.description, content, '    # ');
+        content.push(...descriptions[key]);
 
         if (input.default !== undefined) {
           // Append blank line if description had paragraphs
-          if (input.description?.trimEnd().match(/\n *\r?\n/)) {
-            content.push('    #');
-          }
+          // if (input.description?.trimEnd().match(/\n *\r?\n/)) {
+          //   content.push('    #');
+          // }
 
           // Default
           content.push(`    # Default: ${input.default}`);

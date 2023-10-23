@@ -1,2 +1,2 @@
 import type Inputs from '../inputs.js';
-export default function updateSection(section: string, inputs: Inputs): void;
+export default function updateSection(section: string, inputs: Inputs): Promise<void>;

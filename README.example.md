@@ -1,7 +1,13 @@
-<!-- start title -->
-<!-- end title -->
+<div align="center" width="100%">
 <!-- start branding -->
 <!-- end branding -->
+<!-- start title -->
+<!-- end title -->
+<!-- start badges -->
+<!-- end badges -->
+---
+
+</div>
 <!-- start description -->
 <!-- end description -->
 <!-- start contents -->

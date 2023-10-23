@@ -9,40 +9,39 @@ import updateTitle from './update-title.js';
 import updateUsage from './update-usage.js';
 
 const log = new LogTask('updateSection');
-export default function updateSection(section: string, inputs: Inputs): void {
+export default async function updateSection(section: string, inputs: Inputs): Promise<void> {
   const [startToken, stopToken] = inputs.readmeEditor.getTokenIndexes(section);
-  if (startToken === -1 || stopToken === -1) return;
+  if (
+    (startToken === -1 || stopToken === -1) &&
+    ['branding', 'title'].includes(section) &&
+    inputs.config.get('branding_as_title_prefix') !== true
+  ) {
+    return;
+  }
   switch (section) {
     case 'branding': {
-      updateBranding(section, inputs);
-      break;
+      return updateBranding(section, inputs);
     }
     case 'badges': {
-      updateBadges(section, inputs);
-      break;
+      return updateBadges(section, inputs);
     }
     case 'usage': {
-      updateUsage(section, inputs);
-      break;
+      return updateUsage(section, inputs);
     }
     case 'title': {
-      updateTitle(section, inputs);
-      break;
+      return updateTitle(section, inputs);
     }
     case 'description': {
-      updateDescription(section, inputs);
-      break;
+      return updateDescription(section, inputs);
     }
     case 'inputs': {
-      updateInputs(section, inputs);
-      break;
+      return updateInputs(section, inputs);
     }
     case 'outputs': {
-      updateOutputs(section, inputs);
-      break;
+      return updateOutputs(section, inputs);
     }
     default: {
-      log.debug(`unknown section ${section}`);
+      return log.debug(`unknown section ${section}`);
     }
   }
 }

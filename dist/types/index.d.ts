@@ -83,7 +83,7 @@ declare module "src/helpers" {
 declare module "src/prettier" {
     export function formatYaml(value: string, filepath?: string): Promise<string>;
     export function formatMarkdown(value: string, filepath?: string): Promise<string>;
-    export function wrapDescription(value: string | undefined, content: string[], prefix: string): Promise<string[]>;
+    export function wrapDescription(value: string | undefined, content: string[], prefix?: string): Promise<string[]>;
 }
 declare module "src/readme-editor" {
     export const startTokenFormat = "<!-- start %s -->";
@@ -152,6 +152,15 @@ declare module "src/config" {
         save(configPath: string): void;
     }
 }
+declare module "src/constants" {
+    export const brandingSquareEdgeLengthInPixels = 50;
+    export const DEFAULT_BRAND_COLOR = "blue";
+    export const DEFAULT_BRAND_ICON = "activity";
+    export const ALIGNMENT_MARKUP = "<div align=\"center\">";
+    export const GITHUB_ACTIONS_OMITTED_ICONS: Set<string>;
+    export const GITHUB_ACTIONS_BRANDING_ICONS: Set<string>;
+    export const GITHUB_ACTIONS_BRANDING_COLORS: string[];
+}
 declare module "src/save" {
     import Inputs from "src/inputs";
     export default function save(inputs: Inputs): void;
@@ -173,8 +182,6 @@ declare module "src/svg-editor" {
     type conforms<T, V> = T extends V ? T : V;
     type FeatherIconKeysArray = keyof typeof feather.icons;
     type FeatherIconKeys<T extends string, R = FeatherIconKeysArray> = conforms<T, R>;
-    export const GITHUB_ACTIONS_BRANDING_ICONS: Set<string>;
-    export const GITHUB_ACTIONS_BRANDING_COLORS: string[];
     export default class SVGEditor {
         log: LogTask;
         window?: SVGWindow;
@@ -189,12 +196,17 @@ declare module "src/svg-editor" {
     }
 }
 declare module "src/sections/update-branding" {
+    import * as feather from 'feather-icons';
+    import type { Branding } from "src/Action";
     import type Inputs from "src/inputs";
+    type FeatherIconKeysArray = keyof typeof feather.icons;
     export interface IBranding {
         alt: string;
         img: string;
         url?: string;
     }
+    export function getValidIconName(brand?: Branding): FeatherIconKeysArray;
+    export function generateImgMarkup(inputs: Inputs, width?: string): string;
     export default function updateBranding(token: string, inputs: Inputs): void;
 }
 declare module "src/sections/update-description" {
@@ -234,16 +246,16 @@ declare module "src/sections/update-title" {
 }
 declare module "src/sections/update-usage" {
     import type Inputs from "src/inputs";
-    export default function updateUsage(token: string, inputs: Inputs): void;
+    export default function updateUsage(token: string, inputs: Inputs): Promise<void>;
 }
 declare module "src/sections/index" {
     import type Inputs from "src/inputs";
-    export default function updateSection(section: string, inputs: Inputs): void;
+    export default function updateSection(section: string, inputs: Inputs): Promise<void>;
 }
 declare module "src/generate-docs" {
     import Inputs from "src/inputs";
     export const inputs: Inputs;
-    export function generateDocs(): void;
+    export function generateDocs(): Promise<void>;
 }
 declare module "src/index" { }
 declare module "src/inputs.test" {

@@ -76,3 +76,4 @@ insert_final_newline = ignore
 [{*.yml,*.yaml,package.json}]
 indent_style = space
 indent_size = 2
+trim_trailing_whitespace = false

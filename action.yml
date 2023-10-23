@@ -1,74 +1,90 @@
-name: 📓 GitHub Action's Readme Generator
+name: GitHub Action's Readme Generator
 author: Jamie Nelson <jamie@bitflight.io>
-description: |
-  Keep the README.md `usage`, `inputs` and `outputs` in sync with the `action.yml` file.
+description: |+
+  📓 Keep your action's README.md up to date with the `title` and `description` from the `[action.yml](./action.yml)` file, while also automatically generating sections for the inputs, outputs, and a usage example for the action.
+
+
   Additionally the Action's usage example is updated to match the Action's current release.
+
+
+  This is both a CLI tool and GitHub Action that will read the details from a GitHub Action's `[action.yml](./action.yml)` file. Configuration can be provided through a `.ghadocs.json` file stored in the root directory of the Action's repository, via the command line when using the CLI, or through the `with:` section of this Action.
+
+
+  ***📝 This tool uses markdown comments as delimiting tokens within the README.md file to determine where to place the generated content.***
+
+
+  ***🔗 You can find an example README template with all fields filled-in in the [`README.example.md`](README.example.md) file.***
 
 branding:
   icon: book-open
   color: yellow
 inputs:
   action:
-    description: >
+    description: |
       The absolute or relative path to the `action.yml` file to read in from.
     required: false
     default: action.yml
   readme:
-    description: >
-      The absolute or relative path to the markdown output file that contains
-      the formatting tokens within it.
+    description: |
+      The absolute or relative path to the markdown output file that contains the formatting tokens within it.
     required: false
     default: README.md
   owner:
-    description: >
+    description: |
       The GitHub Action repository owner. i.e: `bitflight-devops`|`your-gh-username`
     required: false
   repo:
-    description: >
+    description: |
       The GitHub Action repository name. i.e: `github-action-readme-generator`
     required: false
   save:
-    description: >
-      Save the provided values in a `.ghadocs.json` file. This will update
-      any existing `.ghadocs.json` file that is in place.
+    description: |
+      Save the provided values in a `.ghadocs.json` file. This will update any existing `.ghadocs.json` file that is in place.
     required: false
   pretty:
-    description: >
+    description: |
       Use `prettier` to pretty print the new README.md file
     required: false
   versioning_enabled:
-    description: >
+    description: |
       Enable the update of the usage version to match the latest version in the `package.json` file
     required: false
   version_override:
-    description: >
+    description: |
       Set a specific version to display in the README.md
     required: false
   version_prefix:
-    description: >
+    description: |
       Prefix the version with this value (if it isn't already prefixed)
     required: false
     default: v
   versioning_default_branch:
-    description: >
+    description: |
       If versioning is disabled show this branch instead
     required: false
     default: main
   title_prefix:
-    description: >
+    description: |
       Add a prefix to the README title
     required: false
     default: "GitHub Action: "
   include_github_version_badge:
-    description: >
+    description: |
       Include additional badge showing latest tag
     required: false
     default: true
   branding_svg_path:
-    description: >
-      Save and load the branding svg image in the README from this path
+    description: |
+      Create the branding svg image from the details in `action.yml` then update the README.md file to source the branding svg image from this path.
+      Use `\<!-- start branding --><!-- stop branding -->` in your template to position the image, or use the input `branding_as_title_prefix: true` to prefix the 'title' with the image.
     required: false
     default: ".github/ghadocs/branding.svg"
+  branding_as_title_prefix:
+    default: true
+    type: boolean
+    description: |
+      Prefix the title in the `\<!-- start title -->` section with the svg branding image
+
 runs:
   using: "node20"
   main: "./dist/index.js"

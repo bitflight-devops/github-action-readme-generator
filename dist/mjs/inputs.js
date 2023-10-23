@@ -29,6 +29,7 @@ export const configKeys = [
     pathsAction,
     pathsReadme,
     'branding_svg_path',
+    'branding_as_title_prefix',
     'versioning:enabled',
     'versioning:override',
     'versioning:prefix',
@@ -65,7 +66,7 @@ export default class Inputs {
             parseValues: true,
             match: /^INPUT_/,
             transform: (obj) => {
-                if (obj.key.startsWith('input_')) {
+                if (obj.key.startsWith('input_') || obj.key.startsWith('INPUT_')) {
                     const newObj = {
                         key: obj.key,
                         value: obj.value,
@@ -133,6 +134,12 @@ export default class Inputs {
             'branding_svg_path': {
                 alias: 'svg',
                 type: 'string',
+                describe: 'Save and load the branding svg image in the README from this path',
+            },
+            'branding_as_title_prefix': {
+                alias: 'branding_prefix',
+                type: 'boolean',
+                parseValues: true,
                 describe: 'Save and load the branding svg image in the README from this path',
             },
             'owner': {
@@ -215,6 +222,7 @@ export default class Inputs {
             this.setConfigValueFromActionFileDefault(thisAction, 'version_prefix', 'versioning:prefix');
             this.setConfigValueFromActionFileDefault(thisAction, 'include_github_version_badge', 'versioning:badges');
             this.setConfigValueFromActionFileDefault(thisAction, 'branding_svg_path');
+            this.setConfigValueFromActionFileDefault(thisAction, 'branding_as_title_prefix');
         }
         catch (error) {
             log.info(`failed to load defaults from action's action.yml: ${error}`);

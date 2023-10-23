@@ -102,7 +102,7 @@ export default class LogTask {
         ...Array.from({ length: LogTask.indentWidth - step.length }).fill(' '),
       ].join('');
 
-      msg = `[${stepStr}] ${emojiStr}: ${desc}`;
+      msg = `[${stepStr}][${this.name}] ${emojiStr}: ${desc}`;
     }
     switch (step) {
       case 'START': {

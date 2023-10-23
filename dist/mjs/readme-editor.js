@@ -30,7 +30,7 @@ export default class ReadmeEditor {
                 ? `${beforeContent}\n${content}\n${afterContent}`
                 : `${beforeContent}${content}${afterContent}`;
         }
-        else if (stopIndex < startIndex) {
+        else if (stopIndex < startIndex && name !== 'branding') {
             throw new Error(`Start token for section '${name}' must appear before end token`);
         }
     }

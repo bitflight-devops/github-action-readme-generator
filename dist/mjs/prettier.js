@@ -27,7 +27,7 @@ export async function wrapDescription(value, content, prefix = '    # ') {
     try {
         formattedString = await format(value, {
             semi: false,
-            parser: 'yaml',
+            parser: 'markdown',
             proseWrap: 'always',
         });
     }

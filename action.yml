@@ -31,15 +31,18 @@ inputs:
     default: README.md
   owner:
     description: |
-      The GitHub Action repository owner. i.e: `bitflight-devops`|`your-gh-username`
+      The GitHub Action repository owner.
+      example `bitflight-devops` or `your-gh-username`
     required: false
   repo:
     description: |
-      The GitHub Action repository name. i.e: `github-action-readme-generator`
+      The GitHub Action repository name.
+      example - `github-action-readme-generator`
     required: false
   save:
     description: |
-      Save the provided values in a `.ghadocs.json` file. This will update any existing `.ghadocs.json` file that is in place.
+      Save the provided values in a `.ghadocs.json` file.
+      This will update any existing `.ghadocs.json` file that is in place.
     required: false
   pretty:
     description: |
@@ -55,7 +58,7 @@ inputs:
     required: false
   version_prefix:
     description: |
-      Prefix the version with this value (if it isn't already prefixed)
+      Prefix the version with this value, if it isn't already prefixed
     required: false
     default: v
   versioning_default_branch:
@@ -65,7 +68,9 @@ inputs:
     default: main
   title_prefix:
     description: |
-      Add a prefix to the README title
+      Add a prefix to the README title.
+      The title template looks like this:
+      # <brand><prefix><title>
     required: false
     default: "GitHub Action: "
   include_github_version_badge:
@@ -75,8 +80,16 @@ inputs:
     default: true
   branding_svg_path:
     description: |
-      Create the branding svg image from the details in `action.yml` then update the README.md file to source the branding svg image from this path.
-      Use `\<!-- start branding --><!-- stop branding -->` in your template to position the image, or use the input `branding_as_title_prefix: true` to prefix the 'title' with the image.
+      Create the branding svg image from the branding object in `action.yml`
+      then save it to this path.
+      Then update the `README.md` file to source the branding image from this path.
+      You can use a section template like this:
+      `\<!-- start branding --><!-- stop branding -->`
+      or use the action input:
+      `branding_as_title_prefix: true`
+      to prefix the 'title' section with the image.
+      The title template looks like this:
+      # <brand><prefix><title>
     required: false
     default: ".github/ghadocs/branding.svg"
   branding_as_title_prefix:
@@ -84,6 +97,8 @@ inputs:
     type: boolean
     description: |
       Prefix the title in the `\<!-- start title -->` section with the svg branding image
+      The title template looks like this:
+      # <brand><prefix><title>
 
 runs:
   using: "node20"

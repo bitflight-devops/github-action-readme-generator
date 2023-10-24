@@ -4,38 +4,11 @@ import * as path from 'node:path';
 import { registerWindow, SVG } from '@svgdotjs/svg.js';
 import * as feather from 'feather-icons';
 import { createSVGDocument, createSVGWindow } from 'svgdom'; /// main-module.js';
+import { brandingSquareEdgeLengthInPixels, GITHUB_ACTIONS_BRANDING_COLORS, GITHUB_ACTIONS_BRANDING_ICONS, } from './constants.js';
 import LogTask from './logtask/index.js';
 // function featherType<T extends FeatherIconKeysArray | string>(iconName: T): FeatherIconKeys<T> {
 //   return iconName as FeatherIconKeys<T>;
 // }
-const brandingSquareEdgeLengthInPixels = 50;
-// https://help.github.com/en/articles/metadata-syntax-for-github-actions#branding
-const GITHUB_ACTIONS_OMITTED_ICONS = new Set([
-    'coffee',
-    'columns',
-    'divide-circle',
-    'divide-square',
-    'divide',
-    'frown',
-    'hexagon',
-    'key',
-    'meh',
-    'mouse-pointer',
-    'smile',
-    'tool',
-    'x-octagon',
-]);
-export const GITHUB_ACTIONS_BRANDING_ICONS = new Set(Object.keys(feather.icons).filter((item) => !GITHUB_ACTIONS_OMITTED_ICONS.has(item)));
-export const GITHUB_ACTIONS_BRANDING_COLORS = [
-    'white',
-    'yellow',
-    'blue',
-    'green',
-    'orange',
-    'red',
-    'purple',
-    'gray-dark',
-];
 export default class SVGEditor {
     log;
     window;

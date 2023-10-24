@@ -1,7 +1,7 @@
 import { getCurrentVersionString } from '../helpers.js';
 import LogTask from '../logtask/index.js';
 import { wrapDescription } from '../prettier.js';
-export default function updateUsage(token, inputs) {
+export default async function updateUsage(token, inputs) {
     const log = new LogTask(token);
     log.start();
     const actionName = `${inputs.config.get('owner')}/${inputs.config.get('repo')}`;
@@ -18,6 +18,21 @@ export default function updateUsage(token, inputs) {
     content.push('```yaml', `- uses: ${actionReference}`, '  with:');
     const inp = inputs.action.inputs;
     let firstInput = true;
+    const descriptionPromises = {};
+    for (const key of Object.keys(inp)) {
+        const input = inp[key];
+        if (input !== undefined) {
+            descriptionPromises[key] = wrapDescription(`Description: ${input.description}`, [], '    # ');
+        }
+    }
+    const descriptions = {};
+    const kvArray = await Promise.all(Object.keys(descriptionPromises).map(async (key) => {
+        return { key, value: await descriptionPromises[key] };
+    }));
+    for (const e of kvArray) {
+        descriptions[e.key] = e.value;
+        log.info(`${e.key}: ${descriptions[e.key].join('\n')}`);
+    }
     if (inp) {
         for (const key of Object.keys(inp)) {
             const input = inp[key];
@@ -27,12 +42,12 @@ export default function updateUsage(token, inputs) {
                     content.push('');
                 }
                 // Constrain the width of the description, and append it
-                wrapDescription(input.description, content, '    # ');
+                content.push(...descriptions[key]);
                 if (input.default !== undefined) {
                     // Append blank line if description had paragraphs
-                    if (input.description?.trimEnd().match(/\n *\r?\n/)) {
-                        content.push('    #');
-                    }
+                    // if (input.description?.trimEnd().match(/\n *\r?\n/)) {
+                    //   content.push('    #');
+                    // }
                     // Default
                     content.push(`    # Default: ${input.default}`);
                 }

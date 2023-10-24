@@ -4,11 +4,12 @@ import save from './save.js';
 import updateSection from './sections/index.js';
 export const inputs = new Inputs();
 // This script rebuilds the usage section in the README.md to be consistent with the action.yml
-export function generateDocs() {
+export async function generateDocs() {
     const log = new LogTask('generating readme');
     for (const section of inputs.sections) {
         try {
-            updateSection(section, inputs);
+            // eslint-disable-next-line no-await-in-loop
+            await updateSection(section, inputs);
         }
         catch (error) {
             if (error && 'message' in error && error.message)
@@ -16,6 +17,6 @@ export function generateDocs() {
         }
     }
     inputs.readmeEditor.dumpToFile();
-    save(inputs);
+    return save(inputs);
 }
 //# sourceMappingURL=generate-docs.js.map

@@ -5,11 +5,12 @@ import updateSection from './sections/index.js';
 
 export const inputs = new Inputs();
 // This script rebuilds the usage section in the README.md to be consistent with the action.yml
-export function generateDocs(): void {
+export async function generateDocs(): Promise<void> {
   const log = new LogTask('generating readme');
   for (const section of inputs.sections) {
     try {
-      updateSection(section, inputs);
+      // eslint-disable-next-line no-await-in-loop
+      await updateSection(section, inputs);
     } catch (error: any) {
       if (error && 'message' in error && error.message)
         return log.fail(`Error occured in section ${section}. ${error.message}`);
@@ -17,5 +18,5 @@ export function generateDocs(): void {
   }
   inputs.readmeEditor.dumpToFile();
 
-  save(inputs);
+  return save(inputs);
 }

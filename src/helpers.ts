@@ -173,14 +173,17 @@ export function columnHeader(value: string): string {
   if (!value) {
     return '';
   }
-  const normalisedHeader = titlecase(
-    value
-      .trim()
-      .replace(/^[*_~]+/, '')
-      .replace(/[*_~]+$/, ''),
-  );
+  let text: string = value.replaceAll(/\*\*(.*?)\*\*/g, '$1');
+
+  // Remove italic formatting: *italic*
+  text = text.replaceAll(/\*(.*?)\*/g, '$1');
+
+  // Remove strikethrough formatting: ~~strikethrough~~
+  text = text.replaceAll(/~~(.*?)~~/g, '$1');
+
+  const normalisedHeader = titlecase(text.trim());
   if (normalisedHeader) {
-    return `**${normalisedHeader}**`;
+    return `<b>${normalisedHeader}</b>`;
   }
   return '';
 }
@@ -188,8 +191,17 @@ export function rowHeader(value: string): string {
   if (!value) {
     return '';
   }
-  const normalisedHeader = value.trim().replace(/^\*+/, '').replace(/\*+$/, '');
-  return `\`**${normalisedHeader}**\``;
+  let text: string;
+  text = value.replaceAll(/\*\*(.*?)\*\*/g, '$1');
+
+  // Remove italic formatting: *italic*
+  text = text.replaceAll(/\*(.*?)\*/g, '$1');
+
+  // Remove strikethrough formatting: ~~strikethrough~~
+  text = text.replaceAll(/~~(.*?)~~/g, '$1');
+
+  const normalisedHeader = text.trim();
+  return `<b><code>${normalisedHeader}</code></b>`;
 }
 
 export function getCurrentVersionString(inputs: Inputs): string {

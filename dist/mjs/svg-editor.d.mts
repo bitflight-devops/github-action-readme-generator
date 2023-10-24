@@ -5,8 +5,6 @@ import LogTask from './logtask/index.js';
 type conforms<T, V> = T extends V ? T : V;
 type FeatherIconKeysArray = keyof typeof feather.icons;
 type FeatherIconKeys<T extends string, R = FeatherIconKeysArray> = conforms<T, R>;
-export declare const GITHUB_ACTIONS_BRANDING_ICONS: Set<string>;
-export declare const GITHUB_ACTIONS_BRANDING_COLORS: string[];
 export default class SVGEditor {
     log: LogTask;
     window?: SVGWindow;

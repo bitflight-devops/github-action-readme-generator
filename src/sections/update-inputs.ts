@@ -35,7 +35,7 @@ export default function updateInputs(token: string, inputs: Inputs): void {
       const row: string[] = [
         rowHeader(key),
         description,
-        values?.default ? `\`${values.default}\`` : '',
+        values?.default ? `<code>${values.default}</code>` : '',
         values?.required ? '**true**' : '__false__',
       ];
       log.debug(JSON.stringify(row));

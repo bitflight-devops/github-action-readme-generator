@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.7.0...v1.7.1) (2023-10-24)
+
+
+### Bug Fixes
+
+* **nconf:** nconf released a fix for dynamic imports ([2e5c3c3](https://github.com/bitflight-devops/github-action-readme-generator/commit/2e5c3c3e4ed53905c8da13f0511c673b1ef83815))
+
 # [1.7.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.6.0...v1.7.0) (2023-10-22)
 
 

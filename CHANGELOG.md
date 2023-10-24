@@ -1,3 +1,14 @@
+## [1.7.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.7.1...v1.7.2) (2023-10-24)
+
+
+### Bug Fixes
+
+* **dist:** dist check was failing due to not installing optional dependencies ([347fb89](https://github.com/bitflight-devops/github-action-readme-generator/commit/347fb890c60ab60289f30ab6edd84f038923debd))
+* **dist:** dist check was failing due to not installing optional dependencies ([9aa26d9](https://github.com/bitflight-devops/github-action-readme-generator/commit/9aa26d9bde139f2eb626a8901988b96c1117bbff))
+* **markdown:** update formatting in tables to use <b> and <code> tags ([e950f20](https://github.com/bitflight-devops/github-action-readme-generator/commit/e950f20770bfd5621084c65e33184687b2b88de4))
+* **usage:** usage section was missing descriptions ([8dc2738](https://github.com/bitflight-devops/github-action-readme-generator/commit/8dc273825c7a017ad8ba53d094a119b7f2c4a0c4))
+* **usage:** usage section was missing its descriptions ([4d6e063](https://github.com/bitflight-devops/github-action-readme-generator/commit/4d6e06394d39fca2669c8dc5d58bdba3d19c1c34))
+
 ## [1.7.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.7.0...v1.7.1) (2023-10-24)
 
 

@@ -1,4 +1,4 @@
-<div align="center">
+<div align="center" >
 <!-- start title -->
 
 # <img src=".github/ghadocs/branding.svg" width="60px" align="center" alt="branding<icon:book-open color:yellow>" /> GitHub Action: GitHub Action's Readme Generator

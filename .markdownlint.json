@@ -59,7 +59,19 @@
   "MD032": false,
   // MD033/no-inline-html - Inline HTML
   "MD033": {
-    "allowed_elements": ["a", "img", "br", "sup", "h1", "p", "details", "summary", "code", "div"]
+    "allowed_elements": [
+      "a",
+      "img",
+      "br",
+      "sup",
+      "h1",
+      "p",
+      "details",
+      "summary",
+      "code",
+      "div",
+      "b"
+    ]
   },
   // MD034/no-bare-urls - Bare URL used
   "MD034": false,

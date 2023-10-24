@@ -70,7 +70,7 @@ inputs:
     description: |
       Add a prefix to the README title.
       The title template looks like this:
-      # <brand><prefix><title>
+      # {brand}{prefix}{title}
     required: false
     default: "GitHub Action: "
   include_github_version_badge:
@@ -89,7 +89,7 @@ inputs:
       `branding_as_title_prefix: true`
       to prefix the 'title' section with the image.
       The title template looks like this:
-      # <brand><prefix><title>
+      # {brand}{prefix}{title}
     required: false
     default: ".github/ghadocs/branding.svg"
   branding_as_title_prefix:
@@ -98,7 +98,7 @@ inputs:
     description: |
       Prefix the title in the `\<!-- start title -->` section with the svg branding image
       The title template looks like this:
-      # <brand><prefix><title>
+      # {brand}{prefix}{title}
 
 runs:
   using: "node20"

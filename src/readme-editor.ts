@@ -33,13 +33,12 @@ export default class ReadmeEditor {
     log.info(`Looking for the ${name} token in ${this.filePath}`);
 
     const [startIndex, stopIndex] = this.getTokenIndexes(name);
-
     if (startIndex !== -1 && stopIndex !== -1) {
       const beforeContent = this.fileContent.slice(0, startIndex);
       const afterContent = this.fileContent.slice(stopIndex);
 
       this.fileContent = addNewlines
-        ? `${beforeContent}\n${content}\n${afterContent}`
+        ? `${beforeContent}\n\n${content}\n${afterContent}`
         : `${beforeContent}${content}${afterContent}`;
     } else if (stopIndex < startIndex && name !== 'branding') {
       throw new Error(`Start token for section '${name}' must appear before end token`);

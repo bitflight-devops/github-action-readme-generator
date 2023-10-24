@@ -1,7 +1,7 @@
 {
   "name": "github-action-readme-generator",
   "displayName": "bitflight-devops/github-action-readme-generator",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "This is a CLI tool and GitHub Action that reads in the details from a \nGitHub Action's `action.yml` file and updates the `README.md` file\nwith the `name`, `description`, `usage`, `inputs`, `outputs`, and\nexamples of the action.\nConfiguration can be provided via a `.ghadocs.json` file stored in the\nroot directory of the Action's repository, via the command line when\nusing the cli, or via the `with:` section of this Action.\n\n\nThis tool uses markdown comments as delimiting tokens within the `README.md`\nfile to determine where to place the generated content.\n\n[`README.example.md`](README.example.md) example with all fields filled in, and no other free-form content.",
   "keywords": [
     "actions",
@@ -145,6 +145,7 @@
     "@types/svgdom": "^0.1.1",
     "chalk": "^5",
     "feather-icons": "^4.29.1",
+    "nconf": "^0.12.1",
     "node-emoji": "^2.1.0",
     "prettier": "^3.0.3",
     "svgdom": "^0.1.18",
@@ -165,6 +166,7 @@
     "@types/babel__preset-env": "^7",
     "@types/esm": "^3",
     "@types/jest": "^29.5.6",
+    "@types/nconf": "^0.10.5",
     "@types/node": "^20.8.7",
     "@types/node-emoji": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "^6.8.0",

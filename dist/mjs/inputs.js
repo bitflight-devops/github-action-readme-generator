@@ -3,11 +3,11 @@
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { Provider } from 'nconf';
 import YAML from 'yaml';
 import Action from './Action.js';
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
-import { Provider } from './nconf/nconf.cjs';
 import ReadmeEditor from './readme-editor.js';
 import { workingDirectory } from './working-directory.js';
 const log = new LogTask('inputs');

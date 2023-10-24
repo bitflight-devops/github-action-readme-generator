@@ -102,8 +102,8 @@ declare module "src/working-directory" {
     export default workingDirectory;
 }
 declare module "src/inputs" {
+    import { Provider } from 'nconf';
     import Action from "src/Action";
-    import { Provider } from './nconf/nconf.cjs';
     import ReadmeEditor from "src/readme-editor";
     export const configFileName = ".ghadocs.json";
     export const configKeys: string[];

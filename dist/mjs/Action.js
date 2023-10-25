@@ -11,8 +11,10 @@ export default class Action {
     inputs;
     outputs;
     runs;
+    path;
     constructor(actionPath) {
         const log = new LogTask('action');
+        this.path = actionPath;
         let tmpActionYaml = null;
         try {
             log.debug(`loading action.yml from ${actionPath}`);

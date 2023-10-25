@@ -107,7 +107,7 @@ You can modify the script below to include any extra variables you like or use n
 <!-- start usage -->
 
 ```yaml
-- uses: bitflight-devops/github-action-readme-generator@v1.7.1
+- uses: bitflight-devops/github-action-readme-generator@v1.7.2
   with:
     # Description: The absolute or relative path to the `action.yml` file to read in
     # from.

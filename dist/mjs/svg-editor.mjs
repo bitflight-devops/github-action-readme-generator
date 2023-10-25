@@ -6,9 +6,6 @@ import * as feather from 'feather-icons';
 import { createSVGDocument, createSVGWindow } from 'svgdom'; /// main-module.js';
 import { brandingSquareEdgeLengthInPixels, GITHUB_ACTIONS_BRANDING_COLORS, GITHUB_ACTIONS_BRANDING_ICONS, } from './constants.js';
 import LogTask from './logtask/index.js';
-// function featherType<T extends FeatherIconKeysArray | string>(iconName: T): FeatherIconKeys<T> {
-//   return iconName as FeatherIconKeys<T>;
-// }
 export default class SVGEditor {
     log;
     window;

@@ -1,5 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import * as feather from 'feather-icons';
+
+import type { FeatherIconNames } from 'feather-icons';
 
 import type { Branding } from '../Action.js';
 import {
@@ -16,13 +17,9 @@ import SVGEditor from '../svg-editor.mjs';
  * https://github.com/haya14busa/github-action-brandings/blob/master/main.js
  * for the urls to the branding images.
  */
-type conforms<T, V> = T extends V ? T : V;
+
 type Maybe<T> = T | undefined;
-type FeatherIconKeysArray = keyof typeof feather.icons;
-type FeatherIconKeys<T extends string, R = FeatherIconKeysArray> = conforms<T, R>;
-function featherType<T extends FeatherIconKeysArray | string>(iconName: T): FeatherIconKeys<T> {
-  return iconName as FeatherIconKeys<T>;
-}
+
 export interface IBranding {
   alt: string;
   img: string;
@@ -31,20 +28,40 @@ export interface IBranding {
 
 /**
  * Generates a svg branding image.
+ * example:
+ * ```ts
+ * generateSvgImage('/path/to/file.svg', 'home', 'red')
+ * ```
+ *
+ * @param svgPath - The path to where the svg file will be saved
+ * @param icon - The icon name from the feather-icons list
+ * @param bgcolor - The background color of the circle behind the icon
  */
-function generateSvgImage<T extends FeatherIconKeysArray>(
+export function generateSvgImage<T extends Partial<FeatherIconNames>>(
   svgPath: string,
-  icon: FeatherIconKeys<T>,
+  icon: T,
   bgcolor: string,
 ): void {
   const svgEditor = new SVGEditor();
   svgEditor.generateSvgImage(svgPath, icon, bgcolor);
 }
 
-export function getValidIconName(brand?: Branding): FeatherIconKeysArray {
+/**
+ * This function returns a valid icon name based on the provided branding.
+ * If the branding is undefined or not a valid icon name, an error is thrown.
+ * It checks if the branding icon is present in the GITHUB_ACTIONS_BRANDING_ICONS set,
+ * and if so, returns the corresponding feather icon key array.
+ * If the branding icon is present in the GITHUB_ACTIONS_OMITTED_ICONS set,
+ * an error is thrown specifying that the icon is part of the omitted icons list.
+ * If the branding icon is not a valid icon from the feather-icons list, an error is thrown.
+ * @param brand - The branding object
+ * @returns The corresponding feather icon key array
+ * @throws Error if the branding icon is undefined, not a valid icon name, or part of the omitted icons list
+ */
+export function getValidIconName(brand?: Branding): FeatherIconNames {
   if (brand && typeof brand.icon === 'string') {
     if (GITHUB_ACTIONS_BRANDING_ICONS.has(brand.icon)) {
-      return featherType(brand.icon);
+      return brand.icon as FeatherIconNames;
     }
     if (GITHUB_ACTIONS_OMITTED_ICONS.has(brand.icon)) {
       throw new Error(
@@ -58,9 +75,21 @@ export function getValidIconName(brand?: Branding): FeatherIconKeysArray {
   throw new Error(`No valid branding icon name found: action.yml branding is undefined`);
 }
 
+/**
+ * This function generates an HTML image markup with branding information.
+ * It takes inputs and an optional width parameter.
+ * If the branding_svg_path is provided, it generates an action.yml branding image for the specified icon and color.
+ * Otherwise, it returns an error message.
+ *
+ * @param inputs - The inputs instance with data for the function.
+ * @param width - The width of the image (default is '15%').
+ * @returns The HTML image markup with branding information or an error message.
+ */
 export function generateImgMarkup(inputs: Inputs, width = '15%'): string {
+  // Create a log task for debugging
   const log = new LogTask('generateImgMarkup');
 
+  // Get the branding information from the inputs
   const brand: Branding = inputs.action.branding;
   const iconName = getValidIconName(brand);
   const color = brand.color ?? DEFAULT_BRAND_COLOR;
@@ -80,6 +109,16 @@ export function generateImgMarkup(inputs: Inputs, width = '15%'): string {
   log.error(`No branding_svg_path provided or it is empty string, can't create the file!`);
   return `<!-- ERROR: no branding path found = ${result} -->`;
 }
+
+/**
+ * This is a TypeScript function named "updateBranding" that takes in a token string and an object of inputs.
+ * It exports the function as the default export.
+ * The function logs the brand details from the inputs, starts a log task, generates image markup,
+ * updates a section in the readme editor using the token and content, and logs success or failure messages.
+ *
+ * @param token - The token string that is used to identify the section in the readme editor.
+ * @param inputs - The inputs object that contains data for the function.
+ */
 export default function updateBranding(token: string, inputs: Inputs): void {
   const log = new LogTask(token);
 

@@ -1,4 +1,9 @@
   {
+    "search.exclude": {
+      // Avoid polluting search results with lockfile content
+      "pnpm-lock.yaml": true,
+    },
+    "npm.packageManager": "pnpm",
     "git.ignoreLimitWarning": true,
     "eslint.validate": [
       "javascript",
@@ -21,7 +26,6 @@
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": true,
     },
-    "github.copilot.advanced": {},
     "eslint.debug": true,
     "json.schemas": [
       {

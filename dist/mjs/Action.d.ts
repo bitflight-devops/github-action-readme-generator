@@ -27,6 +27,7 @@ export default class Action {
     inputs: InputsType;
     outputs: OutputsType;
     runs: Runs;
+    path: string;
     constructor(actionPath: string);
     inputDefault(inputName: string): string | undefined;
     stringify(): string;

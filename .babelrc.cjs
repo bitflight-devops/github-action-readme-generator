@@ -4,9 +4,10 @@ module.exports = {
     [
       '@babel/preset-env',
       {
-        targets: 'node 16',
+        targets: 'current',
       },
     ],
+    '@babel/preset-typescript',
   ],
   plugins: [['@babel/plugin-proposal-decorators', { legacy: true }]],
 };

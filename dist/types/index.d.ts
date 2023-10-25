@@ -4,6 +4,7 @@ declare module "jest.config" {
     const config: Config.InitialOptions;
     export default config;
 }
+declare module "__tests__/index.test" { }
 declare module "src/logtask/index" {
     export default class LogTask {
         static ingroup_setting: {
@@ -56,10 +57,20 @@ declare module "src/Action" {
         inputs: InputsType;
         outputs: OutputsType;
         runs: Runs;
+        path: string;
         constructor(actionPath: string);
         inputDefault(inputName: string): string | undefined;
         stringify(): string;
     }
+}
+declare module "src/constants" {
+    export const brandingSquareEdgeLengthInPixels = 50;
+    export const DEFAULT_BRAND_COLOR = "blue";
+    export const DEFAULT_BRAND_ICON = "activity";
+    export const ALIGNMENT_MARKUP = "<div align=\"center\">";
+    export const GITHUB_ACTIONS_OMITTED_ICONS: Set<string>;
+    export const GITHUB_ACTIONS_BRANDING_ICONS: Set<string>;
+    export const GITHUB_ACTIONS_BRANDING_COLORS: string[];
 }
 declare module "src/helpers" {
     import type { Context } from '@actions/github/lib/context.js';
@@ -120,6 +131,115 @@ declare module "src/inputs" {
         stringify(): string;
     }
 }
+declare module "src/svg-editor" {
+    import type { Container } from '@svgdotjs/svg.js';
+    import type { FeatherIconNames } from 'feather-icons';
+    import { SVGDocument, SVGWindow } from 'svgdom';
+    import LogTask from "src/logtask/index";
+    export default class SVGEditor {
+        log: LogTask;
+        window?: SVGWindow;
+        canvas?: Container;
+        document?: SVGDocument;
+        constructor();
+        init(): Promise<void>;
+        /**
+         * Generates a svg branding image.
+         */
+        generateSvgImage(svgPath: string | undefined, icon?: Partial<FeatherIconNames>, bgcolor?: string): void;
+    }
+}
+declare module "src/sections/update-branding" {
+    import type { FeatherIconNames } from 'feather-icons';
+    import type { Branding } from "src/Action";
+    import type Inputs from "src/inputs";
+    export interface IBranding {
+        alt: string;
+        img: string;
+        url?: string;
+    }
+    /**
+     * Generates a svg branding image.
+     * example:
+     * ```ts
+     * generateSvgImage('/path/to/file.svg', 'home', 'red')
+     * ```
+     *
+     * @param svgPath - The path to where the svg file will be saved
+     * @param icon - The icon name from the feather-icons list
+     * @param bgcolor - The background color of the circle behind the icon
+     */
+    export function generateSvgImage<T extends Partial<FeatherIconNames>>(svgPath: string, icon: T, bgcolor: string): void;
+    /**
+     * This function returns a valid icon name based on the provided branding.
+     * If the branding is undefined or not a valid icon name, an error is thrown.
+     * It checks if the branding icon is present in the GITHUB_ACTIONS_BRANDING_ICONS set,
+     * and if so, returns the corresponding feather icon key array.
+     * If the branding icon is present in the GITHUB_ACTIONS_OMITTED_ICONS set,
+     * an error is thrown specifying that the icon is part of the omitted icons list.
+     * If the branding icon is not a valid icon from the feather-icons list, an error is thrown.
+     * @param brand - The branding object
+     * @returns The corresponding feather icon key array
+     * @throws Error if the branding icon is undefined, not a valid icon name, or part of the omitted icons list
+     */
+    export function getValidIconName(brand?: Branding): FeatherIconNames;
+    /**
+     * This function generates an HTML image markup with branding information.
+     * It takes inputs and an optional width parameter.
+     * If the branding_svg_path is provided, it generates an action.yml branding image for the specified icon and color.
+     * Otherwise, it returns an error message.
+     *
+     * @param inputs - The inputs instance with data for the function.
+     * @param width - The width of the image (default is '15%').
+     * @returns The HTML image markup with branding information or an error message.
+     */
+    export function generateImgMarkup(inputs: Inputs, width?: string): string;
+    /**
+     * This is a TypeScript function named "updateBranding" that takes in a token string and an object of inputs.
+     * It exports the function as the default export.
+     * The function logs the brand details from the inputs, starts a log task, generates image markup,
+     * updates a section in the readme editor using the token and content, and logs success or failure messages.
+     *
+     * @param token - The token string that is used to identify the section in the readme editor.
+     * @param inputs - The inputs object that contains data for the function.
+     */
+    export default function updateBranding(token: string, inputs: Inputs): void;
+}
+declare module "__tests__/update-branding.test" {
+    export { default } from 'ava';
+}
+declare module "__tests__/__mocks__/Action.mock" {
+    export default class ActionMock {
+        name: string;
+        description: string;
+        branding: any;
+        inputs: any;
+        outputs: any;
+        runs: any;
+        path: string;
+        inputDefault: () => {
+            default: string;
+        };
+        inputDescription: () => any;
+        stringify: () => string;
+        toJSON: () => string;
+        constructor(actionPath: string);
+    }
+}
+declare module "__tests__/__mocks__/inputs.mock" {
+    import { Provider } from 'nconf';
+    export default class Inputs {
+        config: Provider;
+        sections: string[];
+        readmePath: string;
+        configPath: string;
+        action: any;
+        readmeEditor: any;
+        setConfigValueFromActionFileDefault: () => void;
+        stringify: () => string;
+        constructor();
+    }
+}
 declare module "src/config" {
     import type Inputs from "src/inputs";
     export interface Versioning {
@@ -152,15 +272,6 @@ declare module "src/config" {
         save(configPath: string): void;
     }
 }
-declare module "src/constants" {
-    export const brandingSquareEdgeLengthInPixels = 50;
-    export const DEFAULT_BRAND_COLOR = "blue";
-    export const DEFAULT_BRAND_ICON = "activity";
-    export const ALIGNMENT_MARKUP = "<div align=\"center\">";
-    export const GITHUB_ACTIONS_OMITTED_ICONS: Set<string>;
-    export const GITHUB_ACTIONS_BRANDING_ICONS: Set<string>;
-    export const GITHUB_ACTIONS_BRANDING_COLORS: string[];
-}
 declare module "src/save" {
     import Inputs from "src/inputs";
     export default function save(inputs: Inputs): void;
@@ -173,41 +284,6 @@ declare module "src/sections/update-badges" {
         url?: string;
     }
     export default function updateBadges(token: string, inputs: Inputs): void;
-}
-declare module "src/svg-editor" {
-    import type { Container } from '@svgdotjs/svg.js';
-    import * as feather from 'feather-icons';
-    import { SVGDocument, SVGWindow } from 'svgdom';
-    import LogTask from "src/logtask/index";
-    type conforms<T, V> = T extends V ? T : V;
-    type FeatherIconKeysArray = keyof typeof feather.icons;
-    type FeatherIconKeys<T extends string, R = FeatherIconKeysArray> = conforms<T, R>;
-    export default class SVGEditor {
-        log: LogTask;
-        window?: SVGWindow;
-        canvas?: Container;
-        document?: SVGDocument;
-        constructor();
-        init(): Promise<void>;
-        /**
-         * Generates a svg branding image.
-         */
-        generateSvgImage(svgPath: string | undefined, icon?: FeatherIconKeys<keyof typeof feather.icons>, bgcolor?: string): void;
-    }
-}
-declare module "src/sections/update-branding" {
-    import * as feather from 'feather-icons';
-    import type { Branding } from "src/Action";
-    import type Inputs from "src/inputs";
-    type FeatherIconKeysArray = keyof typeof feather.icons;
-    export interface IBranding {
-        alt: string;
-        img: string;
-        url?: string;
-    }
-    export function getValidIconName(brand?: Branding): FeatherIconKeysArray;
-    export function generateImgMarkup(inputs: Inputs, width?: string): string;
-    export default function updateBranding(token: string, inputs: Inputs): void;
 }
 declare module "src/sections/update-description" {
     import type Inputs from "src/inputs";
@@ -258,6 +334,3 @@ declare module "src/generate-docs" {
     export function generateDocs(): Promise<void>;
 }
 declare module "src/index" { }
-declare module "src/inputs.test" {
-    export default function main(): void;
-}

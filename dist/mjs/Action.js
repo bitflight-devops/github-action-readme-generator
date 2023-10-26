@@ -3,16 +3,32 @@
 import * as fs from 'node:fs';
 import YAML from 'yaml';
 import LogTask from './logtask/index.js';
+/**
+ * Parses and represents metadata from action.yml.
+ */
 export default class Action {
     // Load the action.yml
+    /** Name of the action */
     name;
+    /** Description of the action */
     description;
+    /** Branding information */
     branding;
+    /** Input definitions */
     inputs;
+    /** Output definitions */
     outputs;
+    /** How the action is run */
     runs;
+    /** Path to the action */
     path;
+    /**
+     * Creates a new Action instance by loading and parsing action.yml.
+     *
+     * @param actionPath Path to the action
+     */
     constructor(actionPath) {
+        // Load and parse action.yml
         const log = new LogTask('action');
         this.path = actionPath;
         let tmpActionYaml = null;
@@ -36,9 +52,20 @@ export default class Action {
         this.outputs = actionYaml.outputs;
         this.runs = actionYaml.runs;
     }
+    /**
+     * Gets the default value for an input.
+     *
+     * @param inputName Name of the input
+     * @returns The default value if defined
+     */
     inputDefault(inputName) {
         return this.inputs[inputName]?.default;
     }
+    /**
+     * Stringifies the action back to YAML.
+     *
+     * @returns The YAML string
+     */
     stringify() {
         try {
             return YAML.stringify(this);

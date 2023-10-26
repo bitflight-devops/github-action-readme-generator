@@ -5,60 +5,177 @@ declare module "jest.config" {
     export default config;
 }
 declare module "src/logtask/index" {
+    enum LogGroup {
+        NO_GROUP = 0,
+        START_GROUP = 1,
+        END_GROUP = 2,
+        IS_ERROR = 3,
+        IS_FAILED = 4,
+        IS_TITLE = 5
+    }
+    /**
+     * Represents a logging task with various log step methods.
+     */
     export default class LogTask {
-        static ingroup_setting: {
-            [key: string]: boolean;
-        };
-        static indentWidth: number;
+        /**
+         * Map of ingroup settings per task name.
+         */
+        private static ingroupSettings;
+        /**
+         * The width of the indentation for log messages.
+         */
+        private static indentWidth;
+        /**
+         * Checks if debug mode is enabled.
+         * @returns A boolean indicating if debug mode is enabled.
+         */
         static isDebug(): boolean;
-        name: string;
+        /**
+         * The name of the task.
+         */
+        private name;
+        /**
+         * Creates a new instance of the LogTask class.
+         * @param name - The name of the task.
+         */
         constructor(name: string);
+        /**
+         * Gets the ingroup setting for the task.
+         */
         get ingroup(): boolean;
+        /**
+         * Sets the ingroup setting for this task.
+         */
         set ingroup(value: boolean);
-        logStep(emojiStr: string, step: string, description: string, startGroup?: number): Promise<void>;
-        debug(description?: string): void;
-        start(description?: string): void;
-        info(description?: string): void;
-        warn(description?: string): void;
-        success(description?: string, ingroup?: boolean): void;
-        fail(description?: string, ingroup?: boolean): void;
-        error(description?: string): void;
-        title(description?: string): void;
+        getMessageString(step: string, desc: string, emojiStr: string): string;
+        /**
+         * Logs a step with the given emoji, type, message and group.
+         * @param emojiStr - The emoji string to display.
+         * @param step - The step type.
+         * @param message - The message of the step.
+         * @param startGroup - The start group type.
+         */
+        logStep(emojiStr: string, step: string, message: string, startGroup?: LogGroup): void;
+        /**
+         * Logs a debug message.
+         * @param message - The message of the debug message.
+         */
+        debug(message?: string): void;
+        /**
+         * Logs a start message.
+         * @param message - The message of the start message.
+         */
+        start(message?: string): void;
+        /**
+         * Logs an info message.
+         * @param message - The message of the info message.
+         */
+        info(message?: string): void;
+        /**
+         * Logs a warning message.
+         * @param message - The message of the warning message.
+         */
+        warn(message?: string): void;
+        /**
+         * Logs a success message.
+         * @param message - The message of the success message.
+         * @param ingroup - Indicates whether the success message is in a group.
+         */
+        success(message?: string, ingroup?: boolean): void;
+        /**
+         * Logs a failure message.
+         * @param message - The message of the failure message.
+         * @param ingroup - Indicates whether the failure message is in a group.
+         */
+        fail(message?: string, ingroup?: boolean): void;
+        /**
+         * Logs an error message.
+         * @param message - The message of the error message.
+         */
+        error(message?: string): void;
+        /**
+         * Logs a title message.
+         * @param message - The message of the title message.
+         */
+        title(message?: string): void;
     }
 }
 declare module "src/Action" {
-    export interface InputType {
+    /**
+     * Represents an input for the action.
+     */
+    export interface Input {
+        /** Description of the input */
         description?: string;
+        /** Whether the input is required */
         required?: boolean;
+        /** Default value for the input */
         default?: string;
     }
-    export interface OutputType {
+    /**
+     * Represents an output for the action.
+     */
+    export interface Output {
+        /** Description of the output */
         description?: string;
     }
-    export interface Runs {
+    /**
+     * Defines how the action is run.
+     */
+    interface Runs {
+        /** The runner used to execute the action */
         using: string;
+        /** The entrypoint file for the action */
         main: string;
     }
+    /**
+     * Branding information for the action.
+     */
     export interface Branding {
+        /** Color for the action branding */
         color: string;
         icon: string;
     }
-    export type InputsType = {
-        [id: string]: InputType;
-    };
-    export type OutputsType = {
-        [id: string]: OutputType;
-    };
+    /**
+     * Parses and represents metadata from action.yml.
+     */
     export default class Action {
+        /** Name of the action */
         name: string;
+        /** Description of the action */
         description: string;
+        /** Branding information */
         branding: Branding;
-        inputs: InputsType;
-        outputs: OutputsType;
+        /** Input definitions */
+        inputs: {
+            [key: string]: Input;
+        };
+        /** Output definitions */
+        outputs: {
+            [key: string]: Output;
+        };
+        /** How the action is run */
         runs: Runs;
+        /** Path to the action */
         path: string;
+        /**
+         * Creates a new Action instance by loading and parsing action.yml.
+         *
+         * @param actionPath Path to the action
+         */
         constructor(actionPath: string);
+        /**
+         * Gets the default value for an input.
+         *
+         * @param inputName Name of the input
+         * @returns The default value if defined
+         */
         inputDefault(inputName: string): string | undefined;
+        /**
+         * Stringifies the action back to YAML.
+         *
+         * @returns The YAML string
+         */
         stringify(): string;
     }
 }

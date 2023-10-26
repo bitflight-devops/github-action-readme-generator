@@ -1,19 +1,19 @@
 name: GitHub Action's Readme Generator
 author: Jamie Nelson <jamie@bitflight.io>
 description: |+
-  📓 Keep your action's README.md up to date with the `title` and `description` from the `[action.yml](./action.yml)` file, while also automatically generating sections for the inputs, outputs, and a usage example for the action.
+  📓 Keep your action's README.md up to date with the `title` and `description` from the [`action.yml`](./action.yml) file, while also automatically generating sections for the inputs, outputs, and a usage example for the action.
 
 
   Additionally the Action's usage example is updated to match the Action's current release.
 
 
-  This is both a CLI tool and GitHub Action that will read the details from a GitHub Action's `[action.yml](./action.yml)` file. Configuration can be provided through a `.ghadocs.json` file stored in the root directory of the Action's repository, via the command line when using the CLI, or through the `with:` section of this Action.
+  This is both a CLI tool and GitHub Action that will read the details from a GitHub Action's [`action.yml`](./action.yml) file. Configuration can be provided through a [`.ghadocs.json`](./.ghadocs.json) file stored in the root directory of the Action's repository, via the command line when using the CLI, or through the `with:` section of this Action.
 
 
   ***📝 This tool uses markdown comments as delimiting tokens within the README.md file to determine where to place the generated content.***
 
 
-  ***🔗 You can find an example README template with all fields filled-in in the [`README.example.md`](README.example.md) file.***
+  ***🔗 You can find an example README template with all fields filled-in in the [`README.example.md`](./README.example.md) file.***
 
 branding:
   icon: book-open
@@ -31,30 +31,35 @@ inputs:
     default: README.md
   owner:
     description: |
-      The GitHub Action repository owner.
-      example `bitflight-devops` or `your-gh-username`
+      The GitHub Action repository owner, this field is autodetected by default.
+      Example: `bitflight-devops` or `your-gh-username`
     required: false
   repo:
     description: |
-      The GitHub Action repository name.
-      example - `github-action-readme-generator`
+      The GitHub Action repository name, this field is autodetected by default.
+      Example: `github-action-readme-generator`
     required: false
   save:
     description: |
       Save the provided values in a `.ghadocs.json` file.
       This will update any existing `.ghadocs.json` file that is in place.
     required: false
+    default: true
   pretty:
     description: |
       Use `prettier` to pretty print the new README.md file
     required: false
+    default: true
   versioning_enabled:
     description: |
       Enable the update of the usage version to match the latest version in the `package.json` file
+      Output if your action repo is `reviewdog/action-eslint` and version in package.json is 1.0.1:
+      `uses: reviewdog/action-eslint@1.0.1`
     required: false
+    default: true
   version_override:
     description: |
-      Set a specific version to display in the README.md
+      Set a specific version to display in the README.md, maybe you want to use a major or minor version
     required: false
   version_prefix:
     description: |
@@ -63,7 +68,10 @@ inputs:
     default: v
   versioning_default_branch:
     description: |
-      If versioning is disabled show this branch instead
+      If versioning is disabled, use this branch in the usage example, where the default is `main`
+      Output if your action repo is reviewdog/action-eslint:
+      `uses: reviewdog/action-eslint@main`
+
     required: false
     default: main
   title_prefix:

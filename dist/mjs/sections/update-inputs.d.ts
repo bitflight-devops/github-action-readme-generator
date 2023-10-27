@@ -1,2 +1,3 @@
 import type Inputs from '../inputs.js';
-export default function updateInputs(token: string, inputs: Inputs): void;
+import type { ReadmeSection } from './index.js';
+export default function updateInputs(token: ReadmeSection, inputs: Inputs): void;

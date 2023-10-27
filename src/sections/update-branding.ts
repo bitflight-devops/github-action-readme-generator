@@ -2,16 +2,12 @@
 
 import type { FeatherIconNames } from 'feather-icons';
 
-import type { Branding } from '../Action.js';
-import {
-  DEFAULT_BRAND_COLOR,
-  GITHUB_ACTIONS_BRANDING_ICONS,
-  GITHUB_ACTIONS_OMITTED_ICONS,
-} from '../constants.js';
+import type { BrandColors } from '../constants.js';
+import { GITHUB_ACTIONS_OMITTED_ICONS, isValidIcon } from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import SVGEditor from '../svg-editor.mjs';
-
+import type { ReadmeSection } from './index.js';
 /**
  * Wiith thanks to
  * https://github.com/haya14busa/github-action-brandings/blob/master/main.js
@@ -37,10 +33,10 @@ export interface IBranding {
  * @param icon - The icon name from the feather-icons list
  * @param bgcolor - The background color of the circle behind the icon
  */
-export function generateSvgImage<T extends Partial<FeatherIconNames>>(
+export function generateSvgImage(
   svgPath: string,
-  icon: T,
-  bgcolor: string,
+  icon: Partial<FeatherIconNames>,
+  bgcolor: Partial<BrandColors>,
 ): void {
   const svgEditor = new SVGEditor();
   svgEditor.generateSvgImage(svgPath, icon, bgcolor);
@@ -58,21 +54,24 @@ export function generateSvgImage<T extends Partial<FeatherIconNames>>(
  * @returns The corresponding feather icon key array
  * @throws Error if the branding icon is undefined, not a valid icon name, or part of the omitted icons list
  */
-export function getValidIconName(brand?: Branding): FeatherIconNames {
-  if (brand && typeof brand.icon === 'string') {
-    if (GITHUB_ACTIONS_BRANDING_ICONS.has(brand.icon)) {
-      return brand.icon as FeatherIconNames;
-    }
-    if (GITHUB_ACTIONS_OMITTED_ICONS.has(brand.icon)) {
-      throw new Error(
-        `No valid branding icon name found: ${brand.icon} is part of the list of omitted icons. `,
-      );
-    }
+export function getValidIconName(icon?: Partial<FeatherIconNames>): FeatherIconNames {
+  if (!icon) {
+    throw new Error(`No valid branding icon name found: action.yml branding is undefined`);
+  }
+
+  if (isValidIcon(icon)) {
+    return icon;
+  }
+
+  if (GITHUB_ACTIONS_OMITTED_ICONS.has(icon)) {
     throw new Error(
-      `No valid branding icon name found: ${brand.icon} is not a valid icon from the feather-icons list`,
+      `No valid branding icon name found: ${icon} is part of the list of omitted icons. `,
     );
   }
-  throw new Error(`No valid branding icon name found: action.yml branding is undefined`);
+
+  throw new Error(
+    `No valid branding icon name found: ${icon} is not a valid icon from the feather-icons list`,
+  );
 }
 
 /**
@@ -90,9 +89,8 @@ export function generateImgMarkup(inputs: Inputs, width = '15%'): string {
   const log = new LogTask('generateImgMarkup');
 
   // Get the branding information from the inputs
-  const brand: Branding = inputs.action.branding;
-  const iconName = getValidIconName(brand);
-  const color = brand.color ?? DEFAULT_BRAND_COLOR;
+  const { icon, color } = inputs.action.branding;
+  const iconName = getValidIconName(icon);
   const svgPath = inputs.config.get('branding_svg_path') as Maybe<string>;
   const result = `<img src="${svgPath}" width="${width}" align="center" alt="branding<icon:${iconName} color:${color}>" />`;
 
@@ -119,7 +117,7 @@ export function generateImgMarkup(inputs: Inputs, width = '15%'): string {
  * @param token - The token string that is used to identify the section in the readme editor.
  * @param inputs - The inputs object that contains data for the function.
  */
-export default function updateBranding(token: string, inputs: Inputs): void {
+export default function updateBranding(token: ReadmeSection, inputs: Inputs): void {
   const log = new LogTask(token);
 
   log.info(`Brand details: ${JSON.stringify(inputs.action.branding)}`);

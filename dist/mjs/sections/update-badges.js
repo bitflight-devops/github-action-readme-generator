@@ -1,3 +1,8 @@
+/**
+ * This TypeScript code imports necessary modules and defines a function named 'updateBadges' which takes a token (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
+ * The function is responsible for updating the badges section in the README.md file based on the provided inputs.
+ * It utilizes the 'LogTask' class for logging purposes.
+ */
 import LogTask from '../logtask/index.js';
 export default function updateBadges(token, inputs) {
     const log = new LogTask(token);
@@ -8,8 +13,8 @@ export default function updateBadges(token, inputs) {
         repo: inputs.config.get('repo'),
     };
     /**
-     * Generate github badges.
-     * @param githubId
+     * Generate GitHub badges.
+     * @returns {IBadge[]} - The array of GitHub badges.
      */
     function githubBadges() {
         const repoUrl = `https://github.com/${repos.owner}/${repos.repo}`;
@@ -40,7 +45,9 @@ export default function updateBadges(token, inputs) {
         ];
     }
     /**
-     * Generates a badge.
+     * Generates a badge HTML markup.
+     * @param {IBadge} item - The badge object.
+     * @returns {string} - The HTML markup for the badge.
      */
     function generateBadge(item) {
         const badgeTemplate = `<img src="${item.img}" alt="${item.alt || ''}" />`;
@@ -50,7 +57,8 @@ export default function updateBadges(token, inputs) {
         return badgeTemplate;
     }
     /**
-     * Generates all badges.
+     * Generates all badges HTML markup.
+     * @returns {string[]} - The array of HTML markup for all badges.
      */
     function generateBadges() {
         const badgeArray = [];
@@ -60,7 +68,7 @@ export default function updateBadges(token, inputs) {
         return [badgeArray.join('')];
     }
     log.start();
-    // Add Github badges
+    // Add GitHub badges
     if (enableVersioning) {
         badges.push(...githubBadges());
     }

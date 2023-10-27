@@ -1,6 +1,9 @@
-/* eslint-disable import/no-extraneous-dependencies */
-/* eslint-disable sonarjs/no-duplicate-string */
-/* eslint-disable @typescript-eslint/explicit-member-accessibility */
+/**
+ * This TypeScript code defines a class named 'Inputs' that handles input configuration and manipulation.
+ * It imports various modules and packages for file operations, configuration parsing, and logging.
+ * The class has methods for initializing the input configuration, setting default values, and converting the configuration to a string.
+ * It also has properties for storing the configuration values, sections, readme path, action instance, and readme editor instance.
+ */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Provider } from 'nconf';
@@ -9,7 +12,8 @@ import Action from './Action.js';
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
-import { workingDirectory } from './working-directory.js';
+import { README_SECTIONS } from './sections/index.js';
+import workingDirectory from './working-directory.js';
 const log = new LogTask('inputs');
 process.chdir(workingDirectory());
 const githubEventPath = process.env.GITHUB_EVENT_PATH ?? '';
@@ -22,24 +26,126 @@ catch {
     log.debug(`GITHUB_EVENT_PATH not found: ${githubEventPath}`);
 }
 export const configFileName = '.ghadocs.json';
-const pathsAction = 'paths:action';
-const pathsReadme = 'paths:readme';
-export const configKeys = [
-    'save',
-    pathsAction,
-    pathsReadme,
-    'branding_svg_path',
-    'branding_as_title_prefix',
-    'versioning:enabled',
-    'versioning:override',
-    'versioning:prefix',
-    'versioning:branch',
-    'owner',
-    'repo',
-    'title_prefix',
-    'pretty',
-    'include_github_version_badge',
+var ConfigKeys;
+(function (ConfigKeys) {
+    ConfigKeys["Save"] = "save";
+    ConfigKeys["pathsAction"] = "paths:action";
+    ConfigKeys["pathsReadme"] = "paths:readme";
+    ConfigKeys["BrandingSvgPath"] = "branding_svg_path";
+    ConfigKeys["BrandingAsTitlePrefix"] = "branding_as_title_prefix";
+    ConfigKeys["VersioningEnabled"] = "versioning:enabled";
+    ConfigKeys["VersioningOverride"] = "versioning:override";
+    ConfigKeys["VersioningPrefix"] = "versioning:prefix";
+    ConfigKeys["VersioningBranch"] = "versioning:branch";
+    ConfigKeys["Owner"] = "owner";
+    ConfigKeys["Repo"] = "repo";
+    ConfigKeys["TitlePrefix"] = "title_prefix";
+    ConfigKeys["Prettier"] = "prettier";
+    ConfigKeys["IncludeGithubVersionBadge"] = "versioning:badge";
+})(ConfigKeys || (ConfigKeys = {}));
+const RequiredInputs = [
+    ConfigKeys.pathsAction,
+    ConfigKeys.pathsReadme,
+    ConfigKeys.Owner,
+    ConfigKeys.Repo,
 ];
+const argvOptions = {};
+argvOptions[ConfigKeys.Save] = {
+    alias: 'save',
+    describe: `Save this config to ${configFileName}`,
+    parseValues: true,
+    type: 'boolean',
+};
+argvOptions[ConfigKeys.pathsAction] = {
+    alias: ['pathsAction', 'action'],
+    type: 'string',
+    describe: 'Path to the action.yml',
+};
+argvOptions[ConfigKeys.pathsReadme] = {
+    alias: ['pathsReadme', 'readme'],
+    type: 'string',
+    describe: 'Path to the README file',
+};
+argvOptions[ConfigKeys.BrandingSvgPath] = {
+    alias: 'svg',
+    type: 'string',
+    describe: 'Save and load the branding svg image in the README from this path',
+};
+argvOptions[ConfigKeys.BrandingAsTitlePrefix] = {
+    alias: 'branding_prefix',
+    type: 'boolean',
+    parseValues: true,
+    describe: 'Save and load the branding svg image in the README from this path',
+};
+argvOptions[ConfigKeys.Owner] = {
+    alias: 'owner',
+    type: 'string',
+    describe: 'The GitHub Action repository owner. i.e: `bitflight-devops`',
+};
+argvOptions[ConfigKeys.Repo] = {
+    alias: 'repo',
+    type: 'string',
+    describe: 'The GitHub Action repository name. i.e: `github-action-readme-generator`',
+};
+argvOptions[ConfigKeys.Prettier] = {
+    alias: ['pretty', 'prettier'],
+    type: 'boolean',
+    parseValues: true,
+    describe: 'Format the markdown using prettier formatter',
+};
+argvOptions[ConfigKeys.VersioningEnabled] = {
+    alias: ['versioning', 'versioning_enabled'],
+    describe: 'Enable the update of the usage version to match the latest version in the package.json file',
+    parseValues: true,
+    type: 'boolean',
+};
+argvOptions[ConfigKeys.VersioningOverride] = {
+    alias: ['setversion', 'versioning_override', 'version_override'],
+    describe: 'Set a specific version to display in the README.md',
+    parseValues: true,
+};
+argvOptions[ConfigKeys.VersioningPrefix] = {
+    alias: ['vp', 'version_prefix'],
+    describe: "Prefix the version with this value (if it isn't already prefixed)",
+    parseValues: true,
+};
+argvOptions[ConfigKeys.VersioningBranch] = {
+    alias: ['branch', 'versioning_default_branch'],
+    describe: 'If versioning is disabled show this branch instead',
+    parseValues: true,
+};
+argvOptions[ConfigKeys.IncludeGithubVersionBadge] = {
+    alias: ['version-badge', 'versioning_badge', 'include_github_version_badge'],
+    describe: 'Display the current version as a badge',
+    parseValues: true,
+    type: 'boolean',
+};
+argvOptions[ConfigKeys.TitlePrefix] = {
+    alias: ['prefix', 'title_prefix'],
+    describe: 'Add a prefix to the README title',
+    parseValues: true,
+};
+/**
+ * Configuration inputs from the github action don't
+ * all match the input names when running on cli.
+ * This maps the action inputs to the cli.
+ */
+const ConfigKeysInputsMap = {
+    save: ConfigKeys.Save,
+    action: ConfigKeys.pathsAction,
+    readme: ConfigKeys.pathsReadme,
+    branding_svg_path: ConfigKeys.BrandingSvgPath,
+    branding_as_title_prefix: ConfigKeys.BrandingAsTitlePrefix,
+    versioning_enabled: ConfigKeys.VersioningEnabled,
+    version_prefix: ConfigKeys.VersioningPrefix,
+    versioning_default_branch: ConfigKeys.VersioningBranch,
+    version_override: ConfigKeys.VersioningOverride,
+    include_github_version_badge: ConfigKeys.IncludeGithubVersionBadge,
+    owner: ConfigKeys.Owner,
+    repo: ConfigKeys.Repo,
+    title_prefix: ConfigKeys.TitlePrefix,
+    pretty: ConfigKeys.Prettier,
+};
 export default class Inputs {
     config;
     sections;
@@ -47,18 +153,21 @@ export default class Inputs {
     configPath;
     action;
     readmeEditor;
+    /**
+     * Initializes a new instance of the Inputs class.
+     */
     constructor() {
         this.configPath = path.resolve(configFileName);
         this.config = new Provider();
         const repositoryDetail = repositoryFinder(null, githubEvent);
         if (process.env.GITHUB_ACTION) {
-            log.info('running in GitHub action');
+            log.info('Running in GitHub action');
         }
         if (fs.existsSync(this.configPath)) {
-            log.info(`config file found: ${this.configPath}`);
+            log.info(`Config file found: ${this.configPath}`);
         }
         else {
-            log.error(`config file not found: ${this.configPath}`);
+            log.error(`Config file not found: ${this.configPath}`);
         }
         this.config
             .env({
@@ -67,152 +176,38 @@ export default class Inputs {
             match: /^INPUT_/,
             transform: (obj) => {
                 if (obj.key.startsWith('input_') || obj.key.startsWith('INPUT_')) {
+                    const keyParsed = obj.key.replace(/^(INPUT|input)_/, '');
                     const newObj = {
-                        key: obj.key,
+                        key: ConfigKeysInputsMap[keyParsed] || keyParsed,
                         value: obj.value,
                     };
-                    const keyParsed = obj.key.replace(/^(INPUT|input)_/, '');
-                    switch (keyParsed) {
-                        case 'readme': {
-                            newObj.key = pathsReadme;
-                            break;
-                        }
-                        case 'action': {
-                            newObj.key = pathsAction;
-                            break;
-                        }
-                        case 'versioning_enabled': {
-                            newObj.key = 'versioning:enabled';
-                            break;
-                        }
-                        case 'version_prefix': {
-                            newObj.key = 'versioning:prefix';
-                            break;
-                        }
-                        case 'versioning_default_branch': {
-                            newObj.key = 'versioning:branch';
-                            break;
-                        }
-                        case 'version_override': {
-                            newObj.key = 'versioning:override';
-                            break;
-                        }
-                        case 'include_github_version_badge': {
-                            newObj.key = 'versioning:badge';
-                            break;
-                        }
-                        default: {
-                            newObj.key = keyParsed;
-                            break;
-                        }
-                    }
+                    newObj.key = ConfigKeysInputsMap[keyParsed] || keyParsed;
                     if (newObj.value) {
-                        this.config.set(newObj.key, newObj.value);
+                        // this.config.set(newObj.key, newObj.value);
+                        // eslint-disable-next-line no-param-reassign
+                        obj.value = newObj.value;
                     }
-                    return newObj;
+                    return obj;
                 }
                 return undefined;
             },
         })
-            .argv({
-            'save': {
-                alias: 'save',
-                describe: `Save this config to ${configFileName}`,
-                parseValues: true,
-                type: 'boolean',
-            },
-            'paths:action': {
-                alias: ['pathsAction', 'action'],
-                type: 'string',
-                describe: 'Path to the action.yml',
-            },
-            'paths:readme': {
-                alias: ['pathsReadme', 'readme'],
-                type: 'string',
-                describe: 'Path to the README file',
-            },
-            'branding_svg_path': {
-                alias: 'svg',
-                type: 'string',
-                describe: 'Save and load the branding svg image in the README from this path',
-            },
-            'branding_as_title_prefix': {
-                alias: 'branding_prefix',
-                type: 'boolean',
-                parseValues: true,
-                describe: 'Save and load the branding svg image in the README from this path',
-            },
-            'owner': {
-                alias: 'owner',
-                describe: 'The GitHub Action repository owner. i.e: `bitflight-devops`',
-            },
-            'repo': {
-                alias: 'repo',
-                describe: 'The GitHub Action repository name. i.e: `github-action-readme-generator`',
-            },
-            'prettier': {
-                alias: 'pretty',
-                describe: 'Format the markdown using prettier formatter',
-                parseValues: true,
-                type: 'boolean',
-            },
-            'versioning:enabled': {
-                alias: ['versioning', 'versioning_enabled'],
-                describe: 'Enable the update of the usage version to match the latest version in the package.json file',
-                parseValues: true,
-                type: 'boolean',
-            },
-            'versioning:override': {
-                alias: ['setversion', 'versioning_override', 'version_override'],
-                describe: 'Set a specific version to display in the README.md',
-                parseValues: true,
-            },
-            'versioning:prefix': {
-                alias: ['vp', 'version_prefix'],
-                describe: "Prefix the version with this value (if it isn't already prefixed)",
-                parseValues: true,
-            },
-            'versioning:branch': {
-                alias: ['branch', 'versioning_default_branch'],
-                describe: 'If versioning is disabled show this branch instead',
-                parseValues: true,
-            },
-            'versioning:badge': {
-                alias: ['version-badge', 'versioning_badge'],
-                describe: 'Display the current version as a badge',
-                parseValues: true,
-                type: 'boolean',
-            },
-            'title_prefix': {
-                alias: ['prefix', 'title_prefix'],
-                describe: 'Add a prefix to the README title',
-                parseValues: true,
-            },
-        })
+            .argv(argvOptions)
             .file(this.configPath)
             .defaults({
             owner: repositoryDetail?.owner,
             repo: repositoryDetail?.repo,
-            sections: [
-                'title',
-                'branding',
-                'description',
-                'usage',
-                'inputs',
-                'outputs',
-                'contents',
-                'badges',
-            ],
+            sections: [...README_SECTIONS],
         })
-            .required(['owner', 'repo']);
+            .required([...RequiredInputs]);
         this.sections = this.config.get('sections');
-        const actionPath = path.resolve(this.config.get(pathsAction));
+        const actionPath = path.resolve(this.config.get(ConfigKeys.pathsAction));
         this.action = new Action(actionPath);
-        this.readmePath = path.resolve(this.config.get(pathsReadme));
+        this.readmePath = path.resolve(this.config.get(ConfigKeys.pathsReadme));
         try {
             const thisActionPath = path.join(__dirname, '../../action.yml');
             const thisAction = new Action(thisActionPath);
-            this.setConfigValueFromActionFileDefault(thisAction, 'readme', pathsReadme);
+            this.setConfigValueFromActionFileDefault(thisAction, 'readme', ConfigKeys.pathsReadme);
             this.setConfigValueFromActionFileDefault(thisAction, 'title_prefix');
             this.setConfigValueFromActionFileDefault(thisAction, 'save');
             this.setConfigValueFromActionFileDefault(thisAction, 'pretty');
@@ -249,7 +244,7 @@ export default class Inputs {
     stringify() {
         if (this) {
             const output = [];
-            for (const k of configKeys) {
+            for (const k of Object.keys(ConfigKeys)) {
                 output.push(`${k}: ${this.config.get(k)}`);
             }
             return YAML.stringify(output);

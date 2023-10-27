@@ -1,2 +1,3 @@
 import type Inputs from '../inputs.js';
-export default function updateUsage(token: string, inputs: Inputs): Promise<void>;
+import type { ReadmeSection } from './index.js';
+export default function updateUsage(token: ReadmeSection, inputs: Inputs): Promise<void>;

@@ -1,3 +1,11 @@
+/**
+ * This TypeScript code exports a function named 'updateSection' which takes a section (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
+ * The function is responsible for updating different sections of the README.md file based on the provided section input.
+ * It utilizes various update functions (e.g., updateBranding, updateBadges) to update specific sections.
+ * @param {ReadmeSection} section - The section of the README to update.
+ * @param {Inputs} inputs - The Inputs class instance.
+ * @returns {Promise<void>} A promise that resolves once the section is updated.
+ */
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import updateBadges from './update-badges.js';
@@ -9,7 +17,18 @@ import updateTitle from './update-title.js';
 import updateUsage from './update-usage.js';
 
 const log = new LogTask('updateSection');
-export default async function updateSection(section: string, inputs: Inputs): Promise<void> {
+export const README_SECTIONS = [
+  'title',
+  'branding',
+  'description',
+  'usage',
+  'inputs',
+  'outputs',
+  'contents',
+  'badges',
+] as const;
+export type ReadmeSection = (typeof README_SECTIONS)[number];
+export default async function updateSection(section: ReadmeSection, inputs: Inputs): Promise<void> {
   const [startToken, stopToken] = inputs.readmeEditor.getTokenIndexes(section);
   if (
     (startToken === -1 || stopToken === -1) &&

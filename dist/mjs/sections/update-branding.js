@@ -1,5 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import { DEFAULT_BRAND_COLOR, GITHUB_ACTIONS_BRANDING_ICONS, GITHUB_ACTIONS_OMITTED_ICONS, } from '../constants.js';
+import { GITHUB_ACTIONS_OMITTED_ICONS, isValidIcon } from '../constants.js';
 import LogTask from '../logtask/index.js';
 import SVGEditor from '../svg-editor.mjs';
 /**
@@ -29,17 +29,17 @@ export function generateSvgImage(svgPath, icon, bgcolor) {
  * @returns The corresponding feather icon key array
  * @throws Error if the branding icon is undefined, not a valid icon name, or part of the omitted icons list
  */
-export function getValidIconName(brand) {
-    if (brand && typeof brand.icon === 'string') {
-        if (GITHUB_ACTIONS_BRANDING_ICONS.has(brand.icon)) {
-            return brand.icon;
-        }
-        if (GITHUB_ACTIONS_OMITTED_ICONS.has(brand.icon)) {
-            throw new Error(`No valid branding icon name found: ${brand.icon} is part of the list of omitted icons. `);
-        }
-        throw new Error(`No valid branding icon name found: ${brand.icon} is not a valid icon from the feather-icons list`);
+export function getValidIconName(icon) {
+    if (!icon) {
+        throw new Error(`No valid branding icon name found: action.yml branding is undefined`);
     }
-    throw new Error(`No valid branding icon name found: action.yml branding is undefined`);
+    if (isValidIcon(icon)) {
+        return icon;
+    }
+    if (GITHUB_ACTIONS_OMITTED_ICONS.has(icon)) {
+        throw new Error(`No valid branding icon name found: ${icon} is part of the list of omitted icons. `);
+    }
+    throw new Error(`No valid branding icon name found: ${icon} is not a valid icon from the feather-icons list`);
 }
 /**
  * This function generates an HTML image markup with branding information.
@@ -55,9 +55,8 @@ export function generateImgMarkup(inputs, width = '15%') {
     // Create a log task for debugging
     const log = new LogTask('generateImgMarkup');
     // Get the branding information from the inputs
-    const brand = inputs.action.branding;
-    const iconName = getValidIconName(brand);
-    const color = brand.color ?? DEFAULT_BRAND_COLOR;
+    const { icon, color } = inputs.action.branding;
+    const iconName = getValidIconName(icon);
     const svgPath = inputs.config.get('branding_svg_path');
     const result = `<img src="${svgPath}" width="${width}" align="center" alt="branding<icon:${iconName} color:${color}>" />`;
     if (svgPath) {

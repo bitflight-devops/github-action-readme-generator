@@ -1,6 +1,7 @@
 import type { FeatherIconNames } from 'feather-icons';
-import type { Branding } from '../Action.js';
+import type { BrandColors } from '../constants.js';
 import type Inputs from '../inputs.js';
+import type { ReadmeSection } from './index.js';
 export interface IBranding {
     alt: string;
     img: string;
@@ -17,7 +18,7 @@ export interface IBranding {
  * @param icon - The icon name from the feather-icons list
  * @param bgcolor - The background color of the circle behind the icon
  */
-export declare function generateSvgImage<T extends Partial<FeatherIconNames>>(svgPath: string, icon: T, bgcolor: string): void;
+export declare function generateSvgImage(svgPath: string, icon: Partial<FeatherIconNames>, bgcolor: Partial<BrandColors>): void;
 /**
  * This function returns a valid icon name based on the provided branding.
  * If the branding is undefined or not a valid icon name, an error is thrown.
@@ -30,7 +31,7 @@ export declare function generateSvgImage<T extends Partial<FeatherIconNames>>(sv
  * @returns The corresponding feather icon key array
  * @throws Error if the branding icon is undefined, not a valid icon name, or part of the omitted icons list
  */
-export declare function getValidIconName(brand?: Branding): FeatherIconNames;
+export declare function getValidIconName(icon?: Partial<FeatherIconNames>): FeatherIconNames;
 /**
  * This function generates an HTML image markup with branding information.
  * It takes inputs and an optional width parameter.
@@ -51,4 +52,4 @@ export declare function generateImgMarkup(inputs: Inputs, width?: string): strin
  * @param token - The token string that is used to identify the section in the readme editor.
  * @param inputs - The inputs object that contains data for the function.
  */
-export default function updateBranding(token: string, inputs: Inputs): void;
+export default function updateBranding(token: ReadmeSection, inputs: Inputs): void;

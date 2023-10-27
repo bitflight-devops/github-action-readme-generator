@@ -1,3 +1,4 @@
+import { type Branding } from './constants.js';
 /**
  * Represents an input for the action.
  */
@@ -24,14 +25,6 @@ interface Runs {
     using: string;
     /** The entrypoint file for the action */
     main: string;
-}
-/**
- * Branding information for the action.
- */
-export interface Branding {
-    /** Color for the action branding */
-    color: string;
-    icon: string;
 }
 /**
  * Parses and represents metadata from action.yml.

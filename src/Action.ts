@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 
 import YAML from 'yaml';
 
+import { type Branding, DEFAULT_BRAND_COLOR, DEFAULT_BRAND_ICON } from './constants.js';
 import LogTask from './logtask/index.js';
 
 /**
@@ -37,15 +38,6 @@ interface Runs {
 
   /** The entrypoint file for the action */
   main: string;
-}
-
-/**
- * Branding information for the action.
- */
-export interface Branding {
-  /** Color for the action branding */
-  color: string;
-  icon: string;
 }
 
 /**
@@ -99,7 +91,11 @@ export default class Action {
     const actionYaml = tmpActionYaml as Action;
     this.name = actionYaml.name;
     this.description = actionYaml.description;
-    this.branding = actionYaml.branding;
+
+    this.branding = {
+      color: actionYaml.branding?.color ?? DEFAULT_BRAND_COLOR,
+      icon: actionYaml.branding?.icon ?? DEFAULT_BRAND_ICON,
+    };
     this.inputs = actionYaml.inputs;
     this.outputs = actionYaml.outputs;
     this.runs = actionYaml.runs;

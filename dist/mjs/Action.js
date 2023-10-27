@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
 import * as fs from 'node:fs';
 import YAML from 'yaml';
+import { DEFAULT_BRAND_COLOR, DEFAULT_BRAND_ICON } from './constants.js';
 import LogTask from './logtask/index.js';
 /**
  * Parses and represents metadata from action.yml.
@@ -47,7 +48,10 @@ export default class Action {
         const actionYaml = tmpActionYaml;
         this.name = actionYaml.name;
         this.description = actionYaml.description;
-        this.branding = actionYaml.branding;
+        this.branding = {
+            color: actionYaml.branding?.color ?? DEFAULT_BRAND_COLOR,
+            icon: actionYaml.branding?.icon ?? DEFAULT_BRAND_ICON,
+        };
         this.inputs = actionYaml.inputs;
         this.outputs = actionYaml.outputs;
         this.runs = actionYaml.runs;

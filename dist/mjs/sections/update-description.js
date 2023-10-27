@@ -9,9 +9,9 @@ export default function updateDescription(token, inputs) {
         const desc = inputs.action.description
             .trim()
             .replaceAll('\r\n', '\n') // Convert CR to LF
-            .replaceAll(/ +/g, ' ') //    Squash consecutive spaces
-            .replaceAll(' \n', '\n') //  Squash space followed by newline
-            .replaceAll('\n\n', '<br />'); // convert double return to a break
+            .replaceAll(/ +/g, ' ') // Squash consecutive spaces
+            .replaceAll(' \n', '\n') // Squash space followed by newline
+            .replaceAll('\n\n', '<br />'); // Convert double return to a break
         log.info(`Writing ${desc.length} characters to the description section`);
         content.push(desc);
         inputs.readmeEditor.updateSection(token, content);

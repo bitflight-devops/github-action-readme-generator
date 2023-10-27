@@ -1,6 +1,15 @@
+/**
+ * This TypeScript code imports the necessary modules and defines two interfaces: `Versioning` and `Paths`.
+ * It also defines a class named `GHActionDocsConfig` that represents the configuration for generating GitHub Actions documentation.
+ * The class has properties that correspond to the configuration options and a method `loadInputs` to load the configuration from the provided `Inputs` object.
+ * The class also has a method `save` to save the configuration to a file.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import LogTask from './logtask/index.js';
+/**
+ * Represents the configuration for generating GitHub Actions documentation.
+ */
 export class GHActionDocsConfig {
     owner;
     repo;
@@ -12,6 +21,10 @@ export class GHActionDocsConfig {
     readmePath;
     outpath;
     pretty;
+    /**
+     * Loads the configuration from the provided `Inputs` object.
+     * @param {Inputs} inputs - The `Inputs` object containing the configuration values.
+     */
     loadInputs(inputs) {
         this.owner = inputs.config.get('owner');
         this.repo = inputs.config.get('repo');
@@ -29,15 +42,14 @@ export class GHActionDocsConfig {
         this.pretty = inputs.config.get('pretty');
     }
     /**
-     *
-     * @param configPath {string}
-     * @description Saves the config to a file,if the file exists it will be overwritten.
+     * Saves the configuration to a file. If the file exists, it will be overwritten.
+     * @param {string} configPath - The path to the configuration file.
      */
     save(configPath) {
         const log = new LogTask('config:save');
-        // validate that that the directory exists
+        // Validate that the directory exists
         const directory = path.dirname(configPath);
-        // make the directory if it doesn't exist
+        // Create the directory if it doesn't exist
         fs.mkdir(directory, { recursive: true }, (err) => {
             if (err) {
                 log.error(`Error creating directory: ${directory}. Error: ${err}`);

@@ -60,7 +60,7 @@ export default async function updateSection(section: ReadmeSection, inputs: Inpu
       return updateOutputs(section, inputs);
     }
     default: {
-      return log.debug(`unknown section ${section}`);
+      return log.debug(`unknown section found <!-- start ${section} -->`);
     }
   }
 }

@@ -9,7 +9,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import type { Context } from '@actions/github/lib/context.js';
-import { Provider } from 'nconf';
+import { IOptions, Provider } from 'nconf';
 import YAML from 'yaml';
 
 import Action from './Action.js';
@@ -160,6 +160,26 @@ interface KVPairType {
   value: string | undefined;
 }
 type ProviderInstance = InstanceType<typeof Provider>;
+
+function setConfigValueFromActionFileDefault(
+  actionInstance: Action,
+  inputName: string,
+): string | boolean | undefined {
+  if (ConfigKeysInputsMap[inputName] === undefined) {
+    log.error(
+      `${inputName} from ${
+        actionInstance.path
+      } does not match a known input. Known inputs are: ${Object.keys(ConfigKeysInputsMap)}`,
+    );
+    return;
+  }
+
+  const configName = ConfigKeysInputsMap[inputName];
+
+  log.debug(`Default Value for: ${configName} = ${actionInstance.inputDefault(inputName)}`);
+  return actionInstance.inputDefault(inputName);
+}
+
 export default class Inputs {
   config: ProviderInstance;
 
@@ -189,79 +209,60 @@ export default class Inputs {
       log.error(`Config file not found: ${this.configPath}`);
     }
     this.config
+
+      .file(this.configPath)
       .env({
         lowerCase: true,
         parseValues: true,
-        match: /^INPUT_/,
+        match: /^(INPUT|input)_[A-Z_a-z]\w*$/,
         transform: (obj: KVPairType): undefined | KVPairType => {
-          if (obj.key.startsWith('input_') || obj.key.startsWith('INPUT_')) {
+          if (/^(INPUT|input)_[A-Z_a-z]\w*$/.test(obj.key)) {
+            log.debug(`Parsing input: ${obj.key} with ith value: ${obj.value}`);
             const keyParsed = obj.key.replace(/^(INPUT|input)_/, '');
-            const newObj: KVPairType = {
-              key: ConfigKeysInputsMap[keyParsed] || keyParsed,
-              value: obj.value,
-            };
-            newObj.key = ConfigKeysInputsMap[keyParsed] || keyParsed;
-            if (newObj.value) {
-              // this.config.set(newObj.key, newObj.value);
-              // eslint-disable-next-line no-param-reassign
-              obj.value = newObj.value;
-            }
+            // eslint-disable-next-line no-param-reassign
+            obj.key = ConfigKeysInputsMap[keyParsed] || keyParsed;
+
+            this.config.set(ConfigKeysInputsMap[keyParsed] || keyParsed, obj.value);
+            // eslint-disable-next-line no-param-reassign
+            // obj.value = newObj.value;
+
+            log.debug(`New input is ${obj.key} with the value ${obj.value}`);
             return obj;
           }
+          log.debug(`Ignoring input: ${obj.key} with ith value: ${obj.value}`);
           return undefined;
         },
       })
-      .argv(argvOptions)
-      .file(this.configPath)
-      .defaults({
-        owner: repositoryDetail?.owner,
-        repo: repositoryDetail?.repo,
-        sections: [...README_SECTIONS],
-      })
-      .required([...RequiredInputs]);
-
-    this.sections = this.config.get('sections') as ReadmeSection[];
+      .argv(argvOptions);
 
     const actionPath = path.resolve(this.config.get(ConfigKeys.pathsAction) as string);
     this.action = new Action(actionPath);
-    this.readmePath = path.resolve(this.config.get(ConfigKeys.pathsReadme) as string);
+    const defaultValues = {} as IOptions;
     try {
       const thisActionPath = path.join(__dirname, '../../action.yml');
       const thisAction = new Action(thisActionPath);
-      this.setConfigValueFromActionFileDefault(thisAction, 'readme', ConfigKeys.pathsReadme);
-      this.setConfigValueFromActionFileDefault(thisAction, 'title_prefix');
-      this.setConfigValueFromActionFileDefault(thisAction, 'save');
-      this.setConfigValueFromActionFileDefault(thisAction, 'pretty');
-      this.setConfigValueFromActionFileDefault(
-        thisAction,
-        'versioning_enabled',
-        'versioning:enabled',
-      );
-      this.setConfigValueFromActionFileDefault(
-        thisAction,
-        'versioning_default_branch',
-        'versioning:branch',
-      );
-      this.setConfigValueFromActionFileDefault(
-        thisAction,
-        'version_override',
-        'versioning:override',
-      );
-      this.setConfigValueFromActionFileDefault(thisAction, 'version_prefix', 'versioning:prefix');
-      this.setConfigValueFromActionFileDefault(
-        thisAction,
-        'include_github_version_badge',
-        'versioning:badges',
-      );
-      this.setConfigValueFromActionFileDefault(thisAction, 'branding_svg_path');
-      this.setConfigValueFromActionFileDefault(thisAction, 'branding_as_title_prefix');
+      // Collect all of the default values from the action.yml file
+      for (const key of Object.keys(thisAction.inputs)) {
+        defaultValues[key] = setConfigValueFromActionFileDefault(thisAction, key);
+      }
     } catch (error) {
       log.info(`failed to load defaults from action's action.yml: ${error}`);
     }
-
+    // Apply the default values from the action.yml file
+    this.config
+      .defaults({
+        ...defaultValues,
+        owner: repositoryDetail?.owner,
+        repo: repositoryDetail?.repo,
+        sections: [...README_SECTIONS] as ReadmeSection[],
+      })
+      .required([...RequiredInputs]);
+    this.sections = this.config.get('sections') as ReadmeSection[];
+    this.readmePath = path.resolve(this.config.get(ConfigKeys.pathsReadme) as string);
     this.readmeEditor = new ReadmeEditor(this.readmePath);
     if (LogTask.isDebug()) {
       try {
+        log.debug(`readme file path: ${this.config.get(ConfigKeys.pathsReadme)}`);
         log.debug('resolved inputs:');
         log.debug(this.stringify());
         log.debug('resolved action:');
@@ -274,22 +275,10 @@ export default class Inputs {
     }
   }
 
-  setConfigValueFromActionFileDefault(
-    actionInstance: Action,
-    inputName: string,
-    providedConfigName?: string,
-  ): void {
-    const configName = providedConfigName ?? inputName;
-    this.config.set(
-      configName,
-      this.config.get(configName) ?? actionInstance.inputDefault(inputName),
-    );
-  }
-
   stringify(): string {
     if (this) {
       const output: string[] = [];
-      for (const k of Object.keys(ConfigKeys)) {
+      for (const k of Object.values(ConfigKeys)) {
         output.push(`${k}: ${this.config.get(k)}`);
       }
       return YAML.stringify(output);

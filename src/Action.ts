@@ -19,6 +19,12 @@ export interface Input {
 
   /** Default value for the input */
   default?: string;
+  /** Optional If the input parameter is used, this string is logged as a warning message. You can use this warning to notify users that the input is deprecated and mention any alternatives. */
+  deprecationMessage?: string;
+
+  /**
+   * The type of the input.
+   */
 }
 
 /**
@@ -27,18 +33,59 @@ export interface Input {
 export interface Output {
   /** Description of the output */
   description?: string;
+  value?: string;
 }
+type CompositeAction = 'composite';
+type ContainerAction = 'container';
+type JavascriptAction = `Node${string}` | `node${string}`;
 
 /**
  * Defines how the action is run.
  */
-interface Runs {
+interface RunsContainer {
+  using: ContainerAction;
+  image: string;
+  main: string;
+  pre: string;
+}
+
+interface RunsJavascript {
   /** The runner used to execute the action */
-  using: string;
+  'using': JavascriptAction;
 
   /** The entrypoint file for the action */
-  main: string;
+  'main': string;
+
+  'pre'?: string;
+  'pre-if'?: string;
+
+  'post-if'?: string;
+
+  'post'?: string;
 }
+
+interface Steps {
+  'shell'?: string;
+  'if'?: string;
+  'run'?: string;
+  'name'?: string;
+  'id'?: string;
+  'working-directory'?: string;
+  'env': { [key: string]: string };
+}
+
+interface RunsComposite {
+  /** The runner used to execute the action */
+  using: CompositeAction;
+  steps?: Steps;
+}
+
+export type ActionType = RunsContainer | RunsJavascript | RunsComposite;
+/**
+ * Defines how the action is run.
+ */
+
+// type FilterByField<T, K extends keyof T, V> = T extends { [P in K]: V } ? T : never;
 
 /**
  * Parses and represents metadata from action.yml.
@@ -48,6 +95,8 @@ export default class Action {
 
   /** Name of the action */
   public name: string;
+
+  public author: string;
 
   /** Description of the action */
   public description: string;
@@ -62,7 +111,7 @@ export default class Action {
   public outputs: { [key: string]: Output };
 
   /** How the action is run */
-  public runs: Runs;
+  public runs: ActionType;
 
   /** Path to the action */
   public path: string;
@@ -90,6 +139,7 @@ export default class Action {
     }
     const actionYaml = tmpActionYaml as Action;
     this.name = actionYaml.name;
+    this.author = actionYaml.author;
     this.description = actionYaml.description;
 
     this.branding = {
@@ -107,7 +157,7 @@ export default class Action {
    * @param inputName Name of the input
    * @returns The default value if defined
    */
-  inputDefault(inputName: string): string | undefined {
+  inputDefault(inputName: string): string | boolean | undefined {
     return this.inputs[inputName]?.default;
   }
 

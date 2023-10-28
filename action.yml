@@ -44,7 +44,7 @@ inputs:
       Save the provided values in a `.ghadocs.json` file.
       This will update any existing `.ghadocs.json` file that is in place.
     required: false
-    default: true
+    default: false
   pretty:
     description: |
       Use `prettier` to pretty print the new README.md file

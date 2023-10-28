@@ -5,12 +5,17 @@ import YAML from 'yaml';
 import { DEFAULT_BRAND_COLOR, DEFAULT_BRAND_ICON } from './constants.js';
 import LogTask from './logtask/index.js';
 /**
+ * Defines how the action is run.
+ */
+// type FilterByField<T, K extends keyof T, V> = T extends { [P in K]: V } ? T : never;
+/**
  * Parses and represents metadata from action.yml.
  */
 export default class Action {
     // Load the action.yml
     /** Name of the action */
     name;
+    author;
     /** Description of the action */
     description;
     /** Branding information */
@@ -47,6 +52,7 @@ export default class Action {
         }
         const actionYaml = tmpActionYaml;
         this.name = actionYaml.name;
+        this.author = actionYaml.author;
         this.description = actionYaml.description;
         this.branding = {
             color: actionYaml.branding?.color ?? DEFAULT_BRAND_COLOR,

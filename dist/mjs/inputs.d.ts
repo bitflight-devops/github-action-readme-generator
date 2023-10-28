@@ -21,7 +21,6 @@ export default class Inputs {
      * Initializes a new instance of the Inputs class.
      */
     constructor();
-    setConfigValueFromActionFileDefault(actionInstance: Action, inputName: string, providedConfigName?: string): void;
     stringify(): string;
 }
 export {};

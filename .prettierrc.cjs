@@ -19,7 +19,6 @@ module.exports = {
       options: {
         singleQuote: false,
         printWidth: 100,
-        trimTrailingWhitespace:false,
         parser: 'yaml',
       },
     },

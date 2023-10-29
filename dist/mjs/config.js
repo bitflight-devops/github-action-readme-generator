@@ -50,19 +50,26 @@ export class GHActionDocsConfig {
         // Validate that the directory exists
         const directory = path.dirname(configPath);
         // Create the directory if it doesn't exist
-        fs.mkdir(directory, { recursive: true }, (err) => {
-            if (err) {
-                log.error(`Error creating directory: ${directory}. Error: ${err}`);
-            }
-        });
-        return fs.writeFile(configPath, JSON.stringify(this, null, 2), (err) => {
-            if (err) {
-                log.error(`Error writing config file: ${configPath}. Error: ${err}`);
-            }
-            else {
-                log.info(`Config file written to: ${configPath}`);
-            }
-        });
+        try {
+            fs.mkdir(directory, { recursive: true }, (err) => {
+                if (err) {
+                    log.error(`Error creating directory: ${directory}.`);
+                    throw err;
+                }
+            });
+            return fs.writeFile(configPath, JSON.stringify(this, null, 2), (err) => {
+                if (err) {
+                    log.error(`Error writing config file: ${configPath}.`);
+                    throw err;
+                }
+                else {
+                    log.info(`Config file written to: ${configPath}`);
+                }
+            });
+        }
+        catch (error) {
+            log.error(`Unable to save config. Error: ${error}`);
+        }
     }
 }
 //# sourceMappingURL=config.js.map

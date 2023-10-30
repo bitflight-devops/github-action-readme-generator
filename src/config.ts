@@ -19,6 +19,7 @@ export interface Versioning {
   prefix?: string;
   override?: string;
   branch?: string;
+  badge?: string;
 }
 
 /**
@@ -69,6 +70,7 @@ export class GHActionDocsConfig {
       prefix: inputs.config.get('versioning:prefix') as string,
       override: inputs.config.get('versioning:override') as string,
       branch: inputs.config.get('versioning:branch') as string,
+      badge: inputs.config.get('versioning:badge') as string,
     };
     this.outpath = inputs.config.get('outpath') as string;
     this.pretty = inputs.config.get('pretty') as boolean;

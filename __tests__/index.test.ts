@@ -1,3 +1,5 @@
+import { expect, jest } from '@jest/globals';
+
 describe('test required environment variables', () => {
   beforeAll(() => {
     // GitHub workspace

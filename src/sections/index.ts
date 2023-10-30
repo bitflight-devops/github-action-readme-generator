@@ -6,6 +6,7 @@
  * @param {Inputs} inputs - The Inputs class instance.
  * @returns {Promise<void>} A promise that resolves once the section is updated.
  */
+import { ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import updateBadges from './update-badges.js';
@@ -17,24 +18,13 @@ import updateTitle from './update-title.js';
 import updateUsage from './update-usage.js';
 
 const log = new LogTask('updateSection');
-export const README_SECTIONS = [
-  'title',
-  'branding',
-  'description',
-  'usage',
-  'inputs',
-  'outputs',
-  'contents',
-  'badges',
-] as const;
-export type ReadmeSection = (typeof README_SECTIONS)[number];
+
 export default async function updateSection(section: ReadmeSection, inputs: Inputs): Promise<void> {
   const [startToken, stopToken] = inputs.readmeEditor.getTokenIndexes(section);
-  if (
-    (startToken === -1 || stopToken === -1) &&
-    ['branding', 'title'].includes(section) &&
-    inputs.config.get('branding_as_title_prefix') !== true
-  ) {
+  // &&
+  // ['branding', 'title'].includes(section) &&
+  // inputs.config.get('branding_as_title_prefix') !== true
+  if (startToken === -1 || stopToken === -1) {
     return;
   }
   switch (section) {

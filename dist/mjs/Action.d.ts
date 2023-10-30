@@ -1,3 +1,8 @@
+/**
+ * This class represents the metadata of a GitHub action defined in the action.yml file.
+ * It provides properties and methods for accessing and manipulating the metadata.
+ * [Further reading on the metadata can be found here](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions#inputs)
+ */
 import { type Branding } from './constants.js';
 /**
  * Represents an input for the action.
@@ -24,7 +29,7 @@ type CompositeAction = 'composite';
 type ContainerAction = 'container';
 type JavascriptAction = `Node${string}` | `node${string}`;
 /**
- * Defines how the action is run.
+ * Defines the runs property for container actions.
  */
 interface RunsContainer {
     using: ContainerAction;
@@ -32,6 +37,9 @@ interface RunsContainer {
     main: string;
     pre: string;
 }
+/**
+ * Defines the runs property for JavaScript actions.
+ */
 interface RunsJavascript {
     /** The runner used to execute the action */
     'using': JavascriptAction;
@@ -42,6 +50,9 @@ interface RunsJavascript {
     'post-if'?: string;
     'post'?: string;
 }
+/**
+ * Defines the steps property for composite actions.
+ */
 interface Steps {
     'shell'?: string;
     'if'?: string;
@@ -53,6 +64,9 @@ interface Steps {
         [key: string]: string;
     };
 }
+/**
+ * Defines the runs property for composite actions.
+ */
 interface RunsComposite {
     /** The runner used to execute the action */
     using: CompositeAction;
@@ -86,22 +100,22 @@ export default class Action {
     /** Path to the action */
     path: string;
     /**
-     * Creates a new Action instance by loading and parsing action.yml.
+     * Creates a new instance of the Action class by loading and parsing action.yml.
      *
-     * @param actionPath Path to the action
+     * @param actionPath The path to the action.yml file.
      */
     constructor(actionPath: string);
     /**
      * Gets the default value for an input.
      *
-     * @param inputName Name of the input
-     * @returns The default value if defined
+     * @param inputName The name of the input.
+     * @returns The default value if defined,or undefined
      */
     inputDefault(inputName: string): string | boolean | undefined;
     /**
      * Stringifies the action back to YAML.
      *
-     * @returns The YAML string
+     * @returns The YAML string for debugging.
      */
     stringify(): string;
 }

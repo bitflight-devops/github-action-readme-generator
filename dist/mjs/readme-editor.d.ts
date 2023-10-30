@@ -12,6 +12,10 @@ export declare const startTokenFormat = "<!-- start %s -->";
  */
 export declare const endTokenFormat = "<!-- end %s -->";
 export default class ReadmeEditor {
+    private log;
+    /**
+     * The path to the README file.
+     */
     private readonly filePath;
     private fileContent;
     /**

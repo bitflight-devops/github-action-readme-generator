@@ -19,16 +19,22 @@ export const inputs = new Inputs();
  */
 export async function generateDocs(): Promise<void> {
   const log = new LogTask('generating readme');
-  for (const section of inputs.sections) {
-    try {
-      // eslint-disable-next-line no-await-in-loop
-      await updateSection(section, inputs);
-    } catch (error: any) {
-      if (error && 'message' in error && error.message)
-        return log.fail(`Error occurred in section ${section}. ${error.message}`);
-    }
-  }
-  inputs.readmeEditor.dumpToFile();
+  const sectionPromises: Promise<void>[] = [];
 
-  return save(inputs);
+  for (const section of inputs.sections) {
+    sectionPromises.push(
+      updateSection(section, inputs).catch((error) => {
+        if (error) {
+          throw new Error(`Error occurred in section ${section}. Error: ${error}`);
+        }
+      }),
+    );
+  }
+  try {
+    await Promise.all(sectionPromises);
+    inputs.readmeEditor.dumpToFile();
+    return save(inputs);
+  } catch (error) {
+    return log.fail(`${error}`);
+  }
 }

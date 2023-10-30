@@ -6,9 +6,10 @@
  */
 import { Provider } from 'nconf';
 import Action from './Action.js';
+import { ReadmeSection } from './constants.js';
 import ReadmeEditor from './readme-editor.js';
-import { ReadmeSection } from './sections/index.js';
-export declare const configFileName = ".ghadocs.json";
+export declare const __filename: string;
+export declare const __dirname: string;
 type ProviderInstance = InstanceType<typeof Provider>;
 export default class Inputs {
     config: ProviderInstance;
@@ -17,6 +18,8 @@ export default class Inputs {
     configPath: string;
     action: Action;
     readmeEditor: ReadmeEditor;
+    owner: string;
+    repo: string;
     /**
      * Initializes a new instance of the Inputs class.
      */

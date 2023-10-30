@@ -14,7 +14,6 @@ import LogTask from './logtask/index.js';
 /**
  * Utility class for generating SVG images.
  */
-/* eslint-disable import/no-extraneous-dependencies */
 export default class SVGEditor {
     log;
     window;

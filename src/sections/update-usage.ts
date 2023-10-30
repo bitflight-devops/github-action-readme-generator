@@ -1,14 +1,15 @@
+import { ReadmeSection } from '../constants.js';
 import { getCurrentVersionString } from '../helpers.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import { wrapDescription } from '../prettier.js';
-import type { ReadmeSection } from './index.js';
 
 type DescriptionType = Record<string, string[]>;
 export default async function updateUsage(token: ReadmeSection, inputs: Inputs): Promise<void> {
   const log = new LogTask(token);
   log.start();
-  const actionName = `${inputs.config.get('owner') as string}/${inputs.config.get('repo')}`;
+
+  const actionName = `${inputs.owner}/${inputs.repo}`;
   log.info(`Action name: ${actionName}`);
   const versionString: string = getCurrentVersionString(inputs);
 

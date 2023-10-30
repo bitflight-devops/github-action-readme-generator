@@ -16,17 +16,21 @@ export const inputs = new Inputs();
  */
 export async function generateDocs() {
     const log = new LogTask('generating readme');
+    const sectionPromises = [];
     for (const section of inputs.sections) {
-        try {
-            // eslint-disable-next-line no-await-in-loop
-            await updateSection(section, inputs);
-        }
-        catch (error) {
-            if (error && 'message' in error && error.message)
-                return log.fail(`Error occurred in section ${section}. ${error.message}`);
-        }
+        sectionPromises.push(updateSection(section, inputs).catch((error) => {
+            if (error) {
+                throw new Error(`Error occurred in section ${section}. Error: ${error}`);
+            }
+        }));
     }
-    inputs.readmeEditor.dumpToFile();
-    return save(inputs);
+    try {
+        await Promise.all(sectionPromises);
+        inputs.readmeEditor.dumpToFile();
+        return save(inputs);
+    }
+    catch (error) {
+        return log.fail(`${error}`);
+    }
 }
 //# sourceMappingURL=generate-docs.js.map

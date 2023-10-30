@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 declare module "jest.config" {
     import type { Config } from '@jest/types';
     const config: Config.InitialOptions;
@@ -6,6 +5,26 @@ declare module "jest.config" {
 }
 declare module "src/constants" {
     import type { FeatherIconNames } from 'feather-icons';
+    export const README_SECTIONS: readonly ["title", "branding", "description", "usage", "inputs", "outputs", "contents", "badges"];
+    export type ReadmeSection = (typeof README_SECTIONS)[number];
+    export const configFileName = ".ghadocs.json";
+    export enum ConfigKeys {
+        Save = "save",
+        pathsAction = "paths:action",
+        pathsReadme = "paths:readme",
+        BrandingSvgPath = "branding_svg_path",
+        BrandingAsTitlePrefix = "branding_as_title_prefix",
+        VersioningEnabled = "versioning:enabled",
+        VersioningOverride = "versioning:override",
+        VersioningPrefix = "versioning:prefix",
+        VersioningBranch = "versioning:branch",
+        Owner = "owner",
+        Repo = "repo",
+        TitlePrefix = "title_prefix",
+        Prettier = "prettier",
+        IncludeGithubVersionBadge = "versioning:badge"
+    }
+    export const RequiredInputs: readonly [ConfigKeys.pathsAction, ConfigKeys.pathsReadme, ConfigKeys.Owner, ConfigKeys.Repo];
     export const brandingSquareEdgeLengthInPixels = 50;
     export const DEFAULT_BRAND_COLOR = "blue";
     export const DEFAULT_BRAND_ICON = "activity";
@@ -148,7 +167,7 @@ declare module "src/Action" {
     type ContainerAction = 'container';
     type JavascriptAction = `Node${string}` | `node${string}`;
     /**
-     * Defines how the action is run.
+     * Defines the runs property for container actions.
      */
     interface RunsContainer {
         using: ContainerAction;
@@ -156,6 +175,9 @@ declare module "src/Action" {
         main: string;
         pre: string;
     }
+    /**
+     * Defines the runs property for JavaScript actions.
+     */
     interface RunsJavascript {
         /** The runner used to execute the action */
         'using': JavascriptAction;
@@ -166,6 +188,9 @@ declare module "src/Action" {
         'post-if'?: string;
         'post'?: string;
     }
+    /**
+     * Defines the steps property for composite actions.
+     */
     interface Steps {
         'shell'?: string;
         'if'?: string;
@@ -177,6 +202,9 @@ declare module "src/Action" {
             [key: string]: string;
         };
     }
+    /**
+     * Defines the runs property for composite actions.
+     */
     interface RunsComposite {
         /** The runner used to execute the action */
         using: CompositeAction;
@@ -210,23 +238,120 @@ declare module "src/Action" {
         /** Path to the action */
         path: string;
         /**
-         * Creates a new Action instance by loading and parsing action.yml.
+         * Creates a new instance of the Action class by loading and parsing action.yml.
          *
-         * @param actionPath Path to the action
+         * @param actionPath The path to the action.yml file.
          */
         constructor(actionPath: string);
         /**
          * Gets the default value for an input.
          *
-         * @param inputName Name of the input
-         * @returns The default value if defined
+         * @param inputName The name of the input.
+         * @returns The default value if defined,or undefined
          */
         inputDefault(inputName: string): string | boolean | undefined;
         /**
          * Stringifies the action back to YAML.
          *
-         * @returns The YAML string
+         * @returns The YAML string for debugging.
          */
+        stringify(): string;
+    }
+}
+declare module "src/prettier" {
+    /**
+     * Formats a YAML string using `prettier`.
+     * @param {string} value - The YAML string to format.
+     * @param {string} [filepath] - The optional filepath.
+     * @returns {Promise<string>} A promise that resolves with the formatted YAML string.
+     */
+    export function formatYaml(value: string, filepath?: string): Promise<string>;
+    /**
+     * Formats a Markdown string using `prettier`.
+     * @param {string} value - The Markdown string to format.
+     * @param {string} [filepath] - The optional filepath.
+     * @returns {Promise<string>} A promise that resolves with the formatted Markdown string.
+     */
+    export function formatMarkdown(value: string, filepath?: string): Promise<string>;
+    /**
+     * Wraps a description text with a prefix and formats it using `prettier`.
+     * @param {string | undefined} value - The description text to wrap and format.
+     * @param {string[]} content - The array of content to update.
+     * @param {string} [prefix='    # '] - The optional prefix to wrap the description lines.
+     * @returns {Promise<string[]>} A promise that resolves with the updated content array.
+     */
+    export function wrapDescription(value: string | undefined, content: string[], prefix?: string): Promise<string[]>;
+}
+declare module "src/readme-editor" {
+    /**
+     * The format for the start token of a section.
+     */
+    export const startTokenFormat = "<!-- start %s -->";
+    /**
+     * The format for the end token of a section.
+     */
+    export const endTokenFormat = "<!-- end %s -->";
+    export default class ReadmeEditor {
+        private log;
+        /**
+         * The path to the README file.
+         */
+        private readonly filePath;
+        private fileContent;
+        /**
+         * Creates a new instance of `ReadmeEditor`.
+         * @param {string} filePath - The path to the README file.
+         */
+        constructor(filePath: string);
+        /**
+         * Gets the indexes of the start and end tokens for a given section.
+         * @param {string} token - The section token.
+         * @returns {number[]} - The indexes of the start and end tokens.
+         */
+        getTokenIndexes(token: string): number[];
+        /**
+         * Updates a specific section in the README file with the provided content.
+         * @param {string} name - The name of the section.
+         * @param {string | string[]} providedContent - The content to update the section with.
+         * @param {boolean} addNewlines - Whether to add newlines before and after the content.
+         */
+        updateSection(name: string, providedContent: string | string[], addNewlines?: boolean): void;
+        /**
+         * Dumps the modified content back to the README file.
+         * @returns {Promise<void>}
+         */
+        dumpToFile(): Promise<void>;
+    }
+}
+declare module "src/working-directory" {
+    /**
+     * Returns the working directory path based on the environment variables.
+     * The order of preference is GITHUB_WORKSPACE, INIT_CWD, and then the current working directory.
+     * @returns The working directory path.
+     */
+    export default function workingDirectory(): string;
+}
+declare module "src/inputs" {
+    import { Provider } from 'nconf';
+    import Action from "src/Action";
+    import { ReadmeSection } from "src/constants";
+    import ReadmeEditor from "src/readme-editor";
+    export const __filename: string;
+    export const __dirname: string;
+    type ProviderInstance = InstanceType<typeof Provider>;
+    export default class Inputs {
+        config: ProviderInstance;
+        sections: ReadmeSection[];
+        readmePath: string;
+        configPath: string;
+        action: Action;
+        readmeEditor: ReadmeEditor;
+        owner: string;
+        repo: string;
+        /**
+         * Initializes a new instance of the Inputs class.
+         */
+        constructor();
         stringify(): string;
     }
 }
@@ -316,71 +441,76 @@ declare module "src/helpers" {
      */
     export function rowHeader(value: string): string;
     export function getCurrentVersionString(inputs: Inputs): string;
+    export function indexOfRegex(str: string, providedRegex: RegExp, start?: number): number;
+    export function lastIndexOfRegex(str: string, providedRegex: RegExp, start?: number): number;
 }
-declare module "src/prettier" {
-    /**
-     * Formats a YAML string using `prettier`.
-     * @param {string} value - The YAML string to format.
-     * @param {string} [filepath] - The optional filepath.
-     * @returns {Promise<string>} A promise that resolves with the formatted YAML string.
-     */
-    export function formatYaml(value: string, filepath?: string): Promise<string>;
-    /**
-     * Formats a Markdown string using `prettier`.
-     * @param {string} value - The Markdown string to format.
-     * @param {string} [filepath] - The optional filepath.
-     * @returns {Promise<string>} A promise that resolves with the formatted Markdown string.
-     */
-    export function formatMarkdown(value: string, filepath?: string): Promise<string>;
-    /**
-     * Wraps a description text with a prefix and formats it using `prettier`.
-     * @param {string | undefined} value - The description text to wrap and format.
-     * @param {string[]} content - The array of content to update.
-     * @param {string} [prefix='    # '] - The optional prefix to wrap the description lines.
-     * @returns {Promise<string[]>} A promise that resolves with the updated content array.
-     */
-    export function wrapDescription(value: string | undefined, content: string[], prefix?: string): Promise<string[]>;
+declare module "__tests__/helpers.test" { }
+declare module "__tests__/index.test" { }
+declare module "__tests__/__mocks__/githubContext" {
+    import type { Context } from '@actions/github/lib/context.js';
+    export const mockContext: () => Context;
 }
-declare module "src/readme-editor" {
+declare module "src/config" {
+    import type Inputs from "src/inputs";
     /**
-     * The format for the start token of a section.
+     * Represents the versioning configuration for GitHub Actions documentation.
      */
-    export const startTokenFormat = "<!-- start %s -->";
+    export interface Versioning {
+        enabled?: boolean;
+        prefix?: string;
+        override?: string;
+        branch?: string;
+        badge?: string;
+    }
     /**
-     * The format for the end token of a section.
+     * Represents the paths configuration for GitHub Actions documentation.
      */
-    export const endTokenFormat = "<!-- end %s -->";
-    export default class ReadmeEditor {
-        private readonly filePath;
-        private fileContent;
+    export interface Paths {
+        action: string;
+        readme: string;
+    }
+    /**
+     * Represents the configuration for generating GitHub Actions documentation.
+     */
+    export class GHActionDocsConfig {
+        owner?: string;
+        repo?: string;
+        title_prefix?: string;
+        title?: string;
+        paths?: Paths;
+        branding_svg_path?: string;
+        versioning?: Versioning;
+        readmePath?: string;
+        outpath?: string;
+        pretty?: boolean;
         /**
-         * Creates a new instance of `ReadmeEditor`.
-         * @param {string} filePath - The path to the README file.
+         * Loads the configuration from the provided `Inputs` object.
+         * @param {Inputs} inputs - The `Inputs` object containing the configuration values.
          */
-        constructor(filePath: string);
+        loadInputs(inputs: Inputs): void;
         /**
-         * Gets the indexes of the start and end tokens for a given section.
-         * @param {string} token - The section token.
-         * @returns {number[]} - The indexes of the start and end tokens.
+         * Saves the configuration to a file. If the file exists, it will be overwritten.
+         * @param {string} configPath - The path to the configuration file.
          */
-        getTokenIndexes(token: string): number[];
-        /**
-         * Updates a specific section in the README file with the provided content.
-         * @param {string} name - The name of the section.
-         * @param {string | string[]} providedContent - The content to update the section with.
-         * @param {boolean} addNewlines - Whether to add newlines before and after the content.
-         */
-        updateSection(name: string, providedContent: string | string[], addNewlines?: boolean): void;
-        /**
-         * Dumps the modified content back to the README file.
-         * @returns {Promise<void>}
-         */
-        dumpToFile(): Promise<void>;
+        save(configPath: string): void;
     }
 }
+declare module "src/save" {
+    import Inputs from "src/inputs";
+    /**
+     * This script rebuilds the usage section in the README.md to be consistent with the action.yml
+     * @param {Inputs} inputs - the inputs class
+     */
+    export default function save(inputs: Inputs): void;
+}
 declare module "src/sections/update-badges" {
+    /**
+     * This TypeScript code imports necessary modules and defines a function named 'updateBadges' which takes a token (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
+     * The function is responsible for updating the badges section in the README.md file based on the provided inputs.
+     * It utilizes the 'LogTask' class for logging purposes.
+     */
+    import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    import type { ReadmeSection } from "src/sections/index";
     /**
      * Interface for a badge.
      */
@@ -437,8 +567,8 @@ declare module "src/svg-editor" {
 declare module "src/sections/update-branding" {
     import type { FeatherIconNames } from 'feather-icons';
     import type { BrandColors } from "src/constants";
+    import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    import type { ReadmeSection } from "src/sections/index";
     export interface IBranding {
         alt: string;
         img: string;
@@ -499,8 +629,8 @@ declare module "src/sections/update-description" {
      * @param {ReadmeSection} token - The token representing the section of the README to update.
      * @param {Inputs} inputs - The Inputs class instance.
      */
+    import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    import type { ReadmeSection } from "src/sections/index";
     export default function updateDescription(token: ReadmeSection, inputs: Inputs): void;
 }
 declare module "src/markdowner/index" {
@@ -523,13 +653,27 @@ declare module "src/markdowner/index" {
     export default ArrayOfArraysToMarkdownTable;
 }
 declare module "src/sections/update-inputs" {
+    /**
+     * This TypeScript code exports a function named 'updateInputs' which takes a token (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
+     * The function is responsible for updating the inputs section in the README.md file based on the provided inputs.
+     * It utilizes the 'LogTask' class for logging purposes, 'columnHeader' and 'rowHeader' functions from '../helpers.js' for formatting table headers, and 'markdowner' function from '../markdowner/index.js' for generating markdown content.
+     * @param {ReadmeSection} token - The token representing the section of the README to update.
+     * @param {Inputs} inputs - The Inputs class instance.
+     */
+    import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    import type { ReadmeSection } from "src/sections/index";
     export default function updateInputs(token: ReadmeSection, inputs: Inputs): void;
 }
 declare module "src/sections/update-outputs" {
+    /**
+     * This TypeScript code exports a function named 'updateOutputs' which takes a token (string) and an instance of the 'Inputs' class as its parameters.
+     * The function is responsible for updating the outputs section in the README.md file based on the provided inputs.
+     * It utilizes the 'LogTask' class for logging purposes, 'columnHeader' and 'rowHeader' functions from '../helpers.js' for formatting table headers, and 'markdowner' function from '../markdowner/index.js' for generating markdown content.
+     * @param {string} token - The token used for identifying the section.
+     * @param {Inputs} inputs - The Inputs class instance.
+     */
+    import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    import type { ReadmeSection } from "src/sections/index";
     export default function updateOutputs(token: ReadmeSection, inputs: Inputs): void;
 }
 declare module "src/sections/update-title" {
@@ -540,13 +684,13 @@ declare module "src/sections/update-title" {
      * @param {ReadmeSection} token - The token representing the section of the README to update.
      * @param {Inputs} inputs - The Inputs class instance.
      */
+    import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    import type { ReadmeSection } from "src/sections/index";
     export default function updateTitle(token: ReadmeSection, inputs: Inputs): void;
 }
 declare module "src/sections/update-usage" {
+    import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    import type { ReadmeSection } from "src/sections/index";
     export default function updateUsage(token: ReadmeSection, inputs: Inputs): Promise<void>;
 }
 declare module "src/sections/index" {
@@ -558,91 +702,9 @@ declare module "src/sections/index" {
      * @param {Inputs} inputs - The Inputs class instance.
      * @returns {Promise<void>} A promise that resolves once the section is updated.
      */
+    import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    export const README_SECTIONS: readonly ["title", "branding", "description", "usage", "inputs", "outputs", "contents", "badges"];
-    export type ReadmeSection = (typeof README_SECTIONS)[number];
     export default function updateSection(section: ReadmeSection, inputs: Inputs): Promise<void>;
-}
-declare module "src/working-directory" {
-    /**
-     * Returns the working directory path based on the environment variables.
-     * The order of preference is GITHUB_WORKSPACE, INIT_CWD, and then the current working directory.
-     * @returns The working directory path.
-     */
-    export default function workingDirectory(): string;
-}
-declare module "src/inputs" {
-    import { Provider } from 'nconf';
-    import Action from "src/Action";
-    import ReadmeEditor from "src/readme-editor";
-    import { ReadmeSection } from "src/sections/index";
-    export const configFileName = ".ghadocs.json";
-    type ProviderInstance = InstanceType<typeof Provider>;
-    export default class Inputs {
-        config: ProviderInstance;
-        sections: ReadmeSection[];
-        readmePath: string;
-        configPath: string;
-        action: Action;
-        readmeEditor: ReadmeEditor;
-        /**
-         * Initializes a new instance of the Inputs class.
-         */
-        constructor();
-        stringify(): string;
-    }
-}
-declare module "src/config" {
-    import type Inputs from "src/inputs";
-    /**
-     * Represents the versioning configuration for GitHub Actions documentation.
-     */
-    export interface Versioning {
-        enabled?: boolean;
-        prefix?: string;
-        override?: string;
-        branch?: string;
-    }
-    /**
-     * Represents the paths configuration for GitHub Actions documentation.
-     */
-    export interface Paths {
-        action: string;
-        readme: string;
-    }
-    /**
-     * Represents the configuration for generating GitHub Actions documentation.
-     */
-    export class GHActionDocsConfig {
-        owner?: string;
-        repo?: string;
-        title_prefix?: string;
-        title?: string;
-        paths?: Paths;
-        branding_svg_path?: string;
-        versioning?: Versioning;
-        readmePath?: string;
-        outpath?: string;
-        pretty?: boolean;
-        /**
-         * Loads the configuration from the provided `Inputs` object.
-         * @param {Inputs} inputs - The `Inputs` object containing the configuration values.
-         */
-        loadInputs(inputs: Inputs): void;
-        /**
-         * Saves the configuration to a file. If the file exists, it will be overwritten.
-         * @param {string} configPath - The path to the configuration file.
-         */
-        save(configPath: string): void;
-    }
-}
-declare module "src/save" {
-    import Inputs from "src/inputs";
-    /**
-     * This script rebuilds the usage section in the README.md to be consistent with the action.yml
-     * @param {Inputs} inputs - the inputs class
-     */
-    export default function save(inputs: Inputs): void;
 }
 declare module "src/generate-docs" {
     /**

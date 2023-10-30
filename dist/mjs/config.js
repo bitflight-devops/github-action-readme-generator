@@ -37,6 +37,7 @@ export class GHActionDocsConfig {
             prefix: inputs.config.get('versioning:prefix'),
             override: inputs.config.get('versioning:override'),
             branch: inputs.config.get('versioning:branch'),
+            badge: inputs.config.get('versioning:badge'),
         };
         this.outpath = inputs.config.get('outpath');
         this.pretty = inputs.config.get('pretty');

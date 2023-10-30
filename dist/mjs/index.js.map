@@ -1,1 +1,1 @@
-{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/index.ts"],"names":[],"mappings":";AACA,OAAO,EAAE,YAAY,EAAE,MAAM,oBAAoB,CAAC;AAElD,MAAM,YAAY,EAAE,CAAC","sourcesContent":["#!/usr/bin/env node\nimport { generateDocs } from './generate-docs.js';\n\nawait generateDocs();\n"]}
+{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/index.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,YAAY,EAAE,MAAM,oBAAoB,CAAC;AAElD,MAAM,YAAY,EAAE,CAAC","sourcesContent":["import { generateDocs } from './generate-docs.js';\n\nawait generateDocs();\n"]}

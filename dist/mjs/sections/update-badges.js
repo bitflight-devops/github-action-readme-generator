@@ -4,76 +4,74 @@
  * It utilizes the 'LogTask' class for logging purposes.
  */
 import LogTask from '../logtask/index.js';
+/**
+ * Generate GitHub badges.
+ * @returns {IBadge[]} - The array of GitHub badges.
+ */
+function githubBadges(owner, repo) {
+    const repoUrl = `https://github.com/${owner}/${repo}`;
+    return [
+        {
+            img: `https://img.shields.io/github/v/release/${owner}/${repo}?display_name=tag&sort=semver&logo=github&style=flat-square`,
+            alt: 'Release by tag',
+            url: `${repoUrl}/releases/latest`,
+        },
+        {
+            img: `https://img.shields.io/github/release-date/${owner}/${repo}?display_name=tag&sort=semver&logo=github&style=flat-square`,
+            alt: 'Release by date',
+            url: `${repoUrl}/releases/latest`,
+        },
+        {
+            img: `https://img.shields.io/github/last-commit/${owner}/${repo}?logo=github&style=flat-square`,
+            alt: 'Commit',
+        },
+        {
+            img: `https://img.shields.io/github/issues/${owner}/${repo}?logo=github&style=flat-square`,
+            alt: 'Open Issues',
+            url: `${repoUrl}/issues`,
+        },
+        {
+            img: `https://img.shields.io/github/downloads/${owner}/${repo}/total?logo=github&style=flat-square`,
+            alt: 'Downloads',
+        },
+    ];
+}
+/**
+ * Generates a badge HTML markup.
+ * @param {IBadge} item - The badge object.
+ * @returns {string} - The HTML markup for the badge.
+ */
+function generateBadge(item, log) {
+    const badgeTemplate = `<img src="${item.img}" alt="${item.alt || ''}" />`;
+    log.info(`Generating badge ${item.alt}`);
+    if (item.url) {
+        return `<a href="${item.url}">${badgeTemplate}</a>`;
+    }
+    return badgeTemplate;
+}
+/**
+ * Generates all badges HTML markup.
+ * @returns {string[]} - The array of HTML markup for all badges.
+ */
+function generateBadges(badges, log) {
+    const badgeArray = [];
+    for (const b of badges) {
+        badgeArray.push(generateBadge(b, log));
+    }
+    log.debug(`Total badges: ${badgeArray.length}`);
+    return badgeArray;
+}
 export default function updateBadges(token, inputs) {
     const log = new LogTask(token);
-    const enableVersioning = inputs.config.get('versioning:badges');
-    const badges = [];
-    const repos = {
-        owner: inputs.config.get('owner'),
-        repo: inputs.config.get('repo'),
-    };
-    /**
-     * Generate GitHub badges.
-     * @returns {IBadge[]} - The array of GitHub badges.
-     */
-    function githubBadges() {
-        const repoUrl = `https://github.com/${repos.owner}/${repos.repo}`;
-        return [
-            {
-                img: `https://img.shields.io/github/v/release/${repos.owner}/${repos.repo}?display_name=tag&sort=semver&logo=github&style=flat-square`,
-                alt: 'Release',
-                url: `${repoUrl}/releases/latest`,
-            },
-            {
-                img: `https://img.shields.io/github/release-date/${repos.owner}/${repos.repo}?display_name=tag&sort=semver&logo=github&style=flat-square`,
-                alt: 'Release',
-                url: `${repoUrl}/releases/latest`,
-            },
-            {
-                img: `https://img.shields.io/github/last-commit/${repos.owner}/${repos.repo}?logo=github&style=flat-square`,
-                alt: 'Commit',
-            },
-            {
-                img: `https://img.shields.io/github/issues/${repos.owner}/${repos.repo}?logo=github&style=flat-square`,
-                alt: 'Open Issues',
-                url: `${repoUrl}/issues`,
-            },
-            {
-                img: `https://img.shields.io/github/downloads/${repos.owner}/${repos.repo}/total?logo=github&style=flat-square`,
-                alt: 'Downloads',
-            },
-        ];
-    }
-    /**
-     * Generates a badge HTML markup.
-     * @param {IBadge} item - The badge object.
-     * @returns {string} - The HTML markup for the badge.
-     */
-    function generateBadge(item) {
-        const badgeTemplate = `<img src="${item.img}" alt="${item.alt || ''}" />`;
-        if (item.url) {
-            return `<a href="${item.url}">${badgeTemplate}</a>`;
-        }
-        return badgeTemplate;
-    }
-    /**
-     * Generates all badges HTML markup.
-     * @returns {string[]} - The array of HTML markup for all badges.
-     */
-    function generateBadges() {
-        const badgeArray = [];
-        for (const b of badges) {
-            badgeArray.push(generateBadge(b));
-        }
-        return [badgeArray.join('')];
-    }
+    const enableVersioning = inputs.config.get()?.versioning?.badge;
+    log.info(`Versioning badge: ${enableVersioning}`);
     log.start();
     // Add GitHub badges
     if (enableVersioning) {
-        badges.push(...githubBadges());
+        const badges = githubBadges(inputs.owner, inputs.repo);
+        const content = generateBadges(badges, log).join('');
+        inputs.readmeEditor.updateSection(token, content);
     }
-    const content = generateBadges();
-    inputs.readmeEditor.updateSection(token, content);
     log.success();
 }
 //# sourceMappingURL=update-badges.js.map

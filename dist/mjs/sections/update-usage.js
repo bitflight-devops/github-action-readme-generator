@@ -4,7 +4,7 @@ import { wrapDescription } from '../prettier.js';
 export default async function updateUsage(token, inputs) {
     const log = new LogTask(token);
     log.start();
-    const actionName = `${inputs.config.get('owner')}/${inputs.config.get('repo')}`;
+    const actionName = `${inputs.owner}/${inputs.repo}`;
     log.info(`Action name: ${actionName}`);
     const versionString = getCurrentVersionString(inputs);
     log.info(`Version string: ${versionString}`);

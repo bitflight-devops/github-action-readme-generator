@@ -1,6 +1,42 @@
 import type { FeatherIconNames } from 'feather-icons';
 import { icons } from 'feather-icons';
 
+export const README_SECTIONS = [
+  'title',
+  'branding',
+  'description',
+  'usage',
+  'inputs',
+  'outputs',
+  'contents',
+  'badges',
+] as const;
+export type ReadmeSection = (typeof README_SECTIONS)[number];
+export const configFileName = '.ghadocs.json';
+
+export enum ConfigKeys {
+  Save = 'save',
+  pathsAction = 'paths:action',
+  pathsReadme = 'paths:readme',
+  BrandingSvgPath = 'branding_svg_path',
+  BrandingAsTitlePrefix = 'branding_as_title_prefix',
+  VersioningEnabled = 'versioning:enabled',
+  VersioningOverride = 'versioning:override',
+  VersioningPrefix = 'versioning:prefix',
+  VersioningBranch = 'versioning:branch',
+  Owner = 'owner',
+  Repo = 'repo',
+  TitlePrefix = 'title_prefix',
+  Prettier = 'prettier',
+  IncludeGithubVersionBadge = 'versioning:badge',
+}
+export const RequiredInputs = [
+  ConfigKeys.pathsAction,
+  ConfigKeys.pathsReadme,
+  ConfigKeys.Owner,
+  ConfigKeys.Repo,
+] as const;
+
 export const brandingSquareEdgeLengthInPixels = 50;
 export const DEFAULT_BRAND_COLOR = 'blue';
 export const DEFAULT_BRAND_ICON = 'activity';

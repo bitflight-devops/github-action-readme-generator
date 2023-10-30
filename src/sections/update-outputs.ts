@@ -5,11 +5,11 @@
  * @param {string} token - The token used for identifying the section.
  * @param {Inputs} inputs - The Inputs class instance.
  */
+import { ReadmeSection } from '../constants.js';
 import { columnHeader, rowHeader } from '../helpers.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import markdowner from '../markdowner/index.js';
-import type { ReadmeSection } from './index.js';
 
 export default function updateOutputs(token: ReadmeSection, inputs: Inputs): void {
   const log = new LogTask(token);
@@ -34,7 +34,7 @@ export default function updateOutputs(token: ReadmeSection, inputs: Inputs): voi
       let description = values?.description ?? '';
 
       // Check if only first line should be added (only subject without body)
-      // eslint-disable-next-line no-useless-escape
+
       const matches = /(.*?)\n\n([Ss]*)/.exec(description);
       if (matches && matches.length >= 2) {
         description = matches[1] || description;

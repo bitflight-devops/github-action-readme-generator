@@ -80,3 +80,5 @@ export declare function columnHeader(value: string): string;
  */
 export declare function rowHeader(value: string): string;
 export declare function getCurrentVersionString(inputs: Inputs): string;
+export declare function indexOfRegex(str: string, providedRegex: RegExp, start?: number): number;
+export declare function lastIndexOfRegex(str: string, providedRegex: RegExp, start?: number): number;

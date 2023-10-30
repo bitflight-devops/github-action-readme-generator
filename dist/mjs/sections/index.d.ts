@@ -6,7 +6,6 @@
  * @param {Inputs} inputs - The Inputs class instance.
  * @returns {Promise<void>} A promise that resolves once the section is updated.
  */
+import { ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
-export declare const README_SECTIONS: readonly ["title", "branding", "description", "usage", "inputs", "outputs", "contents", "badges"];
-export type ReadmeSection = (typeof README_SECTIONS)[number];
 export default function updateSection(section: ReadmeSection, inputs: Inputs): Promise<void>;

@@ -5,9 +5,9 @@
  * @param {ReadmeSection} token - The token representing the section of the README to update.
  * @param {Inputs} inputs - The Inputs class instance.
  */
+import { ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
-import type { ReadmeSection } from './index.js';
 import { generateImgMarkup } from './update-branding.js';
 
 export default function updateTitle(token: ReadmeSection, inputs: Inputs): void {

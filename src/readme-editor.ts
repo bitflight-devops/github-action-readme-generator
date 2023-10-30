@@ -21,6 +21,11 @@ export const startTokenFormat = '<!-- start %s -->';
 export const endTokenFormat = '<!-- end %s -->';
 
 export default class ReadmeEditor {
+  private log = new LogTask('ReadmeEditor');
+
+  /**
+   * The path to the README file.
+   */
   private readonly filePath: string;
 
   private fileContent: string;
@@ -31,7 +36,13 @@ export default class ReadmeEditor {
    */
   constructor(filePath: string) {
     this.filePath = filePath;
-    this.fileContent = fs.readFileSync(filePath, 'utf8');
+    try {
+      fs.accessSync(filePath);
+      this.fileContent = fs.readFileSync(filePath, 'utf8');
+    } catch (error) {
+      this.log.fail(`Readme at '${filePath}' does not exist.`);
+      throw error;
+    }
   }
 
   /**
@@ -61,16 +72,29 @@ export default class ReadmeEditor {
     log.info(`Looking for the ${name} token in ${this.filePath}`);
 
     const [startIndex, stopIndex] = this.getTokenIndexes(name);
-    if (startIndex !== -1 && stopIndex !== -1) {
-      const beforeContent = this.fileContent.slice(0, startIndex);
-      const afterContent = this.fileContent.slice(stopIndex);
+    if (startIndex === -1 && stopIndex === -1) {
+      log.debug(`No start or end token found for section '${name}'. Skipping`);
+      return;
+    }
 
-      this.fileContent = addNewlines
-        ? `${beforeContent}\n\n${content}\n${afterContent}`
-        : `${beforeContent}${content}${afterContent}`;
-    } else if (stopIndex < startIndex && name !== 'branding') {
+    if (stopIndex === -1) {
+      throw new Error(`End token for section '${name}' not found.`);
+    }
+
+    if (startIndex === -1) {
+      throw new Error(`Start token for section '${name}' not found.`);
+    }
+
+    if (stopIndex < startIndex && name !== 'branding') {
       throw new Error(`Start token for section '${name}' must appear before end token`);
     }
+
+    const beforeContent = this.fileContent.slice(0, startIndex);
+    const afterContent = this.fileContent.slice(stopIndex);
+
+    this.fileContent = addNewlines
+      ? `${beforeContent}\n\n${content}\n${afterContent}`
+      : `${beforeContent}${content}${afterContent}`;
   }
 
   /**
@@ -79,6 +103,6 @@ export default class ReadmeEditor {
    */
   async dumpToFile(): Promise<void> {
     const content = await formatMarkdown(this.fileContent);
-    return fs.writeFileSync(this.filePath, content, 'utf8');
+    return fs.promises.writeFile(this.filePath, content, 'utf8');
   }
 }

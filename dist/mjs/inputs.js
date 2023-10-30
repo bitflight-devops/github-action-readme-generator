@@ -6,14 +6,17 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Provider } from 'nconf';
 import YAML from 'yaml';
 import Action from './Action.js';
+import { configFileName, ConfigKeys, README_SECTIONS, RequiredInputs, } from './constants.js';
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
-import { README_SECTIONS } from './sections/index.js';
 import workingDirectory from './working-directory.js';
+export const __filename = fileURLToPath(import.meta.url);
+export const __dirname = path.dirname(__filename);
 const log = new LogTask('inputs');
 process.chdir(workingDirectory());
 const githubEventPath = process.env.GITHUB_EVENT_PATH ?? '';
@@ -25,30 +28,6 @@ catch {
     // File not there
     log.debug(`GITHUB_EVENT_PATH not found: ${githubEventPath}`);
 }
-export const configFileName = '.ghadocs.json';
-var ConfigKeys;
-(function (ConfigKeys) {
-    ConfigKeys["Save"] = "save";
-    ConfigKeys["pathsAction"] = "paths:action";
-    ConfigKeys["pathsReadme"] = "paths:readme";
-    ConfigKeys["BrandingSvgPath"] = "branding_svg_path";
-    ConfigKeys["BrandingAsTitlePrefix"] = "branding_as_title_prefix";
-    ConfigKeys["VersioningEnabled"] = "versioning:enabled";
-    ConfigKeys["VersioningOverride"] = "versioning:override";
-    ConfigKeys["VersioningPrefix"] = "versioning:prefix";
-    ConfigKeys["VersioningBranch"] = "versioning:branch";
-    ConfigKeys["Owner"] = "owner";
-    ConfigKeys["Repo"] = "repo";
-    ConfigKeys["TitlePrefix"] = "title_prefix";
-    ConfigKeys["Prettier"] = "prettier";
-    ConfigKeys["IncludeGithubVersionBadge"] = "versioning:badge";
-})(ConfigKeys || (ConfigKeys = {}));
-const RequiredInputs = [
-    ConfigKeys.pathsAction,
-    ConfigKeys.pathsReadme,
-    ConfigKeys.Owner,
-    ConfigKeys.Repo,
-];
 const argvOptions = {};
 argvOptions[ConfigKeys.Save] = {
     alias: 'save',
@@ -152,8 +131,9 @@ function setConfigValueFromActionFileDefault(actionInstance, inputName) {
         return;
     }
     const configName = ConfigKeysInputsMap[inputName];
-    log.debug(`Default Value for: ${configName} = ${actionInstance.inputDefault(inputName)}`);
-    return actionInstance.inputDefault(inputName);
+    const defaultValue = actionInstance.inputDefault(inputName);
+    log.debug(`Default Value for action.yml: ${inputName} CLI: ${configName} = ${defaultValue}`);
+    return defaultValue;
 }
 export default class Inputs {
     config;
@@ -162,6 +142,8 @@ export default class Inputs {
     configPath;
     action;
     readmeEditor;
+    owner;
+    repo;
     /**
      * Initializes a new instance of the Inputs class.
      */
@@ -191,8 +173,6 @@ export default class Inputs {
                     // eslint-disable-next-line no-param-reassign
                     obj.key = ConfigKeysInputsMap[keyParsed] || keyParsed;
                     this.config.set(ConfigKeysInputsMap[keyParsed] || keyParsed, obj.value);
-                    // eslint-disable-next-line no-param-reassign
-                    // obj.value = newObj.value;
                     log.debug(`New input is ${obj.key} with the value ${obj.value}`);
                     return obj;
                 }
@@ -209,8 +189,10 @@ export default class Inputs {
             const thisAction = new Action(thisActionPath);
             // Collect all of the default values from the action.yml file
             for (const key of Object.keys(thisAction.inputs)) {
-                defaultValues[key] = setConfigValueFromActionFileDefault(thisAction, key);
+                const mappedKey = ConfigKeysInputsMap[key] ?? key;
+                defaultValues[mappedKey] = setConfigValueFromActionFileDefault(thisAction, key);
             }
+            log.debug(JSON.stringify(defaultValues, null, 2));
         }
         catch (error) {
             log.info(`failed to load defaults from action's action.yml: ${error}`);
@@ -227,18 +209,27 @@ export default class Inputs {
         this.sections = this.config.get('sections');
         this.readmePath = path.resolve(this.config.get(ConfigKeys.pathsReadme));
         this.readmeEditor = new ReadmeEditor(this.readmePath);
+        const owner = this.config.get('owner');
+        const repo = this.config.get('repo');
+        if (!owner || !repo) {
+            const errMsg = 'Owner or repo is not defined, and not found automatically. Please pass in these variables.';
+            log.fail(errMsg);
+            throw new Error(errMsg);
+        }
+        this.owner = owner;
+        this.repo = repo;
         if (LogTask.isDebug()) {
             try {
                 log.debug(`readme file path: ${this.config.get(ConfigKeys.pathsReadme)}`);
+                log.debug('resolved nconf:');
+                log.debug(JSON.stringify(this.config.get(), null, 2));
                 log.debug('resolved inputs:');
                 log.debug(this.stringify());
                 log.debug('resolved action:');
                 log.debug(this.action.stringify());
             }
             catch (error) {
-                if (typeof error === 'string') {
-                    log.debug(error);
-                }
+                log.debug(`${error}`);
             }
         }
     }
@@ -248,7 +239,12 @@ export default class Inputs {
             for (const k of Object.values(ConfigKeys)) {
                 output.push(`${k}: ${this.config.get(k)}`);
             }
-            return YAML.stringify(output);
+            try {
+                return YAML.stringify(output);
+            }
+            catch (error) {
+                log.error(`${error}`);
+            }
         }
         return '';
     }

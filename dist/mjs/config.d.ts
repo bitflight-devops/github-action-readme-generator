@@ -13,6 +13,7 @@ export interface Versioning {
     prefix?: string;
     override?: string;
     branch?: string;
+    badge?: string;
 }
 /**
  * Represents the paths configuration for GitHub Actions documentation.

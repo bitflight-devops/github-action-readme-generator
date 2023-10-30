@@ -323,3 +323,33 @@ export function getCurrentVersionString(inputs: Inputs): string {
   log.debug(`version to use in generated example is ${versionString}`);
   return versionString;
 }
+
+export function indexOfRegex(str: string, providedRegex: RegExp, start = 0): number {
+  const regex = providedRegex.global
+    ? providedRegex
+    : new RegExp(providedRegex.source, `${providedRegex.flags}g`);
+  let index = -1;
+  str.replace(regex, (...args): string => {
+    const pos = args.at(-2);
+    if (index < 0 && pos >= start) index = pos;
+    return '';
+  });
+  return index;
+}
+
+export function lastIndexOfRegex(
+  str: string,
+  providedRegex: RegExp,
+  start = str.length - 1,
+): number {
+  const regex = providedRegex.global
+    ? providedRegex
+    : new RegExp(providedRegex.source, `${providedRegex.flags}g`);
+  let index = -1;
+  str.replace(regex, (...args): string => {
+    const pos = args.at(-2);
+    if (pos <= start) index = pos;
+    return '';
+  });
+  return index;
+}

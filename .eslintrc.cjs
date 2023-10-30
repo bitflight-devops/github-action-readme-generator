@@ -12,7 +12,12 @@ module.exports = {
   env: {
     node: true,
     es2022: true,
+    es2024: true,
     browser: false,
+  },
+  parserOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
   },
   overrides: [
     {
@@ -38,7 +43,7 @@ module.exports = {
     },
     {
       files: ['*.cjs', '*.jsx'],
-
+      plugins: ['import'],
       extends: ['airbnb-base', 'eslint:recommended', pp],
       rules: {
         'no-plusplus': 'off',
@@ -94,10 +99,12 @@ module.exports = {
         'sort-class-members',
       ],
       extends: [
+        'eslint:recommended',
+        'plugin:@eslint-community/eslint-comments/recommended',
         'plugin:promise/recommended',
         'plugin:no-use-extend-native/recommended',
         'plugin:jest/recommended',
-        'eslint:recommended',
+        'plugin:n/recommended',
         'plugin:@typescript-eslint/recommended',
         'airbnb-base',
         'plugin:import/errors',
@@ -116,6 +123,8 @@ module.exports = {
         tsconfigRootDir: __dirname,
       },
       rules: {
+        'no-underscore-dangle': 'off',
+        'import/no-extraneous-dependencies': 'off',
         'sort-class-members/sort-class-members': [
           2,
           {
@@ -166,10 +175,10 @@ module.exports = {
         '@typescript-eslint/strict-boolean-expressions': 'off',
         '@typescript-eslint/type-annotation-spacing': 'off',
         '@typescript-eslint/unbound-method': 'error',
+        '@eslint-community/eslint-comments/no-unused-disable': 'error',
         'quote-props': 'off',
         'camelcase': 'off',
         'consistent-return': 'off',
-        'eslint-comments/no-use': 'off',
         'import/extensions': 'off',
         'import/first': 'error',
         'import/newline-after-import': 'error',

@@ -7,21 +7,12 @@ import updateOutputs from './update-outputs.js';
 import updateTitle from './update-title.js';
 import updateUsage from './update-usage.js';
 const log = new LogTask('updateSection');
-export const README_SECTIONS = [
-    'title',
-    'branding',
-    'description',
-    'usage',
-    'inputs',
-    'outputs',
-    'contents',
-    'badges',
-];
 export default async function updateSection(section, inputs) {
     const [startToken, stopToken] = inputs.readmeEditor.getTokenIndexes(section);
-    if ((startToken === -1 || stopToken === -1) &&
-        ['branding', 'title'].includes(section) &&
-        inputs.config.get('branding_as_title_prefix') !== true) {
+    // &&
+    // ['branding', 'title'].includes(section) &&
+    // inputs.config.get('branding_as_title_prefix') !== true
+    if (startToken === -1 || stopToken === -1) {
         return;
     }
     switch (section) {

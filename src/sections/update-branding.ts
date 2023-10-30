@@ -1,13 +1,10 @@
-/* eslint-disable import/no-extraneous-dependencies */
-
 import type { FeatherIconNames } from 'feather-icons';
 
 import type { BrandColors } from '../constants.js';
-import { GITHUB_ACTIONS_OMITTED_ICONS, isValidIcon } from '../constants.js';
+import { GITHUB_ACTIONS_OMITTED_ICONS, isValidIcon, ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import SVGEditor from '../svg-editor.mjs';
-import type { ReadmeSection } from './index.js';
 /**
  * Wiith thanks to
  * https://github.com/haya14busa/github-action-brandings/blob/master/main.js
@@ -123,8 +120,9 @@ export default function updateBranding(token: ReadmeSection, inputs: Inputs): vo
   log.info(`Brand details: ${JSON.stringify(inputs.action.branding)}`);
 
   log.start();
-
-  const content = generateImgMarkup(inputs);
+  /** create <img  /> markup with an image width of 15% */
+  const imageWidth = '15%';
+  const content = generateImgMarkup(inputs, imageWidth);
   inputs.readmeEditor.updateSection(token, content);
   if (content && content !== '') {
     log.success('branding svg successfully created');

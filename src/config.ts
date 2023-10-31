@@ -5,7 +5,7 @@
  * The class also has a method `save` to save the configuration to a file.
  */
 
-import fs from 'node:fs';
+import { promises as fsPromises } from 'node:fs';
 import path from 'node:path';
 
 import type Inputs from './inputs.js';
@@ -48,60 +48,45 @@ export class GHActionDocsConfig {
 
   versioning?: Versioning;
 
-  readmePath?: string;
-
-  outpath?: string;
-
-  pretty?: boolean;
+  prettier?: boolean;
 
   /**
    * Loads the configuration from the provided `Inputs` object.
    * @param {Inputs} inputs - The `Inputs` object containing the configuration values.
    */
   loadInputs(inputs: Inputs): void {
-    this.owner = inputs.config.get('owner') as string;
-    this.repo = inputs.config.get('repo') as string;
-    this.title_prefix = inputs.config.get('title_prefix') as string;
-    this.title = inputs.config.get('title') as string;
-    this.paths = inputs.config.get('paths') as Paths;
-    this.branding_svg_path = inputs.config.get('branding_svg_path') as string;
-    this.versioning = {
-      enabled: inputs.config.get('versioning:enabled') as boolean,
-      prefix: inputs.config.get('versioning:prefix') as string,
-      override: inputs.config.get('versioning:override') as string,
-      branch: inputs.config.get('versioning:branch') as string,
-      badge: inputs.config.get('versioning:badge') as string,
-    };
-    this.outpath = inputs.config.get('outpath') as string;
-    this.pretty = inputs.config.get('pretty') as boolean;
+    const config = inputs.config.get();
+    this.owner = config.owner;
+    this.repo = config.repo;
+    this.title_prefix = config.title_prefix;
+    this.title = config.title;
+    this.paths = config.paths;
+    this.branding_svg_path = config.branding_svg_path;
+    this.versioning = config.versioning;
+    this.prettier = config.prettier;
   }
 
   /**
    * Saves the configuration to a file. If the file exists, it will be overwritten.
    * @param {string} configPath - The path to the configuration file.
    */
-  save(configPath: string): void {
+  async save(configPath: string): Promise<void> {
     const log = new LogTask('config:save');
-    // Validate that the directory exists
     const directory = path.dirname(configPath);
-    // Create the directory if it doesn't exist
+
     try {
-      fs.mkdir(directory, { recursive: true }, (err) => {
-        if (err) {
-          log.error(`Error creating directory: ${directory}.`);
-          throw err;
-        }
-      });
-      return fs.writeFile(configPath, JSON.stringify(this, null, 2), (err) => {
-        if (err) {
-          log.error(`Error writing config file: ${configPath}.`);
-          throw err;
-        } else {
-          log.info(`Config file written to: ${configPath}`);
-        }
-      });
+      await fsPromises.mkdir(directory, { recursive: true });
     } catch (error) {
-      log.error(`Unable to save config. Error: ${error}`);
+      log.error(`Error creating directory: ${directory}.`);
+      throw error;
+    }
+
+    try {
+      await fsPromises.writeFile(configPath, JSON.stringify(this, null, 2));
+      log.info(`Config file written to: ${configPath}`);
+    } catch (error) {
+      log.error(`Error writing config file: ${configPath}.`);
+      throw error;
     }
   }
 }

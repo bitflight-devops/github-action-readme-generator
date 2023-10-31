@@ -15,6 +15,10 @@ export type ReadmeSection = (typeof README_SECTIONS)[number];
 export const configFileName = '.ghadocs.json';
 
 export enum ConfigKeys {
+  Owner = 'owner',
+  Repo = 'repo',
+  TitlePrefix = 'title_prefix',
+  Prettier = 'prettier',
   Save = 'save',
   pathsAction = 'paths:action',
   pathsReadme = 'paths:readme',
@@ -24,10 +28,6 @@ export enum ConfigKeys {
   VersioningOverride = 'versioning:override',
   VersioningPrefix = 'versioning:prefix',
   VersioningBranch = 'versioning:branch',
-  Owner = 'owner',
-  Repo = 'repo',
-  TitlePrefix = 'title_prefix',
-  Prettier = 'prettier',
   IncludeGithubVersionBadge = 'versioning:badge',
 }
 export const RequiredInputs = [

@@ -9,6 +9,10 @@ declare module "src/constants" {
     export type ReadmeSection = (typeof README_SECTIONS)[number];
     export const configFileName = ".ghadocs.json";
     export enum ConfigKeys {
+        Owner = "owner",
+        Repo = "repo",
+        TitlePrefix = "title_prefix",
+        Prettier = "prettier",
         Save = "save",
         pathsAction = "paths:action",
         pathsReadme = "paths:readme",
@@ -18,10 +22,6 @@ declare module "src/constants" {
         VersioningOverride = "versioning:override",
         VersioningPrefix = "versioning:prefix",
         VersioningBranch = "versioning:branch",
-        Owner = "owner",
-        Repo = "repo",
-        TitlePrefix = "title_prefix",
-        Prettier = "prettier",
         IncludeGithubVersionBadge = "versioning:badge"
     }
     export const RequiredInputs: readonly [ConfigKeys.pathsAction, ConfigKeys.pathsReadme, ConfigKeys.Owner, ConfigKeys.Repo];
@@ -480,9 +480,7 @@ declare module "src/config" {
         paths?: Paths;
         branding_svg_path?: string;
         versioning?: Versioning;
-        readmePath?: string;
-        outpath?: string;
-        pretty?: boolean;
+        prettier?: boolean;
         /**
          * Loads the configuration from the provided `Inputs` object.
          * @param {Inputs} inputs - The `Inputs` object containing the configuration values.
@@ -492,7 +490,7 @@ declare module "src/config" {
          * Saves the configuration to a file. If the file exists, it will be overwritten.
          * @param {string} configPath - The path to the configuration file.
          */
-        save(configPath: string): void;
+        save(configPath: string): Promise<void>;
     }
 }
 declare module "src/save" {

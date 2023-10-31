@@ -12,6 +12,10 @@ export const README_SECTIONS = [
 export const configFileName = '.ghadocs.json';
 export var ConfigKeys;
 (function (ConfigKeys) {
+    ConfigKeys["Owner"] = "owner";
+    ConfigKeys["Repo"] = "repo";
+    ConfigKeys["TitlePrefix"] = "title_prefix";
+    ConfigKeys["Prettier"] = "prettier";
     ConfigKeys["Save"] = "save";
     ConfigKeys["pathsAction"] = "paths:action";
     ConfigKeys["pathsReadme"] = "paths:readme";
@@ -21,10 +25,6 @@ export var ConfigKeys;
     ConfigKeys["VersioningOverride"] = "versioning:override";
     ConfigKeys["VersioningPrefix"] = "versioning:prefix";
     ConfigKeys["VersioningBranch"] = "versioning:branch";
-    ConfigKeys["Owner"] = "owner";
-    ConfigKeys["Repo"] = "repo";
-    ConfigKeys["TitlePrefix"] = "title_prefix";
-    ConfigKeys["Prettier"] = "prettier";
     ConfigKeys["IncludeGithubVersionBadge"] = "versioning:badge";
 })(ConfigKeys || (ConfigKeys = {}));
 export const RequiredInputs = [

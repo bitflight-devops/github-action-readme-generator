@@ -99,9 +99,6 @@
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
-    },
-    "ghadocs": {
-      "outpath": ".github/tools/generate-docs"
     }
   },
   "release": {

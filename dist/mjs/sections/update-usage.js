@@ -9,9 +9,7 @@ export default async function updateUsage(token, inputs) {
     const versionString = getCurrentVersionString(inputs);
     log.info(`Version string: ${versionString}`);
     const actionReference = `${actionName}@${versionString}`;
-    if (!actionReference) {
-        throw new Error('Parameter actionReference must not be empty');
-    }
+    const indent = '    # ';
     // Build the new README
     const content = [];
     // Build the new usage section
@@ -22,7 +20,7 @@ export default async function updateUsage(token, inputs) {
     for (const key of Object.keys(inp)) {
         const input = inp[key];
         if (input !== undefined) {
-            descriptionPromises[key] = wrapDescription(`Description: ${input.description}`, [], '    # ');
+            descriptionPromises[key] = wrapDescription(`Description: ${input.description}`, [], indent);
         }
     }
     const descriptions = {};
@@ -31,7 +29,7 @@ export default async function updateUsage(token, inputs) {
     }));
     for (const e of kvArray) {
         descriptions[e.key] = e.value;
-        log.info(`${e.key}: ${descriptions[e.key].join('\n')}`);
+        log.debug(`${e.key}: ${descriptions[e.key].join('\n')}`);
     }
     if (inp) {
         for (const key of Object.keys(inp)) {
@@ -49,7 +47,7 @@ export default async function updateUsage(token, inputs) {
                     //   content.push('    #');
                     // }
                     // Default
-                    content.push(`    # Default: ${input.default}`);
+                    content.push(`${indent}Default: ${input.default}`);
                 }
                 // Input name
                 content.push(`    ${key}: ''`);

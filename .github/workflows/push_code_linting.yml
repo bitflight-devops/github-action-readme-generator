@@ -30,7 +30,7 @@ jobs:
       - name: Install Deps
         run: npm install
       - uses: xt0rted/markdownlint-problem-matcher@v2
-      - run: markdownlint **/*.md --ignore node_modules
+      - run: npm run lint:markdown
         continue-on-error: true
       - name: eslint
         uses: reviewdog/action-eslint@v1.20.0

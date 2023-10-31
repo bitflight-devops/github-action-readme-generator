@@ -1,6 +1,5 @@
 import * as core from '@actions/core';
 import chalkPkg from 'chalk';
-import * as emoji from 'node-emoji';
 
 // Chalk color styles
 const {
@@ -189,7 +188,7 @@ export default class LogTask {
       msg = `${indentStr}   ${emojiStr}: ${this.name} > ${desc}`;
     } else {
       const stepStr = step.padEnd(LogTask.indentWidth, ' ');
-      msg = `[${stepStr}][${this.name}] ${emojiStr}: ${desc}`;
+      msg = `[${stepStr}][${this.name.padEnd(11, ' ')}] ${emojiStr}: ${desc}`;
     }
     return highlightStep(step, msg);
   }
@@ -220,7 +219,7 @@ export default class LogTask {
   debug(message = ''): void {
     // Logic to log a debug message
     if (LogTask.isDebug() && message !== '') {
-      this.logStep('👁️‍🗨️', 'DEBUG', message);
+      this.logStep('🐞', 'DEBUG', message);
     }
   }
 
@@ -231,7 +230,7 @@ export default class LogTask {
   start(message = ''): void {
     // Logic to log a start message
     const desc = message === '' ? `Starting ${this.name}...` : message;
-    this.logStep(emoji.get('rocket') ?? '', 'START', desc, LogGroup.START_GROUP);
+    this.logStep('🚀', 'START', desc, LogGroup.START_GROUP);
   }
 
   /**
@@ -240,7 +239,7 @@ export default class LogTask {
    */
   info(message = ''): void {
     // Logic to log an info message
-    this.logStep(emoji.get('sparkles') ?? '', 'INFO', message);
+    this.logStep('✨', 'INFO', message);
   }
 
   /**
@@ -249,7 +248,7 @@ export default class LogTask {
    */
   warn(message = ''): void {
     // Logic to log a warning message
-    this.logStep(emoji.get('anger') ?? '', 'WARN', message);
+    this.logStep('⚠️', 'WARN', message);
   }
 
   /**
@@ -266,7 +265,7 @@ export default class LogTask {
         core.endGroup();
       }
     }
-    this.logStep(emoji.get('white_check_mark') ?? '', 'SUCCESS', desc);
+    this.logStep('✅', 'SUCCESS', desc);
   }
 
   /**
@@ -284,7 +283,7 @@ export default class LogTask {
       }
     }
     const msgtype = process.env.GITHUB_ACTIONS ? LogGroup.IS_FAILED : LogGroup.IS_ERROR;
-    this.logStep(emoji.get('x') ?? '', 'FAILURE', desc, msgtype);
+    this.logStep('❌', 'FAILURE', desc, msgtype);
   }
 
   /**
@@ -293,7 +292,7 @@ export default class LogTask {
    */
   error(message = ''): void {
     // Logic to log an error message
-    this.logStep(emoji.get('x') ?? '', 'ERROR', message, LogGroup.IS_ERROR);
+    this.logStep('🔴', 'ERROR', message, LogGroup.IS_ERROR);
   }
 
   /**

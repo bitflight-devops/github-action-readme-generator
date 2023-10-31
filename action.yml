@@ -69,7 +69,7 @@ inputs:
   versioning_default_branch:
     description: |
       If versioning is disabled, use this branch in the usage example, where the default is `main`
-      Output if your action repo is reviewdog/action-eslint:
+      Output if your action repo is `reviewdog/action-eslint`:
       `uses: reviewdog/action-eslint@main`
 
     required: false

@@ -7,6 +7,7 @@ declare module "vitest.config" {
     const _default: import("vite").UserConfig;
     export default _default;
 }
+declare module "__tests__/env.test" { }
 declare module "src/constants" {
     import type { FeatherIconNames } from 'feather-icons';
     export const README_SECTIONS: readonly ["title", "branding", "description", "usage", "inputs", "outputs", "contents", "badges"];
@@ -456,11 +457,6 @@ declare module "src/helpers" {
     export function lastIndexOfRegex(str: string, providedRegex: RegExp, start?: number): number;
 }
 declare module "__tests__/helpers.test" { }
-declare module "__tests__/index.test" { }
-declare module "__tests__/__mocks__/githubContext" {
-    import type { Context } from '@actions/github/lib/context.js';
-    export const mockContext: () => Context;
-}
 declare module "__tests__/logtask/index.test" { }
 declare module "src/config" {
     import type Inputs from "src/inputs";

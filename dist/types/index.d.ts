@@ -291,11 +291,11 @@ declare module "src/readme-editor" {
     /**
      * The format for the start token of a section.
      */
-    export const startTokenFormat = "<!-- start %s -->";
+    export const startTokenFormat = "(^|[^\\])<!--\\s+start\\s+%s\\s+-->";
     /**
      * The format for the end token of a section.
      */
-    export const endTokenFormat = "<!-- end %s -->";
+    export const endTokenFormat = "(^|[^\\])<!--\\s+end\\s+%s\\s+-->";
     export default class ReadmeEditor {
         private log;
         /**

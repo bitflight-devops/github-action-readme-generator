@@ -3,6 +3,7 @@
  * The class represents an editor for modifying a README file.
  * It has methods to update specific sections within the file and dump the modified content back to the file.
  */
+import LogTask from './logtask/index.js';
 /**
  * The format for the start token of a section.
  */
@@ -28,7 +29,7 @@ export default class ReadmeEditor {
      * @param {string} token - The section token.
      * @returns {number[]} - The indexes of the start and end tokens.
      */
-    getTokenIndexes(token: string): number[];
+    getTokenIndexes(token: string, logTask?: LogTask): number[];
     /**
      * Updates a specific section in the README file with the provided content.
      * @param {string} name - The name of the section.

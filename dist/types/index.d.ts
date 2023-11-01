@@ -1,8 +1,3 @@
-declare module "jest.config" {
-    import type { Config } from '@jest/types';
-    const config: Config.InitialOptions;
-    export default config;
-}
 declare module "vitest.config" {
     const _default: import("vite").UserConfig;
     export default _default;
@@ -292,6 +287,7 @@ declare module "src/prettier" {
     export function wrapDescription(value: string | undefined, content: string[], prefix?: string): Promise<string[]>;
 }
 declare module "src/readme-editor" {
+    import LogTask from "src/logtask/index";
     /**
      * The format for the start token of a section.
      */
@@ -317,7 +313,7 @@ declare module "src/readme-editor" {
          * @param {string} token - The section token.
          * @returns {number[]} - The indexes of the start and end tokens.
          */
-        getTokenIndexes(token: string): number[];
+        getTokenIndexes(token: string, logTask?: LogTask): number[];
         /**
          * Updates a specific section in the README file with the provided content.
          * @param {string} name - The name of the section.

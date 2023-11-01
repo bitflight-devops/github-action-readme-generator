@@ -50,11 +50,30 @@ export default class ReadmeEditor {
    * @param {string} token - The section token.
    * @returns {number[]} - The indexes of the start and end tokens.
    */
-  getTokenIndexes(token: string): number[] {
+  getTokenIndexes(token: string, logTask?: LogTask): number[] {
+    const log = logTask ?? new LogTask('getTokenIndexes');
     const startToken = startTokenFormat.replace('%s', token);
     const stopToken = endTokenFormat.replace('%s', token);
     const startIndex = Math.max(0, this.fileContent.indexOf(startToken) + startToken.length);
     const stopIndex = this.fileContent.indexOf(stopToken);
+
+    if (startIndex === -1 && stopIndex === -1) {
+      log.debug(`No start or end token found for section '${token}'. Skipping`);
+      return [];
+    }
+
+    if (stopIndex === -1) {
+      throw new Error(`End token for section '${token}' not found.`);
+    }
+
+    if (startIndex === -1) {
+      throw new Error(`Start token for section '${token}' not found.`);
+    }
+
+    if (stopIndex < startIndex && token !== 'branding') {
+      throw new Error(`Start token for section '${token}' must appear before end token`);
+    }
+
     return [startIndex, stopIndex];
   }
 
@@ -71,30 +90,15 @@ export default class ReadmeEditor {
     ).trim();
     log.info(`Looking for the ${name} token in ${this.filePath}`);
 
-    const [startIndex, stopIndex] = this.getTokenIndexes(name);
-    if (startIndex === -1 && stopIndex === -1) {
-      log.debug(`No start or end token found for section '${name}'. Skipping`);
-      return;
+    const [startIndex, stopIndex] = this.getTokenIndexes(name, log);
+    if (startIndex && stopIndex) {
+      const beforeContent = this.fileContent.slice(0, startIndex);
+      const afterContent = this.fileContent.slice(stopIndex);
+
+      this.fileContent = addNewlines
+        ? `${beforeContent}\n\n${content}\n${afterContent}`
+        : `${beforeContent}${content}${afterContent}`;
     }
-
-    if (stopIndex === -1) {
-      throw new Error(`End token for section '${name}' not found.`);
-    }
-
-    if (startIndex === -1) {
-      throw new Error(`Start token for section '${name}' not found.`);
-    }
-
-    if (stopIndex < startIndex && name !== 'branding') {
-      throw new Error(`Start token for section '${name}' must appear before end token`);
-    }
-
-    const beforeContent = this.fileContent.slice(0, startIndex);
-    const afterContent = this.fileContent.slice(stopIndex);
-
-    this.fileContent = addNewlines
-      ? `${beforeContent}\n\n${content}\n${afterContent}`
-      : `${beforeContent}${content}${afterContent}`;
   }
 
   /**

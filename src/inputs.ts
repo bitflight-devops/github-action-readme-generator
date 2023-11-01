@@ -66,7 +66,7 @@ argvOptions[ConfigKeys.BrandingAsTitlePrefix] = {
   alias: 'branding_prefix',
   type: 'boolean',
   parseValues: true,
-  describe: 'Save and load the branding svg image in the README from this path',
+  describe: 'Use the branding svg as a prefix for the README title',
 };
 argvOptions[ConfigKeys.Owner] = {
   alias: 'owner',

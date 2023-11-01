@@ -25,14 +25,14 @@ export async function generateDocs(): Promise<void> {
     sectionPromises.push(
       updateSection(section, inputs).catch((error) => {
         if (error) {
-          throw new Error(`Error occurred in section ${section}. Error: ${error}`);
+          throw new Error(`Problem in ${section}. ${error}`);
         }
       }),
     );
   }
   try {
     await Promise.all(sectionPromises);
-    inputs.readmeEditor.dumpToFile();
+    await inputs.readmeEditor.dumpToFile();
     return save(inputs);
   } catch (error) {
     return log.fail(`${error}`);

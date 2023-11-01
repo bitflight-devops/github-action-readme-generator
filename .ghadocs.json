@@ -13,5 +13,5 @@
     "override": "",
     "branch": "main"
   },
-  "pretty": true
+  "prettier": true
 }

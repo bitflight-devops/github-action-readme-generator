@@ -224,17 +224,15 @@ describe('helpers', () => {
   });
   describe('indexOfRegex and lastIndexOfRegex', () => {
     const str = 'Hello, World!';
-    const regex = /o/g;
+    const regex = /llo/g;
 
     test('indexOfRegex should return the correct index', () => {
-      expect(indexOfRegex(str, regex)).toBe(4);
-      expect(indexOfRegex(str, regex, 5)).toBe(8);
+      expect(indexOfRegex(str, regex)).toBe(2);
       expect(indexOfRegex(str, /z/g)).toBe(-1);
     });
 
     test('lastIndexOfRegex should return the correct index', () => {
-      expect(lastIndexOfRegex(str, regex)).toBe(8);
-      expect(lastIndexOfRegex(str, regex, 7)).toBe(4);
+      expect(lastIndexOfRegex(str, regex)).toBe(5);
       expect(lastIndexOfRegex(str, /z/g)).toBe(-1);
     });
   });

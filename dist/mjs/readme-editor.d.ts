@@ -7,11 +7,11 @@ import LogTask from './logtask/index.js';
 /**
  * The format for the start token of a section.
  */
-export declare const startTokenFormat = "(^|[^\\])<!--\\s+start\\s+%s\\s+-->";
+export declare const startTokenFormat = "(^|[^`\\\\])<!--\\s+start\\s+%s\\s+-->";
 /**
  * The format for the end token of a section.
  */
-export declare const endTokenFormat = "(^|[^\\])<!--\\s+end\\s+%s\\s+-->";
+export declare const endTokenFormat = "(^|[^`\\\\])<!--\\s+end\\s+%s\\s+-->";
 export default class ReadmeEditor {
     private log;
     /**

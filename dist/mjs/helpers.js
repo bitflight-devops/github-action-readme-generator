@@ -272,30 +272,28 @@ export function getCurrentVersionString(inputs) {
     log.debug(`version to use in generated example is ${versionString}`);
     return versionString;
 }
-export function indexOfRegex(str, providedRegex, start = 0) {
+export function indexOfRegex(str, providedRegex) {
     const regex = providedRegex.global
         ? providedRegex
         : new RegExp(providedRegex.source, `${providedRegex.flags}g`);
     let index = -1;
-    str.replace(regex, (...args) => {
-        const pos = args.at(-2);
-        if (index < 0 && pos >= start)
-            index = pos;
-        return '';
-    });
+    let match = regex.exec(str);
+    while (match) {
+        index = match.index;
+        match = regex.exec(str);
+    }
     return index;
 }
-export function lastIndexOfRegex(str, providedRegex, start = str.length - 1) {
+export function lastIndexOfRegex(str, providedRegex) {
     const regex = providedRegex.global
         ? providedRegex
         : new RegExp(providedRegex.source, `${providedRegex.flags}g`);
     let index = -1;
-    str.replace(regex, (...args) => {
-        const pos = args.at(-2);
-        if (pos <= start)
-            index = pos;
-        return '';
-    });
+    let match = regex.exec(str);
+    while (match) {
+        index = match.index + match[0].length;
+        match = regex.exec(str);
+    }
     return index;
 }
 //# sourceMappingURL=helpers.js.map

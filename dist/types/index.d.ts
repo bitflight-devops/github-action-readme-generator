@@ -291,11 +291,11 @@ declare module "src/readme-editor" {
     /**
      * The format for the start token of a section.
      */
-    export const startTokenFormat = "(^|[^\\])<!--\\s+start\\s+%s\\s+-->";
+    export const startTokenFormat = "(^|[^`\\\\])<!--\\s+start\\s+%s\\s+-->";
     /**
      * The format for the end token of a section.
      */
-    export const endTokenFormat = "(^|[^\\])<!--\\s+end\\s+%s\\s+-->";
+    export const endTokenFormat = "(^|[^`\\\\])<!--\\s+end\\s+%s\\s+-->";
     export default class ReadmeEditor {
         private log;
         /**
@@ -449,8 +449,8 @@ declare module "src/helpers" {
      */
     export function rowHeader(value: string): string;
     export function getCurrentVersionString(inputs: Inputs): string;
-    export function indexOfRegex(str: string, providedRegex: RegExp, start?: number): number;
-    export function lastIndexOfRegex(str: string, providedRegex: RegExp, start?: number): number;
+    export function indexOfRegex(str: string, providedRegex: RegExp): number;
+    export function lastIndexOfRegex(str: string, providedRegex: RegExp): number;
 }
 declare module "__tests__/helpers.test" { }
 declare module "__tests__/logtask/index.test" { }

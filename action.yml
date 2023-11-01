@@ -92,7 +92,7 @@ inputs:
       then save it to this path.
       Then update the `README.md` file to source the branding image from this path.
       You can use a section template like this:
-      `\<!-- start branding --><!-- stop branding -->`
+      `<!-- start branding --><!-- stop branding -->`
       or use the action input:
       `branding_as_title_prefix: true`
       to prefix the 'title' section with the image.
@@ -104,7 +104,7 @@ inputs:
     default: true
     type: boolean
     description: |
-      Prefix the title in the `\<!-- start title -->` section with the svg branding image
+      Prefix the title in the `<!-- start title -->` section with the svg branding image
       The title template looks like this:
       # {brand}{prefix}{title}
 

@@ -328,32 +328,28 @@ export function getCurrentVersionString(inputs: Inputs): string {
   return versionString;
 }
 
-export function indexOfRegex(str: string, providedRegex: RegExp, start = 0): number {
+export function indexOfRegex(str: string, providedRegex: RegExp): number {
   const regex = providedRegex.global
     ? providedRegex
     : new RegExp(providedRegex.source, `${providedRegex.flags}g`);
   let index = -1;
-  str.replace(regex, (...args): string => {
-    const pos = args.at(-2);
-    if (index < 0 && pos >= start) index = pos;
-    return '';
-  });
+  let match: RegExpExecArray | null = regex.exec(str);
+  while (match) {
+    index = match.index;
+    match = regex.exec(str);
+  }
   return index;
 }
 
-export function lastIndexOfRegex(
-  str: string,
-  providedRegex: RegExp,
-  start = str.length - 1,
-): number {
+export function lastIndexOfRegex(str: string, providedRegex: RegExp): number {
   const regex = providedRegex.global
     ? providedRegex
     : new RegExp(providedRegex.source, `${providedRegex.flags}g`);
   let index = -1;
-  str.replace(regex, (...args): string => {
-    const pos = args.at(-2);
-    if (pos <= start) index = pos;
-    return '';
-  });
+  let match: RegExpExecArray | null = regex.exec(str);
+  while (match) {
+    index = match.index + match[0].length;
+    match = regex.exec(str);
+  }
   return index;
 }

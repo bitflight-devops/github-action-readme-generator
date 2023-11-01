@@ -83,7 +83,7 @@ You can modify the script below to include any extra variables you like or use n
   "owner": "bitflight-devops",
   "repo": "github-action-readme-generator",
   "title_prefix": "GitHub Action: ",
-  "pretty": true
+  "prettier": true
 }
 ```
 
@@ -113,34 +113,34 @@ You can modify the script below to include any extra variables you like or use n
     # from.
     #
     # Default: action.yml
-    action: ''
+    action: ""
 
     # Description: The absolute or relative path to the markdown output file that
     # contains the formatting tokens within it.
     #
     # Default: README.md
-    readme: ''
+    readme: ""
 
     # Description: The GitHub Action repository owner, this field is autodetected by
     # default. Example: `bitflight-devops` or `your-gh-username`
     #
-    owner: ''
+    owner: ""
 
     # Description: The GitHub Action repository name, this field is autodetected by
     # default. Example: `github-action-readme-generator`
     #
-    repo: ''
+    repo: ""
 
     # Description: Save the provided values in a `.ghadocs.json` file. This will
     # update any existing `.ghadocs.json` file that is in place.
     #
     # Default: false
-    save: ''
+    save: ""
 
     # Description: Use `prettier` to pretty print the new README.md file
     #
     # Default: true
-    pretty: ''
+    pretty: ""
 
     # Description: Enable the update of the usage version to match the latest version
     # in the `package.json` file Output if your action repo is
@@ -148,24 +148,24 @@ You can modify the script below to include any extra variables you like or use n
     # `uses: reviewdog/action-eslint@1.0.1`
     #
     # Default: true
-    versioning_enabled: ''
+    versioning_enabled: ""
 
     # Description: Set a specific version to display in the README.md, maybe you want
     # to use a major or minor version
     #
-    version_override: ''
+    version_override: ""
 
     # Description: Prefix the version with this value, if it isn't already prefixed
     #
     # Default: v
-    version_prefix: ''
+    version_prefix: ""
 
     # Description: If versioning is disabled, use this branch in the usage example,
     # where the default is `main` Output if your action repo is
     # `reviewdog/action-eslint`: `uses: reviewdog/action-eslint@main`
     #
     # Default: main
-    versioning_default_branch: ''
+    versioning_default_branch: ""
 
     # Description: Add a prefix to the README title. The title template looks like
     # this:
@@ -173,32 +173,32 @@ You can modify the script below to include any extra variables you like or use n
     # # {brand}{prefix}{title}
     #
     # Default: GitHub Action:
-    title_prefix: ''
+    title_prefix: ""
 
     # Description: Include additional badge showing latest tag
     #
     # Default: true
-    include_github_version_badge: ''
+    include_github_version_badge: ""
 
     # Description: Create the branding svg image from the branding object in
     # `action.yml` then save it to this path. Then update the `README.md` file to
     # source the branding image from this path. You can use a section template like
-    # this: `\<!-- start branding --><!-- stop branding -->` or use the action input:
+    # this: `<!-- start branding --><!-- stop branding -->` or use the action input:
     # `branding_as_title_prefix: true` to prefix the 'title' section with the image.
     # The title template looks like this:
     #
     # # {brand}{prefix}{title}
     #
     # Default: .github/ghadocs/branding.svg
-    branding_svg_path: ''
+    branding_svg_path: ""
 
-    # Description: Prefix the title in the `\<!-- start title -->` section with the
-    # svg branding image The title template looks like this:
+    # Description: Prefix the title in the `<!-- start title -->` section with the svg
+    # branding image The title template looks like this:
     #
     # # {brand}{prefix}{title}
     #
     # Default: true
-    branding_as_title_prefix: ''
+    branding_as_title_prefix: ""
 ```
 
 <!-- end usage -->
@@ -207,22 +207,22 @@ You can modify the script below to include any extra variables you like or use n
 
 <!-- start inputs -->
 
-| **<b>Input</b>**                                 | **<b>Description</b>**                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | **<b>Default</b>**                        | **<b>Required</b>** |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------- |
-| <b><code>action</code></b>                       | The absolute or relative path to the `action.yml` file to read in from.                                                                                                                                                                                                                                                                                                                                                                                                                      | <code>action.yml</code>                   | **false**           |
-| <b><code>readme</code></b>                       | The absolute or relative path to the markdown output file that contains the formatting tokens within it.                                                                                                                                                                                                                                                                                                                                                                                     | <code>README.md</code>                    | **false**           |
-| <b><code>owner</code></b>                        | The GitHub Action repository owner, this field is autodetected by default.<br />Example: `bitflight-devops` or `your-gh-username`                                                                                                                                                                                                                                                                                                                                                            |                                           | **false**           |
-| <b><code>repo</code></b>                         | The GitHub Action repository name, this field is autodetected by default.<br />Example: `github-action-readme-generator`                                                                                                                                                                                                                                                                                                                                                                     |                                           | **false**           |
-| <b><code>save</code></b>                         | Save the provided values in a `.ghadocs.json` file.<br />This will update any existing `.ghadocs.json` file that is in place.                                                                                                                                                                                                                                                                                                                                                                |                                           | **false**           |
-| <b><code>pretty</code></b>                       | Use `prettier` to pretty print the new README.md file                                                                                                                                                                                                                                                                                                                                                                                                                                        | <code>true</code>                         | **false**           |
-| <b><code>versioning_enabled</code></b>           | Enable the update of the usage version to match the latest version in the `package.json` file<br />Output if your action repo is `reviewdog/action-eslint` and version in package.json is 1.0.1:<br />`uses: reviewdog/action-eslint@1.0.1`                                                                                                                                                                                                                                                  | <code>true</code>                         | **false**           |
-| <b><code>version_override</code></b>             | Set a specific version to display in the README.md, maybe you want to use a major or minor version                                                                                                                                                                                                                                                                                                                                                                                           |                                           | **false**           |
-| <b><code>version_prefix</code></b>               | Prefix the version with this value, if it isn't already prefixed                                                                                                                                                                                                                                                                                                                                                                                                                             | <code>v</code>                            | **false**           |
-| <b><code>versioning_default_branch</code></b>    | If versioning is disabled, use this branch in the usage example, where the default is `main`<br />Output if your action repo is `reviewdog/action-eslint`:<br />`uses: reviewdog/action-eslint@main`                                                                                                                                                                                                                                                                                         | <code>main</code>                         | **false**           |
-| <b><code>title_prefix</code></b>                 | Add a prefix to the README title.<br />The title template looks like this:<br /># {brand}{prefix}{title}                                                                                                                                                                                                                                                                                                                                                                                     | <code>GitHub Action: </code>              | **false**           |
-| <b><code>include_github_version_badge</code></b> | Include additional badge showing latest tag                                                                                                                                                                                                                                                                                                                                                                                                                                                  | <code>true</code>                         | **false**           |
-| <b><code>branding_svg_path</code></b>            | Create the branding svg image from the branding object in `action.yml`<br />then save it to this path.<br />Then update the `README.md` file to source the branding image from this path.<br />You can use a section template like this:<br />`\<!-- start branding --><!-- stop branding -->`<br />or use the action input:<br />`branding_as_title_prefix: true`<br />to prefix the 'title' section with the image.<br />The title template looks like this:<br /># {brand}{prefix}{title} | <code>.github/ghadocs/branding.svg</code> | **false**           |
-| <b><code>branding_as_title_prefix</code></b>     | Prefix the title in the `\<!-- start title -->` section with the svg branding image<br />The title template looks like this:<br /># {brand}{prefix}{title}                                                                                                                                                                                                                                                                                                                                   | <code>true</code>                         | **false**           |
+| **<b>Input</b>**                                 | **<b>Description</b>**                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | **<b>Default</b>**                        | **<b>Required</b>** |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------- |
+| <b><code>action</code></b>                       | The absolute or relative path to the `action.yml` file to read in from.                                                                                                                                                                                                                                                                                                                                                                                                                     | <code>action.yml</code>                   | **false**           |
+| <b><code>readme</code></b>                       | The absolute or relative path to the markdown output file that contains the formatting tokens within it.                                                                                                                                                                                                                                                                                                                                                                                    | <code>README.md</code>                    | **false**           |
+| <b><code>owner</code></b>                        | The GitHub Action repository owner, this field is autodetected by default.<br />Example: `bitflight-devops` or `your-gh-username`                                                                                                                                                                                                                                                                                                                                                           |                                           | **false**           |
+| <b><code>repo</code></b>                         | The GitHub Action repository name, this field is autodetected by default.<br />Example: `github-action-readme-generator`                                                                                                                                                                                                                                                                                                                                                                    |                                           | **false**           |
+| <b><code>save</code></b>                         | Save the provided values in a `.ghadocs.json` file.<br />This will update any existing `.ghadocs.json` file that is in place.                                                                                                                                                                                                                                                                                                                                                               |                                           | **false**           |
+| <b><code>pretty</code></b>                       | Use `prettier` to pretty print the new README.md file                                                                                                                                                                                                                                                                                                                                                                                                                                       | <code>true</code>                         | **false**           |
+| <b><code>versioning_enabled</code></b>           | Enable the update of the usage version to match the latest version in the `package.json` file<br />Output if your action repo is `reviewdog/action-eslint` and version in package.json is 1.0.1:<br />`uses: reviewdog/action-eslint@1.0.1`                                                                                                                                                                                                                                                 | <code>true</code>                         | **false**           |
+| <b><code>version_override</code></b>             | Set a specific version to display in the README.md, maybe you want to use a major or minor version                                                                                                                                                                                                                                                                                                                                                                                          |                                           | **false**           |
+| <b><code>version_prefix</code></b>               | Prefix the version with this value, if it isn't already prefixed                                                                                                                                                                                                                                                                                                                                                                                                                            | <code>v</code>                            | **false**           |
+| <b><code>versioning_default_branch</code></b>    | If versioning is disabled, use this branch in the usage example, where the default is `main`<br />Output if your action repo is `reviewdog/action-eslint`:<br />`uses: reviewdog/action-eslint@main`                                                                                                                                                                                                                                                                                        | <code>main</code>                         | **false**           |
+| <b><code>title_prefix</code></b>                 | Add a prefix to the README title.<br />The title template looks like this:<br /># {brand}{prefix}{title}                                                                                                                                                                                                                                                                                                                                                                                    | <code>GitHub Action: </code>              | **false**           |
+| <b><code>include_github_version_badge</code></b> | Include additional badge showing latest tag                                                                                                                                                                                                                                                                                                                                                                                                                                                 | <code>true</code>                         | **false**           |
+| <b><code>branding_svg_path</code></b>            | Create the branding svg image from the branding object in `action.yml`<br />then save it to this path.<br />Then update the `README.md` file to source the branding image from this path.<br />You can use a section template like this:<br />`<!-- start branding --><!-- stop branding -->`<br />or use the action input:<br />`branding_as_title_prefix: true`<br />to prefix the 'title' section with the image.<br />The title template looks like this:<br /># {brand}{prefix}{title} | <code>.github/ghadocs/branding.svg</code> | **false**           |
+| <b><code>branding_as_title_prefix</code></b>     | Prefix the title in the `<!-- start title -->` section with the svg branding image<br />The title template looks like this:<br /># {brand}{prefix}{title}                                                                                                                                                                                                                                                                                                                                   | <code>true</code>                         | **false**           |
 
 <!-- end inputs -->
 <!-- start outputs -->

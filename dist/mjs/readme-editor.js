@@ -11,11 +11,11 @@ import { formatMarkdown } from './prettier.js';
 /**
  * The format for the start token of a section.
  */
-export const startTokenFormat = '(^|[^\\])<!--\\s+start\\s+%s\\s+-->';
+export const startTokenFormat = '(^|[^`\\\\])<!--\\s+start\\s+%s\\s+-->';
 /**
  * The format for the end token of a section.
  */
-export const endTokenFormat = '(^|[^\\])<!--\\s+end\\s+%s\\s+-->';
+export const endTokenFormat = '(^|[^`\\\\])<!--\\s+end\\s+%s\\s+-->';
 export default class ReadmeEditor {
     log = new LogTask('ReadmeEditor');
     /**
@@ -47,22 +47,15 @@ export default class ReadmeEditor {
         const log = logTask ?? new LogTask('getTokenIndexes');
         const startRegExp = new RegExp(startTokenFormat.replace('%s', token));
         const stopRegExp = new RegExp(endTokenFormat.replace('%s', token));
-        // const startIndex = Math.max(0, this.fileContent.indexOf(startToken) + startToken.length);
-        // const stopIndex = this.fileContent.indexOf(stopToken);
         const startIndex = lastIndexOfRegex(this.fileContent, startRegExp);
-        const stopIndex = indexOfRegex(this.fileContent, stopRegExp, startIndex);
-        if (startIndex === -1 && stopIndex === -1) {
-            log.debug(`No start or end token found for section '${token}'. Skipping`);
+        if (startIndex === -1) {
+            log.debug(`No start token found for section '${token}'. Skipping`);
             return [];
         }
+        const stopIndex = indexOfRegex(this.fileContent, stopRegExp);
         if (stopIndex === -1) {
-            throw new Error(`End token for section '${token}' not found.`);
-        }
-        if (startIndex === -1) {
-            throw new Error(`Start token for section '${token}' not found.`);
-        }
-        if (stopIndex < startIndex && token !== 'branding') {
-            throw new Error(`Start token for section '${token}' must appear before end token`);
+            log.debug(`No start or end token found for section '${token}'. Skipping`);
+            return [];
         }
         return [startIndex, stopIndex];
     }

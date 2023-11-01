@@ -16,6 +16,10 @@ on:
   repository_dispatch:
     types: [semantic-release]
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read # for checkout
 

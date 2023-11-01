@@ -1,19 +1,10 @@
 import * as core from '@actions/core';
 import chalkPkg from 'chalk';
 
+import { notEmpty } from '../util.js';
+
 // Chalk color styles
-const {
-  bgRedBright,
-  cyan,
-  green,
-  greenBright,
-  red,
-  redBright,
-  white,
-  whiteBright,
-  yellow,
-  yellowBright,
-} = chalkPkg;
+const { bgRedBright, cyan, green, greenBright, whiteBright, yellow, yellowBright } = chalkPkg;
 
 // Constants for different log step types
 
@@ -26,12 +17,17 @@ enum LogGroup {
   IS_TITLE,
 }
 
+function inGitHubActions(): boolean {
+  return notEmpty(process.env.GITHUB_ACTIONS) && process.env.GITHUB_ACTIONS === 'true';
+}
+
 function highlightMessage(step: string, message: string): { desc: any; failed: any } {
   let failed = false;
+  const ci = inGitHubActions();
   let desc: string;
   switch (step) {
     case 'START': {
-      desc = yellowBright(`${message}`);
+      desc = `${message}`;
       break;
     }
     case 'INFO': {
@@ -47,12 +43,12 @@ function highlightMessage(step: string, message: string): { desc: any; failed: a
       break;
     }
     case 'FAILURE': {
-      desc = redBright(`${message}`);
+      desc = ci ? message : yellow.bold(`${message}`);
       failed = true;
       break;
     }
     case 'ERROR': {
-      desc = redBright(`${message}`);
+      desc = ci ? message : yellow(`${message}`);
       break;
     }
     case '#####': {
@@ -60,7 +56,7 @@ function highlightMessage(step: string, message: string): { desc: any; failed: a
       break;
     }
     default: {
-      desc = white(`${message}`);
+      desc = message;
       break;
     }
   }
@@ -68,6 +64,7 @@ function highlightMessage(step: string, message: string): { desc: any; failed: a
 }
 function highlightStep(step: string, message: string): string {
   let msg: string;
+  const ci = inGitHubActions();
   // Logic to handle different log outputs based on the environment (GitHub Actions or local)
   switch (step) {
     case 'START': {
@@ -80,7 +77,7 @@ function highlightStep(step: string, message: string): string {
     }
     case 'FAILURE':
     case 'ERROR': {
-      msg = red(message);
+      msg = ci ? message : bgRedBright(message);
       break;
     }
     default: {
@@ -91,45 +88,38 @@ function highlightStep(step: string, message: string): string {
   return msg;
 }
 
-function handleOutput(startGroup: LogGroup, isErroring: boolean, failed: any, msg: string): void {
+function handleOutput(startGroup: LogGroup, msg: string, originalString?: string): void {
   // Logic to handle different log outputs based on the environment (GitHub Actions or local)
-  if (process.env.GITHUB_ACTIONS) {
-    switch (startGroup) {
-      case LogGroup.START_GROUP: {
-        core.startGroup(msg);
+  const ci = inGitHubActions();
 
-        break;
-      }
-      case LogGroup.END_GROUP: {
-        core.endGroup();
-
-        break;
-      }
-      // Logic to handle erroring or failed steps
-      case LogGroup.IS_ERROR: {
-        core.error(bgRedBright(msg));
-
-        break;
-      }
-      case LogGroup.IS_FAILED: {
-        core.setFailed(bgRedBright(msg));
-
-        break;
-      }
-      default: {
+  switch (startGroup) {
+    case LogGroup.START_GROUP: {
+      if (ci && originalString) {
+        core.startGroup(originalString);
+      } else {
         core.info(msg);
       }
-    }
-  } else if (isErroring) {
-    // Logic to display the log message using the appropriate method of the 'core' package
 
-    if (failed) {
-      core.setFailed(msg);
-    } else {
-      core.error(msg);
+      break;
     }
-  } else {
-    core.info(msg);
+    case LogGroup.END_GROUP: {
+      if (ci) {
+        core.endGroup();
+      }
+      break;
+    }
+    // Logic to handle erroring or failed steps
+    case LogGroup.IS_ERROR: {
+      core.error(msg);
+      break;
+    }
+    case LogGroup.IS_FAILED: {
+      core.setFailed(msg);
+      break;
+    }
+    default: {
+      core.info(msg);
+    }
   }
 }
 /**
@@ -151,7 +141,7 @@ export default class LogTask {
    * @returns A boolean indicating if debug mode is enabled.
    */
   static isDebug(): boolean {
-    return core.isDebug() || !!process.env.DEBUG;
+    return core.isDebug() || (notEmpty(process.env.DEBUG) && process.env.DEBUG === 'true');
   }
 
   /**
@@ -183,7 +173,7 @@ export default class LogTask {
 
   getMessageString(step: string, desc: string, emojiStr: string): string {
     let msg: string;
-    if (this.ingroup && !process.env.GITHUB_ACTIONS) {
+    if (this.ingroup) {
       const indentStr = ' '.repeat(LogTask.indentWidth);
       msg = `${indentStr}   ${emojiStr}: ${this.name} > ${desc}`;
     } else {
@@ -205,11 +195,10 @@ export default class LogTask {
     if (step.length > LogTask.indentWidth) {
       LogTask.indentWidth = step.length;
     }
-    const { desc, failed } = highlightMessage(step, message);
+    const { desc } = highlightMessage(step, message);
     const msg = this.getMessageString(step, desc, emojiStr);
 
-    const isErroring = startGroup === LogGroup.IS_ERROR || startGroup === LogGroup.IS_FAILED;
-    handleOutput(startGroup, isErroring, failed, msg);
+    handleOutput(startGroup, msg, message);
   }
 
   /**
@@ -230,6 +219,7 @@ export default class LogTask {
   start(message = ''): void {
     // Logic to log a start message
     const desc = message === '' ? `Starting ${this.name}...` : message;
+
     this.logStep('🚀', 'START', desc, LogGroup.START_GROUP);
   }
 

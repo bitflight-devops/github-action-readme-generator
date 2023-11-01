@@ -1,11 +1,14 @@
+import * as fs from 'node:fs';
+
 import { context } from '@actions/github';
-import { expect, jest, test } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
 
 import {
   basename,
   indexOfRegex,
   lastIndexOfRegex,
   prefixParser,
+  remoteGitUrlPattern,
   repositoryFinder,
   stripRefs,
   titlecase,
@@ -13,14 +16,59 @@ import {
   wrapText,
 } from '../src/helpers.js';
 
-jest.mock('@actions/github');
+vi.mock('@actions/github');
 
-// Jest Unit Test
-afterEach(() => {
-  // restore replaced property
-  jest.restoreAllMocks();
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
+  return {
+    ...actual,
+    readFileSync: vi
+      .fn()
+      .mockReturnValue(`[remote "origin"]\nurl = https://github.com/owner/repo.git\n`),
+  };
 });
+
+let tempEnv: typeof process.env;
+beforeEach(() => {
+  tempEnv = { ...process.env };
+  process.env.GITHUB_REPOSITORY = undefined;
+  process.env.INPUT_OWNER = undefined;
+  process.env.INPUT_REPO = undefined;
+});
+
+// restore the environment variables after each test
+afterEach(() => {
+  vi.unstubAllEnvs();
+  process.env = tempEnv;
+  // restore replaced property
+  vi.restoreAllMocks();
+});
+describe('test mocks work', () => {
+  test('readFileSync is mocked', () => {
+    expect(vi.isMockFunction(fs.readFileSync)).toBe(true);
+  });
+});
+
 describe('helpers', () => {
+  describe('Test constants', () => {
+    test('regex', () => {
+      const filePath = '/path/to/file.txt';
+      const githubConfigOutput = `[remote "origin"]\nurl = https://github.com/owner/repo.git\n`;
+      expect(vi.isMockFunction(fs.readFileSync)).toBe(true);
+      vi.mocked(fs.readFileSync).mockImplementation(() => {
+        return `[remote "origin"]\nurl = https://github.com/owner/repo.git\n`;
+      });
+      const output = fs.readFileSync(filePath, 'utf8');
+      expect(fs.readFileSync).toBeCalled();
+      expect(output).toBe(githubConfigOutput);
+      const match = remoteGitUrlPattern.exec(output);
+      expect(match).toBeDefined();
+      expect(match?.groups).toBeDefined();
+      expect(match?.groups?.owner).toBe('owner');
+      expect(match?.groups?.repo).toBe('repo');
+    });
+  });
+
   describe('undefinedOnEmpty', () => {
     it('should return undefined if the value is empty', () => {
       const result = undefinedOnEmpty('');
@@ -147,26 +195,30 @@ describe('helpers', () => {
     });
 
     it('should return the repository information from the GitHub context', () => {
-      jest.spyOn(context, 'repo', 'get').mockReturnValue({ owner: 'owner', repo: 'repo' });
+      vi.spyOn(context, 'repo', 'get').mockReturnValue({ owner: 'owner', repo: 'repo' });
       const result = repositoryFinder(null, context);
       expect(result).toEqual({ owner: 'owner', repo: 'repo' });
     });
 
     it('should return the repository information from the environment variables', () => {
-      process.env.GITHUB_REPOSITORY = 'owner/repo';
+      vi.stubEnv('GITHUB_REPOSITORY', 'owner/repo');
       const result = repositoryFinder(null, null);
       expect(result).toEqual({ owner: 'owner', repo: 'repo' });
     });
 
-    it('should return the repository information from the git configuration', () => {
-      const fsMock = {
-        readFileSync: jest.fn().mockReturnValue(`
-          [remote "origin"]
-          url = https://github.com/owner/repo.git
-        `),
-      };
-      jest.mock('node:fs', () => fsMock);
+    it('should return the repository information from the inputs variables', () => {
+      vi.stubEnv('INPUT_OWNER', 'owner');
+      vi.stubEnv('INPUT_REPO', 'repo');
       const result = repositoryFinder(null, null);
+      expect(result).toEqual({ owner: 'owner', repo: 'repo' });
+    });
+
+    it('should return the repository information from the git configuration', async () => {
+      vi.mocked(fs.readFileSync).mockImplementation(() => {
+        return `[remote "origin"]\nurl = https://github.com/owner/repo.git\n`;
+      });
+      const result = repositoryFinder(null, null);
+      expect(fs.readFileSync).toHaveBeenCalled();
       expect(result).toEqual({ owner: 'owner', repo: 'repo' });
     });
   });

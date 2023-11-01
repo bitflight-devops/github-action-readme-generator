@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import * as fs from 'node:fs';
+import { accessSync, readFileSync } from 'node:fs';
 
 import type { Context } from '@actions/github/lib/context.js';
 import type { PackageJson } from 'types-package-json';
@@ -7,6 +7,7 @@ import type { PackageJson } from 'types-package-json';
 import type Inputs from './inputs.js';
 import LogTask from './logtask/index.js';
 import { unicodeWordMatch } from './unicode-word-match.js';
+import { notEmpty, Nullable } from './util.js';
 
 /**
  * Returns the input value if it is not empty, otherwise returns undefined.
@@ -141,6 +142,15 @@ interface OwnerRepoInterface extends RegExpExecArray {
   };
 }
 
+export function readFile(filename: string): string {
+  try {
+    return readFileSync(filename, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+export const remoteGitUrlPattern = /url( )?=( )?.*github\.com[/:](?<owner>.*)\/(?<repo>.*)\.git/;
 /**
  * Finds the repository information from the input, context, environment variables, or git configuration.
  * @param inputRepo - The input repository string.
@@ -148,18 +158,18 @@ interface OwnerRepoInterface extends RegExpExecArray {
  * @returns The repository information (owner and repo) or null if not found.
  */
 export function repositoryFinder(
-  inputRepo: string | undefined | null,
-  context: Context | undefined | null,
+  inputRepo: Nullable<string>,
+  context: Nullable<Context>,
 ): Repo | null {
   const log = new LogTask('repositoryFinder');
   const obj = {} as unknown;
   const result = obj as Repo;
-  if (inputRepo) {
+  if (notEmpty(inputRepo)) {
     [result.owner, result.repo] = inputRepo.split('/') as [string, string];
     log.info(`repositoryFinder using input ${inputRepo} and returns ${JSON.stringify(result)}`);
     return result;
   }
-  if (process.env.GITHUB_REPOSITORY) {
+  if (notEmpty(process.env.GITHUB_REPOSITORY)) {
     [result.owner, result.repo] = process.env.GITHUB_REPOSITORY.split('/') as [string, string];
     log.info(
       `repositoryFinder using GITHUB_REPOSITORY ${
@@ -172,34 +182,30 @@ export function repositoryFinder(
     result.owner = context.repo.owner;
     result.repo = context.repo.repo;
 
-    log.info(
-      `repositoryFinder using GITHUB_REPOSITORY ${
-        process.env.GITHUB_REPOSITORY
-      } and returns ${JSON.stringify(result)}`,
-    );
+    log.info(`repositoryFinder using GitHub context and returns ${JSON.stringify(result)}`);
     return result;
   }
-  if (process.env.INPUT_OWNER && process.env.INPUT_REPO) {
+  if (notEmpty(process.env.INPUT_OWNER) && notEmpty(process.env.INPUT_REPO)) {
     result.owner = process.env.INPUT_OWNER;
     result.repo = process.env.INPUT_REPO;
     return result;
   }
   try {
-    const fileContent = fs.readFileSync('.git/config', 'utf8');
-    const pattern = /url( )?=( )?.*github\.com[/:](?<owner>.*)\/(?<repo>.*)\.git/;
+    const fileContent = readFile('.git/config');
 
-    const results = fileContent.match(pattern) as OwnerRepoInterface;
-    if (results !== null) {
+    const results = remoteGitUrlPattern.exec(fileContent) as OwnerRepoInterface;
+    if (results.length > 0) {
       log.debug(JSON.stringify(results.groups));
       result.owner = results.groups?.owner ?? '';
       result.repo = results.groups?.repo ?? '';
+
+      return result;
     }
-    return result;
   } catch (error) {
     // can't find it
-    log.debug(`Couldn't find any owner or repo: ${error}`);
+    log.error(`Couldn't find any owner or repo: ${error}`);
   }
-  return result;
+  throw new Error('No owner or repo found');
 }
 
 /**
@@ -298,10 +304,8 @@ export function getCurrentVersionString(inputs: Inputs): string {
     if (!packageVersion) {
       log.debug('version string in env:npm_package_version is not found, trying to use git');
       try {
-        fs.accessSync('package.json');
-        const packageData: Partial<PackageJson> = JSON.parse(
-          fs.readFileSync('package.json', 'utf8'),
-        );
+        accessSync('package.json');
+        const packageData: Partial<PackageJson> = JSON.parse(readFileSync('package.json', 'utf8'));
         packageVersion = packageData.version;
       } catch (error) {
         log.debug(`package.json not found. ${error}`);

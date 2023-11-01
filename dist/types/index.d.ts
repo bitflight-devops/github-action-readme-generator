@@ -3,6 +3,10 @@ declare module "jest.config" {
     const config: Config.InitialOptions;
     export default config;
 }
+declare module "vitest.config" {
+    const _default: import("vite").UserConfig;
+    export default _default;
+}
 declare module "src/constants" {
     import type { FeatherIconNames } from 'feather-icons';
     export const README_SECTIONS: readonly ["title", "branding", "description", "usage", "inputs", "outputs", "contents", "badges"];
@@ -43,6 +47,10 @@ declare module "src/constants" {
         color: Partial<BrandColors>;
         icon: Partial<FeatherIconNames>;
     }
+}
+declare module "src/util" {
+    export type Nullable<T> = T | null | undefined;
+    export function notEmpty(str: Nullable<string>): str is string;
 }
 declare module "src/logtask/index" {
     enum LogGroup {
@@ -361,6 +369,7 @@ declare module "src/unicode-word-match" {
 declare module "src/helpers" {
     import type { Context } from '@actions/github/lib/context.js';
     import type Inputs from "src/inputs";
+    import { Nullable } from "src/util";
     /**
      * Returns the input value if it is not empty, otherwise returns undefined.
      * @param value - The input value to check.
@@ -408,13 +417,15 @@ declare module "src/helpers" {
         owner: string;
         repo: string;
     }
+    export function readFile(filename: string): string;
+    export const remoteGitUrlPattern: RegExp;
     /**
      * Finds the repository information from the input, context, environment variables, or git configuration.
      * @param inputRepo - The input repository string.
      * @param context - The GitHub context object.
      * @returns The repository information (owner and repo) or null if not found.
      */
-    export function repositoryFinder(inputRepo: string | undefined | null, context: Context | undefined | null): Repo | null;
+    export function repositoryFinder(inputRepo: Nullable<string>, context: Nullable<Context>): Repo | null;
     /**
      * Returns the default branch of the git repository.
      * @returns The default branch.
@@ -450,6 +461,7 @@ declare module "__tests__/__mocks__/githubContext" {
     import type { Context } from '@actions/github/lib/context.js';
     export const mockContext: () => Context;
 }
+declare module "__tests__/logtask/index.test" { }
 declare module "src/config" {
     import type Inputs from "src/inputs";
     /**

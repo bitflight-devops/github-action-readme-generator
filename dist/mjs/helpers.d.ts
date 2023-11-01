@@ -1,5 +1,6 @@
 import type { Context } from '@actions/github/lib/context.js';
 import type Inputs from './inputs.js';
+import { Nullable } from './util.js';
 /**
  * Returns the input value if it is not empty, otherwise returns undefined.
  * @param value - The input value to check.
@@ -47,13 +48,15 @@ export interface Repo {
     owner: string;
     repo: string;
 }
+export declare function readFile(filename: string): string;
+export declare const remoteGitUrlPattern: RegExp;
 /**
  * Finds the repository information from the input, context, environment variables, or git configuration.
  * @param inputRepo - The input repository string.
  * @param context - The GitHub context object.
  * @returns The repository information (owner and repo) or null if not found.
  */
-export declare function repositoryFinder(inputRepo: string | undefined | null, context: Context | undefined | null): Repo | null;
+export declare function repositoryFinder(inputRepo: Nullable<string>, context: Nullable<Context>): Repo | null;
 /**
  * Returns the default branch of the git repository.
  * @returns The default branch.

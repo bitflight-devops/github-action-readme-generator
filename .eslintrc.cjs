@@ -87,12 +87,15 @@ module.exports = {
       processor: 'actions/actions',
     },
     {
+      files: ['__tests__/**'], // or any other pattern
+      plugins: ['vitest'],
+      extends: ['plugin:vitest/recommended'],
+    },
+    {
       files: ['**/*.ts', '**/*.mts'],
       plugins: [
         'simple-import-sort',
         'import',
-        'jest',
-        'jest-async',
         '@typescript-eslint',
         'optimize-regex',
         'promise',
@@ -103,7 +106,6 @@ module.exports = {
         'plugin:@eslint-community/eslint-comments/recommended',
         'plugin:promise/recommended',
         'plugin:no-use-extend-native/recommended',
-        'plugin:jest/recommended',
         'plugin:n/recommended',
         'plugin:@typescript-eslint/recommended',
         'airbnb-base',
@@ -140,7 +142,6 @@ module.exports = {
             accessorPairPositioning: 'getThenSet',
           },
         ],
-        'jest-async/expect-return': 'error',
         'operator-linebreak': 'off',
         'dot-notation': 'off',
         '@typescript-eslint/dot-notation': ['error'],
@@ -218,10 +219,9 @@ module.exports = {
         NodeJS: true,
       },
       env: {
-        'browser': false,
-        'node': true,
-        'es2022': true,
-        'jest/globals': true,
+        browser: false,
+        node: true,
+        es2022: true,
       },
       settings: {
         'import/parsers': {

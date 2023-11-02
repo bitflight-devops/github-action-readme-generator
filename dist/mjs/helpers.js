@@ -212,7 +212,7 @@ export function columnHeader(value) {
     text = text.replaceAll(/~~(.*?)~~/g, '$1');
     const normalisedHeader = titlecase(text.trim());
     if (normalisedHeader) {
-        return `<b>${normalisedHeader}</b>`;
+        return `${normalisedHeader}`;
     }
     return '';
 }
@@ -238,7 +238,7 @@ export function rowHeader(value) {
     // Normalize spacing
     text = text.trim();
     // Add code formatting
-    return `<b><code>${text}</code></b>`;
+    return `<code>${text}</code>`;
 }
 export function getCurrentVersionString(inputs) {
     let versionString = '';

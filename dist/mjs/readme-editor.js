@@ -5,6 +5,7 @@
  */
 import * as fs from 'node:fs';
 import { EOL } from 'node:os';
+import * as core from '@actions/core';
 import { indexOfRegex, lastIndexOfRegex } from './helpers.js';
 import LogTask from './logtask/index.js';
 import { formatMarkdown } from './prettier.js';
@@ -32,6 +33,7 @@ export default class ReadmeEditor {
         try {
             fs.accessSync(filePath);
             this.fileContent = fs.readFileSync(filePath, 'utf8');
+            core.setOutput('readme_before', this.fileContent);
         }
         catch (error) {
             this.log.fail(`Readme at '${filePath}' does not exist.`);
@@ -84,6 +86,7 @@ export default class ReadmeEditor {
      */
     async dumpToFile() {
         const content = await formatMarkdown(this.fileContent);
+        core.setOutput('readme_after', content);
         return fs.promises.writeFile(this.filePath, content, 'utf8');
     }
 }

@@ -1,0 +1,22 @@
+name: Test Action
+author: Test Author
+description: Test Description
+branding:
+  color: white
+  icon: activity
+inputs:
+  input1:
+    description: Test Input 1
+    required: true
+    default: default1
+  input2:
+    description: Test Input 2
+outputs:
+  output1:
+    description: Test Output 1
+runs:
+  using: container
+  image: test-image
+  main: test-main
+  pre: test-pre
+

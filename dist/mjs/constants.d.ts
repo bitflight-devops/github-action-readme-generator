@@ -16,7 +16,12 @@ export declare enum ConfigKeys {
     VersioningOverride = "versioning:override",
     VersioningPrefix = "versioning:prefix",
     VersioningBranch = "versioning:branch",
-    IncludeGithubVersionBadge = "versioning:badge"
+    IncludeGithubVersionBadge = "versioning:badge",
+    DebugNconf = "debug:nconf",
+    DebugReadme = "debug:readme",
+    DebugConfig = "debug:config",
+    DebugAction = "debug:action",
+    DebugGithub = "debug:github"
 }
 export declare const RequiredInputs: readonly [ConfigKeys.pathsAction, ConfigKeys.pathsReadme, ConfigKeys.Owner, ConfigKeys.Repo];
 export declare const brandingSquareEdgeLengthInPixels = 50;

@@ -4,6 +4,7 @@
  * [Further reading on the metadata can be found here](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions#inputs)
  */
 import { type Branding } from './constants.js';
+import LogTask from './logtask/index.js';
 /**
  * Represents an input for the action.
  */
@@ -14,7 +15,7 @@ export interface Input {
     required?: boolean;
     /** Default value for the input */
     default?: string;
-    /** Optional If the input parameter is used, this string is logged as a warning message. You can use this warning to notify users that the input is deprecated and mention any alternatives. */
+    /** Optional If the input parameter is used, this string is this.logged as a warning message. You can use this warning to notify users that the input is deprecated and mention any alternatives. */
     deprecationMessage?: string;
 }
 /**
@@ -76,10 +77,31 @@ export type ActionType = RunsContainer | RunsJavascript | RunsComposite;
 /**
  * Defines how the action is run.
  */
+export interface ActionYaml {
+    name: string;
+    author: string;
+    /** Description of the action */
+    description: string;
+    /** Branding information */
+    branding: Branding;
+    /** Input definitions */
+    inputs: {
+        [key: string]: Input;
+    };
+    /** Output definitions */
+    outputs: {
+        [key: string]: Output;
+    };
+    /** How the action is run */
+    runs: ActionType;
+    /** Path to the action */
+    path: string;
+}
 /**
  * Parses and represents metadata from action.yml.
  */
-export default class Action {
+export default class Action implements ActionYaml {
+    log: LogTask;
     /** Name of the action */
     name: string;
     author: string;
@@ -105,6 +127,7 @@ export default class Action {
      * @param actionPath The path to the action.yml file.
      */
     constructor(actionPath: string);
+    loadActionFrom(actionPath: string): ActionYaml;
     /**
      * Gets the default value for an input.
      *

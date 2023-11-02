@@ -5,6 +5,7 @@
  */
 
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 import YAML from 'yaml';
 
@@ -23,7 +24,7 @@ export interface Input {
 
   /** Default value for the input */
   default?: string;
-  /** Optional If the input parameter is used, this string is logged as a warning message. You can use this warning to notify users that the input is deprecated and mention any alternatives. */
+  /** Optional If the input parameter is used, this string is this.logged as a warning message. You can use this warning to notify users that the input is deprecated and mention any alternatives. */
   deprecationMessage?: string;
 }
 
@@ -93,14 +94,34 @@ export type ActionType = RunsContainer | RunsJavascript | RunsComposite;
 /**
  * Defines how the action is run.
  */
+export interface ActionYaml {
+  name: string;
 
-// type FilterByField<T, K extends keyof T, V> = T extends { [P in K]: V } ? T : never;
+  author: string;
 
+  /** Description of the action */
+  description: string;
+
+  /** Branding information */
+  branding: Branding;
+
+  /** Input definitions */
+  inputs: { [key: string]: Input };
+
+  /** Output definitions */
+  outputs: { [key: string]: Output };
+
+  /** How the action is run */
+  runs: ActionType;
+
+  /** Path to the action */
+  path: string;
+}
 /**
  * Parses and represents metadata from action.yml.
  */
-export default class Action {
-  // Load the action.yml
+export default class Action implements ActionYaml {
+  log: LogTask;
 
   /** Name of the action */
   name: string;
@@ -132,30 +153,41 @@ export default class Action {
    */
   constructor(actionPath: string) {
     // Load and parse action.yml
-    const log = new LogTask('action');
+    this.log = new LogTask(actionPath);
     this.path = actionPath;
-
+    let actionYaml: ActionYaml;
+    this.log.debug(`Constucting ${actionPath}`);
     try {
-      log.debug(`Loading action.yml from ${actionPath}`);
-      const actionString = fs.readFileSync(actionPath, 'utf8');
-      const actionYaml = YAML.parse(actionString) as Action;
-      log.success('Loaded configuration successfully');
-
-      this.name = actionYaml.name;
-      this.author = actionYaml.author;
-      this.description = actionYaml.description;
-
-      this.branding = {
-        color: actionYaml.branding?.color ?? DEFAULT_BRAND_COLOR,
-        icon: actionYaml.branding?.icon ?? DEFAULT_BRAND_ICON,
-      };
-      this.inputs = actionYaml.inputs;
-      this.outputs = actionYaml.outputs;
-      this.runs = actionYaml.runs;
+      actionYaml = this.loadActionFrom(actionPath);
     } catch (error) {
-      log.fail(`Failed to load ${actionPath}`);
-      throw error;
+      throw new Error(`Failed to load ${actionPath}. ${error}`);
     }
+    this.log.debug(`Action YAML: ${actionYaml}`);
+    this.name = actionYaml.name;
+    this.author = actionYaml.author;
+    this.description = actionYaml.description;
+
+    this.branding = {
+      color: actionYaml.branding?.color ?? DEFAULT_BRAND_COLOR,
+      icon: actionYaml.branding?.icon ?? DEFAULT_BRAND_ICON,
+    };
+    this.inputs = actionYaml.inputs;
+    this.outputs = actionYaml.outputs;
+    this.runs = actionYaml.runs;
+  }
+
+  loadActionFrom(actionPath: string): ActionYaml {
+    const actionDir = path.dirname(path.resolve(actionPath));
+    this.log.debug(`Load ${actionPath} from ${actionDir}`);
+    if (!fs.existsSync(actionPath)) {
+      throw new Error(`${actionPath} does not exist in ${actionDir}`);
+    }
+    if (!fs.statSync(actionPath).isFile()) {
+      throw new Error(`${actionPath} is not a file type at ${actionDir}`);
+    }
+    this.log.debug(`Loaded ${actionPath} from ${actionDir}`);
+    const actionString = fs.readFileSync(actionPath, 'utf8');
+    return YAML.parse(actionString);
   }
 
   /**
@@ -177,8 +209,8 @@ export default class Action {
     try {
       return YAML.stringify(this);
     } catch (error) {
-      const log = new LogTask('action:stringify');
-      log.error(`Failed to stringify action.yml. Error: ${error}`);
+      this.log.error(`Failed to stringify Action. ${error}`);
+      // this is just for debugging, continue on error
       return '';
     }
   }

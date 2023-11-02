@@ -72,27 +72,30 @@ export function generateImgMarkup(inputs, width = '15%') {
     return `<!-- ERROR: no branding path found = ${result} -->`;
 }
 /**
- * This is a TypeScript function named "updateBranding" that takes in a token string and an object of inputs.
+ * This is a TypeScript function named "updateBranding" that takes in a sectionToken string and an object of inputs.
  * It exports the function as the default export.
  * The function logs the brand details from the inputs, starts a log task, generates image markup,
- * updates a section in the readme editor using the token and content, and logs success or failure messages.
+ * updates a section in the readme editor using the sectionToken and content, and logs success or failure messages.
  *
- * @param token - The token string that is used to identify the section in the readme editor.
+ * @param sectionToken - The sectionToken string that is used to identify the section in the readme editor.
  * @param inputs - The inputs object that contains data for the function.
  */
-export default function updateBranding(token, inputs) {
-    const log = new LogTask(token);
+export default function updateBranding(sectionToken, inputs) {
+    const log = new LogTask(sectionToken);
     log.info(`Brand details: ${JSON.stringify(inputs.action.branding)}`);
     log.start();
     /** create <img  /> markup with an image width of 15% */
     const imageWidth = '15%';
     const content = generateImgMarkup(inputs, imageWidth);
-    inputs.readmeEditor.updateSection(token, content);
+    inputs.readmeEditor.updateSection(sectionToken, content);
     if (content && content !== '') {
         log.success('branding svg successfully created');
     }
     else {
         log.fail('branding svg failed to be created');
     }
+    const ret = {};
+    ret[sectionToken] = content;
+    return ret;
 }
 //# sourceMappingURL=update-branding.js.map

@@ -6,6 +6,8 @@
  * Finally, it saves the updated README.md file and calls the 'save' function.
  */
 
+import * as core from '@actions/core';
+
 import Inputs from './inputs.js';
 import LogTask from './logtask/index.js';
 import save from './save.js';
@@ -19,19 +21,23 @@ export const inputs = new Inputs();
  */
 export async function generateDocs(): Promise<void> {
   const log = new LogTask('generating readme');
-  const sectionPromises: Promise<void>[] = [];
+  const sectionPromises: Promise<Record<string, string>>[] = [];
 
   for (const section of inputs.sections) {
-    sectionPromises.push(
-      updateSection(section, inputs).catch((error) => {
-        if (error) {
-          throw new Error(`Problem in ${section}. ${error}`);
-        }
-      }),
-    );
+    sectionPromises.push(updateSection(section, inputs));
   }
   try {
-    await Promise.all(sectionPromises);
+    const sectionsArray: Record<string, string>[] = await Promise.all(sectionPromises);
+    const sections: Record<string, string> = {};
+    for (const section of sectionsArray) {
+      for (const key in section) {
+        if (Object.hasOwn(section, key)) {
+          sections[key] = section[key];
+        }
+      }
+    }
+
+    core.setOutput('sections', JSON.stringify(sections, null, 2));
     await inputs.readmeEditor.dumpToFile();
     return save(inputs);
   } catch (error) {

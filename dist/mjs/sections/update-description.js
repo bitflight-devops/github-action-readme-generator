@@ -1,6 +1,6 @@
 import LogTask from '../logtask/index.js';
-export default function updateDescription(token, inputs) {
-    const log = new LogTask(token);
+export default function updateDescription(sectionToken, inputs) {
+    const log = new LogTask(sectionToken);
     // Build the new README
     const content = [];
     // Build the new description section
@@ -14,8 +14,11 @@ export default function updateDescription(token, inputs) {
             .replaceAll('\n\n', '<br />'); // Convert double return to a break
         log.info(`Writing ${desc.length} characters to the description section`);
         content.push(desc);
-        inputs.readmeEditor.updateSection(token, content);
+        inputs.readmeEditor.updateSection(sectionToken, content);
         log.success();
     }
+    const ret = {};
+    ret[sectionToken] = content.join('\n');
+    return ret;
 }
 //# sourceMappingURL=update-description.js.map

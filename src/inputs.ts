@@ -9,6 +9,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import * as core from '@actions/core';
 import type { Context } from '@actions/github/lib/context.js';
 import { IOptions, Provider } from 'nconf';
 import YAML from 'yaml';
@@ -118,6 +119,17 @@ argvOptions[ConfigKeys.TitlePrefix] = {
   parseValues: true,
 };
 
+argvOptions[ConfigKeys.DebugNconf] = {
+  describe: 'Print out the resolved nconf object with all values',
+  parseValues: true,
+  type: 'boolean',
+};
+argvOptions[ConfigKeys.DebugConfig] = {
+  describe: 'Print out the resolved nconf object with all values',
+  parseValues: true,
+  type: 'boolean',
+};
+
 /**
  * Configuration inputs from the github action don't
  * all match the input names when running on cli.
@@ -163,6 +175,21 @@ function setConfigValueFromActionFileDefault(
   const defaultValue = actionInstance.inputDefault(inputName);
   log.debug(`Default Value for action.yml: ${inputName} CLI: ${configName} = ${defaultValue}`);
   return defaultValue;
+}
+function collectAllDefaultValuesFromAction(thisActionPath: string): IOptions {
+  try {
+    const defaultValues = {} as IOptions;
+    const thisAction = new Action(thisActionPath);
+    // Collect all of the default values from the action.yml file
+    for (const key of Object.keys(thisAction.inputs)) {
+      const mappedKey = ConfigKeysInputsMap[key] ?? key;
+      defaultValues[mappedKey] = setConfigValueFromActionFileDefault(thisAction, key);
+    }
+    log.debug(JSON.stringify(defaultValues, null, 2));
+    return defaultValues;
+  } catch (error) {
+    throw new Error(`failed to load defaults from this action's action.yml: ${error}`);
+  }
 }
 
 export default class Inputs {
@@ -224,19 +251,8 @@ export default class Inputs {
 
     const actionPath = path.resolve(this.config.get(ConfigKeys.pathsAction) as string);
     this.action = new Action(actionPath);
-    const defaultValues = {} as IOptions;
-    try {
-      const thisActionPath = path.join(__dirname, '../../action.yml');
-      const thisAction = new Action(thisActionPath);
-      // Collect all of the default values from the action.yml file
-      for (const key of Object.keys(thisAction.inputs)) {
-        const mappedKey = ConfigKeysInputsMap[key] ?? key;
-        defaultValues[mappedKey] = setConfigValueFromActionFileDefault(thisAction, key);
-      }
-      log.debug(JSON.stringify(defaultValues, null, 2));
-    } catch (error) {
-      log.info(`failed to load defaults from action's action.yml: ${error}`);
-    }
+    const thisActionPath = path.join(__dirname, '../../action.yml');
+    const defaultValues = collectAllDefaultValuesFromAction(thisActionPath);
     // Apply the default values from the action.yml file
     this.config
       .defaults({
@@ -246,47 +262,32 @@ export default class Inputs {
         sections: [...README_SECTIONS] as ReadmeSection[],
       })
       .required([...RequiredInputs]);
+
     this.sections = this.config.get('sections') as ReadmeSection[];
     this.readmePath = path.resolve(this.config.get(ConfigKeys.pathsReadme) as string);
     this.readmeEditor = new ReadmeEditor(this.readmePath);
-    const owner = this.config.get('owner') as string;
-    const repo = this.config.get('repo') as string;
+    core.setOutput('readme', this.readmePath);
+    /**
+     * owner is required, and if it doesn't exist it is handled by nconf which throws an error
+     */
+    this.owner = this.config.get('owner');
 
-    if (!owner || !repo) {
-      const errMsg =
-        'Owner or repo is not defined, and not found automatically. Please pass in these variables.';
-      log.fail(errMsg);
-      throw new Error(errMsg);
-    }
-    this.owner = owner;
-    this.repo = repo;
-    if (LogTask.isDebug()) {
-      try {
-        log.debug(`readme file path: ${this.config.get(ConfigKeys.pathsReadme)}`);
-        log.debug('resolved nconf:');
-        log.debug(JSON.stringify(this.config.get(), null, 2));
-        log.debug('resolved inputs:');
-        log.debug(this.stringify());
-        log.debug('resolved action:');
-        log.debug(this.action.stringify());
-      } catch (error) {
-        log.debug(`${error}`);
-      }
-    }
+    /**
+     * repo is required, and if it doesn't exist it is handled by nconf which throws an error
+     */
+    this.repo = this.config.get('repo');
   }
 
   stringify(): string {
-    if (this) {
-      const output: string[] = [];
-      for (const k of Object.values(ConfigKeys)) {
-        output.push(`${k}: ${this.config.get(k)}`);
-      }
+    if (this?.config) {
       try {
-        return YAML.stringify(output);
+        return YAML.stringify(this.config.get());
       } catch (error) {
         log.error(`${error}`);
+        // continue
       }
     }
+    // this is just for debug, no need to stop the process if it fails
     return '';
   }
 }

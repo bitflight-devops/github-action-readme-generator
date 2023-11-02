@@ -1,7 +1,7 @@
 import LogTask from '../logtask/index.js';
 import { generateImgMarkup } from './update-branding.js';
-export default function updateTitle(token, inputs) {
-    const log = new LogTask(token);
+export default function updateTitle(sectionToken, inputs) {
+    const log = new LogTask(sectionToken);
     // Build the new README
     const content = [];
     let name = '';
@@ -17,8 +17,11 @@ export default function updateTitle(token, inputs) {
         log.info(`Title: ${title}`);
         // Build the new usage section
         content.push(title);
-        inputs.readmeEditor.updateSection(token, content, true);
+        inputs.readmeEditor.updateSection(sectionToken, content, true);
         log.success();
     }
+    const ret = {};
+    ret[sectionToken] = content.join('\n');
+    return ret;
 }
 //# sourceMappingURL=update-title.js.map

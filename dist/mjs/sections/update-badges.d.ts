@@ -1,5 +1,5 @@
 /**
- * This TypeScript code imports necessary modules and defines a function named 'updateBadges' which takes a token (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
+ * This TypeScript code imports necessary modules and defines a function named 'updateBadges' which takes a sectionToken (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
  * The function is responsible for updating the badges section in the README.md file based on the provided inputs.
  * It utilizes the 'LogTask' class for logging purposes.
  */
@@ -13,4 +13,4 @@ export interface IBadge {
     img: string;
     url?: string;
 }
-export default function updateBadges(token: ReadmeSection, inputs: Inputs): void;
+export default function updateBadges(sectionToken: ReadmeSection, inputs: Inputs): Record<string, string>;

@@ -8,4 +8,4 @@
  */
 import { ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
-export default function updateSection(section: ReadmeSection, inputs: Inputs): Promise<void>;
+export default function updateSection(section: ReadmeSection, inputs: Inputs): Promise<Record<string, string>>;

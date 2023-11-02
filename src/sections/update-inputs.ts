@@ -1,8 +1,8 @@
 /**
- * This TypeScript code exports a function named 'updateInputs' which takes a token (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
+ * This TypeScript code exports a function named 'updateInputs' which takes a sectionToken (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
  * The function is responsible for updating the inputs section in the README.md file based on the provided inputs.
  * It utilizes the 'LogTask' class for logging purposes, 'columnHeader' and 'rowHeader' functions from '../helpers.js' for formatting table headers, and 'markdowner' function from '../markdowner/index.js' for generating markdown content.
- * @param {ReadmeSection} token - The token representing the section of the README to update.
+ * @param {ReadmeSection} sectionToken - The sectionToken representing the section of the README to update.
  * @param {Inputs} inputs - The Inputs class instance.
  */
 import { ReadmeSection } from '../constants.js';
@@ -11,8 +11,11 @@ import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import markdowner from '../markdowner/index.js';
 
-export default function updateInputs(token: ReadmeSection, inputs: Inputs): void {
-  const log = new LogTask(token);
+export default function updateInputs(
+  sectionToken: ReadmeSection,
+  inputs: Inputs,
+): Record<string, string> {
+  const log = new LogTask(sectionToken);
 
   // Build the new README
   const content: string[] = [];
@@ -55,10 +58,13 @@ export default function updateInputs(token: ReadmeSection, inputs: Inputs): void
       markdownArray.push(row);
     }
     content.push(markdowner(markdownArray));
-    log.info(`Action has ${tI} total ${token}`);
-    inputs.readmeEditor.updateSection(token, content);
+    log.info(`Action has ${tI} total ${sectionToken}`);
+    inputs.readmeEditor.updateSection(sectionToken, content);
     log.success();
   } else {
-    log.debug(`Action has no ${token}`);
+    log.debug(`Action has no ${sectionToken}`);
   }
+  const ret: Record<string, string> = {};
+  ret[sectionToken] = content.join('\n');
+  return ret;
 }

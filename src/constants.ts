@@ -29,6 +29,11 @@ export enum ConfigKeys {
   VersioningPrefix = 'versioning:prefix',
   VersioningBranch = 'versioning:branch',
   IncludeGithubVersionBadge = 'versioning:badge',
+  DebugNconf = 'debug:nconf',
+  DebugReadme = 'debug:readme',
+  DebugConfig = 'debug:config',
+  DebugAction = 'debug:action',
+  DebugGithub = 'debug:github',
 }
 export const RequiredInputs = [
   ConfigKeys.pathsAction,

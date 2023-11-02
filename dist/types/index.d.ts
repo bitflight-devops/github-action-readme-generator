@@ -2,48 +2,6 @@ declare module "vitest.config" {
     const _default: import("vite").UserConfig;
     export default _default;
 }
-declare module "__tests__/env.test" { }
-declare module "src/constants" {
-    import type { FeatherIconNames } from 'feather-icons';
-    export const README_SECTIONS: readonly ["title", "branding", "description", "usage", "inputs", "outputs", "contents", "badges"];
-    export type ReadmeSection = (typeof README_SECTIONS)[number];
-    export const configFileName = ".ghadocs.json";
-    export enum ConfigKeys {
-        Owner = "owner",
-        Repo = "repo",
-        TitlePrefix = "title_prefix",
-        Prettier = "prettier",
-        Save = "save",
-        pathsAction = "paths:action",
-        pathsReadme = "paths:readme",
-        BrandingSvgPath = "branding_svg_path",
-        BrandingAsTitlePrefix = "branding_as_title_prefix",
-        VersioningEnabled = "versioning:enabled",
-        VersioningOverride = "versioning:override",
-        VersioningPrefix = "versioning:prefix",
-        VersioningBranch = "versioning:branch",
-        IncludeGithubVersionBadge = "versioning:badge"
-    }
-    export const RequiredInputs: readonly [ConfigKeys.pathsAction, ConfigKeys.pathsReadme, ConfigKeys.Owner, ConfigKeys.Repo];
-    export const brandingSquareEdgeLengthInPixels = 50;
-    export const DEFAULT_BRAND_COLOR = "blue";
-    export const DEFAULT_BRAND_ICON = "activity";
-    export const ALIGNMENT_MARKUP = "<div align=\"center\">";
-    export const GITHUB_ACTIONS_OMITTED_ICONS: Set<string>;
-    export const GITHUB_ACTIONS_BRANDING_ICONS: Set<string>;
-    export const GITHUB_ACTIONS_BRANDING_COLORS: readonly ["white", "yellow", "blue", "green", "orange", "red", "purple", "gray-dark"];
-    export type BrandColors = (typeof GITHUB_ACTIONS_BRANDING_COLORS)[number];
-    export function isValidIcon(icon: Partial<FeatherIconNames>): icon is FeatherIconNames;
-    export function isValidColor(color: Partial<BrandColors>): color is BrandColors;
-    /**
-     * Branding information for the action.
-     */
-    export interface Branding {
-        /** Color for the action branding */
-        color: Partial<BrandColors>;
-        icon: Partial<FeatherIconNames>;
-    }
-}
 declare module "src/util" {
     export type Nullable<T> = T | null | undefined;
     export function notEmpty(str: Nullable<string>): str is string;
@@ -144,8 +102,55 @@ declare module "src/logtask/index" {
         title(message?: string): void;
     }
 }
+declare module "src/constants" {
+    import type { FeatherIconNames } from 'feather-icons';
+    export const README_SECTIONS: readonly ["title", "branding", "description", "usage", "inputs", "outputs", "contents", "badges"];
+    export type ReadmeSection = (typeof README_SECTIONS)[number];
+    export const configFileName = ".ghadocs.json";
+    export enum ConfigKeys {
+        Owner = "owner",
+        Repo = "repo",
+        TitlePrefix = "title_prefix",
+        Prettier = "prettier",
+        Save = "save",
+        pathsAction = "paths:action",
+        pathsReadme = "paths:readme",
+        BrandingSvgPath = "branding_svg_path",
+        BrandingAsTitlePrefix = "branding_as_title_prefix",
+        VersioningEnabled = "versioning:enabled",
+        VersioningOverride = "versioning:override",
+        VersioningPrefix = "versioning:prefix",
+        VersioningBranch = "versioning:branch",
+        IncludeGithubVersionBadge = "versioning:badge",
+        DebugNconf = "debug:nconf",
+        DebugReadme = "debug:readme",
+        DebugConfig = "debug:config",
+        DebugAction = "debug:action",
+        DebugGithub = "debug:github"
+    }
+    export const RequiredInputs: readonly [ConfigKeys.pathsAction, ConfigKeys.pathsReadme, ConfigKeys.Owner, ConfigKeys.Repo];
+    export const brandingSquareEdgeLengthInPixels = 50;
+    export const DEFAULT_BRAND_COLOR = "blue";
+    export const DEFAULT_BRAND_ICON = "activity";
+    export const ALIGNMENT_MARKUP = "<div align=\"center\">";
+    export const GITHUB_ACTIONS_OMITTED_ICONS: Set<string>;
+    export const GITHUB_ACTIONS_BRANDING_ICONS: Set<string>;
+    export const GITHUB_ACTIONS_BRANDING_COLORS: readonly ["white", "yellow", "blue", "green", "orange", "red", "purple", "gray-dark"];
+    export type BrandColors = (typeof GITHUB_ACTIONS_BRANDING_COLORS)[number];
+    export function isValidIcon(icon: Partial<FeatherIconNames>): icon is FeatherIconNames;
+    export function isValidColor(color: Partial<BrandColors>): color is BrandColors;
+    /**
+     * Branding information for the action.
+     */
+    export interface Branding {
+        /** Color for the action branding */
+        color: Partial<BrandColors>;
+        icon: Partial<FeatherIconNames>;
+    }
+}
 declare module "src/Action" {
     import { type Branding } from "src/constants";
+    import LogTask from "src/logtask/index";
     /**
      * Represents an input for the action.
      */
@@ -156,7 +161,7 @@ declare module "src/Action" {
         required?: boolean;
         /** Default value for the input */
         default?: string;
-        /** Optional If the input parameter is used, this string is logged as a warning message. You can use this warning to notify users that the input is deprecated and mention any alternatives. */
+        /** Optional If the input parameter is used, this string is this.logged as a warning message. You can use this warning to notify users that the input is deprecated and mention any alternatives. */
         deprecationMessage?: string;
     }
     /**
@@ -218,10 +223,31 @@ declare module "src/Action" {
     /**
      * Defines how the action is run.
      */
+    export interface ActionYaml {
+        name: string;
+        author: string;
+        /** Description of the action */
+        description: string;
+        /** Branding information */
+        branding: Branding;
+        /** Input definitions */
+        inputs: {
+            [key: string]: Input;
+        };
+        /** Output definitions */
+        outputs: {
+            [key: string]: Output;
+        };
+        /** How the action is run */
+        runs: ActionType;
+        /** Path to the action */
+        path: string;
+    }
     /**
      * Parses and represents metadata from action.yml.
      */
-    export default class Action {
+    export default class Action implements ActionYaml {
+        log: LogTask;
         /** Name of the action */
         name: string;
         author: string;
@@ -247,6 +273,7 @@ declare module "src/Action" {
          * @param actionPath The path to the action.yml file.
          */
         constructor(actionPath: string);
+        loadActionFrom(actionPath: string): ActionYaml;
         /**
          * Gets the default value for an input.
          *
@@ -262,6 +289,11 @@ declare module "src/Action" {
         stringify(): string;
     }
 }
+declare module "__tests__/action.test" {
+    export const __filename: string;
+    export const __dirname: string;
+}
+declare module "__tests__/env.test" { }
 declare module "src/prettier" {
     /**
      * Formats a YAML string using `prettier`.
@@ -507,7 +539,7 @@ declare module "src/save" {
 }
 declare module "src/sections/update-badges" {
     /**
-     * This TypeScript code imports necessary modules and defines a function named 'updateBadges' which takes a token (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
+     * This TypeScript code imports necessary modules and defines a function named 'updateBadges' which takes a sectionToken (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
      * The function is responsible for updating the badges section in the README.md file based on the provided inputs.
      * It utilizes the 'LogTask' class for logging purposes.
      */
@@ -521,7 +553,7 @@ declare module "src/sections/update-badges" {
         img: string;
         url?: string;
     }
-    export default function updateBadges(token: ReadmeSection, inputs: Inputs): void;
+    export default function updateBadges(sectionToken: ReadmeSection, inputs: Inputs): Record<string, string>;
 }
 declare module "src/svg-editor" {
     import type { FeatherIconNames } from 'feather-icons';
@@ -613,27 +645,27 @@ declare module "src/sections/update-branding" {
      */
     export function generateImgMarkup(inputs: Inputs, width?: string): string;
     /**
-     * This is a TypeScript function named "updateBranding" that takes in a token string and an object of inputs.
+     * This is a TypeScript function named "updateBranding" that takes in a sectionToken string and an object of inputs.
      * It exports the function as the default export.
      * The function logs the brand details from the inputs, starts a log task, generates image markup,
-     * updates a section in the readme editor using the token and content, and logs success or failure messages.
+     * updates a section in the readme editor using the sectionToken and content, and logs success or failure messages.
      *
-     * @param token - The token string that is used to identify the section in the readme editor.
+     * @param sectionToken - The sectionToken string that is used to identify the section in the readme editor.
      * @param inputs - The inputs object that contains data for the function.
      */
-    export default function updateBranding(token: ReadmeSection, inputs: Inputs): void;
+    export default function updateBranding(sectionToken: ReadmeSection, inputs: Inputs): Record<string, string>;
 }
 declare module "src/sections/update-description" {
     /**
-     * This TypeScript code exports a function named 'updateDescription' which takes a token (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
+     * This TypeScript code exports a function named 'updateDescription' which takes a sectionToken (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
      * The function is responsible for updating the description section in the README.md file based on the provided inputs.
      * It utilizes the 'LogTask' class for logging purposes.
-     * @param {ReadmeSection} token - The token representing the section of the README to update.
+     * @param {ReadmeSection} sectionToken - The sectionToken representing the section of the README to update.
      * @param {Inputs} inputs - The Inputs class instance.
      */
     import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    export default function updateDescription(token: ReadmeSection, inputs: Inputs): void;
+    export default function updateDescription(sectionToken: ReadmeSection, inputs: Inputs): Record<string, string>;
 }
 declare module "src/markdowner/index" {
     export type MarkdownArrayRowType = string[][];
@@ -656,44 +688,44 @@ declare module "src/markdowner/index" {
 }
 declare module "src/sections/update-inputs" {
     /**
-     * This TypeScript code exports a function named 'updateInputs' which takes a token (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
+     * This TypeScript code exports a function named 'updateInputs' which takes a sectionToken (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
      * The function is responsible for updating the inputs section in the README.md file based on the provided inputs.
      * It utilizes the 'LogTask' class for logging purposes, 'columnHeader' and 'rowHeader' functions from '../helpers.js' for formatting table headers, and 'markdowner' function from '../markdowner/index.js' for generating markdown content.
-     * @param {ReadmeSection} token - The token representing the section of the README to update.
+     * @param {ReadmeSection} sectionToken - The sectionToken representing the section of the README to update.
      * @param {Inputs} inputs - The Inputs class instance.
      */
     import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    export default function updateInputs(token: ReadmeSection, inputs: Inputs): void;
+    export default function updateInputs(sectionToken: ReadmeSection, inputs: Inputs): Record<string, string>;
 }
 declare module "src/sections/update-outputs" {
     /**
-     * This TypeScript code exports a function named 'updateOutputs' which takes a token (string) and an instance of the 'Inputs' class as its parameters.
+     * This TypeScript code exports a function named 'updateOutputs' which takes a sectionToken (string) and an instance of the 'Inputs' class as its parameters.
      * The function is responsible for updating the outputs section in the README.md file based on the provided inputs.
      * It utilizes the 'LogTask' class for logging purposes, 'columnHeader' and 'rowHeader' functions from '../helpers.js' for formatting table headers, and 'markdowner' function from '../markdowner/index.js' for generating markdown content.
-     * @param {string} token - The token used for identifying the section.
+     * @param {string} sectionToken - The sectionToken used for identifying the section.
      * @param {Inputs} inputs - The Inputs class instance.
      */
     import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    export default function updateOutputs(token: ReadmeSection, inputs: Inputs): void;
+    export default function updateOutputs(sectionToken: ReadmeSection, inputs: Inputs): Record<string, string>;
 }
 declare module "src/sections/update-title" {
     /**
-     * This TypeScript code exports a function named 'updateTitle' which takes a token (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
+     * This TypeScript code exports a function named 'updateTitle' which takes a sectionToken (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
      * The function is responsible for updating the title section in the README.md file based on the provided inputs.
      * It utilizes the 'LogTask' class for logging purposes, the 'generateImgMarkup' function from './update-branding.js' for generating image markup.
-     * @param {ReadmeSection} token - The token representing the section of the README to update.
+     * @param {ReadmeSection} sectionToken - The sectionToken representing the section of the README to update.
      * @param {Inputs} inputs - The Inputs class instance.
      */
     import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    export default function updateTitle(token: ReadmeSection, inputs: Inputs): void;
+    export default function updateTitle(sectionToken: ReadmeSection, inputs: Inputs): Record<string, string>;
 }
 declare module "src/sections/update-usage" {
     import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    export default function updateUsage(token: ReadmeSection, inputs: Inputs): Promise<void>;
+    export default function updateUsage(sectionToken: ReadmeSection, inputs: Inputs): Promise<Record<string, string>>;
 }
 declare module "src/sections/index" {
     /**
@@ -706,16 +738,9 @@ declare module "src/sections/index" {
      */
     import { ReadmeSection } from "src/constants";
     import type Inputs from "src/inputs";
-    export default function updateSection(section: ReadmeSection, inputs: Inputs): Promise<void>;
+    export default function updateSection(section: ReadmeSection, inputs: Inputs): Promise<Record<string, string>>;
 }
 declare module "src/generate-docs" {
-    /**
-     * This TypeScript code imports various modules and defines a function named 'generateDocs'.
-     * The function is responsible for generating documentation for the README.md file based on the provided inputs.
-     * It iterates through each section defined in the 'inputs.sections' array and calls the 'updateSection' function to update the corresponding section in the README.md file.
-     * If an error occurs during the update of a section, it logs the error message and stops the process.
-     * Finally, it saves the updated README.md file and calls the 'save' function.
-     */
     import Inputs from "src/inputs";
     export const inputs: Inputs;
     /**

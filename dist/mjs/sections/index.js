@@ -13,7 +13,7 @@ export default async function updateSection(section, inputs) {
     // ['branding', 'title'].includes(section) &&
     // inputs.config.get('branding_as_title_prefix') !== true
     if (startToken === -1 || stopToken === -1) {
-        return;
+        return {};
     }
     switch (section) {
         case 'branding': {
@@ -38,7 +38,8 @@ export default async function updateSection(section, inputs) {
             return updateOutputs(section, inputs);
         }
         default: {
-            return log.debug(`unknown section found <!-- start ${section} -->`);
+            log.debug(`unknown section found <!-- start ${section} -->. No updates were made.`);
+            return {};
         }
     }
 }

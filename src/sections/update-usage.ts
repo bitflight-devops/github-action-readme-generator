@@ -5,8 +5,11 @@ import LogTask from '../logtask/index.js';
 import { wrapDescription } from '../prettier.js';
 
 type DescriptionType = Record<string, string[]>;
-export default async function updateUsage(token: ReadmeSection, inputs: Inputs): Promise<void> {
-  const log = new LogTask(token);
+export default async function updateUsage(
+  sectionToken: ReadmeSection,
+  inputs: Inputs,
+): Promise<Record<string, string>> {
+  const log = new LogTask(sectionToken);
   log.start();
 
   const actionName = `${inputs.owner}/${inputs.repo}`;
@@ -75,6 +78,9 @@ export default async function updateUsage(token: ReadmeSection, inputs: Inputs):
 
   content.push('```\n');
 
-  inputs.readmeEditor.updateSection(token, content);
+  inputs.readmeEditor.updateSection(sectionToken, content);
   log.success();
+  const ret: Record<string, string> = {};
+  ret[sectionToken] = content.join('\n');
+  return ret;
 }

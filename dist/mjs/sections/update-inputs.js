@@ -1,8 +1,8 @@
 import { columnHeader, rowHeader } from '../helpers.js';
 import LogTask from '../logtask/index.js';
 import markdowner from '../markdowner/index.js';
-export default function updateInputs(token, inputs) {
-    const log = new LogTask(token);
+export default function updateInputs(sectionToken, inputs) {
+    const log = new LogTask(sectionToken);
     // Build the new README
     const content = [];
     const markdownArray = [];
@@ -35,12 +35,15 @@ export default function updateInputs(token, inputs) {
             markdownArray.push(row);
         }
         content.push(markdowner(markdownArray));
-        log.info(`Action has ${tI} total ${token}`);
-        inputs.readmeEditor.updateSection(token, content);
+        log.info(`Action has ${tI} total ${sectionToken}`);
+        inputs.readmeEditor.updateSection(sectionToken, content);
         log.success();
     }
     else {
-        log.debug(`Action has no ${token}`);
+        log.debug(`Action has no ${sectionToken}`);
     }
+    const ret = {};
+    ret[sectionToken] = content.join('\n');
+    return ret;
 }
 //# sourceMappingURL=update-inputs.js.map

@@ -108,6 +108,20 @@ inputs:
       The title template looks like this:
       # {brand}{prefix}{title}
 
+outputs:
+  sections:
+    description: |
+      A json object containing a map of section names to their new content
+  readme:
+    description: |
+      The path to the generated README.md file
+  readme_before:
+    description: |
+      The content of the readme file before the changes were made
+  readme_after:
+    description: |
+      The content of the readme file after the changes were made
+
 runs:
   using: "node20"
-  main: "./dist/index.js"
+  main: "./dist/bin/index.js"

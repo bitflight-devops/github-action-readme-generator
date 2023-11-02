@@ -1,8 +1,8 @@
 import { getCurrentVersionString } from '../helpers.js';
 import LogTask from '../logtask/index.js';
 import { wrapDescription } from '../prettier.js';
-export default async function updateUsage(token, inputs) {
-    const log = new LogTask(token);
+export default async function updateUsage(sectionToken, inputs) {
+    const log = new LogTask(sectionToken);
     log.start();
     const actionName = `${inputs.owner}/${inputs.repo}`;
     log.info(`Action name: ${actionName}`);
@@ -56,7 +56,10 @@ export default async function updateUsage(token, inputs) {
         }
     }
     content.push('```\n');
-    inputs.readmeEditor.updateSection(token, content);
+    inputs.readmeEditor.updateSection(sectionToken, content);
     log.success();
+    const ret = {};
+    ret[sectionToken] = content.join('\n');
+    return ret;
 }
 //# sourceMappingURL=update-usage.js.map

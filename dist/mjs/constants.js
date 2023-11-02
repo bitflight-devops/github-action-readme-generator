@@ -26,6 +26,11 @@ export var ConfigKeys;
     ConfigKeys["VersioningPrefix"] = "versioning:prefix";
     ConfigKeys["VersioningBranch"] = "versioning:branch";
     ConfigKeys["IncludeGithubVersionBadge"] = "versioning:badge";
+    ConfigKeys["DebugNconf"] = "debug:nconf";
+    ConfigKeys["DebugReadme"] = "debug:readme";
+    ConfigKeys["DebugConfig"] = "debug:config";
+    ConfigKeys["DebugAction"] = "debug:action";
+    ConfigKeys["DebugGithub"] = "debug:github";
 })(ConfigKeys || (ConfigKeys = {}));
 export const RequiredInputs = [
     ConfigKeys.pathsAction,

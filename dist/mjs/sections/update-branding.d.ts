@@ -44,12 +44,12 @@ export declare function getValidIconName(icon?: Partial<FeatherIconNames>): Feat
  */
 export declare function generateImgMarkup(inputs: Inputs, width?: string): string;
 /**
- * This is a TypeScript function named "updateBranding" that takes in a token string and an object of inputs.
+ * This is a TypeScript function named "updateBranding" that takes in a sectionToken string and an object of inputs.
  * It exports the function as the default export.
  * The function logs the brand details from the inputs, starts a log task, generates image markup,
- * updates a section in the readme editor using the token and content, and logs success or failure messages.
+ * updates a section in the readme editor using the sectionToken and content, and logs success or failure messages.
  *
- * @param token - The token string that is used to identify the section in the readme editor.
+ * @param sectionToken - The sectionToken string that is used to identify the section in the readme editor.
  * @param inputs - The inputs object that contains data for the function.
  */
-export default function updateBranding(token: ReadmeSection, inputs: Inputs): void;
+export default function updateBranding(sectionToken: ReadmeSection, inputs: Inputs): Record<string, string>;

@@ -1,5 +1,5 @@
 /**
- * This TypeScript code imports necessary modules and defines a function named 'updateBadges' which takes a token (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
+ * This TypeScript code imports necessary modules and defines a function named 'updateBadges' which takes a sectionToken (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
  * The function is responsible for updating the badges section in the README.md file based on the provided inputs.
  * It utilizes the 'LogTask' class for logging purposes.
  */
@@ -61,17 +61,21 @@ function generateBadges(badges, log) {
     log.debug(`Total badges: ${badgeArray.length}`);
     return badgeArray;
 }
-export default function updateBadges(token, inputs) {
-    const log = new LogTask(token);
+export default function updateBadges(sectionToken, inputs) {
+    const log = new LogTask(sectionToken);
     const enableVersioning = inputs.config.get()?.versioning?.badge;
     log.info(`Versioning badge: ${enableVersioning}`);
     log.start();
+    let content = '';
     // Add GitHub badges
     if (enableVersioning) {
         const badges = githubBadges(inputs.owner, inputs.repo);
-        const content = generateBadges(badges, log).join('');
-        inputs.readmeEditor.updateSection(token, content);
+        content = generateBadges(badges, log).join('');
+        inputs.readmeEditor.updateSection(sectionToken, content);
     }
     log.success();
+    const ret = {};
+    ret[sectionToken] = content;
+    return ret;
 }
 //# sourceMappingURL=update-badges.js.map

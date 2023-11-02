@@ -46,7 +46,6 @@
     "build:docker": "run-script-os",
     "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:20-alpine sh -c 'npm run build'",
     "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:20-alpine sh -c \"npm run build\"",
-    "build:inputs": "node scripts/esbuild-inputs-test.mjs && node ./out/inputs.test.js;rm -f ./out/inputs.test.js",
     "clean": "rimraf dist",
     "commit": "git-cz",
     "corepack": "corepack enable",

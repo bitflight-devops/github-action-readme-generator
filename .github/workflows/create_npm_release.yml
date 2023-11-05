@@ -33,11 +33,11 @@ jobs:
     env:
       SKIP_PREFLIGHT_CHECK: trues
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.1
         with:
           ref: ${{github.head_ref || github.ref}}
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4.0.0
         with:
           node-version: "20.x"
           registry-url: "https://registry.npmjs.org"
@@ -79,12 +79,12 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       SKIP_PREFLIGHT_CHECK: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.1
         with:
           ref: ${{github.head_ref || github.ref}}
           token: ${{ secrets.RELEASE_TOKEN }}
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4.0.0
         with:
           node-version: "20.x"
           registry-url: "https://registry.npmjs.org"

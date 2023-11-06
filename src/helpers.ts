@@ -1,5 +1,7 @@
 import { execSync } from 'node:child_process';
 import { accessSync, readFileSync } from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import type { Context } from '@actions/github/lib/context.js';
 import type { PackageJson } from 'types-package-json';
@@ -9,6 +11,8 @@ import LogTask from './logtask/index.js';
 import { unicodeWordMatch } from './unicode-word-match.js';
 import { notEmpty, Nullable } from './util.js';
 
+export const __filename = fileURLToPath(import.meta.url);
+export const __dirname = path.dirname(__filename);
 /**
  * Returns the input value if it is not empty, otherwise returns undefined.
  * @param value - The input value to check.
@@ -23,27 +27,27 @@ export function undefinedOnEmpty(value: string | undefined): string | undefined 
 
 /**
  * Returns the basename of the given path.
- * @param path - The path to extract the basename from.
+ * @param pathStr - The path to extract the basename from.
  * @returns The basename of the path.
  */
-export function basename(path: string): string | undefined {
-  if (!path) return undefined;
+export function basename(pathStr: string): string | undefined {
+  if (!pathStr) return undefined;
   const log = new LogTask('basename');
-  const result = path.split('/').reverse()[0];
-  log.debug(`Basename passed ${path} and returns ${result}`);
+  const result = path.basename(pathStr);
+  log.debug(`Basename passed ${pathStr} and returns ${result}`);
   return result;
 }
 /**
  * Removes the "refs/heads/" or "refs/tags/" prefix from the given path.
  *
- * @param path - The path to remove the prefix from
+ * @param pathStr - The path to remove the prefix from
  * @returns The path without the prefix, or null if path is empty
  */
-export function stripRefs(path: string): string | null {
-  if (!path) return null;
+export function stripRefs(pathStr: string): string | null {
+  if (!pathStr) return null;
   const log = new LogTask('stripRefs');
-  const result = path.replace('refs/heads/', '').replace('refs/tags/', '');
-  log.debug(`stripRefs passed ${path} and returns ${result}`);
+  const result = pathStr.replace('refs/heads/', '').replace('refs/tags/', '');
+  log.debug(`stripRefs passed ${pathStr} and returns ${result}`);
   return result;
 }
 
@@ -141,12 +145,11 @@ interface OwnerRepoInterface extends RegExpExecArray {
     repo: string;
   };
 }
-
 export function readFile(filename: string): string {
   try {
     return readFileSync(filename, 'utf8');
-  } catch {
-    return '';
+  } catch (error) {
+    throw new Error(`Cannot read file ${filename}: ${error}`);
   }
 }
 
@@ -352,4 +355,9 @@ export function lastIndexOfRegex(str: string, providedRegex: RegExp): number {
     match = regex.exec(str);
   }
   return index;
+}
+
+export function isObject(value: any): value is object {
+  const type = typeof value;
+  return type === 'object' && !!value;
 }

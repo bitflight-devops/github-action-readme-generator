@@ -151,9 +151,11 @@ function collectAllDefaultValuesFromAction(thisActionPath) {
         const defaultValues = {};
         const thisAction = new Action(thisActionPath);
         // Collect all of the default values from the action.yml file
-        for (const key of Object.keys(thisAction.inputs)) {
-            const mappedKey = ConfigKeysInputsMap[key] ?? key;
-            defaultValues[mappedKey] = setConfigValueFromActionFileDefault(thisAction, key);
+        if (thisAction.inputs) {
+            for (const key of Object.keys(thisAction.inputs)) {
+                const mappedKey = ConfigKeysInputsMap[key] ?? key;
+                defaultValues[mappedKey] = setConfigValueFromActionFileDefault(thisAction, key);
+            }
         }
         log.debug(JSON.stringify(defaultValues, null, 2));
         return defaultValues;

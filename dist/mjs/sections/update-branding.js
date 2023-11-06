@@ -53,6 +53,10 @@ export function getValidIconName(icon) {
 export function generateImgMarkup(inputs, width = '15%') {
     // Create a log task for debugging
     const log = new LogTask('generateImgMarkup');
+    if (!inputs.action.branding) {
+        log.info('No branding section');
+        return '';
+    }
     // Get the branding information from the inputs
     const { icon, color } = inputs.action.branding;
     const iconName = getValidIconName(icon);

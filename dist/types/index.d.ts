@@ -154,16 +154,16 @@ declare module "src/Action" {
     /**
      * Represents an input for the action.
      */
-    export interface Input {
+    export type Input = {
         /** Description of the input */
-        description?: string;
+        description: string;
         /** Whether the input is required */
         required?: boolean;
         /** Default value for the input */
         default?: string;
         /** Optional If the input parameter is used, this string is this.logged as a warning message. You can use this warning to notify users that the input is deprecated and mention any alternatives. */
         deprecationMessage?: string;
-    }
+    };
     /**
      * Represents an output for the action.
      */
@@ -173,21 +173,23 @@ declare module "src/Action" {
         value?: string;
     }
     type CompositeAction = 'composite';
-    type ContainerAction = 'container';
+    type ContainerAction = 'docker';
     type JavascriptAction = `Node${string}` | `node${string}`;
     /**
      * Defines the runs property for container actions.
      */
-    interface RunsContainer {
-        using: ContainerAction;
-        image: string;
-        main: string;
-        pre: string;
-    }
+    type RunsContainer = {
+        'using': ContainerAction;
+        'image': string;
+        'args'?: string[];
+        'pre-entrypoint'?: string;
+        'post-entrypoint'?: string;
+        'entrypoint'?: string;
+    };
     /**
      * Defines the runs property for JavaScript actions.
      */
-    interface RunsJavascript {
+    type RunsJavascript = {
         /** The runner used to execute the action */
         'using': JavascriptAction;
         /** The entrypoint file for the action */
@@ -196,11 +198,11 @@ declare module "src/Action" {
         'pre-if'?: string;
         'post-if'?: string;
         'post'?: string;
-    }
+    };
     /**
      * Defines the steps property for composite actions.
      */
-    interface Steps {
+    type Steps = {
         'shell'?: string;
         'if'?: string;
         'run'?: string;
@@ -210,63 +212,66 @@ declare module "src/Action" {
         'env': {
             [key: string]: string;
         };
-    }
+    };
     /**
      * Defines the runs property for composite actions.
      */
-    interface RunsComposite {
+    type RunsComposite = {
         /** The runner used to execute the action */
         using: CompositeAction;
-        steps?: Steps;
-    }
+        steps: Steps;
+    };
     export type ActionType = RunsContainer | RunsJavascript | RunsComposite;
     /**
      * Defines how the action is run.
      */
-    export interface ActionYaml {
+    export type ActionYaml = {
         name: string;
-        author: string;
+        author?: string;
         /** Description of the action */
         description: string;
         /** Branding information */
-        branding: Branding;
+        branding?: Branding;
         /** Input definitions */
-        inputs: {
+        inputs?: {
             [key: string]: Input;
         };
         /** Output definitions */
-        outputs: {
+        outputs?: {
             [key: string]: Output;
         };
         /** How the action is run */
         runs: ActionType;
         /** Path to the action */
         path: string;
-    }
+    };
     /**
      * Parses and represents metadata from action.yml.
      */
     export default class Action implements ActionYaml {
+        static validate(obj: any): obj is ActionType;
         log: LogTask;
         /** Name of the action */
         name: string;
-        author: string;
+        author?: string;
         /** Description of the action */
         description: string;
         /** Branding information */
-        branding: Branding;
+        branding?: Branding;
         /** Input definitions */
-        inputs: {
+        inputs?: {
             [key: string]: Input;
         };
         /** Output definitions */
-        outputs: {
+        outputs?: {
             [key: string]: Output;
         };
         /** How the action is run */
         runs: ActionType;
         /** Path to the action */
         path: string;
+        /** the original file content */
+        rawYamlString: string;
         /**
          * Creates a new instance of the Action class by loading and parsing action.yml.
          *
@@ -274,6 +279,10 @@ declare module "src/Action" {
          */
         constructor(actionPath: string);
         loadActionFrom(actionPath: string): ActionYaml;
+        /**
+        * Gets the value of an input.
+        }
+      
         /**
          * Gets the default value for an input.
          *
@@ -399,6 +408,8 @@ declare module "src/helpers" {
     import type { Context } from '@actions/github/lib/context.js';
     import type Inputs from "src/inputs";
     import { Nullable } from "src/util";
+    export const __filename: string;
+    export const __dirname: string;
     /**
      * Returns the input value if it is not empty, otherwise returns undefined.
      * @param value - The input value to check.
@@ -407,17 +418,17 @@ declare module "src/helpers" {
     export function undefinedOnEmpty(value: string | undefined): string | undefined;
     /**
      * Returns the basename of the given path.
-     * @param path - The path to extract the basename from.
+     * @param pathStr - The path to extract the basename from.
      * @returns The basename of the path.
      */
-    export function basename(path: string): string | undefined;
+    export function basename(pathStr: string): string | undefined;
     /**
      * Removes the "refs/heads/" or "refs/tags/" prefix from the given path.
      *
-     * @param path - The path to remove the prefix from
+     * @param pathStr - The path to remove the prefix from
      * @returns The path without the prefix, or null if path is empty
      */
-    export function stripRefs(path: string): string | null;
+    export function stripRefs(pathStr: string): string | null;
     /**
      * Converts the given text to title case.
      * @param text - The text to convert.
@@ -483,6 +494,7 @@ declare module "src/helpers" {
     export function getCurrentVersionString(inputs: Inputs): string;
     export function indexOfRegex(str: string, providedRegex: RegExp): number;
     export function lastIndexOfRegex(str: string, providedRegex: RegExp): number;
+    export function isObject(value: any): value is object;
 }
 declare module "__tests__/helpers.test" { }
 declare module "__tests__/logtask/index.test" { }
@@ -750,3 +762,22 @@ declare module "src/generate-docs" {
     export function generateDocs(): Promise<void>;
 }
 declare module "src/index" { }
+declare module "src/errors/error-type" {
+    export enum ErrorType {
+        FILE = "file",
+        SCHEMA = "schema",
+        VALIDATION = "validation",
+        INPUTS = "inputs",
+        URL = "url"
+    }
+}
+declare module "src/errors/is-error" {
+    /**
+     * Type guard to check if an `unknown` value is an `Error` object.
+     *
+     * @param value - The value to check.
+     *
+     * @returns `true` if the value is an `Error` object, otherwise `false`.
+     */
+    export const isError: (value: unknown) => value is Error;
+}

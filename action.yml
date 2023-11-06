@@ -1,19 +1,13 @@
+---
 name: GitHub Action's Readme Generator
 author: Jamie Nelson <jamie@bitflight.io>
-description: |+
-  📓 Keep your action's README.md up to date with the `title` and `description` from the [`action.yml`](./action.yml) file, while also automatically generating sections for the inputs, outputs, and a usage example for the action.
-
-
-  Additionally the Action's usage example is updated to match the Action's current release.
-
+description: >+
+  📓 Keep your action's README.md up to date with the `title` and `description` from the [`action.yml`](./action.yml) file, while also automatically generating sections for the inputs, outputs, and a usage example for the action. Additionally the Action's usage example is updated to match the Action's current release.
 
   This is both a CLI tool and GitHub Action that will read the details from a GitHub Action's [`action.yml`](./action.yml) file. Configuration can be provided through a [`.ghadocs.json`](./.ghadocs.json) file stored in the root directory of the Action's repository, via the command line when using the CLI, or through the `with:` section of this Action.
 
-
-  ***📝 This tool uses markdown comments as delimiting tokens within the README.md file to determine where to place the generated content.***
-
-
-  ***🔗 You can find an example README template with all fields filled-in in the [`README.example.md`](./README.example.md) file.***
+  ***HOW*** 📝 This tool uses markdown comments like this `<!-- start section --><!-- stop section -->` as delimiting tokens within your README.md file to determine where to place the generated content.
+  You can find an example README template with all fields filled-in in the [`README.example.md`](./README.example.md) file.***
 
 branding:
   icon: book-open
@@ -25,8 +19,9 @@ inputs:
     required: false
     default: action.yml
   readme:
-    description: |
-      The absolute or relative path to the markdown output file that contains the formatting tokens within it.
+    description: >
+      The absolute or relative path to the markdown output file that
+      contains the formatting tokens within it.
     required: false
     default: README.md
   owner:
@@ -49,17 +44,21 @@ inputs:
     description: |
       Use `prettier` to pretty print the new README.md file
     required: false
-    default: true
+    default: "true"
   versioning_enabled:
-    description: |
-      Enable the update of the usage version to match the latest version in the `package.json` file
-      Output if your action repo is `reviewdog/action-eslint` and version in package.json is 1.0.1:
+    description: >
+      Enable the update of the usage version to match the latest version
+      in the `package.json` file
+
+      Output if your action repo is `reviewdog/action-eslint` and version in package.json is `1.0.1`:
+
       `uses: reviewdog/action-eslint@1.0.1`
     required: false
     default: true
   version_override:
-    description: |
-      Set a specific version to display in the README.md, maybe you want to use a major or minor version
+    description: >
+      Set a specific version to display in the README.md, maybe you want
+      to use a major or minor version
     required: false
   version_prefix:
     description: |
@@ -67,11 +66,13 @@ inputs:
     required: false
     default: v
   versioning_default_branch:
-    description: |
-      If versioning is disabled, use this branch in the usage example, where the default is `main`
-      Output if your action repo is `reviewdog/action-eslint`:
-      `uses: reviewdog/action-eslint@main`
+    description: >
+      If versioning is disabled, use this branch in the usage example,
+      where the default is `main`
 
+      Output if your action repo is `reviewdog/action-eslint`:
+
+      `uses: reviewdog/action-eslint@main`
     required: false
     default: main
   title_prefix:
@@ -87,27 +88,39 @@ inputs:
     required: false
     default: true
   branding_svg_path:
-    description: |
-      Create the branding svg image from the branding object in `action.yml`
+    description: >
+      Create the branding svg image from the branding object in
+      `action.yml`
+
       then save it to this path.
+
       Then update the `README.md` file to source the branding image from this path.
+
       You can use a section template like this:
+
       `<!-- start branding --><!-- stop branding -->`
+
       or use the action input:
+
       `branding_as_title_prefix: true`
+
       to prefix the 'title' section with the image.
+
       The title template looks like this:
+
       # {brand}{prefix}{title}
     required: false
-    default: ".github/ghadocs/branding.svg"
+    default: .github/ghadocs/branding.svg
   branding_as_title_prefix:
     default: true
     type: boolean
-    description: |
-      Prefix the title in the `<!-- start title -->` section with the svg branding image
-      The title template looks like this:
-      # {brand}{prefix}{title}
+    description: >
+      Prefix the title in the `<!-- start title -->` section with the svg
+      branding image
 
+      The title template looks like this:
+
+      # {brand}{prefix}{title}
 outputs:
   sections:
     description: |
@@ -121,7 +134,6 @@ outputs:
   readme_after:
     description: |
       The content of the readme file after the changes were made
-
 runs:
-  using: "node20"
-  main: "./dist/bin/index.js"
+  using: node20
+  main: ./dist/bin/index.js

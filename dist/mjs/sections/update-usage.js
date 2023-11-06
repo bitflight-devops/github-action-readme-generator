@@ -17,21 +17,21 @@ export default async function updateUsage(sectionToken, inputs) {
     const inp = inputs.action.inputs;
     let firstInput = true;
     const descriptionPromises = {};
-    for (const key of Object.keys(inp)) {
-        const input = inp[key];
-        if (input !== undefined) {
-            descriptionPromises[key] = wrapDescription(`Description: ${input.description}`, [], indent);
-        }
-    }
-    const descriptions = {};
-    const kvArray = await Promise.all(Object.keys(descriptionPromises).map(async (key) => {
-        return { key, value: await descriptionPromises[key] };
-    }));
-    for (const e of kvArray) {
-        descriptions[e.key] = e.value;
-        log.debug(`${e.key}: ${descriptions[e.key].join('\n')}`);
-    }
     if (inp) {
+        for (const key of Object.keys(inp)) {
+            const input = inp[key];
+            if (input !== undefined) {
+                descriptionPromises[key] = wrapDescription(`Description: ${input.description}`, [], indent);
+            }
+        }
+        const descriptions = {};
+        const kvArray = await Promise.all(Object.keys(descriptionPromises).map(async (key) => {
+            return { key, value: await descriptionPromises[key] };
+        }));
+        for (const e of kvArray) {
+            descriptions[e.key] = e.value;
+            log.debug(`${e.key}: ${descriptions[e.key].join('\n')}`);
+        }
         for (const key of Object.keys(inp)) {
             const input = inp[key];
             if (input !== undefined) {

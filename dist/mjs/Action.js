@@ -12,6 +12,14 @@ import LogTask from './logtask/index.js';
  * Parses and represents metadata from action.yml.
  */
 export default class Action {
+    static validate(obj) {
+        if ('name' in obj && 'description' in obj && 'runs' in obj && 'using' in obj.runs) {
+            return (typeof obj.name === 'string' &&
+                typeof obj.description === 'string' &&
+                typeof obj.runs.using === 'string');
+        }
+        return false;
+    }
     log;
     /** Name of the action */
     name;
@@ -28,6 +36,8 @@ export default class Action {
     runs;
     /** Path to the action */
     path;
+    /** the original file content */
+    rawYamlString = '';
     /**
      * Creates a new instance of the Action class by loading and parsing action.yml.
      *
@@ -45,7 +55,7 @@ export default class Action {
         catch (error) {
             throw new Error(`Failed to load ${actionPath}. ${error}`);
         }
-        this.log.debug(`Action YAML: ${actionYaml}`);
+        this.log.debug(`Action YAML: ${JSON.stringify(actionYaml)}`);
         this.name = actionYaml.name;
         this.author = actionYaml.author;
         this.description = actionYaml.description;
@@ -66,10 +76,18 @@ export default class Action {
         if (!fs.statSync(actionPath).isFile()) {
             throw new Error(`${actionPath} is not a file type at ${actionDir}`);
         }
-        this.log.debug(`Loaded ${actionPath} from ${actionDir}`);
-        const actionString = fs.readFileSync(actionPath, 'utf8');
-        return YAML.parse(actionString);
+        this.rawYamlString = fs.readFileSync(actionPath, 'utf8');
+        this.log.debug(`Parse ${actionPath} from ${actionDir}`);
+        const actionObj = YAML.parse(this.rawYamlString);
+        if (Action.validate(actionObj)) {
+            return actionObj;
+        }
+        throw new Error(`Invalid action metadata syntax in ${actionPath}.`);
     }
+    /**
+    * Gets the value of an input.
+    }
+  
     /**
      * Gets the default value for an input.
      *
@@ -77,7 +95,10 @@ export default class Action {
      * @returns The default value if defined,or undefined
      */
     inputDefault(inputName) {
-        return this.inputs[inputName]?.default ?? undefined;
+        if (this.inputs) {
+            return this.inputs[inputName]?.default ?? undefined;
+        }
+        return undefined;
     }
     /**
      * Stringifies the action back to YAML.

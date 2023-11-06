@@ -8,16 +8,16 @@ import LogTask from './logtask/index.js';
 /**
  * Represents an input for the action.
  */
-export interface Input {
+export type Input = {
     /** Description of the input */
-    description?: string;
+    description: string;
     /** Whether the input is required */
     required?: boolean;
     /** Default value for the input */
     default?: string;
     /** Optional If the input parameter is used, this string is this.logged as a warning message. You can use this warning to notify users that the input is deprecated and mention any alternatives. */
     deprecationMessage?: string;
-}
+};
 /**
  * Represents an output for the action.
  */
@@ -27,21 +27,23 @@ export interface Output {
     value?: string;
 }
 type CompositeAction = 'composite';
-type ContainerAction = 'container';
+type ContainerAction = 'docker';
 type JavascriptAction = `Node${string}` | `node${string}`;
 /**
  * Defines the runs property for container actions.
  */
-interface RunsContainer {
-    using: ContainerAction;
-    image: string;
-    main: string;
-    pre: string;
-}
+type RunsContainer = {
+    'using': ContainerAction;
+    'image': string;
+    'args'?: string[];
+    'pre-entrypoint'?: string;
+    'post-entrypoint'?: string;
+    'entrypoint'?: string;
+};
 /**
  * Defines the runs property for JavaScript actions.
  */
-interface RunsJavascript {
+type RunsJavascript = {
     /** The runner used to execute the action */
     'using': JavascriptAction;
     /** The entrypoint file for the action */
@@ -50,11 +52,11 @@ interface RunsJavascript {
     'pre-if'?: string;
     'post-if'?: string;
     'post'?: string;
-}
+};
 /**
  * Defines the steps property for composite actions.
  */
-interface Steps {
+type Steps = {
     'shell'?: string;
     'if'?: string;
     'run'?: string;
@@ -64,63 +66,66 @@ interface Steps {
     'env': {
         [key: string]: string;
     };
-}
+};
 /**
  * Defines the runs property for composite actions.
  */
-interface RunsComposite {
+type RunsComposite = {
     /** The runner used to execute the action */
     using: CompositeAction;
-    steps?: Steps;
-}
+    steps: Steps;
+};
 export type ActionType = RunsContainer | RunsJavascript | RunsComposite;
 /**
  * Defines how the action is run.
  */
-export interface ActionYaml {
+export type ActionYaml = {
     name: string;
-    author: string;
+    author?: string;
     /** Description of the action */
     description: string;
     /** Branding information */
-    branding: Branding;
+    branding?: Branding;
     /** Input definitions */
-    inputs: {
+    inputs?: {
         [key: string]: Input;
     };
     /** Output definitions */
-    outputs: {
+    outputs?: {
         [key: string]: Output;
     };
     /** How the action is run */
     runs: ActionType;
     /** Path to the action */
     path: string;
-}
+};
 /**
  * Parses and represents metadata from action.yml.
  */
 export default class Action implements ActionYaml {
+    static validate(obj: any): obj is ActionType;
     log: LogTask;
     /** Name of the action */
     name: string;
-    author: string;
+    author?: string;
     /** Description of the action */
     description: string;
     /** Branding information */
-    branding: Branding;
+    branding?: Branding;
     /** Input definitions */
-    inputs: {
+    inputs?: {
         [key: string]: Input;
     };
     /** Output definitions */
-    outputs: {
+    outputs?: {
         [key: string]: Output;
     };
     /** How the action is run */
     runs: ActionType;
     /** Path to the action */
     path: string;
+    /** the original file content */
+    rawYamlString: string;
     /**
      * Creates a new instance of the Action class by loading and parsing action.yml.
      *
@@ -128,6 +133,10 @@ export default class Action implements ActionYaml {
      */
     constructor(actionPath: string);
     loadActionFrom(actionPath: string): ActionYaml;
+    /**
+    * Gets the value of an input.
+    }
+  
     /**
      * Gets the default value for an input.
      *

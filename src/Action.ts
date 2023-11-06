@@ -15,9 +15,9 @@ import LogTask from './logtask/index.js';
 /**
  * Represents an input for the action.
  */
-export interface Input {
+export type Input = {
   /** Description of the input */
-  description?: string;
+  description: string;
 
   /** Whether the input is required */
   required?: boolean;
@@ -26,7 +26,7 @@ export interface Input {
   default?: string;
   /** Optional If the input parameter is used, this string is this.logged as a warning message. You can use this warning to notify users that the input is deprecated and mention any alternatives. */
   deprecationMessage?: string;
-}
+};
 
 /**
  * Represents an output for the action.
@@ -37,23 +37,25 @@ export interface Output {
   value?: string;
 }
 type CompositeAction = 'composite';
-type ContainerAction = 'container';
+type ContainerAction = 'docker';
 type JavascriptAction = `Node${string}` | `node${string}`;
 
 /**
  * Defines the runs property for container actions.
  */
-interface RunsContainer {
-  using: ContainerAction;
-  image: string;
-  main: string;
-  pre: string;
-}
+type RunsContainer = {
+  'using': ContainerAction;
+  'image': string;
+  'args'?: string[];
+  'pre-entrypoint'?: string;
+  'post-entrypoint'?: string;
+  'entrypoint'?: string;
+};
 
 /**
  * Defines the runs property for JavaScript actions.
  */
-interface RunsJavascript {
+type RunsJavascript = {
   /** The runner used to execute the action */
   'using': JavascriptAction;
 
@@ -66,12 +68,12 @@ interface RunsJavascript {
   'post-if'?: string;
 
   'post'?: string;
-}
+};
 
 /**
  * Defines the steps property for composite actions.
  */
-interface Steps {
+type Steps = {
   'shell'?: string;
   'if'?: string;
   'run'?: string;
@@ -79,72 +81,86 @@ interface Steps {
   'id'?: string;
   'working-directory'?: string;
   'env': { [key: string]: string };
-}
+};
 
 /**
  * Defines the runs property for composite actions.
  */
-interface RunsComposite {
+type RunsComposite = {
   /** The runner used to execute the action */
   using: CompositeAction;
-  steps?: Steps;
-}
+  steps: Steps;
+};
 
 export type ActionType = RunsContainer | RunsJavascript | RunsComposite;
 /**
  * Defines how the action is run.
  */
-export interface ActionYaml {
+export type ActionYaml = {
   name: string;
 
-  author: string;
+  author?: string;
 
   /** Description of the action */
   description: string;
 
   /** Branding information */
-  branding: Branding;
+  branding?: Branding;
 
   /** Input definitions */
-  inputs: { [key: string]: Input };
+  inputs?: { [key: string]: Input };
 
   /** Output definitions */
-  outputs: { [key: string]: Output };
+  outputs?: { [key: string]: Output };
 
   /** How the action is run */
   runs: ActionType;
 
   /** Path to the action */
   path: string;
-}
+};
 /**
  * Parses and represents metadata from action.yml.
  */
 export default class Action implements ActionYaml {
+  static validate(obj: any): obj is ActionType {
+    if ('name' in obj && 'description' in obj && 'runs' in obj && 'using' in obj.runs) {
+      return (
+        typeof obj.name === 'string' &&
+        typeof obj.description === 'string' &&
+        typeof obj.runs.using === 'string'
+      );
+    }
+    return false;
+  }
+
   log: LogTask;
 
   /** Name of the action */
   name: string;
 
-  author: string;
+  author?: string;
 
   /** Description of the action */
   description: string;
 
   /** Branding information */
-  branding: Branding;
+  branding?: Branding;
 
   /** Input definitions */
-  inputs: { [key: string]: Input };
+  inputs?: { [key: string]: Input };
 
   /** Output definitions */
-  outputs: { [key: string]: Output };
+  outputs?: { [key: string]: Output };
 
   /** How the action is run */
   runs: ActionType;
 
   /** Path to the action */
   path: string;
+
+  /** the original file content */
+  rawYamlString = '';
 
   /**
    * Creates a new instance of the Action class by loading and parsing action.yml.
@@ -162,7 +178,8 @@ export default class Action implements ActionYaml {
     } catch (error) {
       throw new Error(`Failed to load ${actionPath}. ${error}`);
     }
-    this.log.debug(`Action YAML: ${actionYaml}`);
+    this.log.debug(`Action YAML: ${JSON.stringify(actionYaml)}`);
+
     this.name = actionYaml.name;
     this.author = actionYaml.author;
     this.description = actionYaml.description;
@@ -185,9 +202,19 @@ export default class Action implements ActionYaml {
     if (!fs.statSync(actionPath).isFile()) {
       throw new Error(`${actionPath} is not a file type at ${actionDir}`);
     }
-    this.log.debug(`Loaded ${actionPath} from ${actionDir}`);
-    const actionString = fs.readFileSync(actionPath, 'utf8');
-    return YAML.parse(actionString);
+
+    this.rawYamlString = fs.readFileSync(actionPath, 'utf8');
+
+    this.log.debug(`Parse ${actionPath} from ${actionDir}`);
+    const actionObj = YAML.parse(this.rawYamlString) as ActionYaml;
+    if (Action.validate(actionObj)) {
+      return actionObj;
+    }
+    throw new Error(`Invalid action metadata syntax in ${actionPath}.`);
+  }
+
+  /**
+  * Gets the value of an input.
   }
 
   /**
@@ -197,7 +224,10 @@ export default class Action implements ActionYaml {
    * @returns The default value if defined,or undefined
    */
   inputDefault(inputName: string): string | boolean | undefined {
-    return this.inputs[inputName]?.default ?? undefined;
+    if (this.inputs) {
+      return this.inputs[inputName]?.default ?? undefined;
+    }
+    return undefined;
   }
 
   /**

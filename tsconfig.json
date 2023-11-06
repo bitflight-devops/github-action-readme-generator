@@ -102,7 +102,6 @@
   "exclude": [
     "./bin",
     "**/node_modules/**",
-    "**/*.spec.ts",
     "**/dist/**",
     "**/coverage/**",
     "**/.yarn/**",

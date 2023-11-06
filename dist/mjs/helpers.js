@@ -1,8 +1,12 @@
 import { execSync } from 'node:child_process';
 import { accessSync, readFileSync } from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import LogTask from './logtask/index.js';
 import { unicodeWordMatch } from './unicode-word-match.js';
 import { notEmpty } from './util.js';
+export const __filename = fileURLToPath(import.meta.url);
+export const __dirname = path.dirname(__filename);
 /**
  * Returns the input value if it is not empty, otherwise returns undefined.
  * @param value - The input value to check.
@@ -16,29 +20,29 @@ export function undefinedOnEmpty(value) {
 }
 /**
  * Returns the basename of the given path.
- * @param path - The path to extract the basename from.
+ * @param pathStr - The path to extract the basename from.
  * @returns The basename of the path.
  */
-export function basename(path) {
-    if (!path)
+export function basename(pathStr) {
+    if (!pathStr)
         return undefined;
     const log = new LogTask('basename');
-    const result = path.split('/').reverse()[0];
-    log.debug(`Basename passed ${path} and returns ${result}`);
+    const result = path.basename(pathStr);
+    log.debug(`Basename passed ${pathStr} and returns ${result}`);
     return result;
 }
 /**
  * Removes the "refs/heads/" or "refs/tags/" prefix from the given path.
  *
- * @param path - The path to remove the prefix from
+ * @param pathStr - The path to remove the prefix from
  * @returns The path without the prefix, or null if path is empty
  */
-export function stripRefs(path) {
-    if (!path)
+export function stripRefs(pathStr) {
+    if (!pathStr)
         return null;
     const log = new LogTask('stripRefs');
-    const result = path.replace('refs/heads/', '').replace('refs/tags/', '');
-    log.debug(`stripRefs passed ${path} and returns ${result}`);
+    const result = pathStr.replace('refs/heads/', '').replace('refs/tags/', '');
+    log.debug(`stripRefs passed ${pathStr} and returns ${result}`);
     return result;
 }
 /**
@@ -116,8 +120,8 @@ export function readFile(filename) {
     try {
         return readFileSync(filename, 'utf8');
     }
-    catch {
-        return '';
+    catch (error) {
+        throw new Error(`Cannot read file ${filename}: ${error}`);
     }
 }
 export const remoteGitUrlPattern = /url( )?=( )?.*github\.com[/:](?<owner>.*)\/(?<repo>.*)\.git/;
@@ -295,5 +299,9 @@ export function lastIndexOfRegex(str, providedRegex) {
         match = regex.exec(str);
     }
     return index;
+}
+export function isObject(value) {
+    const type = typeof value;
+    return type === 'object' && !!value;
 }
 //# sourceMappingURL=helpers.js.map

@@ -1,6 +1,8 @@
 import type { Context } from '@actions/github/lib/context.js';
 import type Inputs from './inputs.js';
 import { Nullable } from './util.js';
+export declare const __filename: string;
+export declare const __dirname: string;
 /**
  * Returns the input value if it is not empty, otherwise returns undefined.
  * @param value - The input value to check.
@@ -9,17 +11,17 @@ import { Nullable } from './util.js';
 export declare function undefinedOnEmpty(value: string | undefined): string | undefined;
 /**
  * Returns the basename of the given path.
- * @param path - The path to extract the basename from.
+ * @param pathStr - The path to extract the basename from.
  * @returns The basename of the path.
  */
-export declare function basename(path: string): string | undefined;
+export declare function basename(pathStr: string): string | undefined;
 /**
  * Removes the "refs/heads/" or "refs/tags/" prefix from the given path.
  *
- * @param path - The path to remove the prefix from
+ * @param pathStr - The path to remove the prefix from
  * @returns The path without the prefix, or null if path is empty
  */
-export declare function stripRefs(path: string): string | null;
+export declare function stripRefs(pathStr: string): string | null;
 /**
  * Converts the given text to title case.
  * @param text - The text to convert.
@@ -85,3 +87,4 @@ export declare function rowHeader(value: string): string;
 export declare function getCurrentVersionString(inputs: Inputs): string;
 export declare function indexOfRegex(str: string, providedRegex: RegExp): number;
 export declare function lastIndexOfRegex(str: string, providedRegex: RegExp): number;
+export declare function isObject(value: any): value is object;

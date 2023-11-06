@@ -86,6 +86,9 @@ describe('Action', () => {
   });
 
   describe('test mocks work', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
     test('Yaml parses correctly', () => {
       const y = YAML.parse(actionTestString);
       expect(y.name).toBe('Test Action');
@@ -109,7 +112,9 @@ describe('Action', () => {
 
   describe('constructor', () => {
     const errMsgFailedToLoad = `Failed to load ${actTestYmlPath}`;
-
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
     it(`should load and parse the ${actTestYml} file`, async () => {
       const { default: Action } = await import('../src/Action.js');
       vi.stubEnv('DEBUG', 'true');
@@ -160,7 +165,6 @@ describe('Action', () => {
       const { default: Action } = await import('../src/Action.js');
 
       expect(() => {
-        // vi.mocked(fs.readFileSync).mockReturnValue(actionTestString);
         return new Action(actTestYmlPath);
       }).toThrowError(errMsgFailedToLoad);
       expect(fs.readFileSync).toHaveBeenCalledWith(actTestYmlPath, 'utf8');
@@ -186,7 +190,6 @@ describe('Action', () => {
       const { default: Action } = await import('../src/Action.js');
 
       expect(() => {
-        // vi.mocked(fs.readFileSync).mockReturnValue(actionTestString);
         return new Action(actTestYmlPath);
       }).toThrowError(errMsgFailedToLoad);
       expect(fs.statSync).toHaveBeenCalledWith(actTestYmlPath);
@@ -202,15 +205,20 @@ describe('Action', () => {
   });
 
   describe('inputDefault', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
     it('should return the default value for an input', async () => {
-      // vi.mocked(fs.readFileSync).mockReturnValue(actionTestString);
       const { default: Action } = await import('../src/Action.js');
       const action = new Action(actTestYmlPath);
       action.inputs = {
         input1: {
+          description: 'input1 desc',
           default: 'default1',
         },
-        input2: {},
+        input2: {
+          description: 'input2 desc',
+        },
       };
 
       expect(action.inputDefault('input1')).toBe('default1');
@@ -220,8 +228,10 @@ describe('Action', () => {
   });
 
   describe('stringify', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
     it('should stringify the action to YAML', async () => {
-      // vi.mocked(fs.readFileSync).mockReturnValue(actionTestString);
       const { default: Action } = await import('../src/Action.js');
       const action = new Action(actTestYmlPath);
       const yamlString = action.stringify();
@@ -244,8 +254,15 @@ describe('Action', () => {
       expect(yamlString).toContain('pre: test-pre');
     });
 
+    it('should throw an error if the YAML file is malformed', async () => {
+      vi.mocked(fs.readFileSync).mockImplementation(() => 'malformed yaml string');
+      expect(fs.readFileSync('anything')).toBe('malformed yaml string');
+
+      const { default: Action } = await import('../src/Action.js');
+      expect(() => new Action(actTestYmlPath)).toThrowError();
+    });
+
     it('should return an empty string if failed to stringify', async () => {
-      // vi.mocked(fs.readFileSync).mockReturnValue(actionTestString);
       const { default: Action } = await import('../src/Action.js');
       const action = new Action(actTestYmlPath);
       const logErrorSpy = vi.spyOn(action.log, 'error');

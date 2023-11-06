@@ -14,7 +14,7 @@ export default function updateOutputs(sectionToken, inputs) {
     markdownArray.push(titles);
     const vars = inputs.action.outputs;
     const tI = vars ? Object.keys(vars).length : 0;
-    if (tI > 0) {
+    if (vars && tI > 0) {
         log.start();
         for (const key of Object.keys(vars)) {
             const values = vars[key];

@@ -170,7 +170,7 @@
     "@types/node": "^20.8.7",
     "@types/node-emoji": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "^6.8.0",
-    "@typescript-eslint/parser": "^6.8.0",
+    "@typescript-eslint/parser": "^6.9.1",
     "commitizen": "^4.3.0",
     "conventional-commits": "^1.6.0",
     "cz-conventional-changelog": "^3.3.0",

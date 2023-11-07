@@ -41,50 +41,120 @@ try {
   // File not there
   log.debug(`GITHUB_EVENT_PATH not found: ${githubEventPath}`);
 }
+/**
+ * Represents the command line argument options for the application.
+ */
 const argvOptions: Record<string, object> = {};
+
+/**
+ * Save option configuration.
+ * @property {string} alias - Alias for the save option.
+ * @property {string} describe - Description for the save option.
+ * @property {boolean} parseValues - Specifies whether to parse values for the save option.
+ * @property {string} type - Type of the save option.
+ */
 argvOptions[ConfigKeys.Save] = {
   alias: 'save',
   describe: `Save this config to ${configFileName}`,
   parseValues: true,
   type: 'boolean',
 };
+
+/**
+ * Paths action option configuration.
+ * @property {string | string[]} alias - Alias(es) for the pathsAction option.
+ * @property {string} type - Type of the pathsAction option.
+ * @property {string} describe - Description for the pathsAction option.
+ */
 argvOptions[ConfigKeys.pathsAction] = {
   alias: ['pathsAction', 'action'],
   type: 'string',
   describe: 'Path to the action.yml',
 };
+
+/**
+ * Paths readme option configuration.
+ * @property {string | string[]} alias - Alias(es) for the pathsReadme option.
+ * @property {string} type - Type of the pathsReadme option.
+ * @property {string} describe - Description for the pathsReadme option.
+ */
 argvOptions[ConfigKeys.pathsReadme] = {
   alias: ['pathsReadme', 'readme'],
   type: 'string',
   describe: 'Path to the README file',
 };
+
+/**
+ * Branding SVG path option configuration.
+ * @property {string} alias - Alias for the svg option.
+ * @property {string} type - Type of the svg option.
+ * @property {string} describe - Description for the svg option.
+ */
 argvOptions[ConfigKeys.BrandingSvgPath] = {
   alias: 'svg',
   type: 'string',
   describe: 'Save and load the branding svg image in the README from this path',
 };
+
+/**
+ * Branding as title prefix option configuration.
+ * @property {string} alias - Alias for the branding_prefix option.
+ * @property {string} type - Type of the branding_prefix option.
+ * @property {boolean} parseValues - Specifies whether to parse values for the branding_prefix option.
+ * @property {string} describe - Description for the branding_prefix option.
+ */
 argvOptions[ConfigKeys.BrandingAsTitlePrefix] = {
   alias: 'branding_prefix',
   type: 'boolean',
   parseValues: true,
   describe: 'Use the branding svg as a prefix for the README title',
 };
+
+/**
+ * Owner option configuration.
+ * @property {string} alias - Alias for the owner option.
+ * @property {string} type - Type of the owner option.
+ * @property {string} describe - Description for the owner option.
+ */
 argvOptions[ConfigKeys.Owner] = {
   alias: 'owner',
   type: 'string',
   describe: 'The GitHub Action repository owner. i.e: `bitflight-devops`',
 };
+
+/**
+ * Repo option configuration.
+ * @property {string} alias - Alias for the repo option.
+ * @property {string} type - Type of the repo option.
+ * @property {string} describe - Description for the repo option.
+ */
 argvOptions[ConfigKeys.Repo] = {
   alias: 'repo',
   type: 'string',
   describe: 'The GitHub Action repository name. i.e: `github-action-readme-generator`',
 };
+
+/**
+ * Prettier option configuration.
+ * @property {string | string[]} alias - Alias(es) for the prettier option.
+ * @property {string} type - Type of the prettier option.
+ * @property {boolean} parseValues - Specifies whether to parse values for the prettier option.
+ * @property {string} describe - Description for the prettier option.
+ */
 argvOptions[ConfigKeys.Prettier] = {
   alias: ['pretty', 'prettier'],
   type: 'boolean',
   parseValues: true,
   describe: 'Format the markdown using prettier formatter',
 };
+
+/**
+ * Versioning enabled option configuration.
+ * @property {string | string[]} alias - Alias(es) for the versioning_enabled option.
+ * @property {string} describe - Description for the versioning_enabled option.
+ * @property {boolean} parseValues - Specifies whether to parse values for the versioning_enabled option.
+ * @property {string} type - Type of the versioning_enabled option.
+ */
 argvOptions[ConfigKeys.VersioningEnabled] = {
   alias: ['versioning', 'versioning_enabled'],
   describe:
@@ -92,38 +162,87 @@ argvOptions[ConfigKeys.VersioningEnabled] = {
   parseValues: true,
   type: 'boolean',
 };
+
+/**
+ * Versioning override option configuration.
+ * @property {string | string[]} alias - Alias(es) for the versioning_override option.
+ * @property {string} describe - Description for the versioning_override option.
+ * @property {boolean} parseValues - Specifies whether to parse values for the versioning_override option.
+ */
 argvOptions[ConfigKeys.VersioningOverride] = {
   alias: ['setversion', 'versioning_override', 'version_override'],
   describe: 'Set a specific version to display in the README.md',
   parseValues: true,
 };
+
+/**
+ * Versioning prefix option configuration.
+ * @property {string | string[]} alias - Alias(es) for the version_prefix option.
+ * @property {string} describe - Description for the version_prefix option.
+ * @property {boolean} parseValues - Specifies whether to parse values for the version_prefix option.
+ */
 argvOptions[ConfigKeys.VersioningPrefix] = {
   alias: ['vp', 'version_prefix'],
   describe: "Prefix the version with this value (if it isn't already prefixed)",
   parseValues: true,
 };
+
+/**
+ * Versioning branch option configuration.
+ * @property {string | string[]} alias - Alias(es) for the versioning_default_branch option.
+ * @property {string} describe - Description for the versioning_default_branch option.
+ * @property {boolean} parseValues - Specifies whether to parse values for the versioning_default_branch option.
+ */
 argvOptions[ConfigKeys.VersioningBranch] = {
   alias: ['branch', 'versioning_default_branch'],
   describe: 'If versioning is disabled show this branch instead',
   parseValues: true,
 };
+
+/**
+ * Include GitHub version badge option configuration.
+ * @property {string | string[]} alias - Alias(es) for the include_github_version_badge option.
+ * @property {string} describe - Description for the include_github_version_badge option.
+ * @property {boolean} parseValues - Specifies whether to parse values for the include_github_version_badge option.
+ * @property {string} type - Type of the include_github_version_badge option.
+ */
 argvOptions[ConfigKeys.IncludeGithubVersionBadge] = {
   alias: ['version-badge', 'versioning_badge', 'include_github_version_badge'],
   describe: 'Display the current version as a badge',
   parseValues: true,
   type: 'boolean',
 };
+
+/**
+ * Title prefix option configuration.
+ * @property {string | string[]} alias - Alias(es) for the title_prefix option.
+ * @property {string} describe - Description for the title_prefix option.
+ * @property {boolean} parseValues - Specifies whether to parse values for the title_prefix option.
+ */
 argvOptions[ConfigKeys.TitlePrefix] = {
   alias: ['prefix', 'title_prefix'],
   describe: 'Add a prefix to the README title',
   parseValues: true,
 };
 
+/**
+ * Debug Nconf option configuration.
+ * @property {string} describe - Description for the debugNconf option.
+ * @property {boolean} parseValues - Specifies whether to parse values for the debugNconf option.
+ * @property {string} type - Type of the debugNconf option.
+ */
 argvOptions[ConfigKeys.DebugNconf] = {
   describe: 'Print out the resolved nconf object with all values',
   parseValues: true,
   type: 'boolean',
 };
+
+/**
+ * Debug Config option configuration.
+ * @property {string} describe - Description for the debugConfig option.
+ * @property {boolean} parseValues - Specifies whether to parse values for the debugConfig option.
+ * @property {string} type - Type of the debugConfig option.
+ */
 argvOptions[ConfigKeys.DebugConfig] = {
   describe: 'Print out the resolved nconf object with all values',
   parseValues: true,

@@ -56,16 +56,18 @@ function githubBadges(owner: string, repo: string): IBadge[] {
  * @returns {string} - The HTML markup for the badge.
  */
 function generateBadge(item: IBadge, log: LogTask): string {
-  const badgeTemplate = `<img src="${item.img}" alt="${item.alt || ''}" />`;
+  const badgeTemplate = `<img src="${item.img}" alt="${encodeURIComponent(item.alt) || ''}" />`;
   log.info(`Generating badge ${item.alt}`);
   if (item.url) {
-    return `<a href="${item.url}">${badgeTemplate}</a>`;
+    return `<a href="${encodeURIComponent(item.url)}">${badgeTemplate}</a>`;
   }
   return badgeTemplate;
 }
 
 /**
  * Generates all badges HTML markup.
+ * @param {IBadge} badges - The array of badge objects
+ * @param log - A LogTask instance
  * @returns {string[]} - The array of HTML markup for all badges.
  */
 function generateBadges(badges: IBadge[], log: LogTask): string[] {
@@ -81,7 +83,9 @@ export default function updateBadges(
   inputs: Inputs,
 ): Record<string, string> {
   const log = new LogTask(sectionToken);
-  const enableVersioning = inputs.config.get()?.versioning?.badge;
+  const config = inputs.config.get();
+
+  const enableVersioning = config ? config.versioning?.badge : false;
   log.info(`Versioning badge: ${enableVersioning}`);
 
   log.start();

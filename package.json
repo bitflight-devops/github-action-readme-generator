@@ -52,14 +52,14 @@
     "corepack": "corepack enable",
     "current-version": "jq -r '.version' package.json",
     "format": "prettier --write . --config .prettierrc.cjs --ignore-unknown",
-    "generate-docs": "echo 'Generating docs';node dist/bin/index.js && git add README.md ./.github/ghadocs .ghadocs.json",
+    "generate-docs": "echo 'Generating docs';node dist/bin/index.js && git add README.md ./.github/ghadocs .ghadocs.json || true",
     "postinstall": "echo '✨ Successfully Installed'",
     "prelint": "npm run format && tsc --project tsconfig.json --noemit",
     "lint": "eslint -c .eslintrc.cjs --color ./src/ ./__tests__/",
     "lint:fix": "npm run lint -- --fix",
     "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
     "lint:markdown:fix": "npm run lint:markdown -- --fix",
-    "pre-commit": "npm run build && git add dist && npm run generate-docs && lint-staged",
+    "pre-commit": "lint-staged && npm run build && npm run generate-docs",
     "prepare": "[ -n ${GITHUB_ACTIONS:-} ] || husky install",
     "semantic-release": "semantic-release",
     "test": "NODE_ENV=testing jest --runInBand",
@@ -117,6 +117,12 @@
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/changelog",
+      [
+        "@semantic-release/exec",
+        {
+          "prepareCmd": "npm run generate-docs"
+        }
+      ],
       "@semantic-release/npm",
       [
         "@semantic-release/github",
@@ -124,7 +130,8 @@
           "assets": [
             "dist/**",
             "action.yml",
-            "package.json"
+            "package.json",
+            "package-lock.json"
           ]
         }
       ],
@@ -161,6 +168,7 @@
     "@commitlint/prompt": "^18.0.0",
     "@jest/types": "^29.6.3",
     "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@tsconfig/node20": "^20.1.2",
     "@types/babel__preset-env": "^7",

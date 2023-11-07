@@ -107,57 +107,57 @@ You can modify the script below to include any extra variables you like or use n
 <!-- start usage -->
 
 ```yaml
-- uses: bitflight-devops/github-action-readme-generator@v1.7.1
+- uses: bitflight-devops/github-action-readme-generator@v1.7.2
   with:
     # Description: The absolute or relative path to the `action.yml` file to read in
     # from.
     #
     # Default: action.yml
-    action: ''
+    action: ""
 
     # Description: The absolute or relative path to the markdown output file that
     # contains the formatting tokens within it.
     #
     # Default: README.md
-    readme: ''
+    readme: ""
 
     # Description: The GitHub Action repository owner. example `bitflight-devops` or
     # `your-gh-username`
     #
-    owner: ''
+    owner: ""
 
     # Description: The GitHub Action repository name. example -
     # `github-action-readme-generator`
     #
-    repo: ''
+    repo: ""
 
     # Description: Save the provided values in a `.ghadocs.json` file. This will
     # update any existing `.ghadocs.json` file that is in place.
     #
-    save: ''
+    save: ""
 
     # Description: Use `prettier` to pretty print the new README.md file
     #
-    pretty: ''
+    pretty: ""
 
     # Description: Enable the update of the usage version to match the latest version
     # in the `package.json` file
     #
-    versioning_enabled: ''
+    versioning_enabled: ""
 
     # Description: Set a specific version to display in the README.md
     #
-    version_override: ''
+    version_override: ""
 
     # Description: Prefix the version with this value, if it isn't already prefixed
     #
     # Default: v
-    version_prefix: ''
+    version_prefix: ""
 
     # Description: If versioning is disabled show this branch instead
     #
     # Default: main
-    versioning_default_branch: ''
+    versioning_default_branch: ""
 
     # Description: Add a prefix to the README title. The title template looks like
     # this:
@@ -165,12 +165,12 @@ You can modify the script below to include any extra variables you like or use n
     # # {brand}{prefix}{title}
     #
     # Default: GitHub Action:
-    title_prefix: ''
+    title_prefix: ""
 
     # Description: Include additional badge showing latest tag
     #
     # Default: true
-    include_github_version_badge: ''
+    include_github_version_badge: ""
 
     # Description: Create the branding svg image from the branding object in
     # `action.yml` then save it to this path. Then update the `README.md` file to
@@ -182,7 +182,7 @@ You can modify the script below to include any extra variables you like or use n
     # # {brand}{prefix}{title}
     #
     # Default: .github/ghadocs/branding.svg
-    branding_svg_path: ''
+    branding_svg_path: ""
 
     # Description: Prefix the title in the `\<!-- start title -->` section with the
     # svg branding image The title template looks like this:
@@ -190,7 +190,7 @@ You can modify the script below to include any extra variables you like or use n
     # # {brand}{prefix}{title}
     #
     # Default: true
-    branding_as_title_prefix: ''
+    branding_as_title_prefix: ""
 ```
 
 <!-- end usage -->

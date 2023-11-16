@@ -39,10 +39,6 @@ export declare enum ConfigKeys {
     DebugGithub = "debug:github"
 }
 /**
- * Represents the required inputs for the action.
- */
-export declare const RequiredInputs: readonly [ConfigKeys.pathsAction, ConfigKeys.pathsReadme, ConfigKeys.Owner, ConfigKeys.Repo];
-/**
  * Represents the edge length (in pixels) for the branding square.
  */
 export declare const brandingSquareEdgeLengthInPixels = 50;

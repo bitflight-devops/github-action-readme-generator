@@ -43,9 +43,9 @@ export default class Action {
      *
      * @param actionPath The path to the action.yml file.
      */
-    constructor(actionPath) {
+    constructor(actionPath, log) {
         // Load and parse action.yml
-        this.log = new LogTask(actionPath);
+        this.log = log ?? new LogTask(actionPath);
         this.path = actionPath;
         let actionYaml;
         this.log.debug(`Constucting ${actionPath}`);

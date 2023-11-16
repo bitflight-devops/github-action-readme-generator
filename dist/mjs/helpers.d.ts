@@ -1,5 +1,6 @@
 import type { Context } from '@actions/github/lib/context.js';
 import type Inputs from './inputs.js';
+import LogTask from './logtask/index.js';
 import { Nullable } from './util.js';
 export declare const __filename: string;
 export declare const __dirname: string;
@@ -51,6 +52,7 @@ export interface Repo {
     repo: string;
 }
 export declare function readFile(filename: string): string;
+export declare function repoObjFromRepoName(repository: Nullable<string>, log: LogTask, from?: string): Nullable<Repo>;
 export declare const remoteGitUrlPattern: RegExp;
 /**
  * Finds the repository information from the input, context, environment variables, or git configuration.

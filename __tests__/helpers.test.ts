@@ -1,6 +1,8 @@
 import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { context } from '@actions/github';
+import { Context } from '@actions/github/lib/context.js';
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
 
 import {
@@ -15,42 +17,73 @@ import {
   undefinedOnEmpty,
   wrapText,
 } from '../src/helpers.js';
+import {
+  actionTestString,
+  ghadocsTestString,
+  gitConfigTestString,
+  payloadTestString,
+} from './action.constants.js';
 
+export const __filename = fileURLToPath(import.meta.url);
+export const __dirname = path.dirname(__filename);
+
+// Mocking required objects and functions
+vi.mock('node:fs');
 vi.mock('@actions/github');
 
-vi.mock('node:fs', async () => {
-  const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
-  return {
-    ...actual,
-    readFileSync: vi
-      .fn()
-      .mockReturnValue(`[remote "origin"]\nurl = https://github.com/owner/repo.git\n`),
-  };
-});
-
 let tempEnv: typeof process.env;
-beforeEach(() => {
-  tempEnv = { ...process.env };
-  process.env.GITHUB_REPOSITORY = undefined;
-  process.env.INPUT_OWNER = undefined;
-  process.env.INPUT_REPO = undefined;
-});
 
-// restore the environment variables after each test
-afterEach(() => {
-  vi.unstubAllEnvs();
-  process.env = tempEnv;
-  // restore replaced property
-  vi.restoreAllMocks();
-});
 describe('test mocks work', () => {
+  beforeEach(() => {
+    tempEnv = { ...process.env };
+    delete process.env.GITHUB_REPOSITORY;
+    delete process.env.INPUT_OWNER;
+    delete process.env.INPUT_REPO;
+    delete process.env.INPUT_README;
+    delete process.env.INPUT_ACTION;
+  });
+
+  // restore the environment variables after each test
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    process.env = tempEnv;
+    // restore replaced property
+    vi.restoreAllMocks();
+  });
   test('readFileSync is mocked', () => {
     expect(vi.isMockFunction(fs.readFileSync)).toBe(true);
+    expect(fs.readFileSync('payload.json', 'utf8')).toBe(payloadTestString);
+    expect(fs.readFileSync('action.yml', 'utf8')).toBe(actionTestString);
+    expect(fs.readFileSync('.git/config', 'utf8')).toBe(gitConfigTestString);
+    expect(fs.readFileSync('.ghadocs.json', 'utf8')).toBe(ghadocsTestString);
+    expect(fs.readFileSync('test', 'utf8')).toBe('');
   });
 });
 
 describe('helpers', () => {
+  const readmeTestPath = './README.test.md';
+  const actTestYmlPath = './action.test.yml';
+  const payloadFile = path.join(__dirname, 'payload.json');
+  beforeEach(() => {
+    tempEnv = { ...process.env };
+    delete process.env.GITHUB_REPOSITORY;
+    delete process.env.INPUT_OWNER;
+    delete process.env.INPUT_REPO;
+    vi.stubEnv('GITHUB_EVENT_PATH', payloadFile);
+    vi.stubEnv('GITHUB_REPOSITORY', '');
+    vi.stubEnv('INPUT_README', readmeTestPath);
+    vi.stubEnv('INPUT_ACTION', actTestYmlPath);
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    process.env = tempEnv;
+    // restore replaced property
+    vi.restoreAllMocks();
+  });
+
   describe('Test constants', () => {
+    // restore the environment variables after each test
+
     test('regex', () => {
       const filePath = '/path/to/file.txt';
       const githubConfigOutput = `[remote "origin"]\nurl = https://github.com/owner/repo.git\n`;
@@ -190,38 +223,54 @@ describe('helpers', () => {
 
   describe('repositoryFinder', () => {
     it('should return the repository information from the input', () => {
-      const result = repositoryFinder('owner/repo', null);
-      expect(result).toEqual({ owner: 'owner', repo: 'repo' });
+      const result = repositoryFinder('ownerInput/repoInput', null);
+      expect(result).toEqual({ owner: 'ownerInput', repo: 'repoInput' });
     });
 
-    it('should return the repository information from the GitHub context', () => {
-      vi.spyOn(context, 'repo', 'get').mockReturnValue({ owner: 'owner', repo: 'repo' });
+    it('should return the repository information from the GitHub context', async () => {
+      const context = new Context();
+      vi.spyOn(context, 'repo', 'get').mockReturnValue({
+        owner: 'ownercontext',
+        repo: 'repocontext',
+      });
       const result = repositoryFinder(null, context);
-      expect(result).toEqual({ owner: 'owner', repo: 'repo' });
+      expect(result).toEqual({ owner: 'ownercontext', repo: 'repocontext' });
     });
 
-    it('should return the repository information from the environment variables', () => {
-      vi.stubEnv('GITHUB_REPOSITORY', 'owner/repo');
-      const result = repositoryFinder(null, null);
-      expect(result).toEqual({ owner: 'owner', repo: 'repo' });
+    it('should return the repository information from the GITHUB_REPOSITORY env var', () => {
+      vi.stubEnv('GITHUB_REPOSITORY', 'owner5/repo5');
+      vi.stubEnv('INPUT_OWNER', '');
+      vi.stubEnv('INPUT_REPO', '');
+      const context = new Context();
+      const result = repositoryFinder(null, context);
+      expect(result).toEqual({ owner: 'owner5', repo: 'repo5' });
     });
 
     it('should return the repository information from the inputs variables', () => {
-      vi.stubEnv('INPUT_OWNER', 'owner');
-      vi.stubEnv('INPUT_REPO', 'repo');
-      const result = repositoryFinder(null, null);
-      expect(result).toEqual({ owner: 'owner', repo: 'repo' });
+      vi.stubEnv('GITHUB_REPOSITORY', '');
+      vi.stubEnv('INPUT_OWNER', 'owner1');
+      vi.stubEnv('INPUT_REPO', 'repo1');
+      const result = repositoryFinder(`${process.env.INPUT_OWNER}/${process.env.INPUT_REPO}`, null);
+      expect(result).toEqual({ owner: 'owner1', repo: 'repo1' });
     });
 
-    it('should return the repository information from the git configuration', async () => {
-      vi.mocked(fs.readFileSync).mockImplementation(() => {
-        return `[remote "origin"]\nurl = https://github.com/owner/repo.git\n`;
+    it('should return the repository information from the git configuration', () => {
+      vi.stubEnv('INPUT_OWNER', '');
+      vi.stubEnv('INPUT_REPO', '');
+      vi.stubEnv('GITHUB_REPOSITORY', '');
+
+      const resultRegExp = remoteGitUrlPattern.exec(gitConfigTestString);
+      expect(resultRegExp?.groups).toEqual({
+        owner: 'ownergit',
+        repo: 'repogit',
       });
       const result = repositoryFinder(null, null);
-      expect(fs.readFileSync).toHaveBeenCalled();
-      expect(result).toEqual({ owner: 'owner', repo: 'repo' });
+      expect(vi.isMockFunction(fs.readFileSync)).toBe(true);
+      expect(fs.readFileSync).toHaveBeenCalledWith('.git/config', 'utf8');
+      expect(result).toEqual({ owner: 'ownergit', repo: 'repogit' });
     });
   });
+
   describe('indexOfRegex and lastIndexOfRegex', () => {
     const str = 'Hello, World!';
     const regex = /llo/g;

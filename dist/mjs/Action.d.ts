@@ -131,7 +131,7 @@ export default class Action implements ActionYaml {
      *
      * @param actionPath The path to the action.yml file.
      */
-    constructor(actionPath: string);
+    constructor(actionPath: string, log?: LogTask);
     loadActionFrom(actionPath: string): ActionYaml;
     /**
     * Gets the value of an input.

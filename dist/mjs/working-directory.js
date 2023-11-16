@@ -9,7 +9,6 @@ export default function workingDirectory() {
     // Use the INIT_CWD environment variable if available
     const initCwd = process.env.INIT_CWD;
     // If neither GITHUB_WORKSPACE nor INIT_CWD is available, use the current working directory
-    const currentWorkingDirectory = process.cwd();
-    return githubWorkspace ?? initCwd ?? currentWorkingDirectory;
+    return githubWorkspace ?? initCwd ?? process.cwd();
 }
 //# sourceMappingURL=working-directory.js.map

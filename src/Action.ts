@@ -167,9 +167,9 @@ export default class Action implements ActionYaml {
    *
    * @param actionPath The path to the action.yml file.
    */
-  constructor(actionPath: string) {
+  constructor(actionPath: string, log?: LogTask) {
     // Load and parse action.yml
-    this.log = new LogTask(actionPath);
+    this.log = log ?? new LogTask(actionPath);
     this.path = actionPath;
     let actionYaml: ActionYaml;
     this.log.debug(`Constucting ${actionPath}`);

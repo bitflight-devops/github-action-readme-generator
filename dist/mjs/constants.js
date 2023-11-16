@@ -45,15 +45,6 @@ export var ConfigKeys;
     ConfigKeys["DebugGithub"] = "debug:github";
 })(ConfigKeys || (ConfigKeys = {}));
 /**
- * Represents the required inputs for the action.
- */
-export const RequiredInputs = [
-    ConfigKeys.pathsAction,
-    ConfigKeys.pathsReadme,
-    ConfigKeys.Owner,
-    ConfigKeys.Repo,
-];
-/**
  * Represents the edge length (in pixels) for the branding square.
  */
 export const brandingSquareEdgeLengthInPixels = 50;

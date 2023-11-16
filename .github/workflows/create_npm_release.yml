@@ -62,13 +62,19 @@ jobs:
           git status --porcelain -u
 
       - run: npm install
-      - run: npm run test
+      - run: npm run test -- --coverage-enabled=true
+      - name: 'Report Coverage'
+        if: always()
+        uses:  davelosert/vitest-coverage-report-action@v2
+        with:
+          json-summary-path: './out/coverage-summary.json'
+          json-final-path: ./out/coverage-final.json
       - run: npm run build
       - run: npm run generate-docs
 
   npm-release:
     needs: ["run-tests"]
-    if: (github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
+    if: (github.actor != 'dependabot[bot]' && github.ref_name == 'main' && !contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
     name: Release NPM build
     runs-on: ubuntu-latest
     permissions:

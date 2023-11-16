@@ -5,6 +5,9 @@ jobs:
     name: runner / eslint
     if: (!contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["20.x"]
     permissions:
       issues: write
       pull-requests: write
@@ -16,19 +19,17 @@ jobs:
       NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
     steps:
-      - uses: actions/checkout@v4.1.1
-
-      - id: get-node-version
-        run: |
-          NODE_VERSION=$(grep -oP '^node-version\s*=\s*\K.*' .npmrc | cut -d '.' -f 1-3)
-          echo "node-version=${NODE_VERSION}" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/setup-node@v4.0.0
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
         with:
-          node-version: ${{ steps.get-node-version.outputs.node-version }}
-          cache: "npm"
+          version: 8
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
       - name: Install Deps
-        run: npm install
+        run: pnpm install
       - uses: xt0rted/markdownlint-problem-matcher@v2
       - run: markdownlint **/*.md --ignore node_modules
         continue-on-error: true

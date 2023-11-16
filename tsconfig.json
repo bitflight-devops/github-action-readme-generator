@@ -98,7 +98,7 @@
     "moduleResolution": "Bundler"
   },
   "ignoreDeprecations": "5.0",
-  "include": ["**/*.ts", "**/*.mts", "src/nconf/nconf.d.cts"],
+  "include": ["**/*.ts", "**/*.mts"],
   "exclude": [
     "./bin",
     "**/node_modules/**",

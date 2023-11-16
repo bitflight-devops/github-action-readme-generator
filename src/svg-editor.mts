@@ -4,6 +4,7 @@ import * as path from 'node:path';
 
 import type { Container } from '@svgdotjs/svg.js';
 import { registerWindow, SVG } from '@svgdotjs/svg.js';
+import type { FeatherIconNames } from 'feather-icons';
 import * as feather from 'feather-icons';
 import { createSVGDocument, createSVGWindow, SVGDocument, SVGWindow } from 'svgdom'; /// main-module.js';
 
@@ -13,13 +14,6 @@ import {
   GITHUB_ACTIONS_BRANDING_ICONS,
 } from './constants.js';
 import LogTask from './logtask/index.js';
-
-type conforms<T, V> = T extends V ? T : V;
-type FeatherIconKeysArray = keyof typeof feather.icons;
-type FeatherIconKeys<T extends string, R = FeatherIconKeysArray> = conforms<T, R>;
-// function featherType<T extends FeatherIconKeysArray | string>(iconName: T): FeatherIconKeys<T> {
-//   return iconName as FeatherIconKeys<T>;
-// }
 
 export default class SVGEditor {
   log: LogTask;
@@ -64,7 +58,7 @@ export default class SVGEditor {
    */
   generateSvgImage(
     svgPath: string | undefined,
-    icon: FeatherIconKeys<keyof typeof feather.icons> = 'book-open',
+    icon: Partial<FeatherIconNames> = 'book-open',
     bgcolor = 'blue'
   ): void {
     const { log } = this;

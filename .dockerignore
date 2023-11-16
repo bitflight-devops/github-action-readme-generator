@@ -3,3 +3,7 @@ node_modules
 .github
 .git
 .vscode
+.gitignore
+*.md
+dist
+.pnpm-store

@@ -6,6 +6,7 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 junit.xml
+.pnpm-store
 .yarn/install-state.gz
 /out
 # Diagnostic reports (https://nodejs.org/api/report.html)

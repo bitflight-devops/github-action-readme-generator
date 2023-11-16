@@ -4,12 +4,13 @@ import type { Config } from '@jest/types';
 // Sync object
 const config: Config.InitialOptions = {
   clearMocks: true,
-  moduleFileExtensions: ['js', 'ts'],
+  automock: true,
+  moduleFileExtensions: ['js', 'ts', 'mts', 'cts'],
   testEnvironment: 'node',
-  testMatch: ['**/__tests__/*.test.ts'],
+  testMatch: ['**/*.test.ts'],
   testRunner: 'jest-circus/runner',
 
-  preset: 'ts-jest',
+  preset: 'ts-jest/presets/default-esm',
   setupFiles: ['dotenv/config'],
   reporters: ['default', 'jest-junit'],
   testPathIgnorePatterns: ['/helpers/', '/node_modules/'],

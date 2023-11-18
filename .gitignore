@@ -1,3 +1,7 @@
+# package
+.yarn/install-state.gz
+out/
+dist/
 # Logs
 logs
 *.log
@@ -6,8 +10,7 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 junit.xml
-.yarn/install-state.gz
-/out
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 /.env

@@ -135,5 +135,5 @@ outputs:
     description: |
       The content of the readme file after the changes were made
 runs:
-  using: node20
-  main: ./dist/bin/index.js
+  using: "node20"
+  main: "./dist/bin/index.js"

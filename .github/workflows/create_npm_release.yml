@@ -68,7 +68,7 @@ jobs:
 
   npm-release:
     needs: ["run-tests"]
-    if: (github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
+    if: (github.actor != 'dependabot[bot]' && github.ref_name == 'main' && !contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
     name: Release NPM build
     runs-on: ubuntu-latest
     permissions:
@@ -81,6 +81,7 @@ jobs:
       NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       SKIP_PREFLIGHT_CHECK: true
     steps:
       - uses: actions/checkout@v4.1.1
@@ -120,6 +121,11 @@ jobs:
         run: npm audit signatures
 
       - run: npm run build --if-present
+
+      - run: |
+          git add -f dist
+          npm run generate-docs
+          git commit -n -m 'build(release): bundle distribution files'
 
       - run: npx --yes semantic-release@latest
         env:

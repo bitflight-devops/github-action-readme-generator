@@ -5,8 +5,9 @@
  * This script is used to update the usage section in the README.md file to match the contents of the action.yml file.
  */
 import Inputs from './inputs.js';
+import LogTask from './logtask/index.js';
 /**
  * This script rebuilds the usage section in the README.md to be consistent with the action.yml
  * @param {Inputs} inputs - the inputs class
  */
-export default function save(inputs: Inputs): void;
+export default function save(inputs: Inputs, log: LogTask): void;

@@ -1,6 +1,22 @@
+/// <reference types="node" resolution-mode="require"/>
+/// <reference types="node" resolution-mode="require"/>
 declare module "vitest.config" {
     const _default: import("vite").UserConfig;
     export default _default;
+}
+declare module "__tests__/action.constants" {
+    export const actTestYmlPath = "./action.test.yml";
+    export const actionTestString = "name: Test Action\nauthor: Test Author\ndescription: Test Description\nbranding:\n  color: white\n  icon: activity\ninputs:\n  input1:\n    description: Test Input 1\n    required: true\n    default: default1\n  input2:\n    description: Test Input 2\noutputs:\n  output1:\n    description: Test Output 1\nruns:\n  using: container\n  image: test-image\n  main: test-main\n  pre: test-pre\n";
+    export const ghadocsTestString = "{\n  \"owner\": \"user-from-config\",\n  \"repo\": \"repo-from-config\",\n  \"paths\": {\n    \"action\": \"action.test-config.yml\",\n    \"readme\": \"README.test-config.md\"\n  },\n  \"branding_svg_path\": \".github/ghadocs/branding-config.svg\",\n  \"versioning\": {\n    \"enabled\": true,\n    \"prefix\": \"config\",\n    \"override\": \"\",\n    \"branch\": \"config\"\n  }\n}\n";
+    export const gitConfigTestString = "[remote \"origin\"]\nurl = https://github.com/ownergit/repogit.git\n";
+    export const payloadTestString = "{\n  \"action\": \"opened\",\n  \"repository\": {\n    \"owner\": {\n      \"login\": \"userpayload\"\n    },\n    \"name\": \"testpayload\"\n  },\n  \"issue\": {\n    \"number\": 1\n  },\n  \"sender\": {\n    \"type\": \"User\"\n  }\n}";
+}
+declare module "__mocks__/node:fs" {
+    import type { BigIntStats, PathLike, PathOrFileDescriptor, Stats, StatSyncOptions } from 'node:fs';
+    export type { BigIntStats, PathLike, PathOrFileDescriptor, Stats, StatSyncOptions } from 'node:fs';
+    export const statSync: import("@vitest/spy").Mock<[path: PathLike, options?: StatSyncOptions | undefined], Stats | BigIntStats | undefined>;
+    export const existsSync: import("@vitest/spy").Mock<[filename: PathLike], boolean>;
+    export const readFileSync: import("@vitest/spy").Mock<[filename: PathOrFileDescriptor], string | Buffer>;
 }
 declare module "src/util" {
     export type Nullable<T> = T | null | undefined;
@@ -143,10 +159,6 @@ declare module "src/constants" {
         DebugAction = "debug:action",
         DebugGithub = "debug:github"
     }
-    /**
-     * Represents the required inputs for the action.
-     */
-    export const RequiredInputs: readonly [ConfigKeys.pathsAction, ConfigKeys.pathsReadme, ConfigKeys.Owner, ConfigKeys.Repo];
     /**
      * Represents the edge length (in pixels) for the branding square.
      */
@@ -329,7 +341,7 @@ declare module "src/Action" {
          *
          * @param actionPath The path to the action.yml file.
          */
-        constructor(actionPath: string);
+        constructor(actionPath: string, log?: LogTask);
         loadActionFrom(actionPath: string): ActionYaml;
         /**
         * Gets the value of an input.
@@ -354,6 +366,7 @@ declare module "__tests__/action.test" {
     export const __filename: string;
     export const __dirname: string;
 }
+declare module "__tests__/constants.test" { }
 declare module "__tests__/env.test" { }
 declare module "src/prettier" {
     /**
@@ -421,35 +434,161 @@ declare module "src/readme-editor" {
         dumpToFile(): Promise<void>;
     }
 }
-declare module "src/working-directory" {
-    /**
-     * Returns the working directory path based on the environment variables.
-     * The order of preference is GITHUB_WORKSPACE, INIT_CWD, and then the current working directory.
-     * @returns The working directory path.
-     */
-    export default function workingDirectory(): string;
-}
 declare module "src/inputs" {
-    import { Provider } from 'nconf';
-    import Action from "src/Action";
+    import { Context } from '@actions/github/lib/context.js';
+    import { IOptions, Provider } from 'nconf';
+    import Action, { Input } from "src/Action";
     import { ReadmeSection } from "src/constants";
+    import LogTask from "src/logtask/index";
     import ReadmeEditor from "src/readme-editor";
+    /**
+     * Get the filename from the import.meta.url
+     */
     export const __filename: string;
+    /**
+     * Get the directory name from the filename
+     */
     export const __dirname: string;
+    /**
+     * Change working directory to output of workingDirectory()
+     */
+    export const metaActionPath = "../../action.yml";
+    export type ArgvOptionProperties = {
+        [key: string]: {
+            alias: string | string[];
+            describe: string;
+            parseValues?: boolean;
+            type?: string;
+        };
+    };
+    /**
+     * Interface for key/value pair object
+     */
+    type KVPairType = {
+        key: string;
+        value: string | undefined;
+    };
+    /**
+     * Type alias for Provider instance
+     */
     type ProviderInstance = InstanceType<typeof Provider>;
+    export function transformGitHubInputsToArgv(log: LogTask, config: ProviderInstance, obj: KVPairType): undefined | KVPairType;
+    /**
+     * Sets config value from action file default
+     *
+     * @param {Action} actionInstance - The action instance
+     * @param {string} inputName - The input name
+     * @returns {string | boolean | undefined} The default value
+     */
+    export function setConfigValueFromActionFileDefault(log: LogTask, actionInstance: Action, inputName: string): string | boolean | undefined;
+    /**
+     * Collects all default values from action file
+     *
+     * @returns {IOptions} The default values object
+     */
+    export function collectAllDefaultValuesFromAction(log: LogTask, providedMetaActionPath?: string, providedDefaults?: {
+        [key: string]: Input;
+    }): IOptions;
+    /**
+     * Loads the configuration
+     *
+     * @returns {ProviderInstance} The configuration instance
+     */
+    export function loadConfig(log: LogTask, providedConfig?: ProviderInstance, configFilePath?: string): ProviderInstance;
+    /**
+     * Loads the default configuration
+     *
+     * @param {ProviderInstance} config - The config instance
+     * @returns {ProviderInstance} The updated config instance
+     */
+    export function loadDefaultConfig(log: LogTask, config: ProviderInstance, providedContext?: Context): ProviderInstance;
+    /**
+     * Loads the required configuration
+     *
+     * @param {ProviderInstance} config - The config instance
+     * @returns {ProviderInstance} The updated config instance
+     */
+    export function loadRequiredConfig(log: LogTask, config: ProviderInstance, requiredInputs?: readonly string[]): ProviderInstance;
+    /**
+     *
+     */
+    export function loadAction(log: LogTask, actionPath: string): Action;
+    export type InputContext = {
+        /**
+         * The configuration instance
+         */
+        config?: ProviderInstance;
+        /**
+         * The readme sections
+         */
+        sections?: ReadmeSection[];
+        /**
+         * The readme file path
+         */
+        readmePath?: string;
+        /**
+         * The config file path
+         */
+        configPath?: string;
+        /**
+         * The action instance
+         */
+        action?: Action;
+        /**
+         * The readme editor instance
+         */
+        readmeEditor?: ReadmeEditor;
+        /**
+         * The repository owner
+         */
+        owner?: string;
+        /**
+         * The repository name
+         */
+        repo?: string;
+    };
+    /**
+     * Main Inputs class that handles configuration
+     */
     export default class Inputs {
+        /**
+         * The configuration instance
+         */
         config: ProviderInstance;
+        /**
+         * The readme sections
+         */
         sections: ReadmeSection[];
+        /**
+         * The readme file path
+         */
         readmePath: string;
+        /**
+         * The config file path
+         */
         configPath: string;
+        /**
+         * The action instance
+         */
         action: Action;
+        /**
+         * The readme editor instance
+         */
         readmeEditor: ReadmeEditor;
+        /**
+         * The repository owner
+         */
         owner: string;
+        /**
+         * The repository name
+         */
         repo: string;
+        /** The logger for this instance */
+        log: LogTask;
         /**
          * Initializes a new instance of the Inputs class.
          */
-        constructor();
+        constructor(providedInputContext?: InputContext, log?: LogTask);
         stringify(): string;
     }
 }
@@ -459,6 +598,7 @@ declare module "src/unicode-word-match" {
 declare module "src/helpers" {
     import type { Context } from '@actions/github/lib/context.js';
     import type Inputs from "src/inputs";
+    import LogTask from "src/logtask/index";
     import { Nullable } from "src/util";
     export const __filename: string;
     export const __dirname: string;
@@ -510,6 +650,7 @@ declare module "src/helpers" {
         repo: string;
     }
     export function readFile(filename: string): string;
+    export function repoObjFromRepoName(repository: Nullable<string>, log: LogTask, from?: string): Nullable<Repo>;
     export const remoteGitUrlPattern: RegExp;
     /**
      * Finds the repository information from the input, context, environment variables, or git configuration.
@@ -548,59 +689,79 @@ declare module "src/helpers" {
     export function lastIndexOfRegex(str: string, providedRegex: RegExp): number;
     export function isObject(value: any): value is object;
 }
-declare module "__tests__/helpers.test" { }
-declare module "__tests__/logtask/index.test" { }
-declare module "src/config" {
-    import type Inputs from "src/inputs";
-    /**
-     * Represents the versioning configuration for GitHub Actions documentation.
-     */
-    export interface Versioning {
-        enabled?: boolean;
-        prefix?: string;
-        override?: string;
-        branch?: string;
-        badge?: string;
-    }
-    /**
-     * Represents the paths configuration for GitHub Actions documentation.
-     */
-    export interface Paths {
-        action: string;
-        readme: string;
-    }
-    /**
-     * Represents the configuration for generating GitHub Actions documentation.
-     */
-    export class GHActionDocsConfig {
-        owner?: string;
-        repo?: string;
-        title_prefix?: string;
-        title?: string;
-        paths?: Paths;
-        branding_svg_path?: string;
-        versioning?: Versioning;
-        prettier?: boolean;
-        /**
-         * Loads the configuration from the provided `Inputs` object.
-         * @param {Inputs} inputs - The `Inputs` object containing the configuration values.
-         */
-        loadInputs(inputs: Inputs): void;
-        /**
-         * Saves the configuration to a file. If the file exists, it will be overwritten.
-         * @param {string} configPath - The path to the configuration file.
-         */
-        save(configPath: string): Promise<void>;
-    }
+declare module "__tests__/helpers.test" {
+    export const __filename: string;
+    export const __dirname: string;
 }
-declare module "src/save" {
-    import Inputs from "src/inputs";
-    /**
-     * This script rebuilds the usage section in the README.md to be consistent with the action.yml
-     * @param {Inputs} inputs - the inputs class
-     */
-    export default function save(inputs: Inputs): void;
+declare module "__tests__/inputs.test" {
+    export const __filename: string;
+    export const __dirname: string;
 }
+declare module "src/markdowner/index" {
+    /**
+     * Types representing a 2D array of strings for a Markdown table.
+     */
+    export type MarkdownArrayRowType = string[][];
+    export type MarkdownArrayItemType = string;
+    /**
+     * Fills a string to a desired width by padding with spaces.
+     *
+     * @param text - The text to pad.
+     * @param width - The desired total width.
+     * @param paddingStart - Number of spaces to pad at the start.
+     * @returns The padded string.
+     */
+    export function padString(text: string, width: number, paddingStart: number): string;
+    /**
+     * Escapes special Markdown characters in a string.
+     *
+     * @param text - The text to escape.
+     * @returns The escaped text.
+     */
+    export function markdownEscapeTableCell(text: string): string;
+    /**
+     * Escapes inline code blocks in a Markdown string.
+     *
+     * @param content - Markdown string.
+     * @returns String with escaped inline code blocks.
+     */
+    export function markdownEscapeInlineCode(content: string): string;
+    /**
+     * Clones a 2D array.
+     *
+     * @param arr - Array to clone.
+     * @returns Cloned array.
+     */
+    export function cloneArray(arr: MarkdownArrayRowType): MarkdownArrayRowType;
+    /**
+     * Gets max and min column counts from 2D array.
+     *
+     * @param data - 2D string array.
+     * @returns Object with max and min cols.
+     */
+    export function getColumnCounts(data: MarkdownArrayRowType): {
+        maxCols: number;
+        minCols: number;
+    };
+    /**
+     * Pads 2D array rows to equal length.
+     *
+     * @param data - 2D array to pad.
+     * @param maxCols - Number of columns to pad to.
+     * @returns Padded 2D array.
+     */
+    export function padArrayRows(data: MarkdownArrayRowType, maxCols: number): MarkdownArrayRowType;
+    /**
+     * Converts a 2D array of strings to a Markdown table.
+     *
+     * @param data - 2D string array.
+     * @returns Markdown table string.
+     */
+    export function ArrayOfArraysToMarkdownTable(providedTableContent: MarkdownArrayRowType): string;
+    export default ArrayOfArraysToMarkdownTable;
+}
+declare module "__tests__/markdowner.test" { }
+declare module "__tests__/prettier.test" { }
 declare module "src/sections/update-badges" {
     /**
      * This TypeScript code imports necessary modules and defines a function named 'updateBadges' which takes a sectionToken (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
@@ -731,25 +892,6 @@ declare module "src/sections/update-description" {
     import type Inputs from "src/inputs";
     export default function updateDescription(sectionToken: ReadmeSection, inputs: Inputs): Record<string, string>;
 }
-declare module "src/markdowner/index" {
-    export type MarkdownArrayRowType = string[][];
-    export type MarkdownArrayItemType = string;
-    /**
-     * Fills the width of the cell.
-     * @param text
-     * @param width
-     * @param paddingStart
-     */
-    export function fillWidth(text: string, width: number, paddingStart: number): string;
-    /**
-     * Escape a text so it can be used in a markdown table
-     * @param text
-     */
-    export function markdownEscapeTableCell(text: string): string;
-    export function markdownEscapeInlineCode(content: string): string;
-    export function ArrayOfArraysToMarkdownTable(providedTableContent: MarkdownArrayRowType): string;
-    export default ArrayOfArraysToMarkdownTable;
-}
 declare module "src/sections/update-inputs" {
     /**
      * This TypeScript code exports a function named 'updateInputs' which takes a sectionToken (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
@@ -804,16 +946,129 @@ declare module "src/sections/index" {
     import type Inputs from "src/inputs";
     export default function updateSection(section: ReadmeSection, inputs: Inputs): Promise<Record<string, string>>;
 }
-declare module "src/generate-docs" {
+declare module "src/readme-generator" {
+    import { ReadmeSection } from "src/constants";
     import Inputs from "src/inputs";
-    export const inputs: Inputs;
+    import LogTask from "src/logtask/index";
+    export type SectionKV = Record<string, string>;
     /**
-     * Generates documentation for the README.md file.
-     * @returns {Promise<void>} A promise that resolves once the documentation is generated.
+     * Class for managing README generation.
      */
-    export function generateDocs(): Promise<void>;
+    export class ReadmeGenerator {
+        /**
+         * The Inputs instance.
+         */
+        private inputs;
+        /**
+         * The Logger instance.
+         */
+        private log;
+        /**
+         * Initializes the ReadmeGenerator.
+         *
+         * @param inputs - The Inputs instance
+         * @param log - The Logger instance
+         */
+        constructor(inputs: Inputs, log: LogTask);
+        /**
+         * Updates the README sections.
+         *
+         * @param sections - The sections array
+         * @returns Promise array of section KV objects
+         */
+        updateSections(sections: ReadmeSection[]): Promise<SectionKV>[];
+        /**
+         * Resolves the section update promises.
+         *
+         * @param promises - The promise array
+         * @returns Promise resolving to combined sections KV
+         */
+        resolveUpdates(promises: Promise<SectionKV>[]): Promise<SectionKV>;
+        /**
+         * Outputs the sections KV to GitHub output.
+         *
+         * @param sections - The sections KV
+         */
+        outputSections(sections: SectionKV): void;
+        /**
+         * Generates the README documentation.
+         *
+         * @returns Promise resolving when done
+         */
+        generate(providedSections?: ReadmeSection[]): Promise<void>;
+    }
 }
-declare module "src/index" { }
+declare module "__tests__/readme-generator.test" {
+    export const __filename: string;
+    export const __dirname: string;
+}
+declare module "__tests__/logtask/index.test" { }
+declare module "src/config" {
+    import type Inputs from "src/inputs";
+    /**
+     * Represents the versioning configuration for GitHub Actions documentation.
+     */
+    export interface Versioning {
+        enabled?: boolean;
+        prefix?: string;
+        override?: string;
+        branch?: string;
+        badge?: string;
+    }
+    /**
+     * Represents the paths configuration for GitHub Actions documentation.
+     */
+    export interface Paths {
+        action: string;
+        readme: string;
+    }
+    /**
+     * Represents the configuration for generating GitHub Actions documentation.
+     */
+    export class GHActionDocsConfig {
+        owner?: string;
+        repo?: string;
+        title_prefix?: string;
+        title?: string;
+        paths?: Paths;
+        branding_svg_path?: string;
+        versioning?: Versioning;
+        prettier?: boolean;
+        /**
+         * Loads the configuration from the provided `Inputs` object.
+         * @param {Inputs} inputs - The `Inputs` object containing the configuration values.
+         */
+        loadInputs(inputs: Inputs): void;
+        /**
+         * Saves the configuration to a file. If the file exists, it will be overwritten.
+         * @param {string} configPath - The path to the configuration file.
+         */
+        save(configPath: string): Promise<void>;
+    }
+}
+declare module "src/save" {
+    import Inputs from "src/inputs";
+    import LogTask from "src/logtask/index";
+    /**
+     * This script rebuilds the usage section in the README.md to be consistent with the action.yml
+     * @param {Inputs} inputs - the inputs class
+     */
+    export default function save(inputs: Inputs, log: LogTask): void;
+}
+declare module "src/index" {
+    /**
+     * Creates a ReadmeGenerator instance and generates docs.
+     */
+    export function generateReadme(): Promise<void>;
+}
+declare module "src/working-directory" {
+    /**
+     * Returns the working directory path based on the environment variables.
+     * The order of preference is GITHUB_WORKSPACE, INIT_CWD, and then the current working directory.
+     * @returns The working directory path.
+     */
+    export default function workingDirectory(): string;
+}
 declare module "src/errors/error-type" {
     export enum ErrorType {
         FILE = "file",

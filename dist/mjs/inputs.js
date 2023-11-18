@@ -1,5 +1,5 @@
 /**
- * This TypeScript code defines a class named 'Inputs' that handles input configuration and manipulation.
+ * This class handles input configuration and manipulation.
  * It imports various modules and packages for file operations, configuration parsing, and logging.
  * The class has methods for initializing the input configuration, setting default values, and converting the configuration to a string.
  * It also has properties for storing the configuration values, sections, readme path, action instance, and readme editor instance.
@@ -8,27 +8,28 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as core from '@actions/core';
+import { Context } from '@actions/github/lib/context.js';
 import { Provider } from 'nconf';
 import YAML from 'yaml';
 import Action from './Action.js';
-import { configFileName, ConfigKeys, README_SECTIONS, RequiredInputs, } from './constants.js';
+import { configFileName, ConfigKeys, README_SECTIONS } from './constants.js';
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
-import workingDirectory from './working-directory.js';
+// import workingDirectory from './working-directory.js';
+/**
+ * Get the filename from the import.meta.url
+ */
 export const __filename = fileURLToPath(import.meta.url);
+/**
+ * Get the directory name from the filename
+ */
 export const __dirname = path.dirname(__filename);
-const log = new LogTask('inputs');
-process.chdir(workingDirectory());
-const githubEventPath = process.env.GITHUB_EVENT_PATH ?? '';
-let githubEvent = null;
-try {
-    githubEvent = JSON.parse(fs.readFileSync(githubEventPath, 'utf8'));
-}
-catch {
-    // File not there
-    log.debug(`GITHUB_EVENT_PATH not found: ${githubEventPath}`);
-}
+/**
+ * Change working directory to output of workingDirectory()
+ */
+// process.chdir(workingDirectory());
+export const metaActionPath = '../../action.yml';
 /**
  * Represents the command line argument options for the application.
  */
@@ -204,6 +205,7 @@ argvOptions[ConfigKeys.TitlePrefix] = {
  * @property {string} type - Type of the debugNconf option.
  */
 argvOptions[ConfigKeys.DebugNconf] = {
+    alias: ['debug_nconf'],
     describe: 'Print out the resolved nconf object with all values',
     parseValues: true,
     type: 'boolean',
@@ -215,6 +217,7 @@ argvOptions[ConfigKeys.DebugNconf] = {
  * @property {string} type - Type of the debugConfig option.
  */
 argvOptions[ConfigKeys.DebugConfig] = {
+    alias: ['debug_config'],
     describe: 'Print out the resolved nconf object with all values',
     parseValues: true,
     type: 'boolean',
@@ -240,7 +243,30 @@ const ConfigKeysInputsMap = {
     title_prefix: ConfigKeys.TitlePrefix,
     pretty: ConfigKeys.Prettier,
 };
-function setConfigValueFromActionFileDefault(actionInstance, inputName) {
+export function transformGitHubInputsToArgv(log, config, obj) {
+    /** The obj.key is always in lowercase, but it checks for it without case sensitivity */
+    if (/^(INPUT|input)_[A-Z_a-z]\w*$/.test(obj.key)) {
+        log.debug(`Parsing input: ${obj.key} with ith value: ${obj.value}`);
+        const keyParsed = obj.key.replace(/^(INPUT|input)_/, '').toLocaleLowerCase();
+        const key = ConfigKeysInputsMap[keyParsed] || keyParsed;
+        // eslint-disable-next-line no-param-reassign
+        obj.key = key;
+        // TODO: This is a hack to get around the fact that nconf doesn't support just returning the new value like its documentation says.
+        config.set(key, obj.value);
+        log.debug(`New input is ${key} with the value ${obj.value}`);
+        return { key, value: obj.value };
+    }
+    log.debug(`Ignoring input: ${obj.key} with ith value: ${obj.value}`);
+    return undefined;
+}
+/**
+ * Sets config value from action file default
+ *
+ * @param {Action} actionInstance - The action instance
+ * @param {string} inputName - The input name
+ * @returns {string | boolean | undefined} The default value
+ */
+export function setConfigValueFromActionFileDefault(log, actionInstance, inputName) {
     if (ConfigKeysInputsMap[inputName] === undefined) {
         log.error(`${inputName} from ${actionInstance.path} does not match a known input. Known inputs are: ${Object.keys(ConfigKeysInputsMap)}`);
         return;
@@ -250,15 +276,23 @@ function setConfigValueFromActionFileDefault(actionInstance, inputName) {
     log.debug(`Default Value for action.yml: ${inputName} CLI: ${configName} = ${defaultValue}`);
     return defaultValue;
 }
-function collectAllDefaultValuesFromAction(thisActionPath) {
+/**
+ * Collects all default values from action file
+ *
+ * @returns {IOptions} The default values object
+ */
+export function collectAllDefaultValuesFromAction(log, providedMetaActionPath, providedDefaults = {}) {
+    log.debug('Collecting default values from action.yml');
+    const thisActionPath = path.join(__dirname, providedMetaActionPath ?? metaActionPath);
     try {
         const defaultValues = {};
         const thisAction = new Action(thisActionPath);
+        const defaults = { ...thisAction.inputs, ...providedDefaults };
         // Collect all of the default values from the action.yml file
-        if (thisAction.inputs) {
-            for (const key of Object.keys(thisAction.inputs)) {
+        if (defaults) {
+            for (const key of Object.keys(defaults)) {
                 const mappedKey = ConfigKeysInputsMap[key] ?? key;
-                defaultValues[mappedKey] = setConfigValueFromActionFileDefault(thisAction, key);
+                defaultValues[mappedKey] = setConfigValueFromActionFileDefault(log, thisAction, key);
             }
         }
         log.debug(JSON.stringify(defaultValues, null, 2));
@@ -268,77 +302,157 @@ function collectAllDefaultValuesFromAction(thisActionPath) {
         throw new Error(`failed to load defaults from this action's action.yml: ${error}`);
     }
 }
+/**
+ * Loads the configuration
+ *
+ * @returns {ProviderInstance} The configuration instance
+ */
+export function loadConfig(log, providedConfig, configFilePath) {
+    log.debug('Loading config from env and argv');
+    const config = providedConfig ?? new Provider();
+    if (process.env.GITHUB_ACTION === 'true') {
+        log.info('Running in GitHub action');
+    }
+    if (configFilePath) {
+        if (fs.existsSync(configFilePath)) {
+            log.info(`Config file found: ${configFilePath}`);
+            config.file(configFilePath);
+        }
+        else {
+            log.debug(`Config file not found: ${configFilePath}`);
+        }
+    }
+    config
+        .env({
+        lowerCase: true,
+        parseValues: true,
+        match: /^(INPUT|input)_[A-Z_a-z]\w*$/,
+        transform: (obj) => {
+            return transformGitHubInputsToArgv(log, config, obj);
+        },
+    })
+        .argv(argvOptions);
+    return config;
+}
+/**
+ * Loads the default configuration
+ *
+ * @param {ProviderInstance} config - The config instance
+ * @returns {ProviderInstance} The updated config instance
+ */
+export function loadDefaultConfig(log, config, providedContext) {
+    log.debug('Loading default config');
+    const defaultValues = collectAllDefaultValuesFromAction(log);
+    const context = providedContext ?? new Context();
+    const repositoryDetail = repositoryFinder(`${process.env.INPUT_OWNER ?? ''}/${process.env.INPUT_REPO ?? ''}`, context);
+    log.debug(`repositoryDetail: ${repositoryDetail}`);
+    // Apply the default values from the action.yml file
+    return config.defaults({
+        ...defaultValues,
+        owner: repositoryDetail?.owner,
+        repo: repositoryDetail?.repo,
+        sections: [...README_SECTIONS],
+    });
+}
+/**
+ * Represents the required inputs for the action.
+ */
+const RequiredInputs = [
+    ConfigKeys.pathsAction,
+    ConfigKeys.pathsReadme,
+    ConfigKeys.Owner,
+    ConfigKeys.Repo,
+];
+/**
+ * Loads the required configuration
+ *
+ * @param {ProviderInstance} config - The config instance
+ * @returns {ProviderInstance} The updated config instance
+ */
+export function loadRequiredConfig(log, config, requiredInputs = RequiredInputs) {
+    log.debug('Loading required config');
+    return config.required([...requiredInputs]);
+}
+/**
+ *
+ */
+export function loadAction(log, actionPath) {
+    log.debug(`Loading action from: ${actionPath}`);
+    if (actionPath) {
+        return new Action(path.resolve(actionPath));
+    }
+    throw new Error(`Action path not found: ${actionPath}`);
+}
+/**
+ * Main Inputs class that handles configuration
+ */
 export default class Inputs {
+    /**
+     * The configuration instance
+     */
     config;
+    /**
+     * The readme sections
+     */
     sections;
+    /**
+     * The readme file path
+     */
     readmePath;
+    /**
+     * The config file path
+     */
     configPath;
+    /**
+     * The action instance
+     */
     action;
+    /**
+     * The readme editor instance
+     */
     readmeEditor;
+    /**
+     * The repository owner
+     */
     owner;
+    /**
+     * The repository name
+     */
     repo;
+    /** The logger for this instance */
+    log;
     /**
      * Initializes a new instance of the Inputs class.
      */
-    constructor() {
-        this.configPath = path.resolve(configFileName);
-        this.config = new Provider();
-        const repositoryDetail = repositoryFinder(null, githubEvent);
-        if (process.env.GITHUB_ACTION) {
-            log.info('Running in GitHub action');
-        }
-        if (fs.existsSync(this.configPath)) {
-            log.info(`Config file found: ${this.configPath}`);
-        }
-        else {
-            log.error(`Config file not found: ${this.configPath}`);
-        }
-        this.config
-            .file(this.configPath)
-            .env({
-            lowerCase: true,
-            parseValues: true,
-            match: /^(INPUT|input)_[A-Z_a-z]\w*$/,
-            transform: (obj) => {
-                if (/^(INPUT|input)_[A-Z_a-z]\w*$/.test(obj.key)) {
-                    log.debug(`Parsing input: ${obj.key} with ith value: ${obj.value}`);
-                    const keyParsed = obj.key.replace(/^(INPUT|input)_/, '');
-                    // eslint-disable-next-line no-param-reassign
-                    obj.key = ConfigKeysInputsMap[keyParsed] || keyParsed;
-                    this.config.set(ConfigKeysInputsMap[keyParsed] || keyParsed, obj.value);
-                    log.debug(`New input is ${obj.key} with the value ${obj.value}`);
-                    return obj;
-                }
-                log.debug(`Ignoring input: ${obj.key} with ith value: ${obj.value}`);
-                return undefined;
-            },
-        })
-            .argv(argvOptions);
-        const actionPath = path.resolve(this.config.get(ConfigKeys.pathsAction));
-        this.action = new Action(actionPath);
-        const thisActionPath = path.join(__dirname, '../../action.yml');
-        const defaultValues = collectAllDefaultValuesFromAction(thisActionPath);
-        // Apply the default values from the action.yml file
-        this.config
-            .defaults({
-            ...defaultValues,
-            owner: repositoryDetail?.owner,
-            repo: repositoryDetail?.repo,
-            sections: [...README_SECTIONS],
-        })
-            .required([...RequiredInputs]);
+    constructor(providedInputContext = {}, log = new LogTask('inputs')) {
+        this.log = log ?? new LogTask('inputs');
+        this.log.debug('Initializing Inputs');
+        const inputContext = providedInputContext ?? {};
+        this.configPath = inputContext.configPath ?? path.resolve(configFileName);
+        this.config = inputContext.config ?? new Provider();
+        loadConfig(log, this.config, this.configPath);
+        loadDefaultConfig(log, this.config);
+        loadRequiredConfig(log, this.config);
+        this.action = inputContext.action ?? loadAction(log, this.config.get(ConfigKeys.pathsAction));
+        this.config.set('sections', inputContext.sections ?? this.config.get('sections'));
         this.sections = this.config.get('sections');
-        this.readmePath = path.resolve(this.config.get(ConfigKeys.pathsReadme));
-        this.readmeEditor = new ReadmeEditor(this.readmePath);
-        core.setOutput('readme', this.readmePath);
+        this.readmePath =
+            inputContext.readmePath ?? path.resolve(this.config.get(ConfigKeys.pathsReadme));
+        this.readmeEditor = inputContext.readmeEditor ?? new ReadmeEditor(this.readmePath);
+        /**
+         * Output the readme path that is being parsed
+         */
+        if (process.env.GITHUB_ACTIONS) {
+            core.setOutput('readme', this.readmePath);
+        }
         /**
          * owner is required, and if it doesn't exist it is handled by nconf which throws an error
          */
-        this.owner = this.config.get('owner');
+        this.owner = inputContext.owner ?? this.config.get('owner');
         /**
          * repo is required, and if it doesn't exist it is handled by nconf which throws an error
          */
-        this.repo = this.config.get('repo');
+        this.repo = inputContext.repo ?? this.config.get('repo');
     }
     stringify() {
         if (this?.config) {
@@ -346,7 +460,7 @@ export default class Inputs {
                 return YAML.stringify(this.config.get());
             }
             catch (error) {
-                log.error(`${error}`);
+                this.log.error(`${error}`);
                 // continue
             }
         }

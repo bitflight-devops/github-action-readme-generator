@@ -74,7 +74,8 @@ module.exports = {
         'no-plusplus': 'off',
       },
       parserOptions: {
-        ecmaVersion: 2017,
+        ecmaVersion: 'latest',
+        sourceType: 'module',
       },
 
       env: {
@@ -87,7 +88,7 @@ module.exports = {
       processor: 'actions/actions',
     },
     {
-      files: ['__tests__/**'], // or any other pattern
+      files: ['__tests__/**/*.ts'], // or any other pattern
       plugins: ['vitest'],
       extends: ['plugin:vitest/recommended'],
     },
@@ -125,6 +126,7 @@ module.exports = {
         tsconfigRootDir: __dirname,
       },
       rules: {
+        '@eslint-community/eslint-comments/disable-enable-pair': 'off',
         'no-underscore-dangle': 'off',
         'import/no-extraneous-dependencies': 'off',
         'sort-class-members/sort-class-members': [

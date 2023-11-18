@@ -9,12 +9,11 @@ import { GHActionDocsConfig } from './config.js';
 import Inputs from './inputs.js';
 import LogTask from './logtask/index.js';
 
-const log = new LogTask('save');
 /**
  * This script rebuilds the usage section in the README.md to be consistent with the action.yml
  * @param {Inputs} inputs - the inputs class
  */
-export default function save(inputs: Inputs): void {
+export default function save(inputs: Inputs, log: LogTask): void {
   const docsConfig = new GHActionDocsConfig();
   docsConfig.loadInputs(inputs);
   if (inputs.config.get().save === true) {

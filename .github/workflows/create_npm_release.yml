@@ -62,7 +62,13 @@ jobs:
           git status --porcelain -u
 
       - run: npm install
-      - run: npm run test
+      - run: npm run test -- --coverage-enabled=true
+      - name: 'Report Coverage'
+        if: always()
+        uses:  davelosert/vitest-coverage-report-action@v2
+        with:
+          json-summary-path: './out/coverage-summary.json'
+          json-final-path: ./out/coverage-final.json
       - run: npm run build
       - run: npm run generate-docs
 

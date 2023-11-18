@@ -12,6 +12,9 @@ export default defineConfig({
       interopDefault: true,
       moduleDirectories: ['node_modules'],
     },
-    // ...
+    coverage: {
+      reportsDirectory: './out/coverage',
+      reporter: ['text', 'json-summary', 'json'],
+    },
   },
 });

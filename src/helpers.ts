@@ -135,16 +135,6 @@ export interface Repo {
   repo: string;
 }
 
-/**
- * Represents the interface for capturing owner and repo properties from a regular expression match.
- */
-interface OwnerRepoInterface extends RegExpExecArray {
-  groups?: {
-    [key: string]: string;
-    owner: string;
-    repo: string;
-  };
-}
 export function readFile(filename: string): string {
   try {
     return readFileSync(filename, 'utf8');
@@ -153,6 +143,20 @@ export function readFile(filename: string): string {
   }
 }
 
+export function repoObjFromRepoName(
+  repository: Nullable<string>,
+  log: LogTask,
+  from?: string,
+): Nullable<Repo> {
+  if (notEmpty(repository)) {
+    const [owner, repo] = repository.split('/');
+    if (owner && repo) {
+      log.debug(`repoObjFromRepoName using ${from} and returns ${JSON.stringify({ owner, repo })}`);
+      return { owner, repo };
+    }
+  }
+  return undefined;
+}
 export const remoteGitUrlPattern = /url( )?=( )?.*github\.com[/:](?<owner>.*)\/(?<repo>.*)\.git/;
 /**
  * Finds the repository information from the input, context, environment variables, or git configuration.
@@ -165,48 +169,48 @@ export function repositoryFinder(
   context: Nullable<Context>,
 ): Repo | null {
   const log = new LogTask('repositoryFinder');
-  const obj = {} as unknown;
-  const result = obj as Repo;
-  if (notEmpty(inputRepo)) {
-    [result.owner, result.repo] = inputRepo.split('/') as [string, string];
-    log.info(`repositoryFinder using input ${inputRepo} and returns ${JSON.stringify(result)}`);
-    return result;
-  }
-  if (notEmpty(process.env.GITHUB_REPOSITORY)) {
-    [result.owner, result.repo] = process.env.GITHUB_REPOSITORY.split('/') as [string, string];
-    log.info(
-      `repositoryFinder using GITHUB_REPOSITORY ${
-        process.env.GITHUB_REPOSITORY
-      } and returns ${JSON.stringify(result)}`,
-    );
-    return result;
-  }
-  if (context) {
-    result.owner = context.repo.owner;
-    result.repo = context.repo.repo;
+  /**
+   * Attempt to get git user and repo from input
+   */
+  const repoObj = repoObjFromRepoName(inputRepo, log, 'inputRepo');
 
-    log.info(`repositoryFinder using GitHub context and returns ${JSON.stringify(result)}`);
-    return result;
+  if (repoObj) {
+    return repoObj;
   }
-  if (notEmpty(process.env.INPUT_OWNER) && notEmpty(process.env.INPUT_REPO)) {
-    result.owner = process.env.INPUT_OWNER;
-    result.repo = process.env.INPUT_REPO;
-    return result;
+
+  /**
+   * Attempt to get git user and repo from GitHub context,
+   * which includes checking for GITHUB_REPOSITORY environment variable
+   */
+  if (context) {
+    try {
+      const result = { ...context.repo };
+      log.debug(`repositoryFinder using GitHub context and returns ${JSON.stringify(result)}`);
+      return result;
+    } catch (error) {
+      log.debug(`repositoryFinder using GitHub context gives error ${JSON.stringify(error)}`);
+    }
   }
+
+  /**
+   * Attempt to get git user and repo from .git/config
+   */
   try {
     const fileContent = readFile('.git/config');
-
-    const results = remoteGitUrlPattern.exec(fileContent) as OwnerRepoInterface;
-    if (results.length > 0) {
-      log.debug(JSON.stringify(results.groups));
-      result.owner = results.groups?.owner ?? '';
-      result.repo = results.groups?.repo ?? '';
-
-      return result;
+    log.debug(`loading .git/config:\n***\n${fileContent}\n***`);
+    const results = remoteGitUrlPattern.exec(fileContent);
+    if (results?.groups?.owner && results?.groups?.repo) {
+      log.debug(
+        `repositoryFinder using '.git/config' and returns ${JSON.stringify(results.groups)}`,
+      );
+      return {
+        owner: results.groups.owner,
+        repo: results.groups.repo,
+      };
     }
   } catch (error) {
     // can't find it
-    log.error(`Couldn't find any owner or repo: ${error}`);
+    log.error(`Couldn't retrieve owner or repo in .git/config file: ${error}`);
   }
   throw new Error('No owner or repo found');
 }

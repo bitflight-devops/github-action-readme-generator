@@ -1,4 +1,4 @@
-/* eslint-disable sonarjs/no-duplicate-string */
+/* eslint-disable @typescript-eslint/unbound-method */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,94 +6,49 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
 import YAML from 'yaml';
 
+import { actionTestString, actTestYmlPath } from './action.constants.js';
+
 export const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);
 
-// const actualFs = await vi.importActual<typeof import('node:fs')>('node:fs');
-const actTestYml = './action.test.yml';
-const actTestYmlPath = path.resolve(__dirname, actTestYml);
-vi.mock('node:fs', async () => {
-  const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
-  return {
-    ...actual,
-    statSync: vi.fn(),
-    existsSync: vi.fn(),
-    readFileSync: vi.fn(),
-  };
-});
+vi.mock('node:fs');
+vi.mock('../src/logtask/index.js');
 
-vi.mock('../src/logtask/index.js', async () => {
-  const actual =
-    await vi.importActual<typeof import('../src/logtask/index.js')>('../src/logtask/index.js');
-  return vi.fn(() => ({
-    ...actual,
-    fail: vi.fn(),
-  }));
-});
-const actionTestString = `name: Test Action
-author: Test Author
-description: Test Description
-branding:
-  color: white
-  icon: activity
-inputs:
-  input1:
-    description: Test Input 1
-    required: true
-    default: default1
-  input2:
-    description: Test Input 2
-outputs:
-  output1:
-    description: Test Output 1
-runs:
-  using: container
-  image: test-image
-  main: test-main
-  pre: test-pre
-`;
-const statSyncImpl = (
-  path: fs.PathLike,
-  options?: fs.StatSyncOptions | undefined,
-): fs.Stats | fs.BigIntStats | undefined => {
-  if (path === actTestYmlPath && options === undefined) {
-    return {
-      isFile: () => true,
-    } as fs.Stats;
-  }
-  return {
-    isFile: () => false,
-  } as fs.Stats;
-};
-const existsSyncImpl = (filename: fs.PathLike): boolean => {
-  return filename === actTestYmlPath;
-};
-const readFileSyncImpl = (filename: fs.PathOrFileDescriptor): string | Buffer => {
-  if (filename === actTestYmlPath) {
-    return actionTestString;
-  }
-  return '';
-};
+let tempEnv: typeof process.env;
 
 describe('Action', () => {
-  beforeEach(() => {
-    vi.mocked(fs.statSync).mockImplementation(statSyncImpl);
-    vi.mocked(fs.existsSync).mockImplementation(existsSyncImpl);
-    vi.mocked(fs.readFileSync).mockImplementation(readFileSyncImpl);
+  let mockLogTask: InstanceType<typeof import('../src/logtask/index.js').default>;
+  beforeEach(async () => {
+    const { default: LogTask } = await import('../src/logtask/index.js');
+    mockLogTask = new LogTask('mockAction');
+    tempEnv = { ...process.env };
+    delete process.env.GITHUB_REPOSITORY;
+    delete process.env.INPUT_OWNER;
+    delete process.env.INPUT_REPO;
   });
+
+  // restore the environment variables after each test
   afterEach(() => {
-    vi.resetAllMocks();
+    vi.unstubAllEnvs();
+    process.env = tempEnv;
+    // restore replaced property
+    vi.restoreAllMocks();
   });
 
   describe('test mocks work', () => {
-    afterEach(() => {
-      vi.restoreAllMocks();
-    });
     test('Yaml parses correctly', () => {
       const y = YAML.parse(actionTestString);
       expect(y.name).toBe('Test Action');
     });
-
+    test('LogTask.fail is mocked', () => {
+      expect(vi.isMockFunction(mockLogTask.fail)).toBe(true);
+      mockLogTask.fail('test');
+      expect(mockLogTask.fail).toBeCalled();
+      vi.mocked(mockLogTask.fail).mockImplementationOnce((msg) => {
+        expect(msg).toBe('test1');
+      });
+      mockLogTask.fail('test1');
+    });
     test('readFileSync is mocked', () => {
       expect(vi.isMockFunction(fs.readFileSync)).toBe(true);
       expect(fs.readFileSync(actTestYmlPath, 'utf8')).toBe(actionTestString);
@@ -112,13 +67,10 @@ describe('Action', () => {
 
   describe('constructor', () => {
     const errMsgFailedToLoad = `Failed to load ${actTestYmlPath}`;
-    afterEach(() => {
-      vi.restoreAllMocks();
-    });
-    it(`should load and parse the ${actTestYml} file`, async () => {
+    it(`should load and parse the ${actTestYmlPath} file`, async () => {
       const { default: Action } = await import('../src/Action.js');
       vi.stubEnv('DEBUG', 'true');
-      const action = new Action(actTestYmlPath);
+      const action = new Action(actTestYmlPath, mockLogTask);
 
       expect(fs.readFileSync).toHaveBeenCalledWith(actTestYmlPath, 'utf8');
       expect(action.name).toBe('Test Action');
@@ -152,65 +104,46 @@ describe('Action', () => {
       vi.mocked(fs.readFileSync).mockImplementation(() => {
         throw new Error(errMsgFailedToLoad);
       });
-      vi.mock('../src/logtask/index.js', async () => {
-        const actual =
-          await vi.importActual<typeof import('../src/logtask/index.js')>(
-            '../src/logtask/index.js',
-          );
-        return {
-          ...actual,
-          fail: vi.fn().mockImplementation((msg) => expect(msg).toBe(errMsgFailedToLoad)),
-        };
-      });
+
+      vi.mocked(mockLogTask.fail).mockImplementation((msg) => expect(msg).toBe(errMsgFailedToLoad));
       const { default: Action } = await import('../src/Action.js');
 
       expect(() => {
-        return new Action(actTestYmlPath);
+        return new Action(actTestYmlPath, mockLogTask);
       }).toThrowError(errMsgFailedToLoad);
       expect(fs.readFileSync).toHaveBeenCalledWith(actTestYmlPath, 'utf8');
     });
 
     it('should throw an error if action.yml is missing', async () => {
+      const { default: Action } = await import('../src/Action.js');
+
       vi.mocked(fs.statSync).mockImplementation(
         (actionPath: fs.PathLike): fs.Stats | fs.BigIntStats | undefined => {
           const actionDir = path.dirname(path.resolve(actionPath as string));
           throw new Error(`${actionPath} does not exist in ${actionDir}`);
         },
       );
-      vi.mock('../src/logtask/index.js', async () => {
-        const actual =
-          await vi.importActual<typeof import('../src/logtask/index.js')>(
-            '../src/logtask/index.js',
-          );
-        return {
-          ...actual,
-          fail: vi.fn().mockImplementation((msg) => expect(msg).toBe(errMsgFailedToLoad)),
-        };
-      });
-      const { default: Action } = await import('../src/Action.js');
+      vi.mocked(mockLogTask.fail).mockImplementation((msg) => expect(msg).toBe(errMsgFailedToLoad));
 
       expect(() => {
-        return new Action(actTestYmlPath);
+        return new Action(actTestYmlPath, mockLogTask);
       }).toThrowError(errMsgFailedToLoad);
       expect(fs.statSync).toHaveBeenCalledWith(actTestYmlPath);
     });
 
     it('should throw an error if action.yml is not a file', async () => {
       const { default: Action } = await import('../src/Action.js');
+      const action = new Action(actTestYmlPath, mockLogTask);
 
-      const action = new Action(actTestYmlPath);
       expect(action).toBeDefined();
       expect(fs.existsSync).toHaveBeenCalledWith(actTestYmlPath);
     });
   });
 
   describe('inputDefault', () => {
-    afterEach(() => {
-      vi.restoreAllMocks();
-    });
     it('should return the default value for an input', async () => {
       const { default: Action } = await import('../src/Action.js');
-      const action = new Action(actTestYmlPath);
+      const action = new Action(actTestYmlPath, mockLogTask);
       action.inputs = {
         input1: {
           description: 'input1 desc',
@@ -228,12 +161,9 @@ describe('Action', () => {
   });
 
   describe('stringify', () => {
-    afterEach(() => {
-      vi.restoreAllMocks();
-    });
     it('should stringify the action to YAML', async () => {
       const { default: Action } = await import('../src/Action.js');
-      const action = new Action(actTestYmlPath);
+      const action = new Action(actTestYmlPath, mockLogTask);
       const yamlString = action.stringify();
       expect(yamlString).toContain('name: Test Action');
       expect(yamlString).toContain('author: Test Author');
@@ -259,12 +189,12 @@ describe('Action', () => {
       expect(fs.readFileSync('anything')).toBe('malformed yaml string');
 
       const { default: Action } = await import('../src/Action.js');
-      expect(() => new Action(actTestYmlPath)).toThrowError();
+      expect(() => new Action(actTestYmlPath, mockLogTask)).toThrowError();
     });
 
     it('should return an empty string if failed to stringify', async () => {
       const { default: Action } = await import('../src/Action.js');
-      const action = new Action(actTestYmlPath);
+      const action = new Action(actTestYmlPath, mockLogTask);
       const logErrorSpy = vi.spyOn(action.log, 'error');
       vi.spyOn(YAML, 'stringify').mockImplementation(() => {
         throw new Error('Failed to stringify');
@@ -279,4 +209,3 @@ describe('Action', () => {
     });
   });
 });
-/* eslint-enable sonarjs/no-duplicate-string */

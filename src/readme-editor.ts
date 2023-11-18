@@ -43,7 +43,9 @@ export default class ReadmeEditor {
     try {
       fs.accessSync(filePath);
       this.fileContent = fs.readFileSync(filePath, 'utf8');
-      core.setOutput('readme_before', this.fileContent);
+      if (process.env.GITHUB_ACTIONS) {
+        core.setOutput('readme_before', this.fileContent);
+      }
     } catch (error) {
       this.log.fail(`Readme at '${filePath}' does not exist.`);
       throw error;
@@ -104,7 +106,9 @@ export default class ReadmeEditor {
    */
   async dumpToFile(): Promise<void> {
     const content = await formatMarkdown(this.fileContent);
-    core.setOutput('readme_after', content);
+    if (process.env.GITHUB_ACTIONS) {
+      core.setOutput('readme_after', content);
+    }
     return fs.promises.writeFile(this.filePath, content, 'utf8');
   }
 }

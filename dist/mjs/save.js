@@ -5,13 +5,11 @@
  * This script is used to update the usage section in the README.md file to match the contents of the action.yml file.
  */
 import { GHActionDocsConfig } from './config.js';
-import LogTask from './logtask/index.js';
-const log = new LogTask('save');
 /**
  * This script rebuilds the usage section in the README.md to be consistent with the action.yml
  * @param {Inputs} inputs - the inputs class
  */
-export default function save(inputs) {
+export default function save(inputs, log) {
     const docsConfig = new GHActionDocsConfig();
     docsConfig.loadInputs(inputs);
     if (inputs.config.get().save === true) {

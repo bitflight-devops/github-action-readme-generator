@@ -1,7 +1,8 @@
 # package
 .yarn/install-state.gz
-out/
-dist/
+/out/
+/dist/
+/coverage/
 # Logs
 logs
 *.log

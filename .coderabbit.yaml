@@ -14,8 +14,6 @@ reviews:
         "Assess the unit test code employing the Vitest testing framework. Confirm that:
         - The tests adhere to Vitest's established best practices.
         - Test descriptions are sufficiently detailed to clarify the purpose of each test."
-chat:
-  auto_reply: true
   auto_review:
     enabled: true
     ignore_title_keywords:
@@ -25,3 +23,5 @@ chat:
     base_branches:
       - "main"
       - "next"
+chat:
+  auto_reply: true

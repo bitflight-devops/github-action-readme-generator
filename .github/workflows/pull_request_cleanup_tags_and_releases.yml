@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Remove unused releases and tags
-        uses: Broadshield/github-action-cleanup-releases-and-tags@v1.0.0
+        uses: bitflight-devops/github-action-cleanup-releases-and-tags@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:

@@ -17,7 +17,7 @@ on:
     types: [semantic-release]
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.number }}${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4.1.1
         with:
-          ref: ${{github.head_ref || github.ref}}
+          ref: ${{ github.head_ref || github.ref }}
 
       - uses: actions/setup-node@v4
         with:
@@ -74,7 +74,7 @@ jobs:
 
   npm-release:
     needs: ["run-tests"]
-    if: (github.actor != 'dependabot[bot]' && github.ref_name == 'main' && !contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
+    if: (github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, 'build(release)') && !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
     name: Release NPM build
     runs-on: ubuntu-latest
     permissions:

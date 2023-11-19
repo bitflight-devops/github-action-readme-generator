@@ -70,9 +70,11 @@ export default class Action {
     loadActionFrom(actionPath) {
         const actionDir = path.dirname(path.resolve(actionPath));
         this.log.debug(`Load ${actionPath} from ${actionDir}`);
+        // Check if the action file exists
         if (!fs.existsSync(actionPath)) {
             throw new Error(`${actionPath} does not exist in ${actionDir}`);
         }
+        // Ensure the path is a file and not a directory
         if (!fs.statSync(actionPath).isFile()) {
             throw new Error(`${actionPath} is not a file type at ${actionDir}`);
         }

@@ -1,139 +1,181 @@
-/* eslint-disable import/no-extraneous-dependencies */
+/**
+ * This TypeScript code imports necessary modules and defines a class named 'SVGEditor' for generating SVG images.
+ * The class has methods for initializing the SVG window, generating SVG content, and writing SVG files.
+ * It utilizes various packages such as 'fs', 'path', '@svgdotjs/svg.js', 'feather-icons', and 'svgdom' for SVG manipulation and file operations.
+ * The class also defines interfaces for badges and brand colors.
+ */
+
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import type { Container } from '@svgdotjs/svg.js';
 import { registerWindow, SVG } from '@svgdotjs/svg.js';
+import type { FeatherIconNames } from 'feather-icons';
 import * as feather from 'feather-icons';
-import { createSVGDocument, createSVGWindow, SVGDocument, SVGWindow } from 'svgdom'; /// main-module.js';
+import { createSVGWindow, SVGDocument, SVGWindow } from 'svgdom'; /// main-module.js';
 
+import type { BrandColors } from './constants.js';
 import {
   brandingSquareEdgeLengthInPixels,
+  DEFAULT_BRAND_COLOR,
+  DEFAULT_BRAND_ICON,
   GITHUB_ACTIONS_BRANDING_COLORS,
   GITHUB_ACTIONS_BRANDING_ICONS,
+  isValidColor,
+  isValidIcon,
 } from './constants.js';
 import LogTask from './logtask/index.js';
 
-type conforms<T, V> = T extends V ? T : V;
-type FeatherIconKeysArray = keyof typeof feather.icons;
-type FeatherIconKeys<T extends string, R = FeatherIconKeysArray> = conforms<T, R>;
-// function featherType<T extends FeatherIconKeysArray | string>(iconName: T): FeatherIconKeys<T> {
-//   return iconName as FeatherIconKeys<T>;
-// }
+/**
+ * Utility class for generating SVG images.
+ */
 
 export default class SVGEditor {
-  log: LogTask;
+  private log: LogTask;
 
-  window?: SVGWindow;
+  private window?: SVGWindow;
 
-  canvas?: Container;
+  private canvas?: Container;
 
-  document?: SVGDocument;
+  private document?: SVGDocument;
 
+  /**
+   * Initializes a new SVGEditor instance.
+   */
   constructor() {
     this.log = new LogTask('SVGEditor');
   }
 
-  async init(): Promise<void> {
+  /**
+   * Initializes the SVG window, document, and canvas if not already set up.
+   */
+  async initSVG(): Promise<void> {
     if (!this.window) {
-      // returns a window with a document and an svg root node
       this.window = createSVGWindow();
-
       const { document } = this.window;
-      // instanceof<typeof createSVGWindow>
-      // register window and document
       registerWindow(this.window, document);
       if (!this.canvas) {
-        // create canvas
         this.canvas = SVG(document.documentElement) as Container;
       }
-    }
-
-    if (!this.document) {
-      this.document = createSVGDocument();
-    }
-
-    if (!this.canvas) {
-      // create canvas
-      this.canvas = SVG(this.document.documentElement) as Container;
     }
   }
 
   /**
-   * Generates a svg branding image.
+   * Generates a branded SVG image.
+   * @param {string | undefined} svgPath - Path to write the generated SVG file to.
+   * @param {Partial<FeatherIconNames>} icon - Name of the icon to use.
+   * @param {Partial<BrandColors>} bgcolor - Background color for the image.
+   * @returns {Promise<void>} A promise that resolves when the image is generated.
    */
-  generateSvgImage(
+  async generateSvgImage(
     svgPath: string | undefined,
-    icon: FeatherIconKeys<keyof typeof feather.icons> = 'book-open',
-    bgcolor = 'blue'
-  ): void {
-    const { log } = this;
-    if (svgPath && svgPath.length > 0) {
-      fs.mkdirSync(path.dirname(svgPath), { recursive: true });
-      this.init()
-        .then(() => {
-          const { canvas } = this;
-          if (!GITHUB_ACTIONS_BRANDING_ICONS.has(icon)) {
-            log.fail(`Invalid icon specified for branding: ${icon}`);
-            return;
-          }
-          const color = GITHUB_ACTIONS_BRANDING_COLORS.includes(bgcolor.toLowerCase())
-            ? bgcolor.toLowerCase()
-            : 'blue';
-
-          const svgData = feather.icons[icon];
-          log.info(`SVG data generated for ${icon} at ${svgPath} with color ${color}.`);
-          log.debug(`SVG data to ingest: ${svgData.toSvg()}`);
-          if (canvas) {
-            canvas.clear();
-            const outerViewBox = 100;
-            canvas
-              .size(brandingSquareEdgeLengthInPixels, brandingSquareEdgeLengthInPixels)
-              .viewbox(`0 0 ${outerViewBox} ${outerViewBox}`)
-              .stroke(color.startsWith('white') ? 'white' : 'black')
-              .fill('none');
-            const circleSize = outerViewBox / 2;
-            canvas
-              .circle('50%')
-              .fill(color)
-              .radius(circleSize)
-              .cx(circleSize)
-              .cy(circleSize)
-              .stroke({ width: 0 });
-
-            const iconsvgOuter = canvas.nested();
-            iconsvgOuter.attr('overflow', 'visible').height('50%').width('50%').x('25%').y('25%');
-            const iconsvg = iconsvgOuter.nested();
-
-            iconsvg.id('icon').svg(svgData.contents);
-            for (const attr of Object.keys(svgData.attrs)) {
-              iconsvg.attr(attr, svgData.attrs[attr]);
-            }
-            iconsvg.attr('overflow', 'visible');
-            log.info(`SVG icon: rbox: ${iconsvg.rbox()}`);
-            log.info(`SVG icon: bbox: ${iconsvg.bbox()}`);
-            iconsvg.viewbox(iconsvg.bbox());
-            iconsvg.height('auto').width('auto');
-
-            const svgOut = [
-              '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
-              canvas.svg(),
-              '\n',
-            ].join('\n');
-            log.debug(`SVG data to write: ${svgOut}`);
-            fs.mkdirSync(path.dirname(svgPath), { recursive: true });
-            fs.writeFileSync(svgPath, svgOut, { encoding: 'utf8' });
-            log.debug(`SVG image generated: ${svgPath}`);
-            return;
-          }
-
-          throw new Error('Canvas not initialized');
-        })
-        .catch((error) => {
-          log.fail(`Error generating svg image: ${svgPath}. Error: ${error}`);
-        });
-    } else {
-      log.debug('svgPath is not provided');
+    icon: Partial<FeatherIconNames> = DEFAULT_BRAND_ICON,
+    bgcolor: Partial<BrandColors> = DEFAULT_BRAND_COLOR
+  ): Promise<void> {
+    if (!svgPath || svgPath.length === 0) {
+      this.log.debug('No svgPath provided');
+      return;
     }
+
+    if (!isValidIcon(icon)) {
+      this.log.error(`Valid Branding Icon Names: ${GITHUB_ACTIONS_BRANDING_ICONS}`);
+      this.log.fail(`Invalid icon name: ${icon}`);
+      return;
+    }
+    if (!isValidColor(bgcolor)) {
+      this.log.error(`Valid Branding Colors: ${GITHUB_ACTIONS_BRANDING_COLORS}`);
+      this.log.fail('Invalid branding color');
+      return;
+    }
+    this.log.info(`SVG to generate ${icon} at ${svgPath} with color ${bgcolor}.`);
+    // Initialize SVG
+    await this.initSVG();
+    // Generate SVG content
+    const svgContent = this.generateSVGContent(icon, bgcolor);
+
+    // Write SVG file
+    this.writeSVGFile(svgPath, svgContent);
+
+    this.log.debug('SVG image generated successfully');
+  }
+
+  /**
+   * Writes the SVG xml to disk.
+   * @param {string} svgPath - File path to save the SVG to.
+   * @param {string} svgContent - The XML for the SVG file.
+   */
+  writeSVGFile(svgPath: string, svgContent: string): void {
+    fs.mkdirSync(path.dirname(svgPath), { recursive: true });
+    this.log.debug(`Writing SVG file to ${svgPath}`);
+    fs.writeFile(svgPath, svgContent, 'utf8', () => {
+      return this.log.debug(`SVG image generated: ${svgPath}`);
+    });
+  }
+
+  /**
+   * Generates the SVG content for the branding image.
+   * @param {FeatherIconNames} icon - Name of the icon to use.
+   * @param {BrandColors} color - Background color for the image.
+   * @param {number} outerViewBox - Size of the canvas for the image.
+   * @returns {string} The generated SVG content.
+   */
+  generateSVGContent(icon: FeatherIconNames, color: BrandColors, outerViewBox = 100): string {
+    const { canvas, log } = this;
+    // Validate canvas
+    if (!canvas) {
+      log.fail('Canvas not initialized');
+      return '';
+    }
+
+    const svgData = feather.icons[icon];
+    log.debug(`SVG data to ingest: ${svgData.toSvg()}`);
+
+    canvas.clear();
+
+    // Create a canvas that is `outerViewBox` x `outerViewBox`
+    canvas
+      .size(brandingSquareEdgeLengthInPixels, brandingSquareEdgeLengthInPixels)
+      .viewbox(`0 0 ${outerViewBox} ${outerViewBox}`)
+      .fill('none');
+
+    // Create a 'color' circle that touches the edges of the canvas
+    const circleSize = outerViewBox / 2;
+    canvas
+      .circle('50%')
+      .fill(color)
+      .radius(circleSize)
+      .cx(circleSize)
+      .cy(circleSize)
+      .stroke({ width: 0 });
+
+    // Create an svg box that is half the size of the parent
+    const iconsvgOuter = canvas.nested();
+    iconsvgOuter.attr('overflow', 'visible').height('50%').width('50%').x('25%').y('25%');
+
+    // create a nested svg and add the feather-icon paths to the svg
+    const iconsvg = iconsvgOuter.nested();
+    iconsvg.id('icon').svg(svgData.contents);
+
+    // Append all of the attributes from the fether-icon
+    for (const attr of Object.keys(svgData.attrs)) {
+      iconsvg.attr(attr, svgData.attrs[attr]);
+    }
+
+    // invert the stroke color if it matches the background color
+    iconsvg.stroke(color.startsWith('white') ? 'white' : 'black');
+
+    // remove the edge clipping
+    iconsvg.attr('overflow', 'visible');
+
+    // Make the viewbox of the svg match the exact dimensions of the icon
+    iconsvg.viewbox(iconsvg.bbox());
+
+    // Make the svg icon center itself vertically and horozonally
+    iconsvg.height('auto').width('auto');
+
+    // return the xml file content
+    return ['<?xml version="1.0" encoding="UTF-8" standalone="no"?>', canvas.svg(), '\n'].join(
+      '\n'
+    );
   }
 }

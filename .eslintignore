@@ -1,8 +1,8 @@
 /dist/
 lib/
 node_modules/
-jest.config.ts
 .gulpfile.js
-esbuild.js
+esbuild.mjs
 package-lock.json
-/src/nconf/
+__tests__/package.mock.json
+__tests__/payload.json

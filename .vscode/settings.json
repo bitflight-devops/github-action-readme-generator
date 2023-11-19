@@ -1,4 +1,6 @@
   {
+    "vitest.enable":true,
+    "vitest.commandLine": "npm run test -- ",
     "git.ignoreLimitWarning": true,
     "eslint.validate": [
       "javascript",

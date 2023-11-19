@@ -16,6 +16,10 @@ on:
   repository_dispatch:
     types: [semantic-release]
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read # for checkout
 
@@ -37,7 +41,7 @@ jobs:
         with:
           ref: ${{github.head_ref || github.ref}}
 
-      - uses: actions/setup-node@v4.0.0
+      - uses: actions/setup-node@v4
         with:
           node-version: "20.x"
           registry-url: "https://registry.npmjs.org"
@@ -58,7 +62,13 @@ jobs:
           git status --porcelain -u
 
       - run: npm install
-      - run: npm run test
+      - run: npm run test -- --coverage-enabled=true
+      - name: 'Report Coverage'
+        if: always()
+        uses:  davelosert/vitest-coverage-report-action@v2
+        with:
+          json-summary-path: './out/coverage-summary.json'
+          json-final-path: ./out/coverage-final.json
       - run: npm run build
       - run: npm run generate-docs
 
@@ -85,7 +95,7 @@ jobs:
           ref: ${{github.head_ref || github.ref}}
           token: ${{ secrets.RELEASE_TOKEN }}
 
-      - uses: actions/setup-node@v4.0.0
+      - uses: actions/setup-node@v4
         with:
           node-version: "20.x"
           registry-url: "https://registry.npmjs.org"

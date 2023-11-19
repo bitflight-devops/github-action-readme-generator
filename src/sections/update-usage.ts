@@ -1,13 +1,18 @@
+import { ReadmeSection } from '../constants.js';
 import { getCurrentVersionString } from '../helpers.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import { wrapDescription } from '../prettier.js';
 
 type DescriptionType = Record<string, string[]>;
-export default async function updateUsage(token: string, inputs: Inputs): Promise<void> {
-  const log = new LogTask(token);
+export default async function updateUsage(
+  sectionToken: ReadmeSection,
+  inputs: Inputs,
+): Promise<Record<string, string>> {
+  const log = new LogTask(sectionToken);
   log.start();
-  const actionName = `${inputs.config.get('owner') as string}/${inputs.config.get('repo')}`;
+
+  const actionName = `${inputs.owner}/${inputs.repo}`;
   log.info(`Action name: ${actionName}`);
   const versionString: string = getCurrentVersionString(inputs);
 
@@ -15,10 +20,7 @@ export default async function updateUsage(token: string, inputs: Inputs): Promis
 
   const actionReference = `${actionName}@${versionString}`;
 
-  if (!actionReference) {
-    throw new Error('Parameter actionReference must not be empty');
-  }
-
+  const indent = '    # ';
   // Build the new README
   const content: string[] = [];
   // Build the new usage section
@@ -27,24 +29,25 @@ export default async function updateUsage(token: string, inputs: Inputs): Promis
   const inp = inputs.action.inputs;
   let firstInput = true;
   const descriptionPromises: Record<string, Promise<string[]>> = {};
-  for (const key of Object.keys(inp)) {
-    const input = inp[key];
-    if (input !== undefined) {
-      descriptionPromises[key] = wrapDescription(`Description: ${input.description}`, [], '    # ');
-    }
-  }
-  const descriptions: DescriptionType = {};
-  const kvArray = await Promise.all(
-    Object.keys(descriptionPromises).map(async (key) => {
-      return { key, value: await descriptionPromises[key] };
-    }),
-  );
-  for (const e of kvArray) {
-    descriptions[e.key] = e.value;
-    log.info(`${e.key}: ${descriptions[e.key].join('\n')}`);
-  }
-
   if (inp) {
+    for (const key of Object.keys(inp)) {
+      const input = inp[key];
+      if (input !== undefined) {
+        descriptionPromises[key] = wrapDescription(`Description: ${input.description}`, [], indent);
+      }
+    }
+
+    const descriptions: DescriptionType = {};
+    const kvArray = await Promise.all(
+      Object.keys(descriptionPromises).map(async (key) => {
+        return { key, value: await descriptionPromises[key] };
+      }),
+    );
+    for (const e of kvArray) {
+      descriptions[e.key] = e.value;
+      log.debug(`${e.key}: ${descriptions[e.key].join('\n')}`);
+    }
+
     for (const key of Object.keys(inp)) {
       const input = inp[key];
       if (input !== undefined) {
@@ -63,7 +66,7 @@ export default async function updateUsage(token: string, inputs: Inputs): Promis
           // }
 
           // Default
-          content.push(`    # Default: ${input.default}`);
+          content.push(`${indent}Default: ${input.default}`);
         }
 
         // Input name
@@ -76,6 +79,9 @@ export default async function updateUsage(token: string, inputs: Inputs): Promis
 
   content.push('```\n');
 
-  inputs.readmeEditor.updateSection(token, content);
+  inputs.readmeEditor.updateSection(sectionToken, content);
   log.success();
+  const ret: Record<string, string> = {};
+  ret[sectionToken] = content.join('\n');
+  return ret;
 }

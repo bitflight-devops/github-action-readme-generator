@@ -29,10 +29,10 @@
     // "paths": {},                                      /* Specify a set of entries that re-map imports to additional lookup locations. */
     // "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
     // "typeRoots": [],                                  /* Specify multiple folders that act like `./node_modules/@types`. */
-    "typeRoots": ["./node_modules/@types"],
+    // "typeRoots": ["./node_modules/@types"],
     "types": [
       "node",
-      "jest"
+      "vitest/globals"
     ] /* Specify type package names to be included without being referenced in a source file. */,
     // "allowUmdGlobalAccess": true,                     /* Allow accessing UMD globals from modules. */
     // "resolveJsonModule": true,                        /* Enable importing .json files */
@@ -94,15 +94,14 @@
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     // "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
     "esModuleInterop": true,
-    "module": "ESNext",
-    "moduleResolution": "Bundler"
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
   },
   "ignoreDeprecations": "5.0",
-  "include": ["**/*.ts", "**/*.mts", "src/nconf/nconf.d.cts"],
+  "include": ["**/*.ts", "**/*.mts"],
   "exclude": [
     "./bin",
     "**/node_modules/**",
-    "**/*.spec.ts",
     "**/dist/**",
     "**/coverage/**",
     "**/.yarn/**",

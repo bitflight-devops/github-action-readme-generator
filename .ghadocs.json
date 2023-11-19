@@ -6,12 +6,12 @@
     "action": "action.yml",
     "readme": "README.md"
   },
-  "show_logo": true,
+  "branding_svg_path": ".github/ghadocs/branding.svg",
   "versioning": {
     "enabled": true,
     "prefix": "v",
     "override": "",
     "branch": "main"
   },
-  "pretty": true
+  "prettier": true
 }

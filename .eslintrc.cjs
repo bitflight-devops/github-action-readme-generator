@@ -12,7 +12,12 @@ module.exports = {
   env: {
     node: true,
     es2022: true,
+    es2024: true,
     browser: false,
+  },
+  parserOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
   },
   overrides: [
     {
@@ -38,7 +43,7 @@ module.exports = {
     },
     {
       files: ['*.cjs', '*.jsx'],
-
+      plugins: ['import'],
       extends: ['airbnb-base', 'eslint:recommended', pp],
       rules: {
         'no-plusplus': 'off',
@@ -69,7 +74,8 @@ module.exports = {
         'no-plusplus': 'off',
       },
       parserOptions: {
-        ecmaVersion: 2017,
+        ecmaVersion: 'latest',
+        sourceType: 'module',
       },
 
       env: {
@@ -82,22 +88,26 @@ module.exports = {
       processor: 'actions/actions',
     },
     {
+      files: ['__tests__/**/*.ts'], // or any other pattern
+      plugins: ['vitest'],
+      extends: ['plugin:vitest/recommended'],
+    },
+    {
       files: ['**/*.ts', '**/*.mts'],
       plugins: [
         'simple-import-sort',
         'import',
-        'jest',
-        'jest-async',
         '@typescript-eslint',
         'optimize-regex',
         'promise',
         'sort-class-members',
       ],
       extends: [
+        'eslint:recommended',
+        'plugin:@eslint-community/eslint-comments/recommended',
         'plugin:promise/recommended',
         'plugin:no-use-extend-native/recommended',
-        'plugin:jest/recommended',
-        'eslint:recommended',
+        'plugin:n/recommended',
         'plugin:@typescript-eslint/recommended',
         'airbnb-base',
         'plugin:import/errors',
@@ -116,6 +126,9 @@ module.exports = {
         tsconfigRootDir: __dirname,
       },
       rules: {
+        '@eslint-community/eslint-comments/disable-enable-pair': 'off',
+        'no-underscore-dangle': 'off',
+        'import/no-extraneous-dependencies': 'off',
         'sort-class-members/sort-class-members': [
           2,
           {
@@ -131,7 +144,6 @@ module.exports = {
             accessorPairPositioning: 'getThenSet',
           },
         ],
-        'jest-async/expect-return': 'error',
         'operator-linebreak': 'off',
         'dot-notation': 'off',
         '@typescript-eslint/dot-notation': ['error'],
@@ -166,10 +178,10 @@ module.exports = {
         '@typescript-eslint/strict-boolean-expressions': 'off',
         '@typescript-eslint/type-annotation-spacing': 'off',
         '@typescript-eslint/unbound-method': 'error',
+        '@eslint-community/eslint-comments/no-unused-disable': 'error',
         'quote-props': 'off',
         'camelcase': 'off',
         'consistent-return': 'off',
-        'eslint-comments/no-use': 'off',
         'import/extensions': 'off',
         'import/first': 'error',
         'import/newline-after-import': 'error',
@@ -209,10 +221,9 @@ module.exports = {
         NodeJS: true,
       },
       env: {
-        'browser': false,
-        'node': true,
-        'es2022': true,
-        'jest/globals': true,
+        browser: false,
+        node: true,
+        es2022: true,
       },
       settings: {
         'import/parsers': {

@@ -14,18 +14,18 @@ on:
 concurrency:
   group: ci-${{ github.event.pull_request.number }}${{ github.ref }}${{ github.workflow }}
   cancel-in-progress: true
-
+permissions:
+  issues: write
+  pull-requests: write
+  statuses: write
+  checks: write
+  contents: write
+  actions: write
+  id-token: write
 jobs:
   run-tests:
     name: Run unit tests
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      pull-requests: write
-      statuses: write
-      checks: write
-      actions: write
-      contents: write
     env:
       SKIP_PREFLIGHT_CHECK: true
     steps:
@@ -72,6 +72,7 @@ jobs:
       checks: write
       contents: write
       actions: write
+      id-token: write
     uses: ./.github/workflows/deploy.yml
     with:
       ref: ${{ github.head_ref || github.ref }}

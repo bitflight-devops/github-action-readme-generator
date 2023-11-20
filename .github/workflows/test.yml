@@ -14,6 +14,7 @@ on:
 concurrency:
   group: ci-${{ github.event.pull_request.number }}${{ github.ref }}${{ github.workflow }}
   cancel-in-progress: true
+
 permissions:
   issues: write
   pull-requests: write
@@ -22,6 +23,7 @@ permissions:
   contents: write
   actions: write
   id-token: write
+
 jobs:
   run-tests:
     name: Run unit tests

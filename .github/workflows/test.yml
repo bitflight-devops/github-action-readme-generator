@@ -2,11 +2,6 @@ name: Tag and Release Updated NPM Package
 
 on:
   pull_request_target:
-    branches:
-      - main
-      - next
-      - beta
-      - "*.x"
   push:
     branches:
       - main
@@ -36,14 +31,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4.1.1
         with:
-          ref: ${{github.head_ref || github.ref}}
+          ref: ${{ github.head_ref || github.ref }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20.x"
-          registry-url: "https://registry.npmjs.org"
-          always-auth: true
-          cache: npm
+      - name: Install compatible Nodejs version
+        id: install-node
+        uses: ./.github/actions/install-node
 
       - name: Configure PATH
         run: |
@@ -53,8 +45,8 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --global user.email "${{github.event.pusher.email || 'stack@bitflight.io'}}"
-          git config --global user.name "${{github.event.pusher.name || 'GitHub[bot]'}}"
+          git config --global user.email "${{ github.event.pusher.email || 'stack@bitflight.io' }}"
+          git config --global user.name "${{ github.event.pusher.name || 'GitHub[bot]' }}"
           git fetch --tags
           git status --porcelain -u
 
@@ -62,10 +54,11 @@ jobs:
       - run: npm run test -- --coverage-enabled=true
       - name: 'Report Coverage'
         if: always()
+        continue-on-error: true
         uses:  davelosert/vitest-coverage-report-action@v2
         with:
-          json-summary-path: './out/coverage-summary.json'
-          json-final-path: ./out/coverage-final.json
+          json-summary-path: './coverage/coverage-summary.json'
+          json-final-path: ./coverage/coverage-final.json
       - run: npm run build
       - run: npm run generate-docs
   call-workflow-passing-data:

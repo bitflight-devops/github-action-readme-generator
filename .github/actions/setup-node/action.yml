@@ -1,0 +1,57 @@
+name: Setup Node
+description: Sets up Node.js environment
+
+inputs:
+  version:
+    description: 'The version of Node.js to use'
+    default: 20
+    required: true
+    type: number
+    
+outputs:
+  version: ${{ steps.node.outputs.version }}}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check if Node Version change is required
+      id: node
+      runs: bash
+      env:
+        npm_config_engine_strict: true
+      run:
+        # check if the installed node version works with the engines field in package.json
+        if npm ln --dry-run --ignore-scripts &>/dev/null; then
+          NODE_VERSION=$(node -v)"
+        
+        # check if .npmrc specifies a node version
+        elif [ -f .npmrc ] && grep -qP '^node-version\s*=' .npmrc ; then
+          NODE_VERSION="$(grep -oP '^node-version\s*=\s*\K.*' .npmrc | cut -d '.' -f 1-3)"
+
+        # check if .nvmrc or .node-version specify a node version
+        elif [ -f .node-version ] && grep -qP '^\d+\.\d+\.\d+$' .node-version ; then
+          NODE_VERSION="$(cat .node-version)"
+        elif [ -f .nvmrc ] && grep -qP '^\d+\.\d+\.\d+$' .nvmrc ; then
+          NODE_VERSION="$(cat .nvmrc)"
+
+        # get the latest version of node that is compatible with the engines field in package.json
+        elif [ -f package.json ] && jq --exit-status -r '.engines.node' package.json 2>&1 >/dev/null; then
+          NODE_VERSION="$(bash ./scripts/latest_valid_node_version.sh)"
+        fi
+
+        # check that we now have a node version, if not, use the default
+        if grep -qoP '^v?\d+\.(x|\d+\.)?(\d+|x)?' <<<"${NODE_VERSION}"; then
+          NODE_VERSION="${{ inputs.version }}"
+          echo "::warning::Unable to determine Node.js version from project files, using default version ${NODE_VERSION}"
+        fi
+
+        echo "version=${NODE_VERSION}" | tee -a "$GITHUB_OUTPUT"
+        echo "version=${NODE_VERSION}" >> "$GITHUB_ENV"
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "${{ steps.node.outputs.version || '20.x' }}"
+        cache: npm
+
+
+

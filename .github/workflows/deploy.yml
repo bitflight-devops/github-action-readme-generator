@@ -1,0 +1,103 @@
+name: Run Tests and Lint
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'The branch or tag ref to checkout. Defaults to the default branch.'
+        required: false
+        default: ${{ github.ref }}
+        type: string
+      sha:
+        description: 'The commit SHA to checkout. Defaults to the SHA of the ref.'
+        required: false
+        default: ${{ github.sha }}
+        type: string
+      repository:
+        description: 'The repository to checkout. Defaults to the current repository.'
+        required: false
+        default: ${{ github.repository }}
+        type: string
+      token:
+        description: 'The token to use for authentication. Defaults to the token of the current workflow run.'
+        required: false
+        default: ${{ github.token }}
+        type: string
+    secrets:
+      RELEASE_TOKEN:
+        required: true
+  repository_dispatch:
+    types: [semantic-release]
+
+concurrency:
+  group: ci-${{ inputs.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # for checkout
+
+jobs:
+
+  deploy:
+    name: Deploy NPM build
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for npm provenance
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      SKIP_PREFLIGHT_CHECK: true
+    steps:
+      - uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ inputs.sha }}
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
+          always-auth: true
+          cache: npm
+
+      - name: Configure PATH
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "${GITHUB_PATH}"
+          echo "HOME=$HOME" >> "${GITHUB_ENV}"
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "${{ github.event.pusher.email || 'stack@bitflight.io' }}"
+          git config --global user.name "${{ github.event.pusher.name || 'GitHub[bot]' }}"
+          git fetch --tags
+          git status --porcelain -u
+
+      - name: Install Deps
+        id: deps
+        run: |
+          npm ci
+
+      - name: Ensure dependencies are compatible with the version of node
+        run: npx --yes ls-engines
+
+      - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
+        run: npm audit signatures
+
+      - run: npm run build --if-present
+
+      - run: |
+          git add -f dist
+          npm run generate-docs
+          git commit -n -m 'build(release): bundle distribution files'
+
+      - run: npx --yes semantic-release@latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

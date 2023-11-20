@@ -1,0 +1,83 @@
+name: Tag and Release Updated NPM Package
+
+on:
+  pull_request_target:
+    branches:
+      - main
+      - next
+      - beta
+      - "*.x"
+  push:
+    branches:
+      - main
+      - next
+      - beta
+      - "*.x"
+  repository_dispatch:
+    types: [semantic-release]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}${{ github.ref }}${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  run-tests:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      statuses: write
+      checks: write
+      actions: write
+      contents: write
+    env:
+      SKIP_PREFLIGHT_CHECK: trues
+    steps:
+      - uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{github.head_ref || github.ref}}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
+          always-auth: true
+          cache: npm
+
+      - name: Configure PATH
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "${GITHUB_PATH}"
+          echo "HOME=$HOME" >> "${GITHUB_ENV}"
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "${{github.event.pusher.email || 'stack@bitflight.io'}}"
+          git config --global user.name "${{github.event.pusher.name || 'GitHub[bot]'}}"
+          git fetch --tags
+          git status --porcelain -u
+
+      - run: npm install
+      - run: npm run test -- --coverage-enabled=true
+      - name: 'Report Coverage'
+        if: always()
+        uses:  davelosert/vitest-coverage-report-action@v2
+        with:
+          json-summary-path: './out/coverage-summary.json'
+          json-final-path: ./out/coverage-final.json
+      - run: npm run build
+      - run: npm run generate-docs
+  call-workflow-passing-data:
+    needs: run-tests
+    if: ${{ github.event_name == 'push' }}
+    permissions:
+      issues: write
+      pull-requests: write
+      statuses: write
+      checks: write
+      actions: write
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ref: ${{ github.head_ref || github.ref }}
+    secrets: inherit

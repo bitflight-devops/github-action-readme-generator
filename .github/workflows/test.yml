@@ -58,8 +58,8 @@ jobs:
         continue-on-error: true
         uses:  davelosert/vitest-coverage-report-action@v2
         with:
-          json-summary-path: './coverage/coverage-summary.json'
-          json-final-path: ./coverage/coverage-final.json
+          json-summary-path: './out/coverage-summary.json'
+          json-final-path: ./out/coverage-final.json
       - run: npm run build
       - run: npm run generate-docs
   call-workflow-passing-data:

@@ -1,6 +1,11 @@
 name: Code Linting Annotation
 on:
-  pull_request_target:
+  pull_request:
+    branches:
+      - main
+      - next
+      - beta
+      - "*.x"
   push:
     branches:
       - main
@@ -9,7 +14,7 @@ on:
       - "*.x"
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-linting-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   eslint_annotation:

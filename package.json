@@ -55,7 +55,7 @@
     "postinstall": "echo '✨ Successfully Installed'",
     "prelint": "npm run format && tsc --project tsconfig.json --noemit",
     "lint": "npm run lint:eslint && npm run lint:markdown",
-    "lint:fix": "npm run lint:eslint:fix && npm run lint:markdown:fix", 
+    "lint:fix": "npm run lint:eslint:fix && npm run lint:markdown:fix",
     "lint:eslint": "eslint -c .eslintrc.cjs --color ./src/ ./__tests__/",
     "lint:eslint:fix": "npm run eslint -- --fix",
     "markdownlint": "markdownlint",
@@ -218,5 +218,8 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
+  },
+  "volta": {
+    "node": "20.9.0"
   }
 }

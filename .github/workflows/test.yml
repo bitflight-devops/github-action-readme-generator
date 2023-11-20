@@ -27,7 +27,7 @@ jobs:
       actions: write
       contents: write
     env:
-      SKIP_PREFLIGHT_CHECK: trues
+      SKIP_PREFLIGHT_CHECK: true
     steps:
       - uses: actions/checkout@v4.1.1
         with:

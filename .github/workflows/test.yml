@@ -45,13 +45,6 @@ jobs:
           echo "$HOME/.local/bin" >> "${GITHUB_PATH}"
           echo "HOME=$HOME" >> "${GITHUB_ENV}"
 
-      - name: Configure Git
-        run: |
-          git config --global user.email "${{ github.event.pusher.email || 'stack@bitflight.io' }}"
-          git config --global user.name "${{ github.event.pusher.name || 'GitHub[bot]' }}"
-          git fetch --tags
-          git status --porcelain -u
-
       - run: npm install
       - run: npm run test
       - run: npm run coverage

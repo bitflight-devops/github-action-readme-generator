@@ -35,8 +35,8 @@ jobs:
       - uses: actions/checkout@v4.1.1
 
       - name: Install compatible Nodejs version
-        id: install-node
-        uses: ./.github/actions/install-node
+        id: setup-node
+        uses: ./.github/actions/setup-node
         
       - name: Install Deps
         run: npm install

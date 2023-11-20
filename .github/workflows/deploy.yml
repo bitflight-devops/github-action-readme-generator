@@ -59,12 +59,10 @@ jobs:
           ref: ${{ inputs.sha }}
           token: ${{ secrets.RELEASE_TOKEN }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20.x"
-          registry-url: "https://registry.npmjs.org"
-          always-auth: true
-          cache: npm
+
+      - name: Install compatible Nodejs version
+        id: setup-node
+        uses: ./.github/actions/setup-node
 
       - name: Configure PATH
         run: |

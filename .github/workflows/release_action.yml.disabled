@@ -25,12 +25,9 @@ jobs:
           ref: ${{ github.ref }}
       - name: Prepare repository
         run: git fetch --unshallow --tags
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '16.x'
-          registry-url: 'https://registry.npmjs.org'
-          always-auth: true
-          cache: npm
+      - name: Install compatible Nodejs version
+        id: setup-node
+        uses: ./.github/actions/setup-node
       - run: git config --global init.defaultBranch main
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path

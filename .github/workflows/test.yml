@@ -34,8 +34,8 @@ jobs:
           ref: ${{ github.head_ref || github.ref }}
 
       - name: Install compatible Nodejs version
-        id: install-node
-        uses: ./.github/actions/install-node
+        id: setup-node
+        uses: ./.github/actions/setup-node
 
       - name: Configure PATH
         run: |

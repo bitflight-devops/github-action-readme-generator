@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/bitflight-devops/github-action-readme-generator"
+    "url": "git+https://github.com/bitflight-devops/github-action-readme-generator.git"
   },
   "license": "APACHE",
   "author": "Jamie Nelson <jamie@bitflight.io>",
@@ -30,13 +30,15 @@
   "main": "dist/cjs/index.js",
   "module": "dist/mjs/index.js",
   "types": "dist/types/index.d.ts",
-  "bin": "dist/bin/index.js",
+  "bin": {
+    "github-action-readme-generator": "dist/bin/index.js"
+  },
   "files": [
     "package.json",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
-    "/dist"
+    "dist/"
   ],
   "scripts": {
     "all": "npm run build && npm run format && npm run lint && npm run test",
@@ -93,8 +95,8 @@
   },
   "lint-staged": {
     "*.{md,json,yaml,yml,sh}": "prettier --write",
-    "{src,__tests__}/**/*.js": "eslint --cache --fix",
-    "*.{ts,mts,yml}": [
+    "{src,__tests__}/**/*.ts": "eslint --cache --fix",
+    "*.{yaml,yml}": [
       "eslint --cache --fix"
     ]
   },

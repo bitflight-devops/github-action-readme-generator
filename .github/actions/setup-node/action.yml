@@ -9,7 +9,9 @@ inputs:
     type: string
     
 outputs:
-  version: ${{ steps.node.outputs.version }}
+  version:
+    description: 'The version of Node.js that was set up'
+    value: ${{ steps.node.outputs.version }}
 
 runs:
   using: 'composite'

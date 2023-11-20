@@ -1,3 +1,15 @@
+# [1.8.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.7.2...v1.8.0) (2023-11-20)
+
+
+### Bug Fixes
+
+* **defaults:** fix npm release blockage ([34e2f46](https://github.com/bitflight-devops/github-action-readme-generator/commit/34e2f465fb85774bf80e748f68204362298845c0))
+
+
+### Features
+
+* **refactor:** JSDocs added, Unit Tests added using ViTest, refactored for maintainability ([#239](https://github.com/bitflight-devops/github-action-readme-generator/issues/239)) ([0451f2c](https://github.com/bitflight-devops/github-action-readme-generator/commit/0451f2c7bbd93cefba4400589ca1d46fde7aa5f4))
+
 ## [1.7.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.7.1...v1.7.2) (2023-10-24)
 
 

@@ -20,9 +20,9 @@ permissions:
   pull-requests: write
   statuses: write
   checks: write
-  contents: write
   actions: write
   id-token: write
+  contents: write
 
 jobs:
   run-tests:
@@ -72,9 +72,9 @@ jobs:
       pull-requests: write
       statuses: write
       checks: write
-      contents: write
       actions: write
       id-token: write
+      contents: write
     uses: ./.github/workflows/deploy.yml
     with:
       ref: ${{ github.head_ref || github.ref }}

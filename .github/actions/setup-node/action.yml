@@ -52,7 +52,6 @@ runs:
         echo "NODE_VERSION=${NODE_VERSION}" >> "$GITHUB_ENV"
 
     - uses: actions/setup-node@v4
-      working-directory: ${{ github.workspace }}
       with:
         node-version: "${{ steps.node.outputs.version }}"
         cache: npm

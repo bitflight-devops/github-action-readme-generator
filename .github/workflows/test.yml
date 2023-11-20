@@ -2,11 +2,6 @@ name: Tag and Release Updated NPM Package
 
 on:
   pull_request_target:
-    branches:
-      - main
-      - next
-      - beta
-      - "*.x"
   push:
     branches:
       - main
@@ -25,34 +20,24 @@ permissions:
   pull-requests: write
   statuses: write
   checks: write
-  contents: write
   actions: write
   id-token: write
+  contents: write
 
 jobs:
   run-tests:
     name: Run unit tests
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      pull-requests: write
-      statuses: write
-      checks: write
-      actions: write
-      contents: write
     env:
-      SKIP_PREFLIGHT_CHECK: trues
+      SKIP_PREFLIGHT_CHECK: true
     steps:
       - uses: actions/checkout@v4.1.1
         with:
-          ref: ${{github.head_ref || github.ref}}
+          ref: ${{ github.head_ref || github.ref }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20.x"
-          registry-url: "https://registry.npmjs.org"
-          always-auth: true
-          cache: npm
+      - name: Install compatible Nodejs version
+        id: setup-node
+        uses: ./.github/actions/setup-node
 
       - name: Configure PATH
         run: |
@@ -62,8 +47,8 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --global user.email "${{github.event.pusher.email || 'stack@bitflight.io'}}"
-          git config --global user.name "${{github.event.pusher.name || 'GitHub[bot]'}}"
+          git config --global user.email "${{ github.event.pusher.email || 'stack@bitflight.io' }}"
+          git config --global user.name "${{ github.event.pusher.name || 'GitHub[bot]' }}"
           git fetch --tags
           git status --porcelain -u
 
@@ -72,6 +57,7 @@ jobs:
       - run: npm run coverage
       - name: 'Report Coverage'
         if: always()
+        continue-on-error: true
         uses:  davelosert/vitest-coverage-report-action@v2
         with:
           json-summary-path: './out/coverage-summary.json'
@@ -87,6 +73,8 @@ jobs:
       statuses: write
       checks: write
       actions: write
+      id-token: write
+      contents: write
     uses: ./.github/workflows/deploy.yml
     with:
       ref: ${{ github.head_ref || github.ref }}

@@ -10,6 +10,10 @@ updates:
     labels:
       - "github-actions"
       - "dependencies"
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:

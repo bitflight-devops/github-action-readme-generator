@@ -1,7 +1,20 @@
 name: Code Linting Annotation
-on: [pull_request]
+on:
+  pull_request:
+    branches:
+      - main
+      - next
+      - beta
+      - "*.x"
+  push:
+    branches:
+      - main
+      - next
+      - beta
+      - "*.x"
+
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-linting-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   eslint_annotation:
@@ -21,15 +34,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4.1.1
 
-      - id: get-node-version
-        run: |
-          NODE_VERSION=$(grep -oP '^node-version\s*=\s*\K.*' .npmrc | cut -d '.' -f 1-3)
-          echo "node-version=${NODE_VERSION}" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ steps.get-node-version.outputs.node-version }}
-          cache: "npm"
+      - name: Install compatible Nodejs version
+        id: setup-node
+        uses: ./.github/actions/setup-node
+        
       - name: Install Deps
         run: npm install
       - uses: xt0rted/markdownlint-problem-matcher@v2

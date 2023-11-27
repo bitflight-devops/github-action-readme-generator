@@ -221,5 +221,8 @@ You can modify the script below to include any extra variables you like or use n
 | <code>readme_after</code>  | The content of the readme file after the changes were made           |
 
 <!-- end outputs -->
+
+**NOTE**: [volta.sh](https://volta.sh/) is a great tool for managing node versions, and is configured in this directory. If you have volta installed, you can run `volta install` to install the correct version of node for this project.
+
 <!-- start [.github/ghadocs/examples/] -->
 <!-- end [.github/ghadocs/examples/] -->

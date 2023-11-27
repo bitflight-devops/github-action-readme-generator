@@ -5,7 +5,7 @@
  * If an error occurs during the update of a section, it logs the error message and stops the process.
  * Finally, it saves the updated README.md file and calls the 'save' function.
  */
-// TODO: Ask CodeWhisperer to write unit tests.
+
 import * as core from '@actions/core';
 
 import { ReadmeSection } from './constants.js';

@@ -32,7 +32,7 @@ jobs:
       NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.1.7
 
       - name: Install compatible Nodejs version
         id: setup-node
@@ -40,11 +40,11 @@ jobs:
         
       - name: Install Deps
         run: npm install
-      - uses: xt0rted/markdownlint-problem-matcher@v2
+      - uses: xt0rted/markdownlint-problem-matcher@v3.0.0
       - run: npm run lint:markdown
         continue-on-error: true
       - name: eslint
-        uses: reviewdog/action-eslint@v1.20.0
+        uses: reviewdog/action-eslint@v1.29.0
         with:
           reporter: github-pr-review # Change reporter.
           eslint_flags: src/

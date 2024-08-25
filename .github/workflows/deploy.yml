@@ -52,7 +52,7 @@ jobs:
       GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       SKIP_PREFLIGHT_CHECK: true
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.1.7
         with:
           ref: ${{ inputs.sha }}
           token: ${{ secrets.RELEASE_TOKEN }}

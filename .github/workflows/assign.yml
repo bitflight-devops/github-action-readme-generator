@@ -6,7 +6,7 @@ jobs:
   auto-assign:
     runs-on: ubuntu-latest
     steps:
-      - uses: pozil/auto-assign-issue@v1.13.0
+      - uses: pozil/auto-assign-issue@v2.1.2
         if: github.actor != 'dependabot[bot]'
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}

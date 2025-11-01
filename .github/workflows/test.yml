@@ -48,12 +48,12 @@ jobs:
       - run: npm install
       - run: npm run test
       - run: npm run coverage
-      - name: 'Report Coverage'
+      - name: "Report Coverage"
         if: always()
         continue-on-error: true
-        uses:  davelosert/vitest-coverage-report-action@v2.8.3
+        uses: davelosert/vitest-coverage-report-action@v2.8.3
         with:
-          json-summary-path: './out/coverage-summary.json'
+          json-summary-path: "./out/coverage-summary.json"
           json-final-path: ./out/coverage-final.json
       - run: npm run build
       - run: npm run generate-docs

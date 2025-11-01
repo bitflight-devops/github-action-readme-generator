@@ -52,7 +52,8 @@ describe('ReadmeGenerator', () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    // In vitest 4.x, use resetAllMocks to clear mock history
+    vi.resetAllMocks();
   });
 
   it('updateSection should be mocked', () => {

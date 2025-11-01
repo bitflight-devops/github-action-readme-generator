@@ -225,6 +225,12 @@ describe('helpers', () => {
   });
 
   describe('repositoryFinder', () => {
+    afterEach(() => {
+      // Clean up environment variables and mocks after each test
+      vi.unstubAllEnvs();
+      vi.resetAllMocks();
+    });
+
     it('should return the repository information from the input', () => {
       const result = repositoryFinder('ownerInput/repoInput', null);
       expect(result).toEqual({ owner: 'ownerInput', repo: 'repoInput' });

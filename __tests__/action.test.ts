@@ -11,7 +11,10 @@ import { actionTestString, actTestYmlPath } from './action.constants.js';
 export const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);
 
-vi.mock('node:fs');
+vi.mock('node:fs', async () => {
+  const mockFs = await import('../__mocks__/node:fs.js');
+  return mockFs;
+});
 vi.mock('../src/logtask/index.js');
 
 let tempEnv: typeof process.env;
@@ -31,8 +34,8 @@ describe('Action', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     process.env = tempEnv;
-    // restore replaced property
-    vi.restoreAllMocks();
+    // In vitest 4.x, we need to reset mocks to restore their original implementation
+    vi.resetAllMocks();
   });
 
   describe('test mocks work', () => {

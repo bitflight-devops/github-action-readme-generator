@@ -16,7 +16,6 @@ import { configFileName, ConfigKeys, README_SECTIONS } from './constants.js';
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
-// import workingDirectory from './working-directory.js';
 /**
  * Get the filename from the import.meta.url
  */
@@ -251,7 +250,6 @@ export function transformGitHubInputsToArgv(log, config, obj) {
         const key = ConfigKeysInputsMap[keyParsed] || keyParsed;
         // eslint-disable-next-line no-param-reassign
         obj.key = key;
-        // TODO: This is a hack to get around the fact that nconf doesn't support just returning the new value like its documentation says.
         config.set(key, obj.value);
         log.debug(`New input is ${key} with the value ${obj.value}`);
         return { key, value: obj.value };

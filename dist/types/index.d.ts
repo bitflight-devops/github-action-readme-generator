@@ -1,5 +1,4 @@
 /// <reference types="node" resolution-mode="require"/>
-/// <reference types="node" resolution-mode="require"/>
 declare module "vitest.config" {
     const _default: import("vite").UserConfig;
     export default _default;
@@ -14,9 +13,9 @@ declare module "__tests__/action.constants" {
 declare module "__mocks__/node:fs" {
     import type { BigIntStats, PathLike, PathOrFileDescriptor, Stats, StatSyncOptions } from 'node:fs';
     export type { BigIntStats, PathLike, PathOrFileDescriptor, Stats, StatSyncOptions } from 'node:fs';
-    export const statSync: import("@vitest/spy").Mock<[path: PathLike, options?: StatSyncOptions | undefined], Stats | BigIntStats | undefined>;
-    export const existsSync: import("@vitest/spy").Mock<[filename: PathLike], boolean>;
-    export const readFileSync: import("@vitest/spy").Mock<[filename: PathOrFileDescriptor], string | Buffer>;
+    export const statSync: import("@vitest/spy").Mock<(path: PathLike, options?: StatSyncOptions | undefined) => Stats | BigIntStats | undefined>;
+    export const existsSync: import("@vitest/spy").Mock<(filename: PathLike) => boolean>;
+    export const readFileSync: import("@vitest/spy").Mock<(filename: PathOrFileDescriptor) => string | Buffer>;
 }
 declare module "src/util" {
     export type Nullable<T> = T | null | undefined;

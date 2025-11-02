@@ -6,7 +6,7 @@ export default function updateOutputs(sectionToken, inputs) {
     // Build the new README
     const content = [];
     const markdownArray = [];
-    const titleArray = ['Output', 'Description'];
+    const titleArray = ['Output', 'Description', 'Value'];
     const titles = [];
     for (const t of titleArray) {
         titles.push(columnHeader(t));
@@ -25,7 +25,8 @@ export default function updateOutputs(sectionToken, inputs) {
                 description = matches[1] || description;
             }
             description = description.trim().replace('\n', '<br />');
-            const row = [rowHeader(key), description];
+            const value = values?.value ? `\`${values.value}\`` : '';
+            const row = [rowHeader(key), description, value];
             log.debug(JSON.stringify(row));
             markdownArray.push(row);
         }

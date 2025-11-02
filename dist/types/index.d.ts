@@ -696,71 +696,6 @@ declare module "__tests__/inputs.test" {
     export const __filename: string;
     export const __dirname: string;
 }
-declare module "src/markdowner/index" {
-    /**
-     * Types representing a 2D array of strings for a Markdown table.
-     */
-    export type MarkdownArrayRowType = string[][];
-    export type MarkdownArrayItemType = string;
-    /**
-     * Fills a string to a desired width by padding with spaces.
-     *
-     * @param text - The text to pad.
-     * @param width - The desired total width.
-     * @param paddingStart - Number of spaces to pad at the start.
-     * @returns The padded string.
-     */
-    export function padString(text: string, width: number, paddingStart: number): string;
-    /**
-     * Escapes special Markdown characters in a string.
-     *
-     * @param text - The text to escape.
-     * @returns The escaped text.
-     */
-    export function markdownEscapeTableCell(text: string): string;
-    /**
-     * Escapes inline code blocks in a Markdown string.
-     *
-     * @param content - Markdown string.
-     * @returns String with escaped inline code blocks.
-     */
-    export function markdownEscapeInlineCode(content: string): string;
-    /**
-     * Clones a 2D array.
-     *
-     * @param arr - Array to clone.
-     * @returns Cloned array.
-     */
-    export function cloneArray(arr: MarkdownArrayRowType): MarkdownArrayRowType;
-    /**
-     * Gets max and min column counts from 2D array.
-     *
-     * @param data - 2D string array.
-     * @returns Object with max and min cols.
-     */
-    export function getColumnCounts(data: MarkdownArrayRowType): {
-        maxCols: number;
-        minCols: number;
-    };
-    /**
-     * Pads 2D array rows to equal length.
-     *
-     * @param data - 2D array to pad.
-     * @param maxCols - Number of columns to pad to.
-     * @returns Padded 2D array.
-     */
-    export function padArrayRows(data: MarkdownArrayRowType, maxCols: number): MarkdownArrayRowType;
-    /**
-     * Converts a 2D array of strings to a Markdown table.
-     *
-     * @param data - 2D string array.
-     * @returns Markdown table string.
-     */
-    export function ArrayOfArraysToMarkdownTable(providedTableContent: MarkdownArrayRowType): string;
-    export default ArrayOfArraysToMarkdownTable;
-}
-declare module "__tests__/markdowner.test" { }
-declare module "__tests__/prettier.test" { }
 declare module "src/sections/update-badges" {
     /**
      * This TypeScript code imports necessary modules and defines a function named 'updateBadges' which takes a sectionToken (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
@@ -891,6 +826,69 @@ declare module "src/sections/update-description" {
     import type Inputs from "src/inputs";
     export default function updateDescription(sectionToken: ReadmeSection, inputs: Inputs): Record<string, string>;
 }
+declare module "src/markdowner/index" {
+    /**
+     * Types representing a 2D array of strings for a Markdown table.
+     */
+    export type MarkdownArrayRowType = string[][];
+    export type MarkdownArrayItemType = string;
+    /**
+     * Fills a string to a desired width by padding with spaces.
+     *
+     * @param text - The text to pad.
+     * @param width - The desired total width.
+     * @param paddingStart - Number of spaces to pad at the start.
+     * @returns The padded string.
+     */
+    export function padString(text: string, width: number, paddingStart: number): string;
+    /**
+     * Escapes special Markdown characters in a string.
+     *
+     * @param text - The text to escape.
+     * @returns The escaped text.
+     */
+    export function markdownEscapeTableCell(text: string): string;
+    /**
+     * Escapes inline code blocks in a Markdown string.
+     *
+     * @param content - Markdown string.
+     * @returns String with escaped inline code blocks.
+     */
+    export function markdownEscapeInlineCode(content: string): string;
+    /**
+     * Clones a 2D array.
+     *
+     * @param arr - Array to clone.
+     * @returns Cloned array.
+     */
+    export function cloneArray(arr: MarkdownArrayRowType): MarkdownArrayRowType;
+    /**
+     * Gets max and min column counts from 2D array.
+     *
+     * @param data - 2D string array.
+     * @returns Object with max and min cols.
+     */
+    export function getColumnCounts(data: MarkdownArrayRowType): {
+        maxCols: number;
+        minCols: number;
+    };
+    /**
+     * Pads 2D array rows to equal length.
+     *
+     * @param data - 2D array to pad.
+     * @param maxCols - Number of columns to pad to.
+     * @returns Padded 2D array.
+     */
+    export function padArrayRows(data: MarkdownArrayRowType, maxCols: number): MarkdownArrayRowType;
+    /**
+     * Converts a 2D array of strings to a Markdown table.
+     *
+     * @param data - 2D string array.
+     * @returns Markdown table string.
+     */
+    export function ArrayOfArraysToMarkdownTable(providedTableContent: MarkdownArrayRowType): string;
+    export default ArrayOfArraysToMarkdownTable;
+}
 declare module "src/sections/update-inputs" {
     /**
      * This TypeScript code exports a function named 'updateInputs' which takes a sectionToken (ReadmeSection) and an instance of the 'Inputs' class as its parameters.
@@ -998,6 +996,9 @@ declare module "src/readme-generator" {
         generate(providedSections?: ReadmeSection[]): Promise<void>;
     }
 }
+declare module "__tests__/integration-issue-335.test" { }
+declare module "__tests__/markdowner.test" { }
+declare module "__tests__/prettier.test" { }
 declare module "__tests__/readme-generator.test" {
     export const __filename: string;
     export const __dirname: string;

@@ -451,7 +451,7 @@ declare module "src/inputs" {
     /**
      * Change working directory to output of workingDirectory()
      */
-    export const metaActionPath = "../../action.yml";
+    export const metaActionPath = "action.yml";
     export type ArgvOptionProperties = {
         [key: string]: {
             alias: string | string[];

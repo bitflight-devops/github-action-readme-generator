@@ -33,7 +33,7 @@ export const __dirname = path.dirname(__filename);
  * Change working directory to output of workingDirectory()
  */
 // process.chdir(workingDirectory());
-export const metaActionPath = '../../action.yml';
+export const metaActionPath = 'action.yml';
 
 export type ArgvOptionProperties = {
   [key: string]: {
@@ -351,7 +351,7 @@ export function collectAllDefaultValuesFromAction(
   } = {},
 ): IOptions {
   log.debug('Collecting default values from action.yml');
-  const thisActionPath = path.join(__dirname, providedMetaActionPath ?? metaActionPath);
+  const thisActionPath = path.join(process.cwd(), providedMetaActionPath ?? metaActionPath);
   try {
     const defaultValues = {} as IOptions;
     const thisAction = new Action(thisActionPath);

@@ -61,6 +61,36 @@ You can modify the script below to include any extra variables you like or use n
 }
 ```
 
+### Using as a Pre-commit Hook
+
+You can automate README generation on every commit by using this tool as a pre-commit hook. This ensures your documentation stays up-to-date automatically.
+
+1. **Install the tool locally** (if you haven't already):
+
+```sh
+npm install --save-dev github-action-readme-generator
+# or
+yarn add -D github-action-readme-generator
+```
+
+2. **Configure pre-commit**:
+
+Add the following to your `.pre-commit-config.yaml` file:
+
+```yaml
+repos:
+  - repo: local
+    hooks:
+      - id: github-action-readme-generator
+        name: Generate README from action.yml
+        entry: npx github-action-readme-generator
+        language: system
+        files: ^(action\.yml|\.ghadocs\.json)$
+        pass_filenames: false
+```
+
+This configuration will automatically regenerate your README whenever `action.yml` or `.ghadocs.json` changes.
+
 ## Configuration
 
 ### Example `.ghadocs.json` with all possible values
@@ -213,12 +243,12 @@ You can modify the script below to include any extra variables you like or use n
 <!-- end inputs -->
 <!-- start outputs -->
 
-| **Output**                 | **Description**                                                      |
-| -------------------------- | -------------------------------------------------------------------- |
-| <code>sections</code>      | A json object containing a map of section names to their new content |
-| <code>readme</code>        | The path to the generated README.md file                             |
-| <code>readme_before</code> | The content of the readme file before the changes were made          |
-| <code>readme_after</code>  | The content of the readme file after the changes were made           |
+| **Output**                 | **Description**                                                      | **Value** |
+| -------------------------- | -------------------------------------------------------------------- | --------- |
+| <code>sections</code>      | A json object containing a map of section names to their new content |           |
+| <code>readme</code>        | The path to the generated README.md file                             |           |
+| <code>readme_before</code> | The content of the readme file before the changes were made          |           |
+| <code>readme_after</code>  | The content of the readme file after the changes were made           |           |
 
 <!-- end outputs -->
 

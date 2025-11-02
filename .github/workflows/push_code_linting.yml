@@ -37,7 +37,7 @@ jobs:
       - name: Install compatible Nodejs version
         id: setup-node
         uses: ./.github/actions/setup-node
-        
+
       - name: Install Deps
         run: npm install
       - uses: xt0rted/markdownlint-problem-matcher@v3.0.0

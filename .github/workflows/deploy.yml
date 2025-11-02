@@ -4,22 +4,22 @@ on:
   workflow_call:
     inputs:
       ref:
-        description: 'The branch or tag ref to checkout. Defaults to the default branch.'
+        description: "The branch or tag ref to checkout. Defaults to the default branch."
         required: false
         default: ${{ github.ref }}
         type: string
       sha:
-        description: 'The commit SHA to checkout. Defaults to the SHA of the ref.'
+        description: "The commit SHA to checkout. Defaults to the SHA of the ref."
         required: false
         default: ${{ github.sha }}
         type: string
       repository:
-        description: 'The repository to checkout. Defaults to the current repository.'
+        description: "The repository to checkout. Defaults to the current repository."
         required: false
         default: ${{ github.repository }}
         type: string
       token:
-        description: 'The token to use for authentication. Defaults to the token of the current workflow run.'
+        description: "The token to use for authentication. Defaults to the token of the current workflow run."
         required: false
         default: ${{ github.token }}
         type: string
@@ -41,7 +41,6 @@ permissions:
   id-token: write # to enable use of OIDC for npm provenance
 
 jobs:
-
   deploy:
     name: Deploy NPM build
     runs-on: ubuntu-latest
@@ -56,7 +55,6 @@ jobs:
         with:
           ref: ${{ inputs.sha }}
           token: ${{ secrets.RELEASE_TOKEN }}
-
 
       - name: Install compatible Nodejs version
         id: setup-node

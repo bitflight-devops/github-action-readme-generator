@@ -342,7 +342,12 @@ export function loadDefaultConfig(log, config, providedContext) {
     log.debug('Loading default config');
     const defaultValues = collectAllDefaultValuesFromAction(log);
     const context = providedContext ?? new Context();
-    const repositoryDetail = repositoryFinder(`${process.env.INPUT_OWNER ?? ''}/${process.env.INPUT_REPO ?? ''}`, context);
+    // Get owner/repo from config (which includes CLI args), falling back to env vars for GitHub Actions
+    const ownerFromConfig = config.get('owner');
+    const repoFromConfig = config.get('repo');
+    const ownerInput = ownerFromConfig ?? process.env.INPUT_OWNER ?? '';
+    const repoInput = repoFromConfig ?? process.env.INPUT_REPO ?? '';
+    const repositoryDetail = repositoryFinder(`${ownerInput}/${repoInput}`, context);
     log.debug(`repositoryDetail: ${repositoryDetail}`);
     // Apply the default values from the action.yml file
     return config.defaults({

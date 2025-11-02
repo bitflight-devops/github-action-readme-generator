@@ -28,7 +28,10 @@ export const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);
 
 // Mocking required objects and functions
-vi.mock('node:fs');
+vi.mock('node:fs', async () => {
+  const mockFs = await import('../__mocks__/node:fs.js');
+  return mockFs;
+});
 vi.mock('@actions/github');
 
 let tempEnv: typeof process.env;
@@ -222,6 +225,12 @@ describe('helpers', () => {
   });
 
   describe('repositoryFinder', () => {
+    afterEach(() => {
+      // Clean up environment variables and mocks after each test
+      vi.unstubAllEnvs();
+      vi.resetAllMocks();
+    });
+
     it('should return the repository information from the input', () => {
       const result = repositoryFinder('ownerInput/repoInput', null);
       expect(result).toEqual({ owner: 'ownerInput', repo: 'repoInput' });

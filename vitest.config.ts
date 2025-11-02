@@ -8,9 +8,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ['dotenv/config'],
     environment: 'node',
+    root: './',
     deps: {
       interopDefault: true,
-      moduleDirectories: ['node_modules'],
     },
     coverage: {
       provider: 'v8',

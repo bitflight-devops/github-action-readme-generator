@@ -24,18 +24,21 @@ Before opening an issue, please check these resources:
 If you need assistance, please follow these steps:
 
 #### For General Questions
+
 - Open a [GitHub Discussion](https://github.com/bitflight-devops/github-action-readme-generator/discussions/new?category=q-a) in the Q&A category
 - Provide context about what you're trying to accomplish
 - Include relevant code snippets or configuration files
 - Describe what you've already tried
 
 #### For Bug Reports
+
 - Use our [Bug Report template](https://github.com/bitflight-devops/github-action-readme-generator/issues/new?template=01_bug_report.yml)
 - Include the version of the action you're using
 - Provide a minimal reproducible example
 - Attach relevant logs or error messages
 
 #### For Feature Requests
+
 - Use our [Feature Request template](https://github.com/bitflight-devops/github-action-readme-generator/issues/new?template=02_feature_request.yml)
 - Clearly describe the feature and its use case
 - Explain how it would benefit other users

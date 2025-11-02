@@ -129,34 +129,34 @@ This configuration will automatically regenerate your README whenever `action.ym
     # from.
     #
     # Default: action.yml
-    action: ""
+    action: ''
 
     # Description: The absolute or relative path to the markdown output file that
     # contains the formatting tokens within it.
     #
     # Default: README.md
-    readme: ""
+    readme: ''
 
     # Description: The GitHub Action repository owner, this field is autodetected by
     # default. Example: `bitflight-devops` or `your-gh-username`
     #
-    owner: ""
+    owner: ''
 
     # Description: The GitHub Action repository name, this field is autodetected by
     # default. Example: `github-action-readme-generator`
     #
-    repo: ""
+    repo: ''
 
     # Description: Save the provided values in a `.ghadocs.json` file. This will
     # update any existing `.ghadocs.json` file that is in place.
     #
     # Default: false
-    save: ""
+    save: ''
 
     # Description: Use `prettier` to pretty print the new README.md file
     #
     # Default: true
-    pretty: ""
+    pretty: ''
 
     # Description: Enable the update of the usage version to match the latest version
     # in the `package.json` file Output if your action repo is
@@ -164,24 +164,24 @@ This configuration will automatically regenerate your README whenever `action.ym
     # `uses: reviewdog/action-eslint@1.0.1`
     #
     # Default: true
-    versioning_enabled: ""
+    versioning_enabled: ''
 
     # Description: Set a specific version to display in the README.md, maybe you want
     # to use a major or minor version
     #
-    version_override: ""
+    version_override: ''
 
     # Description: Prefix the version with this value, if it isn't already prefixed
     #
     # Default: v
-    version_prefix: ""
+    version_prefix: ''
 
     # Description: If versioning is disabled, use this branch in the usage example,
     # where the default is `main` Output if your action repo is
     # `reviewdog/action-eslint`: `uses: reviewdog/action-eslint@main`
     #
     # Default: main
-    versioning_default_branch: ""
+    versioning_default_branch: ''
 
     # Description: Add a prefix to the README title. The title template looks like
     # this:
@@ -189,12 +189,12 @@ This configuration will automatically regenerate your README whenever `action.ym
     # # {brand}{prefix}{title}
     #
     # Default: GitHub Action:
-    title_prefix: ""
+    title_prefix: ''
 
     # Description: Include additional badge showing latest tag
     #
     # Default: true
-    include_github_version_badge: ""
+    include_github_version_badge: ''
 
     # Description: Create the branding svg image from the branding object in
     # `action.yml` then save it to this path. Then update the `README.md` file to
@@ -206,7 +206,7 @@ This configuration will automatically regenerate your README whenever `action.ym
     # # {brand}{prefix}{title}
     #
     # Default: .github/ghadocs/branding.svg
-    branding_svg_path: ""
+    branding_svg_path: ''
 
     # Description: Prefix the title in the `<!-- start title -->` section with the svg
     # branding image The title template looks like this:
@@ -214,7 +214,7 @@ This configuration will automatically regenerate your README whenever `action.ym
     # # {brand}{prefix}{title}
     #
     # Default: true
-    branding_as_title_prefix: ""
+    branding_as_title_prefix: ''
 ```
 
 <!-- end usage -->

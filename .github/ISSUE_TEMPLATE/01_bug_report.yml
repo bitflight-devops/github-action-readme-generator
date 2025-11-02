@@ -1,5 +1,6 @@
 name: Bug Report
 description: Something not working as expected
+labels: ["bug", "needs-triage"]
 body:
   - type: textarea
     attributes:

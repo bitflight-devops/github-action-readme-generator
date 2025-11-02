@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 GitHub Discussions
+    url: https://github.com/bitflight-devops/github-action-readme-generator/discussions
+    about: Ask questions and discuss with other community members
+  - name: 📖 Documentation
+    url: https://github.com/bitflight-devops/github-action-readme-generator#readme
+    about: Read the documentation for usage examples and configuration options
+  - name: 🔒 Security Issues
+    url: https://github.com/bitflight-devops/github-action-readme-generator/security/advisories/new
+    about: Report security vulnerabilities privately

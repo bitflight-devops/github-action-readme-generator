@@ -6,13 +6,15 @@
   "keywords": [
     "actions",
     "github",
-    "node16",
     "node20",
     "documentation",
     "github-actions",
     "generator",
-    "readme-generator"
+    "readme-generator",
+    "action-metadata",
+    "markdown-generator"
   ],
+  "homepage": "https://github.com/bitflight-devops/github-action-readme-generator#readme",
   "bugs": {
     "url": "https://github.com/bitflight-devops/github-action-readme-generator/issues"
   },
@@ -20,7 +22,7 @@
     "type": "git",
     "url": "git+https://github.com/bitflight-devops/github-action-readme-generator.git"
   },
-  "license": "APACHE",
+  "license": "Apache-2.0",
   "author": "Jamie Nelson <jamie@bitflight.io>",
   "type": "module",
   "exports": {

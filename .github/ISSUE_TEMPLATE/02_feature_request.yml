@@ -1,5 +1,6 @@
 name: Feature request
 description: Wouldn't it be nice if `github-action-readme-generator` could ...
+labels: ["enhancement", "needs-triage"]
 body:
   - type: textarea
     attributes:

@@ -27,7 +27,7 @@ export const __dirname = path.dirname(__filename);
 
 // Mocking required objects and functions
 vi.mock('node:fs', async () => {
-  return await import('../__mocks__/node:fs.js');
+  return import('../__mocks__/node:fs.js');
 });
 vi.mock('@actions/core');
 vi.mock('../src/Action.js');

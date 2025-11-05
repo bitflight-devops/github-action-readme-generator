@@ -297,7 +297,12 @@ export function collectAllDefaultValuesFromAction(log, providedMetaActionPath, p
         return defaultValues;
     }
     catch (error) {
-        throw new Error(`failed to load defaults from this action's action.yml: ${error}`);
+        // When running as a CLI tool (e.g., via npx or yarn dlx), the tool's own action.yml
+        // may not be present in the node_modules. This is expected behavior, as the tool
+        // should still work to generate documentation for other actions.
+        log.debug(`Could not load defaults from this tool's action.yml at ${thisActionPath}: ${error}`);
+        log.debug('Continuing without default values from action.yml');
+        return {};
     }
 }
 /**

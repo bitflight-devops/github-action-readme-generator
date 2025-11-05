@@ -435,11 +435,13 @@ declare module "src/readme-editor" {
 }
 declare module "src/inputs" {
     import { Context } from '@actions/github/lib/context.js';
-    import { IOptions, Provider } from 'nconf';
+    import nconf from 'nconf';
     import Action, { Input } from "src/Action";
     import { ReadmeSection } from "src/constants";
     import LogTask from "src/logtask/index";
     import ReadmeEditor from "src/readme-editor";
+    const Provider: typeof nconf.Provider;
+    type IOptions = nconf.IOptions;
     /**
      * Get the filename from the import.meta.url
      */

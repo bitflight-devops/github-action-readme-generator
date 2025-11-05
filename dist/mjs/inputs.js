@@ -9,13 +9,14 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as core from '@actions/core';
 import { Context } from '@actions/github/lib/context.js';
-import { Provider } from 'nconf';
+import nconf from 'nconf';
 import YAML from 'yaml';
 import Action from './Action.js';
 import { configFileName, ConfigKeys, README_SECTIONS } from './constants.js';
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
+const { Provider } = nconf;
 /**
  * Get the filename from the import.meta.url
  */
@@ -248,9 +249,6 @@ export function transformGitHubInputsToArgv(log, config, obj) {
         log.debug(`Parsing input: ${obj.key} with ith value: ${obj.value}`);
         const keyParsed = obj.key.replace(/^(INPUT|input)_/, '').toLocaleLowerCase();
         const key = ConfigKeysInputsMap[keyParsed] || keyParsed;
-        // eslint-disable-next-line no-param-reassign
-        obj.key = key;
-        config.set(key, obj.value);
         log.debug(`New input is ${key} with the value ${obj.value}`);
         return { key, value: obj.value };
     }
@@ -332,7 +330,6 @@ export function loadConfig(log, providedConfig, configFilePath) {
         .env({
         lowerCase: true,
         parseValues: true,
-        match: /^(INPUT|input)_[A-Z_a-z]\w*$/,
         transform: (obj) => {
             return transformGitHubInputsToArgv(log, config, obj);
         },

@@ -1,9 +1,11 @@
 import { Context } from '@actions/github/lib/context.js';
-import { IOptions, Provider } from 'nconf';
+import nconf from 'nconf';
 import Action, { Input } from './Action.js';
 import { ReadmeSection } from './constants.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
+declare const Provider: typeof nconf.Provider;
+type IOptions = nconf.IOptions;
 /**
  * Get the filename from the import.meta.url
  */

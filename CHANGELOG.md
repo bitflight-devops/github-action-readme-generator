@@ -1,3 +1,27 @@
+# [1.9.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.0...v1.9.0) (2025-11-05)
+
+
+### Bug Fixes
+
+* add division by zero check and improve diff error handling ([cc937f9](https://github.com/bitflight-devops/github-action-readme-generator/commit/cc937f9f5ebb9b2b23eb8cbd32a747d87ef0efdc))
+* add integration test and resolve linting issues ([9e8993a](https://github.com/bitflight-devops/github-action-readme-generator/commit/9e8993a3d50f70a94407f9c39f9f6fefaf89465b)), closes [#335](https://github.com/bitflight-devops/github-action-readme-generator/issues/335) [#335](https://github.com/bitflight-devops/github-action-readme-generator/issues/335)
+* apply linting and formatting fixes ([a4392aa](https://github.com/bitflight-devops/github-action-readme-generator/commit/a4392aad13a909b590629b33151a04174f94aae1))
+* correct lint:eslint:fix script and apply auto-fixes ([fa7bcee](https://github.com/bitflight-devops/github-action-readme-generator/commit/fa7bceeaaf10d3681aff6708124ebaf529252b7a))
+* remove match regex from nconf env config to enable INPUT_ var transformation ([b61f097](https://github.com/bitflight-devops/github-action-readme-generator/commit/b61f0970ac26b0040c7d233f455ba044c29433cd))
+* update nconf import for CommonJS/ESM compatibility ([#409](https://github.com/bitflight-devops/github-action-readme-generator/issues/409)) ([1878c34](https://github.com/bitflight-devops/github-action-readme-generator/commit/1878c34f20d7e4562964296a5ff56ae75b3ac5ae))
+* use Node 24 for semantic-release to satisfy version requirement ([529a2d2](https://github.com/bitflight-devops/github-action-readme-generator/commit/529a2d2dcf3d163606de5660d18b6e3034b42ae5))
+* use Node 24 for semantic-release to satisfy version requirement ([5e0acc4](https://github.com/bitflight-devops/github-action-readme-generator/commit/5e0acc4d109f7b85abb309e4a188b6839a7b5df1))
+* use sanitized artifact names to avoid special characters ([f64a248](https://github.com/bitflight-devops/github-action-readme-generator/commit/f64a248306a098b253c66319760132eff17ccbfb))
+
+
+### Features
+
+* add integration test workflow for real-world repositories ([ca961e5](https://github.com/bitflight-devops/github-action-readme-generator/commit/ca961e5a798224a9b4daf3c66bb237ae36a604d3))
+* add matrix testing for Node.js 20.x and 24.x versions ([aa4ee85](https://github.com/bitflight-devops/github-action-readme-generator/commit/aa4ee854ee04ac7d69a0d378b92727ee909f47db))
+* add Value column to outputs table and pre-commit hook documentation ([81a096d](https://github.com/bitflight-devops/github-action-readme-generator/commit/81a096d7cb62d11e4cc1d9a822ccfe392f060e74))
+* enable npm provenance for automated publishing without manual token ([b2484cf](https://github.com/bitflight-devops/github-action-readme-generator/commit/b2484cf22443e8d02ece0073226fffbff43c099e))
+* enable npm provenance with OIDC and Node 24 for semantic-release ([#413](https://github.com/bitflight-devops/github-action-readme-generator/issues/413)) ([c526aae](https://github.com/bitflight-devops/github-action-readme-generator/commit/c526aaee08fb507ea6b0dd29c9851b1283c05384))
+
 # [1.8.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.7.2...v1.8.0) (2023-11-20)
 
 

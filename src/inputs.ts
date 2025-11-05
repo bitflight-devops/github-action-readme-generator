@@ -301,9 +301,6 @@ export function transformGitHubInputsToArgv(
     log.debug(`Parsing input: ${obj.key} with ith value: ${obj.value}`);
     const keyParsed = obj.key.replace(/^(INPUT|input)_/, '').toLocaleLowerCase();
     const key = ConfigKeysInputsMap[keyParsed] || keyParsed;
-    // eslint-disable-next-line no-param-reassign
-    obj.key = key;
-    config.set(key, obj.value);
 
     log.debug(`New input is ${key} with the value ${obj.value}`);
     return { key, value: obj.value };
@@ -411,12 +408,12 @@ export function loadConfig(
     .env({
       lowerCase: true,
       parseValues: true,
-      match: /^(INPUT|input)_[A-Z_a-z]\w*$/,
       transform: (obj: KVPairType): undefined | KVPairType => {
         return transformGitHubInputsToArgv(log, config, obj);
       },
     })
     .argv(argvOptions);
+
   return config;
 }
 

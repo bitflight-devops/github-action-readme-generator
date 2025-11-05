@@ -24,7 +24,7 @@ vi.mock('@actions/core');
 vi.mock('../src/readme-editor.js');
 // Mocking required objects and functions
 vi.mock('node:fs', async () => {
-  return await import('../__mocks__/node:fs.js');
+  return import('../__mocks__/node:fs.js');
 });
 describe('ReadmeGenerator', () => {
   let mockInputs: Inputs;

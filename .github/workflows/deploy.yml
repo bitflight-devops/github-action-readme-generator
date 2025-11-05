@@ -91,6 +91,11 @@ jobs:
           npm run generate-docs
           git commit -n -m 'build(release): bundle distribution files'
 
+      - name: Setup Node 24 for semantic-release
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+
       - run: npx --yes semantic-release@latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}

@@ -22,9 +22,11 @@
 **Always run commands in this exact order:**
 
 1. **Install dependencies** (ALWAYS run first after any git checkout/pull):
+
    ```bash
    npm install
    ```
+
    - Expected: Completes in ~20-30s, installs ~1368 packages
    - Known warnings: May show peer dependency warnings for @types/node (safe to ignore)
    - If on Node 22+: Will show EBADENGINE warning (informational, but build still works)
@@ -48,6 +50,7 @@
 npm run test          # Run tests in watch mode (vitest)
 npm run coverage      # Run tests with coverage report (outputs to ./out/)
 ```
+
 - Duration: ~2 seconds
 - All 111 tests should pass
 - Test files: `__tests__/**/*.test.ts`
@@ -74,6 +77,7 @@ npm run lint:markdown:fix   # Fix markdown linting only
 ```bash
 npm run generate-docs
 ```
+
 - Reads action.yml and updates README.md sections
 - Generates branding SVG at `.github/ghadocs/branding.svg`
 - Uses `.ghadocs.json` for configuration
@@ -82,6 +86,7 @@ npm run generate-docs
 ### Complete Validation Sequence
 
 **To validate your changes will pass CI, run these in order:**
+
 ```bash
 npm install              # Install/update dependencies
 npm run build           # Build project
@@ -99,12 +104,14 @@ Duration: Total ~40-60 seconds for full validation.
 **Husky hooks are configured and WILL run automatically on commits:**
 
 - **Pre-commit** (`.husky/pre-commit`): Runs `npm run pre-commit`
+
   - Executes: `lint-staged && npm run build && npm run generate-docs`
   - Duration: 30-60 seconds
   - This means EVERY commit triggers a full build and docs regeneration
   - Staged files are auto-formatted via prettier and eslint
 
 - **Commit-msg** (`.husky/commit-msg`): Validates commit message format
+
   - Uses commitlint with conventional commits format
   - Example valid format: `feat: add new feature`, `fix: resolve bug`, `chore: update deps`
 
@@ -160,11 +167,13 @@ Duration: Total ~40-60 seconds for full validation.
 **Workflows run on every push/PR to main, next, beta:**
 
 1. **Test Workflow** (`.github/workflows/test.yml`):
+
    - Runs on: push, pull_request_target
    - Steps: checkout → setup Node 20.x → npm install → npm test → npm run coverage → npm run build → npm run generate-docs
    - Must pass for PR merge
 
 2. **Linting Workflow** (`.github/workflows/push_code_linting.yml`):
+
    - Runs: npm install → npm run lint:markdown → eslint via reviewdog
    - Reports inline PR comments via reviewdog
 
@@ -175,16 +184,16 @@ Duration: Total ~40-60 seconds for full validation.
 
 ## Configuration Files Reference
 
-| File | Purpose | When to Modify |
-|------|---------|----------------|
-| `action.yml` | GitHub Action metadata - defines all inputs/outputs | When adding/changing action inputs or outputs |
-| `.ghadocs.json` | Tool configuration for README generation | To customize README generation behavior |
-| `tsconfig.json` | TypeScript compiler settings for CJS/types | When changing TypeScript compilation targets |
-| `tsconfig-mjs.json` | TypeScript compiler settings for ESM | For ESM-specific build configuration |
-| `.eslintrc.cjs` | ESLint rules and plugins (strict config) | When modifying linting rules |
-| `.prettierrc.cjs` | Code formatting rules | When changing code style |
-| `vitest.config.ts` | Test runner configuration | When modifying test setup |
-| `package.json` | Dependencies, scripts, engines, volta | When adding deps or changing build scripts |
+| File                | Purpose                                             | When to Modify                                |
+| ------------------- | --------------------------------------------------- | --------------------------------------------- |
+| `action.yml`        | GitHub Action metadata - defines all inputs/outputs | When adding/changing action inputs or outputs |
+| `.ghadocs.json`     | Tool configuration for README generation            | To customize README generation behavior       |
+| `tsconfig.json`     | TypeScript compiler settings for CJS/types          | When changing TypeScript compilation targets  |
+| `tsconfig-mjs.json` | TypeScript compiler settings for ESM                | For ESM-specific build configuration          |
+| `.eslintrc.cjs`     | ESLint rules and plugins (strict config)            | When modifying linting rules                  |
+| `.prettierrc.cjs`   | Code formatting rules                               | When changing code style                      |
+| `vitest.config.ts`  | Test runner configuration                           | When modifying test setup                     |
+| `package.json`      | Dependencies, scripts, engines, volta               | When adding deps or changing build scripts    |
 
 ## Common Pitfalls & Solutions
 
@@ -208,16 +217,19 @@ Duration: Total ~40-60 seconds for full validation.
 **Trust these instructions.** Only search the codebase if information here is incomplete or incorrect.
 
 **Before making changes:**
+
 1. Ensure Node 20.x is active (check `node -v`)
 2. Run `npm install` if package.json changed
 3. Run `npm run build` after any source changes
 
 **Before committing:**
+
 1. Run full validation sequence (see "Complete Validation Sequence" above)
 2. Review README.md changes if action.yml was modified
 3. Ensure commit message follows conventional commits format
 
 **When debugging:**
+
 - Check dist/bin/index.js exists after build
-- Verify __tests__ directory mirrors src/ structure
+- Verify **tests** directory mirrors src/ structure
 - Look for `[ERROR]`, `[WARN]` in generate-docs output

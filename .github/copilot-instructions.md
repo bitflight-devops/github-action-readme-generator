@@ -16,6 +16,7 @@
 **This repository uses Conventional Commits (enforced by commitlint + husky).**
 
 **EVERY commit MUST follow this format:**
+
 ```
 <type>: <description>
 
@@ -25,6 +26,7 @@
 ```
 
 **Common types:**
+
 - `feat:` - New feature
 - `fix:` - Bug fix or issue resolution (includes test fixes, integration tests)
 - `docs:` - Documentation ONLY changes (README, comments ONLY if that's the sole change)
@@ -34,6 +36,7 @@
 - `ci:` - CI/CD changes
 
 **Examples:**
+
 - `fix: resolve path resolution error in npx usage` ✅
 - `feat: add support for custom templates` ✅
 - `docs: update installation instructions` ✅
@@ -63,9 +66,11 @@
    - If on Node 22+: Will show EBADENGINE warning (informational, but build still works)
 
 2. **Build the project** (REQUIRED before testing changes):
+
    ```bash
    npm run build
    ```
+
    - Duration: ~5-10 seconds
    - Runs in sequence: prebuild (tsc type-check) → build (esbuild) → postbuild (generate declarations + MJS build)
    - Output: Creates `dist/` directory with:
@@ -135,20 +140,76 @@ Duration: Total ~40-60 seconds for full validation.
 **Husky hooks are configured and WILL run automatically on commits:**
 
 - **Pre-commit** (`.husky/pre-commit`): Runs `npm run pre-commit`
-
   - Executes: `lint-staged && npm run build && npm run generate-docs`
   - Duration: 30-60 seconds
   - This means EVERY commit triggers a full build and docs regeneration
   - Staged files are auto-formatted via prettier and eslint
 
 - **Commit-msg** (`.husky/commit-msg`): Validates commit message format
-
   - Uses commitlint with conventional commits format
   - Example valid format: `feat: add new feature`, `fix: resolve bug`, `chore: update deps`
 
 - **Pre-push** (`.husky/pre-push`): Additional validation before push
 
 **Important**: If you make changes to action.yml, inputs.ts, or related files, the pre-commit hook will automatically update README.md. Include these updates in your commit.
+
+## ⚠️ CRITICAL: Dist Files Workflow
+
+**RULE: NEVER commit dist/ files manually. CI handles this automatically.**
+
+### Decision Logic for AI Agents
+
+```
+IF git status shows dist/ files as modified:
+  THEN ignore them - do NOT commit
+  REASON: Pre-commit hook rebuilds dist/ for validation only
+
+IF you are tempted to run `git add dist/`:
+  THEN STOP - this is incorrect
+  REASON: Only CI should commit dist/ files
+
+IF pre-commit hook completes successfully:
+  THEN commit ONLY your source changes (src/, package.json, etc.)
+  AND leave dist/ changes uncommitted
+```
+
+### How Dist Files Work
+
+1. **Developer commits source changes** (src/\*.ts, package.json, etc.)
+2. **Pre-commit hook runs** → rebuilds dist/ for validation → you see dist/ modified in git status
+3. **Developer commits** → do NOT include dist/ → ignore the modifications
+4. **CI deploy workflow** (`.github/workflows/deploy.yml` lines 87-92):
+   ```bash
+   npm run build --if-present
+   git add -f dist
+   npm run generate-docs
+   git commit -n -m 'build(release): bundle distribution files'
+   npx semantic-release@latest
+   ```
+5. **CI commits dist/ files** with specific message `build(release): bundle distribution files`
+
+### Why Dist Files Are Tracked But Ignored
+
+- `dist/` IS in `.gitignore` (line 3: `/dist/`)
+- BUT dist files ARE tracked in git (committed previously by CI)
+- `.gitignore` prevents accidental manual commits
+- CI uses `git add -f dist` to force-add during deploy
+
+### What You Should Do
+
+✅ **ALWAYS do:**
+
+- Run `npm install` as the FIRST step (auto-runs `husky install` via prepare script)
+- Commit source code changes (src/, package.json, tests, etc.)
+- Let pre-commit hook rebuild dist/ (this validates your changes work)
+- Push your commits normally
+
+❌ **NEVER do:**
+
+- `git add dist/` or `git add -f dist/`
+- `git commit` with dist/ files included
+- Bypass hooks with `HUSKY=0` unless investigating hook failures
+- Worry about dist/ showing as modified in git status
 
 ## Project Structure
 
@@ -198,13 +259,11 @@ Duration: Total ~40-60 seconds for full validation.
 **Workflows run on every push/PR to main, next, beta:**
 
 1. **Test Workflow** (`.github/workflows/test.yml`):
-
    - Runs on: push, pull_request_target
    - Steps: checkout → setup Node 20.x → npm install → npm test → npm run coverage → npm run build → npm run generate-docs
    - Must pass for PR merge
 
 2. **Linting Workflow** (`.github/workflows/push_code_linting.yml`):
-
    - Runs: npm install → npm run lint:markdown → eslint via reviewdog
    - Reports inline PR comments via reviewdog
 

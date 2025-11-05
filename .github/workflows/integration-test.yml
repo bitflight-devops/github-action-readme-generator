@@ -1,0 +1,183 @@
+name: Integration Tests - Real World Repositories
+
+on:
+  pull_request:
+    branches:
+      - main
+      - next
+      - beta
+  push:
+    branches:
+      - main
+      - next
+      - beta
+  workflow_dispatch:
+
+concurrency:
+  group: integration-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  integration-test:
+    name: Test against ${{ matrix.repo }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - repo: bjia56/setup-cosmocc
+            action_path: action.yml
+            readme_path: README.md
+            description: "Setup Cosmocc Action"
+            artifact_name: "setup-cosmocc"
+          - repo: catalystcommunity/action-release-action
+            action_path: action.yaml
+            readme_path: README.md
+            description: "Release Action"
+            artifact_name: "release-action"
+
+    steps:
+      - name: Checkout this action (PR code)
+        uses: actions/checkout@v4
+        with:
+          path: action-under-test
+
+      - name: Setup Node.js for building action
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: action-under-test/package-lock.json
+
+      - name: Install dependencies and build action
+        working-directory: action-under-test
+        run: |
+          npm ci
+          npm run build
+
+      - name: Checkout target repository (${{ matrix.repo }})
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          path: test-repo
+
+      - name: Backup original README
+        working-directory: test-repo
+        run: |
+          if [ -f "${{ matrix.readme_path }}" ]; then
+            cp "${{ matrix.readme_path }}" README.backup.md
+            echo "✓ Backed up original README"
+          else
+            echo "::warning::README not found at ${{ matrix.readme_path }}"
+          fi
+
+      - name: Run action against test repository
+        uses: ./action-under-test
+        with:
+          action: test-repo/${{ matrix.action_path }}
+          readme: test-repo/${{ matrix.readme_path }}
+          pretty: true
+
+      - name: Verify README was generated
+        working-directory: test-repo
+        run: |
+          if [ ! -f "${{ matrix.readme_path }}" ]; then
+            echo "::error::README was not generated at ${{ matrix.readme_path }}"
+            exit 1
+          fi
+          
+          echo "✓ README exists"
+          
+          # Check file size (Linux stat command)
+          SIZE=$(stat -c%s "${{ matrix.readme_path }}")
+          if [ "$SIZE" -lt 100 ]; then
+            echo "::error::Generated README is suspiciously small ($SIZE bytes)"
+            exit 1
+          fi
+          
+          echo "✓ README has reasonable size ($SIZE bytes)"
+
+      - name: Verify README contains expected sections
+        working-directory: test-repo
+        run: |
+          README_CONTENT=$(cat "${{ matrix.readme_path }}")
+          
+          # Check for common sections
+          CHECKS_PASSED=0
+          CHECKS_FAILED=0
+          
+          if echo "$README_CONTENT" | grep -q "<!-- start"; then
+            echo "✓ Found section delimiters"
+            CHECKS_PASSED=$((CHECKS_PASSED + 1))
+          else
+            echo "::warning::No section delimiters found"
+            CHECKS_FAILED=$((CHECKS_FAILED + 1))
+          fi
+          
+          if echo "$README_CONTENT" | grep -q "## "; then
+            echo "✓ Found markdown headers"
+            CHECKS_PASSED=$((CHECKS_PASSED + 1))
+          else
+            echo "::warning::No markdown headers found"
+            CHECKS_FAILED=$((CHECKS_FAILED + 1))
+          fi
+          
+          if echo "$README_CONTENT" | grep -q "uses:"; then
+            echo "✓ Found usage examples"
+            CHECKS_PASSED=$((CHECKS_PASSED + 1))
+          else
+            echo "::warning::No usage examples found"
+            CHECKS_FAILED=$((CHECKS_FAILED + 1))
+          fi
+          
+          echo ""
+          echo "Section validation: $CHECKS_PASSED passed, $CHECKS_FAILED warnings"
+
+      - name: Compare with original (if exists)
+        if: always()
+        working-directory: test-repo
+        run: |
+          if [ -f "README.backup.md" ]; then
+            echo "Comparing generated README with original..."
+            
+            # Linux stat command
+            ORIG_SIZE=$(stat -c%s "README.backup.md")
+            NEW_SIZE=$(stat -c%s "${{ matrix.readme_path }}")
+            
+            echo "Original size: $ORIG_SIZE bytes"
+            echo "Generated size: $NEW_SIZE bytes"
+            
+            # Calculate size difference percentage (avoid bc if not available, check for division by zero)
+            if [ "$ORIG_SIZE" -gt 0 ] && command -v bc &> /dev/null; then
+              DIFF_PCT=$(echo "scale=2; (($NEW_SIZE - $ORIG_SIZE) / $ORIG_SIZE) * 100" | bc)
+              echo "Size difference: $DIFF_PCT%"
+            else
+              DIFF=$((NEW_SIZE - ORIG_SIZE))
+              echo "Size difference: $DIFF bytes"
+            fi
+            
+            # Show diff summary (first 50 lines) - diff exits with 1 when files differ, so we use || true
+            echo ""
+            echo "Diff summary (first 50 lines):"
+            if [ -f "README.backup.md" ] && [ -f "${{ matrix.readme_path }}" ]; then
+              diff -u README.backup.md "${{ matrix.readme_path }}" | head -50 || true
+            else
+              echo "::warning::Cannot compare - one or both files missing"
+            fi
+          fi
+
+      - name: Upload generated README as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: readme-${{ matrix.artifact_name }}-${{ github.run_number }}
+          path: test-repo/${{ matrix.readme_path }}
+          retention-days: 7
+
+      - name: Report success
+        run: |
+          echo "✅ Integration test passed for ${{ matrix.repo }}"
+          echo "The action successfully generated README from ${{ matrix.action_path }}"

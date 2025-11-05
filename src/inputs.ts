@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 import * as core from '@actions/core';
 import { Context } from '@actions/github/lib/context.js';
-import { IOptions, Provider } from 'nconf';
+import nconf from 'nconf';
 import YAML from 'yaml';
 
 import Action, { Input } from './Action.js';
@@ -18,6 +18,9 @@ import { configFileName, ConfigKeys, README_SECTIONS, ReadmeSection } from './co
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
+
+const { Provider } = nconf;
+type IOptions = nconf.IOptions;
 
 /**
  * Get the filename from the import.meta.url
@@ -403,6 +406,7 @@ export function loadConfig(
       log.debug(`Config file not found: ${configFilePath}`);
     }
   }
+
   config
     .env({
       lowerCase: true,

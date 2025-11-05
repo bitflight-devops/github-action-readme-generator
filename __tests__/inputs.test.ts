@@ -108,6 +108,14 @@ describe('inputs', () => {
       expect(result).toEqual({});
     });
 
+    test('collectAllDefaultValuesFromAction with non-existent action.yml', ({ task }) => {
+      const log = new LogTask(task.name);
+
+      // Test with a path that doesn't exist (simulating CLI usage where action.yml is missing)
+      const result = collectAllDefaultValuesFromAction(log, './non-existent-action.yml');
+      expect(result).toEqual({});
+    });
+
     test('loadConfig', ({ task }) => {
       const log = new LogTask(task.name);
       const providedConfig = new Provider();

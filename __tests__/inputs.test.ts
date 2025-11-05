@@ -213,8 +213,14 @@ describe('inputs', () => {
     test('loadRequiredConfig: config missing', ({ task }) => {
       const log = new LogTask(task.name);
       const config = new Provider();
+
+      // Clear INPUT_ vars set in beforeEach to test missing scenario
+      vi.unstubAllEnvs();
+
       loadConfig(log, config);
       expect(config).toBeInstanceOf(Provider);
+
+      // Set INPUT_ vars AFTER loadConfig to verify they're not picked up
       vi.stubEnv('INPUT_owner', 'testowner');
       vi.stubEnv('INPUT_REPO', 'testrepo');
       vi.stubEnv('INPUT_README', 'testreadme');
@@ -223,6 +229,25 @@ describe('inputs', () => {
       expect(() => loadRequiredConfig(log, config)).toThrowError(
         /Missing required keys: paths:action, paths:readme, owner, repo/,
       );
+    });
+
+    test('loadConfig transforms INPUT_ env vars to paths (GitHub Actions scenario)', ({ task }) => {
+      // TDD test: This test replicates the actual GitHub Actions scenario
+      // where INPUT_ACTION and INPUT_README environment variables are set
+      // BEFORE loadConfig() is called.
+      const log = new LogTask(task.name);
+      const config = new Provider();
+
+      // Set INPUT_ env vars BEFORE calling loadConfig (simulates GitHub Actions)
+      vi.stubEnv('INPUT_ACTION', actTestYmlPath);
+      vi.stubEnv('INPUT_README', readmeTestPath);
+
+      // Load config with INPUT_ vars already set
+      loadConfig(log, config);
+
+      // Verify INPUT_ vars were transformed to paths:action and paths:readme
+      expect(config.get('paths:action')).toBe(actTestYmlPath);
+      expect(config.get('paths:readme')).toBe(readmeTestPath);
     });
 
     test('loadAction', ({ task }) => {
@@ -269,22 +294,28 @@ describe('inputs', () => {
     test('Inputs stringify', async ({ task }) => {
       const log = new LogTask(task.name);
       const { default: Action } = await import('../src/Action.js');
+
+      // Clear beforeEach env vars and set test-specific ones
+      vi.unstubAllEnvs();
       vi.stubEnv('DEBUG', 'true');
-      const action = new Action(actTestYmlPath);
-      const sections = ['usage'] as ReadmeSection[];
       vi.stubEnv('INPUT_OWNER', 'stringowner');
       vi.stubEnv('INPUT_REPO', 'stringrepo');
       vi.stubEnv('INPUT_README', 'stringreadme');
       vi.stubEnv('INPUT_ACTION', 'stringaction');
+      vi.stubEnv('GITHUB_REPOSITORY', ''); // Prevent fallback
+      vi.stubEnv('GITHUB_EVENT_PATH', ''); // Prevent payload file read
+
+      const action = new Action(actTestYmlPath);
+      const sections = ['usage'] as ReadmeSection[];
       const providedInputContext: InputContext = {
         action,
         sections,
+        configPath: '/tmp/nonexistent.json', // Prevent loading .ghadocs.json
       };
 
       const inputs = new Inputs(providedInputContext, log);
       const result = inputs.stringify();
       expect(typeof result).toBe('string');
-
       expect(result).toMatch(/owner: stringowner/);
       expect(result).toMatch(/repo: stringrepo/);
       expect(result).toMatch(/sections:\n {2}- usage/);

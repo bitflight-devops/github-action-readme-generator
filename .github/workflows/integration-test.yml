@@ -32,10 +32,12 @@ jobs:
             action_path: action.yml
             readme_path: README.md
             description: "Setup Cosmocc Action"
+            artifact_name: "setup-cosmocc"
           - repo: catalystcommunity/action-release-action
             action_path: action.yaml
             readme_path: README.md
             description: "Release Action"
+            artifact_name: "release-action"
 
     steps:
       - name: Checkout this action (PR code)
@@ -171,7 +173,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: readme-${{ matrix.description }}-${{ github.run_number }}
+          name: readme-${{ matrix.artifact_name }}-${{ github.run_number }}
           path: test-repo/${{ matrix.readme_path }}
           retention-days: 7
 

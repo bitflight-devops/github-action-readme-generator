@@ -95,3 +95,5 @@ jobs:
           node-version: '24.x'
 
       - run: npx --yes semantic-release@latest
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

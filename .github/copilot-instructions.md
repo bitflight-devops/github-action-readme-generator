@@ -11,6 +11,37 @@
 **Test Framework**: vitest
 **Code Style**: ESLint + Prettier + Markdownlint
 
+## ⚠️ CRITICAL: Commit Message Format
+
+**This repository uses Conventional Commits (enforced by commitlint + husky).**
+
+**EVERY commit MUST follow this format:**
+```
+<type>: <description>
+
+[optional body]
+
+[optional footer]
+```
+
+**Common types:**
+- `feat:` - New feature
+- `fix:` - Bug fix or issue resolution (includes test fixes, integration tests)
+- `docs:` - Documentation ONLY changes (README, comments ONLY if that's the sole change)
+- `test:` - Test-only changes
+- `refactor:` - Code restructuring without feature changes
+- `chore:` - Build scripts, dependencies, tooling
+- `ci:` - CI/CD changes
+
+**Examples:**
+- `fix: resolve path resolution error in npx usage` ✅
+- `feat: add support for custom templates` ✅
+- `docs: update installation instructions` ✅
+- `Add new feature` ❌ (missing type)
+- `docs: fix integration test` ❌ (wrong type - should be `fix:` or `test:`)
+
+**Validation:** Run `git log --format=%B -n 1 | npx --no -- commitlint` to validate before pushing.
+
 ## Critical: Node Version Requirement
 
 ⚠️ **IMPORTANT**: This project REQUIRES Node 20.x. The engines field strictly enforces this. If you see `EBADENGINE` warnings during npm install, the environment is using an incompatible Node version. The project uses volta for version management - check `.node-version` (contains "20.9.0") and `package.json` volta field.

@@ -15,7 +15,7 @@ export declare const __dirname: string;
 /**
  * Change working directory to output of workingDirectory()
  */
-export declare const metaActionPath = "action.yml";
+export declare const metaActionPath = "../../action.yml";
 export type ArgvOptionProperties = {
     [key: string]: {
         alias: string | string[];

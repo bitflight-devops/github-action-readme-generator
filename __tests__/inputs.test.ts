@@ -108,17 +108,17 @@ describe('inputs', () => {
       expect(result).toEqual({});
     });
 
-    test('collectAllDefaultValuesFromAction resolves path from process.cwd()', ({ task }) => {
+    test('collectAllDefaultValuesFromAction loads this actions own action.yml', ({ task }) => {
       const log = new LogTask(task.name);
 
-      // This test verifies that the path is resolved from process.cwd() instead of __dirname
-      // When a relative path is provided, it should be resolved relative to the current working directory
-      // This is critical for npx/yarn dlx usage where __dirname would point to node_modules
+      // This test verifies that collectAllDefaultValuesFromAction loads THIS action's own action.yml
+      // (github-action-readme-generator's action.yml), not the user's action.yml
+      // It uses __dirname to find the action.yml file relative to where the code is installed
       const relativePath = actTestYmlPath;
       const result = collectAllDefaultValuesFromAction(log, relativePath);
 
-      // The test passes if it successfully loads the action.yml from the relative path
-      // based on process.cwd() rather than failing to find it in __dirname
+      // The test passes if it successfully loads the action defaults
+      // This works because the test mock provides the action.yml in the expected location
       expect(result).toBeDefined();
       expect(typeof result).toBe('object');
     });

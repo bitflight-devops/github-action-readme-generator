@@ -28,7 +28,7 @@ export const __dirname = path.dirname(__filename);
  * Change working directory to output of workingDirectory()
  */
 // process.chdir(workingDirectory());
-export const metaActionPath = 'action.yml';
+export const metaActionPath = '../../action.yml';
 /**
  * Represents the command line argument options for the application.
  */
@@ -281,10 +281,10 @@ export function setConfigValueFromActionFileDefault(log, actionInstance, inputNa
  */
 export function collectAllDefaultValuesFromAction(log, providedMetaActionPath, providedDefaults = {}) {
     log.debug('Collecting default values from action.yml');
-    // Path is resolved relative to the current working directory (process.cwd())
-    // This ensures the tool works correctly when executed via npx/yarn dlx
-    // where __dirname would resolve to the package installation directory in node_modules
-    const thisActionPath = path.join(process.cwd(), providedMetaActionPath ?? metaActionPath);
+    // This loads the defaults from THIS action's own action.yml file (github-action-readme-generator's action.yml)
+    // NOT the user's action.yml file (which is loaded separately via the 'action' input parameter)
+    // Therefore, we use __dirname to find this package's action.yml regardless of where it's installed
+    const thisActionPath = path.join(__dirname, providedMetaActionPath ?? metaActionPath);
     try {
         const defaultValues = {};
         const thisAction = new Action(thisActionPath);
@@ -300,9 +300,8 @@ export function collectAllDefaultValuesFromAction(log, providedMetaActionPath, p
         return defaultValues;
     }
     catch (error) {
-        throw new Error(`Failed to load action.yml from '${thisActionPath}'. ` +
-            `Ensure the file exists in the current working directory. ` +
-            `Current working directory: ${process.cwd()}. Error: ${error}`);
+        throw new Error(`Failed to load this action's action.yml from '${thisActionPath}'. ` +
+            `This should be the github-action-readme-generator's own action.yml file. Error: ${error}`);
     }
 }
 /**

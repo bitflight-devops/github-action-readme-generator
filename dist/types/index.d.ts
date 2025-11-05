@@ -696,6 +696,7 @@ declare module "__tests__/inputs.test" {
     export const __filename: string;
     export const __dirname: string;
 }
+declare module "__tests__/integration-issue-335.test" { }
 declare module "src/markdowner/index" {
     /**
      * Types representing a 2D array of strings for a Markdown table.

@@ -55,9 +55,6 @@ npm run coverage      # Run tests with coverage report (outputs to ./out/)
 
 ### Linting & Formatting
 
-⚠️ **KNOWN ISSUE**: The `npm run lint:fix` command has a bug - it references a non-existent "eslint" script and will fail. Use manual commands instead.
-
-**Working lint commands:**
 ```bash
 # Run all linting (format + type-check + eslint + markdownlint)
 npm run lint
@@ -65,9 +62,9 @@ npm run lint
 # Auto-format code
 npm run format          # Runs prettier on all files
 
-# Fix linting issues manually
-npm run format && npx eslint -c .eslintrc.cjs --fix ./src/ ./__tests__/
-npm run lint:markdown:fix   # Fix markdown linting
+# Fix linting issues
+npm run lint:fix        # Runs format + eslint --fix + markdownlint --fix
+npm run lint:markdown:fix   # Fix markdown linting only
 ```
 
 **Pre-existing lint issues**: There are 4 linting errors in test files (`no-return-await` in action.test.ts, helpers.test.ts, inputs.test.ts, readme-generator.test.ts). These are pre-existing and may need fixing.
@@ -196,8 +193,7 @@ Duration: Total ~40-60 seconds for full validation.
 3. **Lint errors on test files**: Pre-existing `no-return-await` errors in 4 test files - can be ignored or fixed
 4. **README.md changes after commit**: Expected - pre-commit hook runs `generate-docs`
 5. **Pre-commit hook slow**: Normal - it runs full build + docs generation (~30-60s)
-6. **npm run lint:fix fails**: Known bug - use `npm run format && npx eslint --fix` instead
-7. **EBADENGINE warning**: Using wrong Node version - requires Node 20.x
+6. **EBADENGINE warning**: Using wrong Node version - requires Node 20.x
 
 ## Key Implementation Details
 

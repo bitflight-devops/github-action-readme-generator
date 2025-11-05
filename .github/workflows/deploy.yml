@@ -45,8 +45,6 @@ jobs:
     name: Deploy NPM build
     runs-on: ubuntu-latest
     env:
-      NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       SKIP_PREFLIGHT_CHECK: true
@@ -97,6 +95,3 @@ jobs:
           node-version: '24.x'
 
       - run: npx --yes semantic-release@latest
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

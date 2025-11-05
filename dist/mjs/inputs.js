@@ -281,6 +281,9 @@ export function setConfigValueFromActionFileDefault(log, actionInstance, inputNa
  */
 export function collectAllDefaultValuesFromAction(log, providedMetaActionPath, providedDefaults = {}) {
     log.debug('Collecting default values from action.yml');
+    // This loads the defaults from THIS action's own action.yml file (github-action-readme-generator's action.yml)
+    // NOT the user's action.yml file (which is loaded separately via the 'action' input parameter)
+    // Therefore, we use __dirname to find this package's action.yml regardless of where it's installed
     const thisActionPath = path.join(__dirname, providedMetaActionPath ?? metaActionPath);
     try {
         const defaultValues = {};

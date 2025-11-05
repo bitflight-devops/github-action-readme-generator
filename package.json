@@ -62,7 +62,7 @@
     "lint": "npm run lint:eslint && npm run lint:markdown",
     "lint:fix": "npm run lint:eslint:fix && npm run lint:markdown:fix",
     "lint:eslint": "eslint -c .eslintrc.cjs --color ./src/ ./__tests__/",
-    "lint:eslint:fix": "npm run eslint -- --fix",
+    "lint:eslint:fix": "eslint -c .eslintrc.cjs --color --fix ./src/ ./__tests__/",
     "markdownlint": "markdownlint",
     "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
     "lint:markdown:fix": "npm run lint:markdown -- --fix",
@@ -214,7 +214,7 @@
     "vitest": "^4.0.6"
   },
   "engines": {
-    "node": ">=20.0.0 <21.0.0",
+    "node": ">=20.0.0 <25.0.0",
     "npm": ">=10.0.0"
   },
   "os": [

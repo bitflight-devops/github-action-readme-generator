@@ -12,8 +12,7 @@ export const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);
 
 vi.mock('node:fs', async () => {
-  const mockFs = await import('../__mocks__/node:fs.js');
-  return mockFs;
+  return import('../__mocks__/node:fs.js');
 });
 vi.mock('../src/logtask/index.js');
 

@@ -66,6 +66,14 @@ runs:
     // Also create a dummy README.md to satisfy other requirements
     fs.writeFileSync(path.join(tempDir, 'README.md'), '# Test README\n');
 
+    // Create a .git directory with config to simulate a git repository
+    const gitDir = path.join(tempDir, '.git');
+    fs.mkdirSync(gitDir);
+    const gitConfig = `[remote "origin"]
+\turl = https://github.com/test-owner/test-repo.git
+`;
+    fs.writeFileSync(path.join(gitDir, 'config'), gitConfig);
+
     // Step 4: Temporarily move the tool's action.yml to simulate it being missing
     // (as it would be when installed via npm since it's not in the "files" array)
     const actionYmlMoved = fs.existsSync(originalActionYmlPath);
@@ -76,20 +84,20 @@ runs:
     // Verify the file was actually moved
     expect(fs.existsSync(originalActionYmlPath)).toBe(false);
 
-    // Step 5: Execute the main function and expect it to throw an error
-    // The error should indicate that action.yml could not be found
+    // Step 5: Execute the main function and verify it handles the missing action.yml gracefully
+    // The current implementation should NOT throw an error about action.yml being missing
     const log = new LogTask('Generate Documentation');
 
-    // This should fail because collectAllDefaultValuesFromAction tries to load
+    // This should NOT fail even though collectAllDefaultValuesFromAction can't load
     // the github-action-readme-generator's own action.yml from __dirname/../../action.yml
-    // which doesn't exist when the package is installed via npm (not in "files" array)
+    // The fix gracefully handles this by logging a debug message and returning empty defaults
     // In our test, we've moved the action.yml file to simulate this scenario
 
-    // The test validates that the current implementation throws an error
-    // when trying to create an Inputs instance without the tool's action.yml file
+    // The test validates that the current implementation gracefully handles missing action.yml
+    // but still requires other required inputs (paths:action, paths:readme)
     expect(() => {
       // eslint-disable-next-line no-new
       new Inputs({}, log);
-    }).toThrow(/action\.yml/);
+    }).toThrow(/Missing required keys/);
   });
 });

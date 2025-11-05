@@ -26,8 +26,12 @@ permissions:
 
 jobs:
   run-tests:
-    name: Run unit tests
+    name: Run unit tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['20.0.0', '20.17.0', '24.x']
     env:
       SKIP_PREFLIGHT_CHECK: true
     steps:
@@ -38,6 +42,8 @@ jobs:
       - name: Install compatible Nodejs version
         id: setup-node
         uses: ./.github/actions/setup-node
+        with:
+          version: ${{ matrix.node-version }}
 
       - name: Configure PATH
         run: |

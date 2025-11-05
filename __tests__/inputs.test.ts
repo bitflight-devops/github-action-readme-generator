@@ -108,6 +108,21 @@ describe('inputs', () => {
       expect(result).toEqual({});
     });
 
+    test('collectAllDefaultValuesFromAction resolves path from process.cwd()', ({ task }) => {
+      const log = new LogTask(task.name);
+
+      // This test verifies that the path is resolved from process.cwd() instead of __dirname
+      // When a relative path is provided, it should be resolved relative to the current working directory
+      // This is critical for npx/yarn dlx usage where __dirname would point to node_modules
+      const relativePath = actTestYmlPath;
+      const result = collectAllDefaultValuesFromAction(log, relativePath);
+
+      // The test passes if it successfully loads the action.yml from the relative path
+      // based on process.cwd() rather than failing to find it in __dirname
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('object');
+    });
+
     test('loadConfig', ({ task }) => {
       const log = new LogTask(task.name);
       const providedConfig = new Provider();

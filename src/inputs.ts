@@ -351,6 +351,9 @@ export function collectAllDefaultValuesFromAction(
   } = {},
 ): IOptions {
   log.debug('Collecting default values from action.yml');
+  // Path is resolved relative to the current working directory (process.cwd())
+  // This ensures the tool works correctly when executed via npx/yarn dlx
+  // where __dirname would resolve to the package installation directory in node_modules
   const thisActionPath = path.join(process.cwd(), providedMetaActionPath ?? metaActionPath);
   try {
     const defaultValues = {} as IOptions;
@@ -368,7 +371,11 @@ export function collectAllDefaultValuesFromAction(
     log.debug(JSON.stringify(defaultValues, null, 2));
     return defaultValues;
   } catch (error) {
-    throw new Error(`failed to load defaults from this action's action.yml: ${error}`);
+    throw new Error(
+      `Failed to load action.yml from '${thisActionPath}'. ` +
+        `Ensure the file exists in the current working directory. ` +
+        `Current working directory: ${process.cwd()}. Error: ${error}`,
+    );
   }
 }
 

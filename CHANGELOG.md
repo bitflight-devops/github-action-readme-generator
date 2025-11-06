@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.0...v1.8.1) (2025-11-06)
+
+
+### Performance Improvements
+
+* externalize prettier to reduce bundle size by 58% ([9d29197](https://github.com/bitflight-devops/github-action-readme-generator/commit/9d29197891d7d913edc69de621d951a81f8f7df5))
+
 # [1.8.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.7.2...v1.8.0) (2025-11-05)
 
 

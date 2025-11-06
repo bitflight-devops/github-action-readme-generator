@@ -1,4 +1,5 @@
 import * as esbuild from 'esbuild';
+import { writeFileSync } from 'node:fs';
 // import { nodeExternalsPlugin } from 'esbuild-node-externals';
 
 const ESM_REQUIRE_SHIM = `#!/usr/bin/env node
@@ -16,6 +17,8 @@ await esbuild
     platform: 'node',
     format: 'esm',
     target: 'node20',
+    metafile: true,
+    external: ['prettier'],
     banner: {
       js: ESM_REQUIRE_SHIM,
     },
@@ -24,5 +27,11 @@ await esbuild
       //   dependencies: false,
       // }),
     ],
+  })
+  .then((result) => {
+    if (result.metafile) {
+      writeFileSync('meta.json', JSON.stringify(result.metafile, null, 2));
+      console.log('✓ Metafile written to meta.json');
+    }
   })
   .catch(() => process.exit(1));

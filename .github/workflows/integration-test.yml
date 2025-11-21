@@ -48,8 +48,8 @@ jobs:
       - name: Setup Node.js for building action
         uses: actions/setup-node@v6.0.0
         with:
-          node-version: '20.x'
-          cache: 'npm'
+          node-version: "20.x"
+          cache: "npm"
           cache-dependency-path: action-under-test/package-lock.json
 
       - name: Install dependencies and build action
@@ -88,27 +88,27 @@ jobs:
             echo "::error::README was not generated at ${{ matrix.readme_path }}"
             exit 1
           fi
-          
+
           echo "✓ README exists"
-          
+
           # Check file size (Linux stat command)
           SIZE=$(stat -c%s "${{ matrix.readme_path }}")
           if [ "$SIZE" -lt 100 ]; then
             echo "::error::Generated README is suspiciously small ($SIZE bytes)"
             exit 1
           fi
-          
+
           echo "✓ README has reasonable size ($SIZE bytes)"
 
       - name: Verify README contains expected sections
         working-directory: test-repo
         run: |
           README_CONTENT=$(cat "${{ matrix.readme_path }}")
-          
+
           # Check for common sections
           CHECKS_PASSED=0
           CHECKS_FAILED=0
-          
+
           if echo "$README_CONTENT" | grep -q "<!-- start"; then
             echo "✓ Found section delimiters"
             CHECKS_PASSED=$((CHECKS_PASSED + 1))
@@ -116,7 +116,7 @@ jobs:
             echo "::warning::No section delimiters found"
             CHECKS_FAILED=$((CHECKS_FAILED + 1))
           fi
-          
+
           if echo "$README_CONTENT" | grep -q "## "; then
             echo "✓ Found markdown headers"
             CHECKS_PASSED=$((CHECKS_PASSED + 1))
@@ -124,7 +124,7 @@ jobs:
             echo "::warning::No markdown headers found"
             CHECKS_FAILED=$((CHECKS_FAILED + 1))
           fi
-          
+
           if echo "$README_CONTENT" | grep -q "uses:"; then
             echo "✓ Found usage examples"
             CHECKS_PASSED=$((CHECKS_PASSED + 1))
@@ -132,7 +132,7 @@ jobs:
             echo "::warning::No usage examples found"
             CHECKS_FAILED=$((CHECKS_FAILED + 1))
           fi
-          
+
           echo ""
           echo "Section validation: $CHECKS_PASSED passed, $CHECKS_FAILED warnings"
 

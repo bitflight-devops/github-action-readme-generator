@@ -134,17 +134,7 @@
           "provenance": true
         }
       ],
-      [
-        "@semantic-release/github",
-        {
-          "assets": [
-            "dist/**",
-            "action.yml",
-            "package.json",
-            "package-lock.json"
-          ]
-        }
-      ],
+      "@semantic-release/github",
       "@semantic-release/git"
     ],
     "preset": "angular"

@@ -5,6 +5,7 @@ on:
   schedule:
     # Automatically run on every Sunday
     - cron: "0 0 * * 0"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -27,3 +28,5 @@ jobs:
           token: ${{ secrets.RELEASE_TOKEN }}
           pull_request_branch: "github-actions-updates"
           pull_request_labels: "dependencies, automated"
+          commit_message: "fix(deps): update github action versions"
+          pull_request_title: "fix(deps): update github action versions"

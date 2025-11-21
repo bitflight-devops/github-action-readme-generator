@@ -3,6 +3,7 @@
 /out/
 /dist/
 /coverage/
+meta.json
 # Logs
 logs
 *.log

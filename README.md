@@ -14,7 +14,7 @@
 </div>
 <!-- start description -->
 
-Effortlessly sync action.yml to README.md. Auto-generates inputs, outputs & usage docs, ensuring documentation matches code.
+📓 Effortlessly sync action.yml to README.md. Auto-generates inputs, outputs & usage docs, ensuring docs match code.
 
 <!-- end description -->
 

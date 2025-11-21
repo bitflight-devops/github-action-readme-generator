@@ -1,7 +1,7 @@
 ---
 name: GitHub Action's Readme Generator
 author: Jamie Nelson <jamie@bitflight.io>
-description: Effortlessly sync action.yml to README.md. Auto-generates inputs, outputs & usage docs, ensuring documentation matches code.
+description: 📓 Effortlessly sync action.yml to README.md. Auto-generates inputs, outputs & usage docs, ensuring docs match code.
 
 branding:
   icon: book-open

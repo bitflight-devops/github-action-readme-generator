@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.1...v1.8.2) (2025-11-21)
+
+
+### Bug Fixes
+
+* **ci:** add conventional commits to github actions version updater ([c49de89](https://github.com/bitflight-devops/github-action-readme-generator/commit/c49de89e9ad4027401ffbee34b63c8735c13fa54))
+
 ## [1.8.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.0...v1.8.1) (2025-11-06)
 
 

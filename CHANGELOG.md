@@ -1,3 +1,10 @@
+## [1.8.3](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.2...v1.8.3) (2025-11-21)
+
+
+### Bug Fixes
+
+* **release:** update package.json ([489cdf9](https://github.com/bitflight-devops/github-action-readme-generator/commit/489cdf9287705c014e3fa04b060e9d235ae60a1c))
+
 ## [1.8.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.1...v1.8.2) (2025-11-21)
 
 

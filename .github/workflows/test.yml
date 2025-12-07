@@ -35,7 +35,7 @@ jobs:
     env:
       SKIP_PREFLIGHT_CHECK: true
     steps:
-      - uses: actions/checkout@v5.0.0
+      - uses: actions/checkout@v6.0.1
         with:
           ref: ${{ github.head_ref || github.ref }}
 
@@ -57,7 +57,7 @@ jobs:
       - name: "Report Coverage"
         if: always()
         continue-on-error: true
-        uses: davelosert/vitest-coverage-report-action@v2.8.3
+        uses: davelosert/vitest-coverage-report-action@v2.9.0
         with:
           json-summary-path: "./out/coverage-summary.json"
           json-final-path: ./out/coverage-final.json

@@ -171,7 +171,7 @@ jobs:
 
       - name: Upload generated README as artifact
         if: always()
-        uses: actions/upload-artifact@v5.0.0
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: readme-${{ matrix.artifact_name }}-${{ github.run_number }}
           path: test-repo/${{ matrix.readme_path }}

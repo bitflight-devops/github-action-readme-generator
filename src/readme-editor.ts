@@ -85,7 +85,7 @@ export default class ReadmeEditor {
   updateSection(name: string, providedContent: string | string[], addNewlines = true): void {
     const log = new LogTask(name);
     const content = (
-      Array.isArray(providedContent) ? providedContent.join(EOL) : providedContent ?? ''
+      Array.isArray(providedContent) ? providedContent.join(EOL) : (providedContent ?? '')
     ).trim();
     log.info(`Looking for the ${name} token in ${this.filePath}`);
 

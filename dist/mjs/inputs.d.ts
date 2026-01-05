@@ -24,6 +24,7 @@ export type ArgvOptionProperties = {
         describe: string;
         parseValues?: boolean;
         type?: string;
+        default?: string;
     };
 };
 /**

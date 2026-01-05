@@ -227,7 +227,7 @@ describe('inputs', () => {
       vi.stubEnv('INPUT_ACTION', 'testaction');
 
       expect(() => loadRequiredConfig(log, config)).toThrowError(
-        /Missing required keys: paths:action, paths:readme, owner, repo/,
+        /Missing required keys: owner, repo/,
       );
     });
 

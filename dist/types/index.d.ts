@@ -460,6 +460,7 @@ declare module "src/inputs" {
             describe: string;
             parseValues?: boolean;
             type?: string;
+            default?: string;
         };
     };
     /**

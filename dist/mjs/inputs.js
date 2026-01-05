@@ -57,6 +57,7 @@ argvOptions[ConfigKeys.pathsAction] = {
     alias: ['pathsAction', 'action'],
     type: 'string',
     describe: 'Path to the action.yml',
+    default: './action.yml',
 };
 /**
  * Paths readme option configuration.
@@ -68,6 +69,7 @@ argvOptions[ConfigKeys.pathsReadme] = {
     alias: ['pathsReadme', 'readme'],
     type: 'string',
     describe: 'Path to the README file',
+    default: 'README.md',
 };
 /**
  * Branding SVG path option configuration.

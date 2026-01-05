@@ -44,6 +44,7 @@ export type ArgvOptionProperties = {
     describe: string;
     parseValues?: boolean;
     type?: string;
+    default?: string;
   };
 };
 /**
@@ -75,6 +76,7 @@ argvOptions[ConfigKeys.pathsAction] = {
   alias: ['pathsAction', 'action'],
   type: 'string',
   describe: 'Path to the action.yml',
+  default: './action.yml',
 };
 
 /**
@@ -87,6 +89,7 @@ argvOptions[ConfigKeys.pathsReadme] = {
   alias: ['pathsReadme', 'readme'],
   type: 'string',
   describe: 'Path to the README file',
+  default: 'README.md',
 };
 
 /**

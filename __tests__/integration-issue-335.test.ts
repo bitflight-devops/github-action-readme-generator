@@ -46,7 +46,7 @@ describe('Integration Test - Issue #335: Execution from different directory', ()
     }
   });
 
-  it('should fail when executed from a directory other than the project root', async () => {
+  it('should work when executed from a directory other than the project root with defaults', async () => {
     // Step 1: Create a temporary directory to simulate user's project
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gha-test-335-'));
 
@@ -93,11 +93,12 @@ runs:
     // The fix gracefully handles this by logging a debug message and returning empty defaults
     // In our test, we've moved the action.yml file to simulate this scenario
 
-    // The test validates that the current implementation gracefully handles missing action.yml
-    // but still requires other required inputs (paths:action, paths:readme)
+    // With default values for paths:action (./action.yml) and paths:readme (README.md),
+    // and with owner/repo auto-detected from the .git config, the tool now works
+    // without requiring any explicit inputs - this is the desired behavior!
     expect(() => {
       // eslint-disable-next-line no-new
       new Inputs({}, log);
-    }).toThrow(/Missing required keys/);
+    }).not.toThrow();
   });
 });

@@ -277,7 +277,7 @@ export function getCurrentVersionString(inputs) {
             }
             log.debug(`version string in package.json:version is ${packageVersion ?? 'not found'}`);
         }
-        versionString = oRide && oRide.length > 0 ? oRide : packageVersion ?? '0.0.0';
+        versionString = oRide && oRide.length > 0 ? oRide : (packageVersion ?? '0.0.0');
         if (versionString &&
             !versionString.startsWith(inputs.config.get('versioning:prefix'))) {
             versionString = `${inputs.config.get('versioning:prefix')}${versionString}`;

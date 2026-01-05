@@ -1,3 +1,12 @@
+## [1.8.6](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.5...v1.8.6) (2026-01-05)
+
+
+### Bug Fixes
+
+* correct npm ln typo to npm link in setup-node action ([78073c4](https://github.com/bitflight-devops/github-action-readme-generator/commit/78073c48d63ab63402bebdbcf778d4cbe2163e5e))
+* revert npm ln to npm link change - ln is a valid alias ([eab4124](https://github.com/bitflight-devops/github-action-readme-generator/commit/eab41249ae6032c7b1c0c19ce66821a4bc250b8a))
+* update engines and esbuild-node-externals for Node 25 compatibility ([73968ba](https://github.com/bitflight-devops/github-action-readme-generator/commit/73968bada8e288b987b56771755ec3ef4d597c65))
+
 ## [1.8.5](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.4...v1.8.5) (2025-12-07)
 
 

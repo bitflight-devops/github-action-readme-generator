@@ -50,11 +50,17 @@ All ESLint plugins were updated to their latest versions:
 ### 5. New Dependencies
 
 Added for ESLint 9 compatibility:
-- **@eslint/compat**: Allows using old-style configs with ESLint 9
+- **@eslint/compat**: Allows using legacy configs with ESLint 9 (specifically `eslint-config-airbnb-base`)
 - **@eslint/eslintrc**: FlatCompat utility for migration
 - **@eslint/js**: ESLint's recommended JavaScript rules
 - **typescript-eslint**: Unified TypeScript ESLint tooling
 - **globals**: Standard global variable definitions
+
+**Why keep `eslint-config-airbnb-base`?**
+- Still actively maintained (last updated November 2024)
+- Provides comprehensive, battle-tested rules for JavaScript files
+- Only used for `.mjs` and `.cjs` files (build scripts and config files), not TypeScript source
+- Using `@eslint/compat` as a compatibility bridge until airbnb-base adds native flat config support
 
 ### 6. Removed Files
 
@@ -139,7 +145,7 @@ We disabled several overly-strict new rules that don't fit the project's coding 
 - `unicorn/consistent-existence-index-check` - Doesn't fit our style
 
 **Node Plugin (disabled):**
-- `n/no-missing-import` - Doesn't work well with TypeScript path resolution
+- `n/no-missing-import` - This rule flags module imports as missing even when TypeScript resolves them correctly (e.g., `@actions/github/lib/context.js`). TypeScript's compiler already validates imports, making this rule redundant and error-prone for TypeScript projects.
 
 ## Testing & Validation
 
@@ -171,12 +177,14 @@ Removed the `-c .eslintrc.cjs` flag since flat config is auto-detected.
 
 ## Troubleshooting
 
+Common issues when working with the new flat config:
+
 ### "Could not find plugin" errors
 
-Make sure the plugin is:
-1. Installed in package.json
+If you encounter plugin-related errors, verify the plugin is:
+1. Listed in package.json dependencies
 2. Imported at the top of eslint.config.js
-3. Added to the plugins object
+3. Added to the plugins object in the config
 
 ### "Rule not found" errors
 
@@ -187,7 +195,7 @@ Check if the rule was:
 
 ### Legacy peer dependency warnings
 
-When running `npm install --legacy-peer-deps`, this is expected because `eslint-config-airbnb-base` doesn't officially support ESLint 9 yet. We use `@eslint/compat` to work around this.
+When running `npm install --legacy-peer-deps`, this is expected because `eslint-config-airbnb-base` (v15.0.0) requires `eslint@^7.32.0 || ^8.2.0` as a peer dependency and hasn't yet added ESLint 9 support. We use `@eslint/compat` to bridge this gap safely. The config is still maintained (last updated November 2024) and will likely add ESLint 9 support in a future release.
 
 ## References
 

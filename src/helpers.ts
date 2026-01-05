@@ -320,7 +320,7 @@ export function getCurrentVersionString(inputs: Inputs): string {
       log.debug(`version string in package.json:version is ${packageVersion ?? 'not found'}`);
     }
 
-    versionString = oRide && oRide.length > 0 ? oRide : packageVersion ?? '0.0.0';
+    versionString = oRide && oRide.length > 0 ? oRide : (packageVersion ?? '0.0.0');
 
     if (
       versionString &&

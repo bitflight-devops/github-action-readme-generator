@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/no-duplicate-string */
 import * as core from '@actions/core';
 import chalk from 'chalk';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -114,7 +113,7 @@ describe('LogTask', () => {
       );
     });
   });
-  /* eslint-enable sonarjs/no-duplicate-string */
+
   describe('success', () => {
     it('should log a success message', () => {
       logTask.success(testMessage);

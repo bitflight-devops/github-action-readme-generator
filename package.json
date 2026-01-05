@@ -199,7 +199,7 @@
     "eslint-plugin-vitest": "^0.3.8",
     "husky": "^8.0.3",
     "is-ci": "^3.0.1",
-    "lint-staged": "^15.0.2",
+    "lint-staged": "^16.2.7",
     "markdownlint-cli": "^0.37.0",
     "rimraf": "^5.0.5",
     "run-script-os": "^1.1.6",

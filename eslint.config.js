@@ -1,6 +1,4 @@
 import js from '@eslint/js';
-import { FlatCompat } from '@eslint/eslintrc';
-import { fixupConfigRules } from '@eslint/compat';
 import babelParser from '@babel/eslint-parser';
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
@@ -15,6 +13,7 @@ import n from 'eslint-plugin-n';
 import sonarjs from 'eslint-plugin-sonarjs';
 import unicorn from 'eslint-plugin-unicorn';
 import prettier from 'eslint-plugin-prettier';
+import prettierConfig from 'eslint-config-prettier';
 import actions from 'eslint-plugin-actions';
 import vitest from 'eslint-plugin-vitest';
 import globals from 'globals';
@@ -23,13 +22,6 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  recommendedConfig: js.configs.recommended,
-});
-
-const pp = 'plugin:prettier/recommended';
 
 export default [
   // Base ignores
@@ -48,45 +40,13 @@ export default [
   // Base JavaScript config
   js.configs.recommended,
 
-  // YAML files
-  ...fixupConfigRules(
-    compat.extends(pp).map((config) => ({
-      ...config,
-      files: ['**/*.yml', '**/*.yaml'],
-    })),
-  ),
-
-  // JavaScript MJS files
+  // JavaScript MJS and CJS files
   {
-    files: ['**/*.mjs'],
+    files: ['**/*.mjs', '**/*.cjs'],
     languageOptions: {
       parser: babelParser,
       ecmaVersion: 'latest',
-      sourceType: 'script',
-      parserOptions: {
-        requireConfigFile: false,
-        ecmaFeatures: {
-          impliedStrict: true,
-        },
-      },
-      globals: {
-        ...globals.es2022,
-        ...globals.node,
-      },
-    },
-    ...fixupConfigRules(compat.extends('airbnb-base', 'eslint:recommended', pp))[0],
-    rules: {
-      'import/no-extraneous-dependencies': 'off',
-    },
-  },
-
-  // CommonJS files
-  {
-    files: ['**/*.cjs', '**/*.jsx'],
-    languageOptions: {
-      parser: babelParser,
-      ecmaVersion: 'latest',
-      sourceType: 'script',
+      sourceType: 'module',
       parserOptions: {
         requireConfigFile: false,
         ecmaFeatures: {
@@ -100,34 +60,17 @@ export default [
     },
     plugins: {
       import: importPlugin,
+      prettier,
     },
-    ...fixupConfigRules(compat.extends('airbnb-base', 'eslint:recommended', pp))[0],
     rules: {
+      ...js.configs.recommended.rules,
+      ...prettierConfig.rules,
       'no-plusplus': 'off',
-      'unicorn/prefer-module': 'off',
       'no-use-before-define': 'off',
       'no-console': 'off',
-      'sonarjs/cognitive-complexity': 'off',
       'camelcase': 'off',
       'import/extensions': 'off',
-      'sonarjs/no-duplicate-string': 'off',
-    },
-  },
-
-  // HTML and JSON files
-  {
-    files: ['**/*.html', '**/*.json'],
-    ...fixupConfigRules(compat.extends(pp))[0],
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      globals: {
-        ...globals.es6,
-      },
-    },
-    rules: {
-      'no-plusplus': 'off',
-      '@eslint-community/eslint-comments/no-unused-disable': 'off',
+      'import/no-extraneous-dependencies': 'off',
     },
   },
 

@@ -50,17 +50,16 @@ All ESLint plugins were updated to their latest versions:
 ### 5. New Dependencies
 
 Added for ESLint 9 compatibility:
-- **@eslint/compat**: Allows using legacy configs with ESLint 9 (specifically `eslint-config-airbnb-base`)
-- **@eslint/eslintrc**: FlatCompat utility for migration
 - **@eslint/js**: ESLint's recommended JavaScript rules
 - **typescript-eslint**: Unified TypeScript ESLint tooling
 - **globals**: Standard global variable definitions
 
-**Why keep `eslint-config-airbnb-base`?**
-- Still actively maintained (last updated November 2024)
-- Provides comprehensive, battle-tested rules for JavaScript files
-- Only used for `.mjs` and `.cjs` files (build scripts and config files), not TypeScript source
-- Using `@eslint/compat` as a compatibility bridge until airbnb-base adds native flat config support
+**Note on eslint-config-airbnb-base:**
+Initially considered, but removed because:
+- Last release was v15.0.0 in November 2021 (over 3 years ago)
+- Not actively maintained for ESLint 9 support
+- Only needed for 3 files (.mjs/.cjs config and build scripts)
+- Using ESLint's built-in recommended rules is simpler and more maintainable
 
 ### 6. Removed Files
 
@@ -111,17 +110,15 @@ rules: {
 
 ### Compatibility with Legacy Configs
 
-For plugins that don't yet support flat config (like `eslint-config-airbnb-base`), we use `@eslint/compat`:
+**Originally considered but removed:** `eslint-config-airbnb-base`
 
-```javascript
-import { FlatCompat } from '@eslint/eslintrc';
-import { fixupConfigRules } from '@eslint/compat';
+This popular config was initially included via `@eslint/compat` compatibility layer, but was removed because:
+- Last release: v15.0.0 in November 2021 (over 3 years old)
+- No ESLint 9 support on the roadmap
+- Only affected 3 files (.mjs/.cjs config and build scripts)
+- ESLint's built-in recommended rules provide sufficient coverage
 
-const compat = new FlatCompat({ baseDirectory: __dirname });
-
-// Convert old-style extends
-...fixupConfigRules(compat.extends('airbnb-base'))
-```
+For TypeScript files, we use the comprehensive plugin ecosystem directly without legacy configs.
 
 ## Rule Changes
 
@@ -195,7 +192,7 @@ Check if the rule was:
 
 ### Legacy peer dependency warnings
 
-When running `npm install --legacy-peer-deps`, this is expected because `eslint-config-airbnb-base` (v15.0.0) requires `eslint@^7.32.0 || ^8.2.0` as a peer dependency and hasn't yet added ESLint 9 support. We use `@eslint/compat` to bridge this gap safely. The config is still maintained (last updated November 2024) and will likely add ESLint 9 support in a future release.
+When running `npm install --legacy-peer-deps`, this is expected because some plugins like `eslint-plugin-actions` haven't updated their peer dependencies to include ESLint 9 yet. The plugins work fine with ESLint 9, but npm's strict peer dependency checking requires the flag.
 
 ## References
 

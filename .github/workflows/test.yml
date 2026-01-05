@@ -51,7 +51,7 @@ jobs:
           echo "$HOME/.local/bin" >> "${GITHUB_PATH}"
           echo "HOME=$HOME" >> "${GITHUB_ENV}"
 
-      - run: npm install --legacy-peer-deps
+      - run: npm install
       - run: npm run test
       - run: npm run coverage
       - name: "Report Coverage"

@@ -14,7 +14,6 @@ import sonarjs from 'eslint-plugin-sonarjs';
 import unicorn from 'eslint-plugin-unicorn';
 import prettier from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
-import actions from 'eslint-plugin-actions';
 import vitest from 'eslint-plugin-vitest';
 import globals from 'globals';
 import path from 'path';
@@ -72,15 +71,6 @@ export default [
       'import/extensions': 'off',
       'import/no-extraneous-dependencies': 'off',
     },
-  },
-
-  // GitHub Actions workflow files
-  {
-    files: ['.github/workflows/*.{yml,yaml}', './action.yml'],
-    plugins: {
-      actions,
-    },
-    processor: 'actions/actions',
   },
 
   // Vitest test files

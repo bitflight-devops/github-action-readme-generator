@@ -24,7 +24,7 @@ runs:
         npm_config_engine_strict: true
       run: |
         # check if the installed node version works with the engines field in package.json
-        if npm link --dry-run --ignore-scripts &>/dev/null; then
+        if npm ln --dry-run --ignore-scripts &>/dev/null; then
           NODE_VERSION="$(node -v)"
 
         # check if .npmrc specifies a node version

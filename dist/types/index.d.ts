@@ -1,4 +1,5 @@
 /// <reference types="node" resolution-mode="require"/>
+/// <reference types="node" resolution-mode="require"/>
 declare module "vitest.config" {
     const _default: import("vite").UserConfig;
     export default _default;

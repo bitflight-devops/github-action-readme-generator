@@ -96,7 +96,6 @@ runs:
     // The test validates that the current implementation gracefully handles missing action.yml
     // but still requires other required inputs (paths:action, paths:readme)
     expect(() => {
-      // eslint-disable-next-line no-new
       new Inputs({}, log);
     }).toThrow(/Missing required keys/);
   });

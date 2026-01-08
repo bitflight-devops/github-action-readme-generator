@@ -158,7 +158,6 @@ module.exports = {
         ],
         'import/no-unresolved': 'error',
         '@typescript-eslint/func-call-spacing': 'off',
-        '@typescript-eslint/lines-between-class-members': ['error'],
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-require-imports': 'error',
         '@typescript-eslint/no-unnecessary-qualifier': 'error',

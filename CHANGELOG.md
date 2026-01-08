@@ -1,3 +1,10 @@
+## [1.8.7](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.6...v1.8.7) (2026-01-08)
+
+
+### Bug Fixes
+
+* upgrade @typescript-eslint/eslint-plugin to 8.51.0 and remove deprecated rule ([e3034a1](https://github.com/bitflight-devops/github-action-readme-generator/commit/e3034a125beb529b3749f6318232caa007649d73))
+
 ## [1.8.6](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.5...v1.8.6) (2026-01-05)
 
 

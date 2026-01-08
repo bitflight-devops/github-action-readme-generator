@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 import * as core from '@actions/core';
 import { Context } from '@actions/github/lib/context.js';
-import { IOptions, Provider } from 'nconf';
+import nconf from 'nconf';
 import YAML from 'yaml';
 
 import Action, { Input } from './Action.js';
@@ -18,7 +18,9 @@ import { configFileName, ConfigKeys, README_SECTIONS, ReadmeSection } from './co
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
-// import workingDirectory from './working-directory.js';
+
+const { Provider } = nconf;
+type IOptions = nconf.IOptions;
 
 /**
  * Get the filename from the import.meta.url
@@ -302,10 +304,6 @@ export function transformGitHubInputsToArgv(
     log.debug(`Parsing input: ${obj.key} with ith value: ${obj.value}`);
     const keyParsed = obj.key.replace(/^(INPUT|input)_/, '').toLocaleLowerCase();
     const key = ConfigKeysInputsMap[keyParsed] || keyParsed;
-    // eslint-disable-next-line no-param-reassign
-    obj.key = key;
-    // TODO: This is a hack to get around the fact that nconf doesn't support just returning the new value like its documentation says.
-    config.set(key, obj.value);
 
     log.debug(`New input is ${key} with the value ${obj.value}`);
     return { key, value: obj.value };
@@ -356,6 +354,9 @@ export function collectAllDefaultValuesFromAction(
   } = {},
 ): IOptions {
   log.debug('Collecting default values from action.yml');
+  // This loads the defaults from THIS action's own action.yml file (github-action-readme-generator's action.yml)
+  // NOT the user's action.yml file (which is loaded separately via the 'action' input parameter)
+  // Therefore, we use __dirname to find this package's action.yml regardless of where it's installed
   const thisActionPath = path.join(__dirname, providedMetaActionPath ?? metaActionPath);
   try {
     const defaultValues = {} as IOptions;
@@ -373,7 +374,12 @@ export function collectAllDefaultValuesFromAction(
     log.debug(JSON.stringify(defaultValues, null, 2));
     return defaultValues;
   } catch (error) {
-    throw new Error(`failed to load defaults from this action's action.yml: ${error}`);
+    // When running as a CLI tool (e.g., via npx or yarn dlx), the tool's own action.yml
+    // may not be present in the node_modules. This is expected behavior, as the tool
+    // should still work to generate documentation for other actions.
+    log.debug(`Could not load defaults from this tool's action.yml at ${thisActionPath}: ${error}`);
+    log.debug('Continuing without default values from action.yml');
+    return {} as IOptions;
   }
 }
 
@@ -400,16 +406,17 @@ export function loadConfig(
       log.debug(`Config file not found: ${configFilePath}`);
     }
   }
+
   config
     .env({
       lowerCase: true,
       parseValues: true,
-      match: /^(INPUT|input)_[A-Z_a-z]\w*$/,
       transform: (obj: KVPairType): undefined | KVPairType => {
         return transformGitHubInputsToArgv(log, config, obj);
       },
     })
     .argv(argvOptions);
+
   return config;
 }
 
@@ -427,10 +434,14 @@ export function loadDefaultConfig(
   log.debug('Loading default config');
   const defaultValues = collectAllDefaultValuesFromAction(log);
   const context = providedContext ?? new Context();
-  const repositoryDetail = repositoryFinder(
-    `${process.env.INPUT_OWNER ?? ''}/${process.env.INPUT_REPO ?? ''}`,
-    context,
-  );
+
+  // Get owner/repo from config (which includes CLI args), falling back to env vars for GitHub Actions
+  const ownerFromConfig = config.get('owner') as string | undefined;
+  const repoFromConfig = config.get('repo') as string | undefined;
+  const ownerInput = ownerFromConfig ?? process.env.INPUT_OWNER ?? '';
+  const repoInput = repoFromConfig ?? process.env.INPUT_REPO ?? '';
+
+  const repositoryDetail = repositoryFinder(`${ownerInput}/${repoInput}`, context);
   log.debug(`repositoryDetail: ${repositoryDetail}`);
   // Apply the default values from the action.yml file
   return config.defaults({

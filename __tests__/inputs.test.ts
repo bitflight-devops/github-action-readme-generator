@@ -194,7 +194,7 @@ describe('inputs', () => {
       vi.stubEnv('INPUT_ACTION', 'testaction');
 
       expect(() => loadRequiredConfig(log, config)).toThrowError(
-        /Missing required keys: paths:action, paths:readme, owner, repo/,
+        /Missing required keys: owner, repo/,
       );
     });
 
@@ -242,22 +242,28 @@ describe('inputs', () => {
     test('Inputs stringify', async ({ task }) => {
       const log = new LogTask(task.name);
       const { default: Action } = await import('../src/Action.js');
+
+      // Clear beforeEach env vars and set test-specific ones
+      vi.unstubAllEnvs();
       vi.stubEnv('DEBUG', 'true');
-      const action = new Action(actTestYmlPath);
-      const sections = ['usage'] as ReadmeSection[];
       vi.stubEnv('INPUT_OWNER', 'stringowner');
       vi.stubEnv('INPUT_REPO', 'stringrepo');
       vi.stubEnv('INPUT_README', 'stringreadme');
       vi.stubEnv('INPUT_ACTION', 'stringaction');
+      vi.stubEnv('GITHUB_REPOSITORY', ''); // Prevent fallback
+      vi.stubEnv('GITHUB_EVENT_PATH', ''); // Prevent payload file read
+
+      const action = new Action(actTestYmlPath);
+      const sections = ['usage'] as ReadmeSection[];
       const providedInputContext: InputContext = {
         action,
         sections,
+        configPath: '/tmp/nonexistent.json', // Prevent loading .ghadocs.json
       };
 
       const inputs = new Inputs(providedInputContext, log);
       const result = inputs.stringify();
       expect(typeof result).toBe('string');
-
       expect(result).toMatch(/owner: stringowner/);
       expect(result).toMatch(/repo: stringrepo/);
       expect(result).toMatch(/sections:\n {2}- usage/);

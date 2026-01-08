@@ -90,7 +90,13 @@ module.exports = {
     {
       files: ['__tests__/**/*.ts'], // or any other pattern
       plugins: ['vitest'],
-      extends: ['plugin:vitest/recommended'],
+      rules: {
+        'vitest/expect-expect': 'error',
+        'vitest/no-disabled-tests': 'warn',
+        'vitest/no-focused-tests': 'error',
+        'vitest/no-identical-title': 'error',
+        'vitest/valid-expect': 'error',
+      },
     },
     {
       files: ['**/*.ts', '**/*.mts'],

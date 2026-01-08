@@ -23,7 +23,7 @@ export default [
       'lib/**',
       'node_modules/**',
       '.gulpfile.js',
-      'esbuild.mjs',
+      'scripts/esbuild.mjs',
       'package-lock.json',
       '__tests__/package.mock.json',
       '__tests__/payload.json',

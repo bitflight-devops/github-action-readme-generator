@@ -1,3 +1,12 @@
+## [1.8.8](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.7...v1.8.8) (2026-01-11)
+
+
+### Bug Fixes
+
+* add legacy-peer-deps to .npmrc for CI compatibility ([9ba9b37](https://github.com/bitflight-devops/github-action-readme-generator/commit/9ba9b372a9fad19968a85e57c531efd0dcbe4a11))
+* disable n/no-missing-import rule for ESLint compatibility ([0e4141c](https://github.com/bitflight-devops/github-action-readme-generator/commit/0e4141ce1af2aa39ae649d5149fd78372c9c5fa2))
+* remove legacy-peer-deps by upgrading and removing unmaintained packages ([3755216](https://github.com/bitflight-devops/github-action-readme-generator/commit/375521699b563c77b003883f2788f16cdf50e0bc))
+
 ## [1.8.7](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.6...v1.8.7) (2026-01-08)
 
 

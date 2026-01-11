@@ -13,7 +13,6 @@ import sonarjsPlugin from 'eslint-plugin-sonarjs';
 import sortClassMembersPlugin from 'eslint-plugin-sort-class-members';
 import unicornPlugin from 'eslint-plugin-unicorn';
 import vitestPlugin from 'eslint-plugin-vitest';
-import actionsPlugin from 'eslint-plugin-actions';
 import prettierConfig from 'eslint-config-prettier';
 
 export default [
@@ -57,7 +56,7 @@ export default [
       'prettier': prettierPlugin,
       'promise': promisePlugin,
       'simple-import-sort': simpleImportSortPlugin,
-      // 'sonarjs': sonarjsPlugin, // Disabled due to ESLint 9 compatibility
+      // 'sonarjs': sonarjsPlugin, // Re-enabled with v3.0.5 but disabled for now due to many new findings
       'sort-class-members': sortClassMembersPlugin,
       'unicorn': unicornPlugin,
     },
@@ -78,7 +77,7 @@ export default [
       // Disable n/no-missing-import as it's too strict with type-only imports and deep package imports
       'n/no-missing-import': 'off',
 
-      // sonarjs recommended - commented out due to ES Lint 9 compatibility issues
+      // sonarjs recommended - Re-enabled with v3.0.5 but disabled for now due to many new findings that should be addressed separately
       // ...sonarjsPlugin.configs.recommended.rules,
 
       // unicorn recommended
@@ -239,14 +238,6 @@ export default [
       'import/extensions': 'off',
       'import/no-extraneous-dependencies': 'off',
     },
-  },
-
-  {
-    files: ['.github/workflows/*.{yml,yaml}', './action.yml'],
-    plugins: {
-      actions: actionsPlugin,
-    },
-    processor: 'actions/actions',
   },
 
   {

@@ -75,6 +75,9 @@ export default [
       // n recommended
       ...nPlugin.configs.recommended.rules,
 
+      // Disable n/no-missing-import as it's too strict with type-only imports and deep package imports
+      'n/no-missing-import': 'off',
+
       // sonarjs recommended - commented out due to ES Lint 9 compatibility issues
       // ...sonarjsPlugin.configs.recommended.rules,
 

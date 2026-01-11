@@ -153,7 +153,6 @@ describe('helpers', () => {
 
     it('should convert the text to title case', () => {
       const result = titlecase('hello world');
-      // eslint-disable-next-line sonarjs/no-duplicate-string
       expect(result).toBe('Hello World');
     });
 

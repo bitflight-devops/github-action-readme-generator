@@ -171,7 +171,7 @@
     "@types/node": "^20.17.10",
     "@types/node-emoji": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "^8.51.0",
-    "@typescript-eslint/parser": "^8.51.0",
+    "@typescript-eslint/parser": "^8.53.0",
     "@vitest/coverage-v8": "^4.0.6",
     "commitizen": "^4.3.1",
     "conventional-commits": "^1.6.0",

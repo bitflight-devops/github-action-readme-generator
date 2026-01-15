@@ -196,7 +196,7 @@
     "is-ci": "^3.0.1",
     "lint-staged": "^16.2.7",
     "markdownlint-cli": "^0.47.0",
-    "rimraf": "^5.0.5",
+    "rimraf": "^6.1.2",
     "run-script-os": "^1.1.6",
     "semantic-release": "^25.0.2",
     "ts-node": "^10.9.1",

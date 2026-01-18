@@ -127,7 +127,7 @@ This configuration will automatically regenerate your README whenever `action.ym
 <!-- start usage -->
 
 ```yaml
-- uses: bitflight-devops/github-action-readme-generator@v1.8.7
+- uses: bitflight-devops/github-action-readme-generator@v1.8.8
   with:
     # Description: The absolute or relative path to the `action.yml` file to read in
     # from.

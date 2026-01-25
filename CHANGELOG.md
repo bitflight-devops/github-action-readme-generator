@@ -1,3 +1,10 @@
+## [1.8.10](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.9...v1.8.10) (2026-01-25)
+
+
+### Bug Fixes
+
+* **deps:** update github action versions ([#456](https://github.com/bitflight-devops/github-action-readme-generator/issues/456)) ([f6430a7](https://github.com/bitflight-devops/github-action-readme-generator/commit/f6430a7f79b7dbc5af2fe8ea7cf0311300847215))
+
 ## [1.8.9](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.8...v1.8.9) (2026-01-18)
 
 

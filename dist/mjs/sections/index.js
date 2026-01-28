@@ -1,6 +1,7 @@
 import LogTask from '../logtask/index.js';
 import updateBadges from './update-badges.js';
 import updateBranding from './update-branding.js';
+import updateContents from './update-contents.js';
 import updateDescription from './update-description.js';
 import updateInputs from './update-inputs.js';
 import updateOutputs from './update-outputs.js';
@@ -36,6 +37,9 @@ export default async function updateSection(section, inputs) {
         }
         case 'outputs': {
             return updateOutputs(section, inputs);
+        }
+        case 'contents': {
+            return updateContents(section, inputs);
         }
         default: {
             log.debug(`unknown section found <!-- start ${section} -->. No updates were made.`);

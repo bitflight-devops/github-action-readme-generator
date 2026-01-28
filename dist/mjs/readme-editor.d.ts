@@ -25,6 +25,11 @@ export default class ReadmeEditor {
      */
     constructor(filePath: string);
     /**
+     * Gets the current README content.
+     * @returns {string} - The README file content.
+     */
+    getReadmeContent(): string;
+    /**
      * Gets the indexes of the start and end tokens for a given section.
      * @param {string} token - The section token.
      * @returns {number[]} - The indexes of the start and end tokens.

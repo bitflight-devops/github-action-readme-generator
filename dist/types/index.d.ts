@@ -413,6 +413,11 @@ declare module "src/readme-editor" {
          */
         constructor(filePath: string);
         /**
+         * Gets the current README content.
+         * @returns {string} - The README file content.
+         */
+        getReadmeContent(): string;
+        /**
          * Gets the indexes of the start and end tokens for a given section.
          * @param {string} token - The section token.
          * @returns {number[]} - The indexes of the start and end tokens.
@@ -880,6 +885,17 @@ declare module "src/sections/update-branding" {
      * @param inputs - The inputs object that contains data for the function.
      */
     export default function updateBranding(sectionToken: ReadmeSection, inputs: Inputs): Record<string, string>;
+}
+declare module "src/sections/update-contents" {
+    /**
+     * This TypeScript code exports a function named 'updateContents' which generates
+     * a table of contents from the README.md headers.
+     * @param {ReadmeSection} sectionToken - The sectionToken representing the section of the README to update.
+     * @param {Inputs} inputs - The Inputs class instance.
+     */
+    import { ReadmeSection } from "src/constants";
+    import type Inputs from "src/inputs";
+    export default function updateContents(sectionToken: ReadmeSection, inputs: Inputs): Record<string, string>;
 }
 declare module "src/sections/update-description" {
     /**

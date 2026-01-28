@@ -7,10 +7,10 @@ import LogTask from '../logtask/index.js';
 function headerToAnchor(text) {
     return text
         .toLowerCase()
-        .replace(/[^\w\s-]/g, '') // Remove special characters except hyphens
-        .replace(/\s+/g, '-') // Replace spaces with hyphens
-        .replace(/-+/g, '-') // Collapse multiple hyphens
-        .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+        .replaceAll(/[^\w\s-]/g, '') // Remove special characters except hyphens
+        .replaceAll(/\s+/g, '-') // Replace spaces with hyphens
+        .replaceAll(/-+/g, '-') // Collapse multiple hyphens
+        .replaceAll(/^-|-$/g, ''); // Remove leading/trailing hyphens
 }
 /**
  * Extracts headers from markdown content, excluding those in code blocks.
@@ -37,9 +37,9 @@ function extractHeaders(content) {
             const level = headerMatch[1].length;
             let text = headerMatch[2].trim();
             // Remove inline images and other markdown formatting from header text
-            text = text.replace(/<img[^>]*>/g, '').trim();
+            text = text.replaceAll(/<img[^>]*>/g, '').trim();
             // Remove markdown links but keep the text
-            text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+            text = text.replaceAll(/\[([^\]]+)]\([^)]+\)/g, '$1');
             if (text) {
                 headers.push({ level, text });
             }
@@ -58,20 +58,25 @@ export default function updateContents(sectionToken, inputs) {
     const tocHeaders = headers.filter((h) => h.level >= 2 && !h.text.toLowerCase().includes('contents'));
     if (tocHeaders.length === 0) {
         log.info('No headers found for table of contents');
-        const ret = {};
-        ret[sectionToken] = '';
-        return ret;
     }
-    log.info(`Generating table of contents with ${tocHeaders.length} entries`);
-    // Find minimum header level for proper indentation
-    const minLevel = Math.min(...tocHeaders.map((h) => h.level));
-    // Generate TOC entries
-    content.push('## Table of Contents');
-    content.push('');
-    for (const header of tocHeaders) {
-        const indent = '  '.repeat(header.level - minLevel);
-        const anchor = headerToAnchor(header.text);
-        content.push(`${indent}- [${header.text}](#${anchor})`);
+    else {
+        log.info(`Generating table of contents with ${tocHeaders.length} entries`);
+        // Find minimum header level for proper indentation
+        const minLevel = Math.min(...tocHeaders.map((h) => h.level));
+        // Track anchor occurrences to disambiguate duplicates like GitHub does
+        const anchorCounts = new Map();
+        // Generate TOC entries
+        content.push('## Table of Contents', '');
+        for (const header of tocHeaders) {
+            const indent = '  '.repeat(header.level - minLevel);
+            const baseAnchor = headerToAnchor(header.text);
+            // Track occurrences and compute unique anchor
+            const count = anchorCounts.get(baseAnchor) ?? 0;
+            anchorCounts.set(baseAnchor, count + 1);
+            // First occurrence uses base anchor, subsequent ones get -1, -2, etc.
+            const anchor = count === 0 ? baseAnchor : `${baseAnchor}-${count}`;
+            content.push(`${indent}- [${header.text}](#${anchor})`);
+        }
     }
     inputs.readmeEditor.updateSection(sectionToken, content);
     log.success();

@@ -1020,6 +1020,7 @@ declare module "__tests__/readme-generator.test" {
     export const __filename: string;
     export const __dirname: string;
 }
+declare module "__tests__/update-contents.test" { }
 declare module "__tests__/logtask/index.test" { }
 declare module "src/config" {
     import type Inputs from "src/inputs";

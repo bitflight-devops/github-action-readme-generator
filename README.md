@@ -20,7 +20,7 @@
 </div>
 <!-- start description -->
 
-📓 The docs generator for GitHub Actions. Auto-syncs action.yml → README.md with 8 sections including inputs, outputs, usage, badges & branding. One command, zero config.
+📓 The docs generator for GitHub Actions. Auto-syncs action.yml → README.md with 8 sections including inputs, outputs, usage, badges & branding. Sensible defaults, highly configurable.
 
 <!-- end description -->
 
@@ -34,16 +34,16 @@ That's it. Run this in your GitHub Action repository and your README.md is updat
 
 ## Features
 
-|                    | Feature             | Description                                             |
-| :----------------: | ------------------- | ------------------------------------------------------- |
-| :white_check_mark: | **Inputs Table**    | Auto-generates markdown table from `action.yml` inputs  |
-| :white_check_mark: | **Outputs Table**   | Auto-generates markdown table from `action.yml` outputs |
-| :white_check_mark: | **Usage Example**   | Creates ready-to-copy YAML workflow snippet             |
-| :white_check_mark: | **Auto-Versioning** | Updates `uses: owner/repo@v1.2.3` on every release      |
-| :white_check_mark: | **GitHub Badges**   | Adds release, commit, issues, and download badges       |
-| :white_check_mark: | **SVG Branding**    | Generates icon from action.yml branding (100+ icons)    |
-| :white_check_mark: | **Zero Config**     | Works out of the box - no setup required                |
-| :white_check_mark: | **Dual Mode**       | Use as CLI (`npx`) or GitHub Action in workflows        |
+|                    | Feature             | Description                                                  |
+| :----------------: | ------------------- | ------------------------------------------------------------ |
+| :white_check_mark: | **Inputs Table**    | Auto-generates markdown table from `action.yml` inputs       |
+| :white_check_mark: | **Outputs Table**   | Auto-generates markdown table from `action.yml` outputs      |
+| :white_check_mark: | **Usage Example**   | Creates ready-to-copy YAML workflow snippet                  |
+| :white_check_mark: | **Auto-Versioning** | Updates `uses: owner/repo@v1.2.3` on every release           |
+| :white_check_mark: | **GitHub Badges**   | Adds release, commit, issues, and download badges            |
+| :white_check_mark: | **SVG Branding**    | Generates icon from action.yml branding (100+ icons)         |
+| :white_check_mark: | **Easy Setup**      | Add section markers to README, configure via `.ghadocs.json` |
+| :white_check_mark: | **Dual Mode**       | Use as CLI (`npx`) or GitHub Action in workflows             |
 
 ## How It Works
 

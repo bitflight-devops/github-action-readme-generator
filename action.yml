@@ -1,7 +1,7 @@
 ---
 name: GitHub Action's Readme Generator
 author: Jamie Nelson <jamie@bitflight.io>
-description: 📓 The docs generator for GitHub Actions. Auto-syncs action.yml → README.md with 8 sections including inputs, outputs, usage, badges & branding. One command, zero config.
+description: 📓 The docs generator for GitHub Actions. Auto-syncs action.yml → README.md with 8 sections including inputs, outputs, usage, badges & branding. Sensible defaults, highly configurable.
 
 branding:
   icon: book-open

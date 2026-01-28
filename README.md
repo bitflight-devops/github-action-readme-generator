@@ -148,6 +148,22 @@ This configuration will automatically regenerate your README whenever `action.ym
 ```
 
 <!-- start contents -->
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Features](#features)
+- [How It Works](#how-it-works)
+- [CLI Usage](#cli-usage)
+  - [Stand Alone Usage - if you have a Docker Action](#stand-alone-usage-if-you-have-a-docker-action)
+  - [Install with Yarn or NPM as a dev dependency](#install-with-yarn-or-npm-as-a-dev-dependency)
+  - [Add a script to your project file](#add-a-script-to-your-project-file)
+  - [Using as a Pre-commit Hook](#using-as-a-pre-commit-hook)
+- [Configuration](#configuration)
+  - [Example `.ghadocs.json` with all possible values](#example-ghadocsjson-with-all-possible-values)
+- [Usage](#usage)
+- [Inputs](#inputs)
+
 <!-- end contents -->
 
 ## Usage

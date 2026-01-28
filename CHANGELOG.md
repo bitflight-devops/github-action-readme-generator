@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.10...v1.9.0) (2026-01-28)
+
+
+### Features
+
+* implement table of contents generation for contents section ([3e9a0a4](https://github.com/bitflight-devops/github-action-readme-generator/commit/3e9a0a4e1f1180c94ea0666b12abeb5ed325afdd))
+
 ## [1.8.10](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.9...v1.8.10) (2026-01-25)
 
 

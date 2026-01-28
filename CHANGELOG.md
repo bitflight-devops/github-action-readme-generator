@@ -1,3 +1,10 @@
+## [1.9.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.9.0...v1.9.1) (2026-01-28)
+
+
+### Bug Fixes
+
+* disambiguate duplicate TOC anchors and persist empty TOC ([767a192](https://github.com/bitflight-devops/github-action-readme-generator/commit/767a192f871de95f14a66d1e6aa677df8f97334d))
+
 # [1.9.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.8.10...v1.9.0) (2026-01-28)
 
 

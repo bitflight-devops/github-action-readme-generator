@@ -16,10 +16,10 @@ import LogTask from '../logtask/index.js';
 function headerToAnchor(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '') // Remove special characters except hyphens
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Collapse multiple hyphens
-    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+    .replaceAll(/[^\w\s-]/g, '') // Remove special characters except hyphens
+    .replaceAll(/\s+/g, '-') // Replace spaces with hyphens
+    .replaceAll(/-+/g, '-') // Collapse multiple hyphens
+    .replaceAll(/^-|-$/g, ''); // Remove leading/trailing hyphens
 }
 
 /**
@@ -27,8 +27,8 @@ function headerToAnchor(text: string): string {
  * @param {string} content - The markdown content.
  * @returns {Array<{level: number, text: string}>} Array of header objects.
  */
-function extractHeaders(content: string): Array<{ level: number; text: string }> {
-  const headers: Array<{ level: number; text: string }> = [];
+function extractHeaders(content: string): { level: number; text: string }[] {
+  const headers: { level: number; text: string }[] = [];
   const lines = content.split('\n');
   let inCodeBlock = false;
 
@@ -51,9 +51,9 @@ function extractHeaders(content: string): Array<{ level: number; text: string }>
       let text = headerMatch[2].trim();
 
       // Remove inline images and other markdown formatting from header text
-      text = text.replace(/<img[^>]*>/g, '').trim();
+      text = text.replaceAll(/<img[^>]*>/g, '').trim();
       // Remove markdown links but keep the text
-      text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+      text = text.replaceAll(/\[([^\]]+)]\([^)]+\)/g, '$1');
 
       if (text) {
         headers.push({ level, text });
@@ -84,24 +84,31 @@ export default function updateContents(
 
   if (tocHeaders.length === 0) {
     log.info('No headers found for table of contents');
-    const ret: Record<string, string> = {};
-    ret[sectionToken] = '';
-    return ret;
-  }
+  } else {
+    log.info(`Generating table of contents with ${tocHeaders.length} entries`);
 
-  log.info(`Generating table of contents with ${tocHeaders.length} entries`);
+    // Find minimum header level for proper indentation
+    const minLevel = Math.min(...tocHeaders.map((h) => h.level));
 
-  // Find minimum header level for proper indentation
-  const minLevel = Math.min(...tocHeaders.map((h) => h.level));
+    // Track anchor occurrences to disambiguate duplicates like GitHub does
+    const anchorCounts = new Map<string, number>();
 
-  // Generate TOC entries
-  content.push('## Table of Contents');
-  content.push('');
+    // Generate TOC entries
+    content.push('## Table of Contents', '');
 
-  for (const header of tocHeaders) {
-    const indent = '  '.repeat(header.level - minLevel);
-    const anchor = headerToAnchor(header.text);
-    content.push(`${indent}- [${header.text}](#${anchor})`);
+    for (const header of tocHeaders) {
+      const indent = '  '.repeat(header.level - minLevel);
+      const baseAnchor = headerToAnchor(header.text);
+
+      // Track occurrences and compute unique anchor
+      const count = anchorCounts.get(baseAnchor) ?? 0;
+      anchorCounts.set(baseAnchor, count + 1);
+
+      // First occurrence uses base anchor, subsequent ones get -1, -2, etc.
+      const anchor = count === 0 ? baseAnchor : `${baseAnchor}-${count}`;
+
+      content.push(`${indent}- [${header.text}](#${anchor})`);
+    }
   }
 
   inputs.readmeEditor.updateSection(sectionToken, content);

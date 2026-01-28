@@ -14,15 +14,43 @@
 </div>
 <!-- start description -->
 
-📓 Effortlessly sync action.yml to README.md. Auto-generates inputs, outputs & usage docs, ensuring docs match code.
+📓 The docs generator for GitHub Actions. Auto-syncs action.yml → README.md with 8 sections including inputs, outputs, usage, badges & branding. One command, zero config.
 
 <!-- end description -->
 
-📓 Keep your action's README.md up to date with the `title` and `description` from the [`action.yml`](./action.yml) file, while also automatically generating sections for the inputs, outputs, and a usage example for the action. Additionally the Action's usage example is updated to match the Action's current release.
+## Quick Start
 
-This is both a CLI tool and GitHub Action that will read the details from a GitHub Action's [`action.yml`](./action.yml) file. Configuration can be provided through a [`.ghadocs.json`](./.ghadocs.json) file stored in the root directory of the Action's repository, via the command line when using the CLI, or through the `with:` section of this Action.
+```sh
+npx github-action-readme-generator
+```
 
-**_HOW_** 📝 This tool uses markdown comments like this `<!-- start section --><!-- stop section -->` as delimiting tokens within your README.md file to determine where to place the generated content. You can find an example README template with all fields filled-in in the [`README.example.md`](./README.example.md) file.\*\*\*
+That's it. Run this in your GitHub Action repository and your README.md is updated.
+
+## Features
+
+|                    | Feature             | Description                                             |
+| :----------------: | ------------------- | ------------------------------------------------------- |
+| :white_check_mark: | **Inputs Table**    | Auto-generates markdown table from `action.yml` inputs  |
+| :white_check_mark: | **Outputs Table**   | Auto-generates markdown table from `action.yml` outputs |
+| :white_check_mark: | **Usage Example**   | Creates ready-to-copy YAML workflow snippet             |
+| :white_check_mark: | **Auto-Versioning** | Updates `uses: owner/repo@v1.2.3` on every release      |
+| :white_check_mark: | **GitHub Badges**   | Adds release, commit, issues, and download badges       |
+| :white_check_mark: | **SVG Branding**    | Generates icon from action.yml branding (100+ icons)    |
+| :white_check_mark: | **Zero Config**     | Works out of the box - no setup required                |
+| :white_check_mark: | **Dual Mode**       | Use as CLI (`npx`) or GitHub Action in workflows        |
+
+## How It Works
+
+This tool uses markdown comments as section markers in your README:
+
+```markdown
+<!-- start inputs -->
+<!-- end inputs -->
+```
+
+Run the generator, and content between these markers is automatically updated from your `action.yml`. See [`README.example.md`](./README.example.md) for a complete template.
+
+**Works as both CLI and GitHub Action** - configure via [`.ghadocs.json`](./.ghadocs.json), command line args, or the Action's `with:` section.
 
 ## CLI Usage
 
@@ -127,7 +155,7 @@ This configuration will automatically regenerate your README whenever `action.ym
 <!-- start usage -->
 
 ```yaml
-- uses: bitflight-devops/github-action-readme-generator@v1.8.9
+- uses: bitflight-devops/github-action-readme-generator@v1.8.10
   with:
     # Description: The absolute or relative path to the `action.yml` file to read in
     # from.

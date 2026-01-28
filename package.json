@@ -172,7 +172,7 @@
     "@types/node-emoji": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "^8.53.1",
     "@typescript-eslint/parser": "^8.53.0",
-    "@vitest/coverage-v8": "^4.0.6",
+    "@vitest/coverage-v8": "^4.0.18",
     "commitizen": "^4.3.1",
     "conventional-commits": "^1.6.0",
     "cz-conventional-changelog": "^3.3.0",

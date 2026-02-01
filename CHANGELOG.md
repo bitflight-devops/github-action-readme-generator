@@ -1,3 +1,11 @@
+## [1.9.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.9.1...v1.9.2) (2026-02-01)
+
+
+### Bug Fixes
+
+* synchronize package.json with package-lock.json for vitest dependencies ([edee36d](https://github.com/bitflight-devops/github-action-readme-generator/commit/edee36d525b509753eff775e4b3f1176ee4600d7))
+* update vitest to 4.0.18 to match package-lock.json ([41657b5](https://github.com/bitflight-devops/github-action-readme-generator/commit/41657b5db31979479d2df1c599a885ed7708dbb5))
+
 ## [1.9.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.9.0...v1.9.1) (2026-01-28)
 
 

@@ -82,6 +82,20 @@ jobs:
           echo "owner=$OWNER" >> "$GITHUB_OUTPUT"
           echo "repo=$REPO" >> "$GITHUB_OUTPUT"
 
+      - name: Get latest release version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get latest release from GitHub API
+          VERSION=$(gh api repos/${{ matrix.repo }}/releases/latest --jq '.tag_name' 2>/dev/null || echo "")
+          if [ -z "$VERSION" ]; then
+            # Fallback to latest tag if no releases
+            VERSION=$(gh api repos/${{ matrix.repo }}/tags --jq '.[0].name' 2>/dev/null || echo "latest")
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Detected version: $VERSION"
+
       - name: Run action against test repository
         uses: ./action-under-test
         with:
@@ -89,6 +103,7 @@ jobs:
           readme: test-repo/${{ matrix.readme_path }}
           owner: ${{ steps.extract.outputs.owner }}
           repo: ${{ steps.extract.outputs.repo }}
+          version_override: ${{ steps.version.outputs.version }}
           pretty: true
 
       - name: Verify README was generated

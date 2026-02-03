@@ -291,6 +291,12 @@ export function transformGitHubInputsToArgv(
     const keyParsed = obj.key.replace(/^(INPUT|input)_/, '').toLocaleLowerCase();
     const key = ConfigKeysInputsMap[keyParsed] || keyParsed;
 
+    // Skip empty values for owner/repo to allow fallback detection from .git/config or GITHUB_REPOSITORY
+    if ((key === 'owner' || key === 'repo') && (!obj.value || obj.value === '')) {
+      log.debug(`Ignoring empty ${key} input to allow auto-detection`);
+      return undefined;
+    }
+
     log.debug(`New input is ${key} with the value ${obj.value}`);
     return { key, value: obj.value };
   }
@@ -427,7 +433,12 @@ export function loadDefaultConfig(
   const ownerInput = ownerFromConfig ?? process.env.INPUT_OWNER ?? '';
   const repoInput = repoFromConfig ?? process.env.INPUT_REPO ?? '';
 
-  const repositoryDetail = repositoryFinder(`${ownerInput}/${repoInput}`, context);
+  // Get the action path to derive the target repo directory for .git/config lookup
+  const actionPath = config.get(ConfigKeys.pathsAction) as string | undefined;
+  const actionDir = actionPath ? path.dirname(path.resolve(actionPath)) : undefined;
+  log.debug(`Action directory for repository detection: ${actionDir ?? 'not specified'}`);
+
+  const repositoryDetail = repositoryFinder(`${ownerInput}/${repoInput}`, context, actionDir);
   log.debug(`repositoryDetail: ${repositoryDetail}`);
   // Apply the default values from the action.yml file
   return config.defaults({

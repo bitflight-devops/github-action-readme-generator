@@ -172,11 +172,13 @@ export const remoteGitUrlPattern = /url( )?=( )?.*github\.com[/:](?<owner>.*)\/(
  * Finds the repository information from the input, context, environment variables, or git configuration.
  * @param inputRepo - The input repository string.
  * @param context - The GitHub context object.
+ * @param baseDir - Optional base directory to look for .git/config (defaults to CWD).
  * @returns The repository information (owner and repo) or null if not found.
  */
 export function repositoryFinder(
   inputRepo: Nullable<string>,
   context: Nullable<Context>,
+  baseDir?: string,
 ): Repo | null {
   const log = new LogTask('repositoryFinder');
   /**
@@ -195,23 +197,39 @@ export function repositoryFinder(
   if (context) {
     try {
       const result = { ...context.repo };
-      log.debug(`repositoryFinder using GitHub context and returns ${JSON.stringify(result)}`);
-      return result;
+      if (result.owner && result.repo) {
+        log.debug(`repositoryFinder using GitHub context and returns ${JSON.stringify(result)}`);
+        return result;
+      }
     } catch (error) {
       log.debug(`repositoryFinder using GitHub context gives error ${JSON.stringify(error)}`);
     }
   }
 
   /**
+   * Fallback: Try to parse GITHUB_REPOSITORY environment variable directly
+   * This handles cases where the Context class doesn't pick up the value
+   */
+  const githubRepo = process.env.GITHUB_REPOSITORY;
+  if (githubRepo) {
+    const repoFromEnv = repoObjFromRepoName(githubRepo, log, 'GITHUB_REPOSITORY env');
+    if (repoFromEnv) {
+      return repoFromEnv;
+    }
+  }
+
+  /**
    * Attempt to get git user and repo from .git/config
+   * Use baseDir if provided, otherwise use current working directory
    */
   try {
-    const fileContent = readFile('.git/config');
-    log.debug(`loading .git/config:\n***\n${fileContent}\n***`);
+    const gitConfigPath = baseDir ? path.join(baseDir, '.git', 'config') : '.git/config';
+    const fileContent = readFile(gitConfigPath);
+    log.debug(`loading ${gitConfigPath}:\n***\n${fileContent}\n***`);
     const results = remoteGitUrlPattern.exec(fileContent);
     if (results?.groups?.owner && results?.groups?.repo) {
       log.debug(
-        `repositoryFinder using '.git/config' and returns ${JSON.stringify(results.groups)}`,
+        `repositoryFinder using '${gitConfigPath}' and returns ${JSON.stringify(results.groups)}`,
       );
       return {
         owner: results.groups.owner,
@@ -313,30 +331,43 @@ export function rowHeader(value: string): string {
 export function getCurrentVersionString(inputs: Inputs): string {
   let versionString = '';
   const log = new LogTask('getCurrentVersionString');
-  if (inputs.config.get('versioning:enabled')) {
+  // Default to enabled if not explicitly set (matches action.yml default of "true")
+  const versioningEnabled = inputs.config.get('versioning:enabled');
+  const isVersioningEnabled =
+    versioningEnabled === undefined ||
+    versioningEnabled === true ||
+    versioningEnabled === 'true';
+
+  if (isVersioningEnabled) {
     log.debug('version string in generated example is enabled');
     const oRide = inputs.config.get('versioning:override') as string;
-    let packageVersion = process.env.npm_package_version;
-    log.debug(`version string in env:npm_package_version is ${packageVersion ?? 'not found'}`);
-    if (!packageVersion) {
-      log.debug('version string in env:npm_package_version is not found, trying to use git');
-      try {
-        accessSync('package.json');
-        const packageData: Partial<PackageJson> = JSON.parse(readFileSync('package.json', 'utf8'));
-        packageVersion = packageData.version;
-      } catch (error) {
-        log.debug(`package.json not found. ${error}`);
-      }
-      log.debug(`version string in package.json:version is ${packageVersion ?? 'not found'}`);
+    let packageVersion: string | undefined;
+
+    // First, try to read package.json from the action directory (target repository)
+    // This is the primary source for version when running against external repos
+    const actionDir = path.dirname(inputs.action.path);
+    const packageJsonPath = path.join(actionDir, 'package.json');
+    log.debug(`Looking for package.json at: ${packageJsonPath}`);
+    try {
+      accessSync(packageJsonPath);
+      const packageData: Partial<PackageJson> = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+      packageVersion = packageData.version;
+      log.debug(`version string from target repo package.json: ${packageVersion ?? 'not found'}`);
+    } catch (error) {
+      log.debug(`package.json not found at ${packageJsonPath}. ${error}`);
+      // Fall back to npm_package_version for backward compatibility when running from same directory
+      packageVersion = process.env.npm_package_version;
+      log.debug(
+        `Falling back to env:npm_package_version: ${packageVersion ?? 'not found'}`,
+      );
     }
 
     versionString = oRide && oRide.length > 0 ? oRide : (packageVersion ?? '0.0.0');
 
-    if (
-      versionString &&
-      !versionString.startsWith(inputs.config.get('versioning:prefix') as string)
-    ) {
-      versionString = `${inputs.config.get('versioning:prefix') as string}${versionString}`;
+    // Get prefix, defaulting to 'v' if not set
+    const prefix = (inputs.config.get('versioning:prefix') as string) ?? 'v';
+    if (versionString && !versionString.startsWith(prefix)) {
+      versionString = `${prefix}${versionString}`;
     }
   } else {
     versionString = inputs.config.get('versioning:branch') as string;

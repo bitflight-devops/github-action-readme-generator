@@ -191,6 +191,32 @@ export function repositoryFinder(
   }
 
   /**
+   * When baseDir is provided, prioritize .git/config from that directory
+   * This is critical for external repos where GITHUB_REPOSITORY points to
+   * the workflow repo, not the target repo being documented
+   */
+  if (baseDir) {
+    try {
+      const gitConfigPath = path.join(baseDir, '.git', 'config');
+      const fileContent = readFile(gitConfigPath);
+      log.debug(`loading ${gitConfigPath}:\n***\n${fileContent}\n***`);
+      const results = remoteGitUrlPattern.exec(fileContent);
+      if (results?.groups?.owner && results?.groups?.repo) {
+        log.debug(
+          `repositoryFinder using '${gitConfigPath}' and returns ${JSON.stringify(results.groups)}`,
+        );
+        return {
+          owner: results.groups.owner,
+          repo: results.groups.repo,
+        };
+      }
+    } catch (error) {
+      log.debug(`Couldn't read .git/config from baseDir ${baseDir}: ${error}`);
+      // Fall through to other methods
+    }
+  }
+
+  /**
    * Attempt to get git user and repo from GitHub context,
    * which includes checking for GITHUB_REPOSITORY environment variable
    */
@@ -219,17 +245,15 @@ export function repositoryFinder(
   }
 
   /**
-   * Attempt to get git user and repo from .git/config
-   * Use baseDir if provided, otherwise use current working directory
+   * Last resort: Attempt to get git user and repo from .git/config in CWD
    */
   try {
-    const gitConfigPath = baseDir ? path.join(baseDir, '.git', 'config') : '.git/config';
-    const fileContent = readFile(gitConfigPath);
-    log.debug(`loading ${gitConfigPath}:\n***\n${fileContent}\n***`);
+    const fileContent = readFile('.git/config');
+    log.debug(`loading .git/config:\n***\n${fileContent}\n***`);
     const results = remoteGitUrlPattern.exec(fileContent);
     if (results?.groups?.owner && results?.groups?.repo) {
       log.debug(
-        `repositoryFinder using '${gitConfigPath}' and returns ${JSON.stringify(results.groups)}`,
+        `repositoryFinder using '.git/config' and returns ${JSON.stringify(results.groups)}`,
       );
       return {
         owner: results.groups.owner,

@@ -1,6 +1,3 @@
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import * as core from '@actions/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -9,8 +6,6 @@ import type Inputs from '../src/inputs.js';
 import type LogTask from '../src/logtask/index.js';
 import updateSection from '../src/sections/index.js';
 
-export const __filename = fileURLToPath(import.meta.url);
-export const __dirname = path.dirname(__filename);
 type ReadmeGeneratorInstance = InstanceType<
   typeof import('../src/readme-generator.js').ReadmeGenerator
 >;

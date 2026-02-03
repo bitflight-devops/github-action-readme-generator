@@ -6,7 +6,7 @@
  * Issue #335: When the package is installed via npm and run via npx/yarn dlx,
  * the action.yml file is not included in the published package (it's not in the
  * "files" array in package.json). The tool tries to load its own action.yml from
- * __dirname/../../action.yml for default values, which fails because the file
+ * import.meta.dirname/../../action.yml for default values, which fails because the file
  * doesn't exist in the installed package.
  */
 import * as fs from 'node:fs';
@@ -89,7 +89,7 @@ runs:
     const log = new LogTask('Generate Documentation');
 
     // This should NOT fail even though collectAllDefaultValuesFromAction can't load
-    // the github-action-readme-generator's own action.yml from __dirname/../../action.yml
+    // the github-action-readme-generator's own action.yml from import.meta.dirname/../../action.yml
     // The fix gracefully handles this by logging a debug message and returning empty defaults
     // In our test, we've moved the action.yml file to simulate this scenario
 

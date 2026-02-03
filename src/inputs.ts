@@ -6,7 +6,6 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import * as core from '@actions/core';
 import { Context } from '@actions/github/lib/context.js';
@@ -21,18 +20,6 @@ import ReadmeEditor from './readme-editor.js';
 
 const { Provider }: typeof nconf = nconf;
 type IOptions = nconf.IOptions;
-
-/**
- * Get the filename from the import.meta.url
- */
-// biome-ignore lint/style/useNamingConvention: ESM polyfill for __filename
-export const __filename: string = fileURLToPath(import.meta.url);
-
-/**
- * Get the directory name from the filename
- */
-// biome-ignore lint/style/useNamingConvention: ESM polyfill for __dirname
-export const __dirname: string = path.dirname(__filename);
 
 /**
  * Change working directory to output of workingDirectory()
@@ -355,8 +342,8 @@ export function collectAllDefaultValuesFromAction(
   log.debug('Collecting default values from action.yml');
   // This loads the defaults from THIS action's own action.yml file (github-action-readme-generator's action.yml)
   // NOT the user's action.yml file (which is loaded separately via the 'action' input parameter)
-  // Therefore, we use __dirname to find this package's action.yml regardless of where it's installed
-  const thisActionPath = path.join(__dirname, providedMetaActionPath ?? metaActionPath);
+  // Therefore, we use import.meta.dirname to find this package's action.yml regardless of where it's installed
+  const thisActionPath = path.join(import.meta.dirname, providedMetaActionPath ?? metaActionPath);
   try {
     const defaultValues = {} as IOptions;
     const thisAction = new Action(thisActionPath);

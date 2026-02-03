@@ -1,6 +1,5 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { Context } from '@actions/github/lib/context.js';
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
@@ -23,9 +22,6 @@ import {
   gitConfigTestString,
   payloadTestString,
 } from './action.constants.js';
-
-export const __filename = fileURLToPath(import.meta.url);
-export const __dirname = path.dirname(__filename);
 
 // Mocking required objects and functions
 vi.mock('node:fs', async () => {
@@ -65,7 +61,7 @@ describe('test mocks work', () => {
 describe('helpers', () => {
   const readmeTestPath = './README.test.md';
   const actTestYmlPath = './action.test.yml';
-  const payloadFile = path.join(__dirname, 'payload.json');
+  const payloadFile = path.join(import.meta.dirname, 'payload.json');
   beforeEach(() => {
     tempEnv = { ...process.env };
     process.env.GITHUB_REPOSITORY = undefined;

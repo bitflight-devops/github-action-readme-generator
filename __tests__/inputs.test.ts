@@ -1,6 +1,5 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { Provider } from 'nconf';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -22,9 +21,6 @@ import LogTask from '../src/logtask/index.js';
 import ReadmeEditor from '../src/readme-editor.js';
 import { actionTestString } from './action.constants.js';
 
-export const __filename = fileURLToPath(import.meta.url);
-export const __dirname = path.dirname(__filename);
-
 // Mocking required objects and functions
 vi.mock('node:fs', async () => {
   return import('../__mocks__/node:fs.js');
@@ -39,7 +35,7 @@ describe('inputs', () => {
   const readmeTestPath = './README.test.md';
   const actTestYmlPath = './action.test.yml';
   // const fsMocksFile = './mocks/fs.js';
-  const payloadFile = path.join(__dirname, 'payload.json');
+  const payloadFile = path.join(import.meta.dirname, 'payload.json');
 
   describe('test mocks work', () => {
     test('Yaml parses correctly', () => {
@@ -122,7 +118,7 @@ describe('inputs', () => {
 
       // This test verifies that collectAllDefaultValuesFromAction loads THIS action's own action.yml
       // (github-action-readme-generator's action.yml), not the user's action.yml
-      // It uses __dirname to find the action.yml file relative to where the code is installed
+      // It uses import.meta.dirname to find the action.yml file relative to where the code is installed
       const relativePath = actTestYmlPath;
       const result = collectAllDefaultValuesFromAction(log, relativePath);
 

@@ -1,7 +1,6 @@
 import { execSync } from 'node:child_process';
 import { accessSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import type { Context } from '@actions/github/lib/context.js';
 import type { PackageJson } from 'types-package-json';
@@ -10,11 +9,6 @@ import type Inputs from './inputs.js';
 import LogTask from './logtask/index.js';
 import { unicodeWordMatch } from './unicode-word-match.js';
 import { type Nullable, notEmpty } from './util.js';
-
-// biome-ignore lint/style/useNamingConvention: ESM polyfill for __filename
-export const __filename: string = fileURLToPath(import.meta.url);
-// biome-ignore lint/style/useNamingConvention: ESM polyfill for __dirname
-export const __dirname: string = path.dirname(__filename);
 /**
  * Returns the input value if it is not empty, otherwise returns undefined.
  * @param value - The input value to check.

@@ -1,14 +1,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
 import YAML from 'yaml';
 
 import { actionTestString, actTestYmlPath } from './action.constants.js';
-
-export const __filename = fileURLToPath(import.meta.url);
-export const __dirname = path.dirname(__filename);
 
 vi.mock('node:fs', async () => {
   return import('../__mocks__/node:fs.js');

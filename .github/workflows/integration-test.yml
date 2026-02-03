@@ -134,7 +134,12 @@ jobs:
           fi
 
           echo ""
-          echo "Section validation: $CHECKS_PASSED passed, $CHECKS_FAILED warnings"
+          echo "Section validation: $CHECKS_PASSED passed, $CHECKS_FAILED failed"
+
+          if [ "$CHECKS_FAILED" -gt 0 ]; then
+            echo "::error::Integration test failed: $CHECKS_FAILED validation checks did not pass"
+            exit 1
+          fi
 
       - name: Compare with original (if exists)
         if: always()

@@ -171,7 +171,7 @@ npm run lint:markdown:fix
 
    **useAwait → Add await or remove async**
 
-   **NOTE**: This rule is NOT recommended by default. It must be explicitly enabled in biome.json. Check project configuration before flagging this.
+   **This project enforces useAwait at error level.**
 
    ```typescript
    // Before (no await in function)
@@ -192,7 +192,7 @@ npm run lint:markdown:fix
 
    **noParameterAssign → Use local variable**
 
-   **NOTE**: This rule has a `propertyAssignment` option (allow/deny). Property assignment to parameters is allowed by default.
+   **This project enforces noParameterAssign at warn level.**
 
    ```typescript
    // Before
@@ -205,11 +205,6 @@ npm run lint:markdown:fix
    function process(value: string) {
      const trimmed = value.trim();
      return trimmed;
-   }
-
-   // ✅ Property assignment is allowed by default
-   function updateConfig(config: ConfigType) {
-     config.updated = true;  // OK - property assignment
    }
    ```
 

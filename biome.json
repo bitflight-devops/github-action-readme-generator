@@ -61,8 +61,8 @@
       },
       "complexity": {
         "recommended": true,
-        "noForEach": "off",
-        "useLiteralKeys": "off",
+        "noForEach": "warn",
+        "useLiteralKeys": "warn",
         "noExcessiveCognitiveComplexity": {
           "level": "warn",
           "options": { "maxAllowedComplexity": 25 }
@@ -107,9 +107,9 @@
       "style": {
         "recommended": true,
         "noNonNullAssertion": "warn",
-        "noParameterAssign": "off",
-        "useDefaultParameterLast": "off",
-        "useNodejsImportProtocol": "off",
+        "noParameterAssign": "warn",
+        "useDefaultParameterLast": "warn",
+        "useNodejsImportProtocol": "warn",
         "useBlockStatements": "error",
         "useCollapsedElseIf": "error",
         "useConsistentArrayType": {
@@ -134,7 +134,7 @@
               },
               {
                 "selector": { "kind": "typeLike" },
-                "formats": ["PascalCase", "camelCase"]
+                "formats": ["PascalCase", "camelCase", "CONSTANT_CASE"]
               },
               {
                 "selector": { "kind": "enumMember" },
@@ -175,7 +175,7 @@
       "suspicious": {
         "recommended": true,
         "noAssignInExpressions": "warn",
-        "noConsole": "off",
+        "noConsole": "warn",
         "noExplicitAny": "warn",
         "noConfusingVoidType": "error",
         "noConstEnum": "error",
@@ -251,13 +251,21 @@
       "includes": ["__tests__/**/*.ts"],
       "linter": {
         "rules": {
-          "suspicious": { "noExportsInTest": "off" },
+          "suspicious": {
+            "noExportsInTest": "off",
+            "noConsole": "off",
+            "useAwait": "off",
+            "noMisplacedAssertion": "off"
+          },
           "complexity": {
             "noExcessiveCognitiveComplexity": "off",
             "noExcessiveLinesPerFunction": "off"
           },
           "nursery": {
             "useExplicitType": "off"
+          },
+          "style": {
+            "useNamingConvention": "off"
           }
         }
       }

@@ -38,11 +38,11 @@ let tempEnv: typeof process.env;
 describe('test mocks work', () => {
   beforeEach(() => {
     tempEnv = { ...process.env };
-    delete process.env.GITHUB_REPOSITORY;
-    delete process.env.INPUT_OWNER;
-    delete process.env.INPUT_REPO;
-    delete process.env.INPUT_README;
-    delete process.env.INPUT_ACTION;
+    process.env.GITHUB_REPOSITORY = undefined;
+    process.env.INPUT_OWNER = undefined;
+    process.env.INPUT_REPO = undefined;
+    process.env.INPUT_README = undefined;
+    process.env.INPUT_ACTION = undefined;
   });
 
   // restore the environment variables after each test
@@ -68,9 +68,9 @@ describe('helpers', () => {
   const payloadFile = path.join(__dirname, 'payload.json');
   beforeEach(() => {
     tempEnv = { ...process.env };
-    delete process.env.GITHUB_REPOSITORY;
-    delete process.env.INPUT_OWNER;
-    delete process.env.INPUT_REPO;
+    process.env.GITHUB_REPOSITORY = undefined;
+    process.env.INPUT_OWNER = undefined;
+    process.env.INPUT_REPO = undefined;
     vi.stubEnv('GITHUB_EVENT_PATH', payloadFile);
     vi.stubEnv('GITHUB_REPOSITORY', '');
     vi.stubEnv('INPUT_README', readmeTestPath);

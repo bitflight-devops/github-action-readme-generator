@@ -9,10 +9,12 @@ import type { PackageJson } from 'types-package-json';
 import type Inputs from './inputs.js';
 import LogTask from './logtask/index.js';
 import { unicodeWordMatch } from './unicode-word-match.js';
-import { notEmpty, type Nullable } from './util.js';
+import { type Nullable, notEmpty } from './util.js';
 
-export const __filename = fileURLToPath(import.meta.url);
-export const __dirname = path.dirname(__filename);
+// biome-ignore lint/style/useNamingConvention: ESM polyfill for __filename
+export const __filename: string = fileURLToPath(import.meta.url);
+// biome-ignore lint/style/useNamingConvention: ESM polyfill for __dirname
+export const __dirname: string = path.dirname(__filename);
 /**
  * Returns the input value if it is not empty, otherwise returns undefined.
  * @param value - The input value to check.
@@ -31,7 +33,9 @@ export function undefinedOnEmpty(value: string | undefined): string | undefined 
  * @returns The basename of the path.
  */
 export function basename(pathStr: string): string | undefined {
-  if (!pathStr) return undefined;
+  if (!pathStr) {
+    return undefined;
+  }
   const log = new LogTask('basename');
   const result = path.basename(pathStr);
   log.debug(`Basename passed ${pathStr} and returns ${result}`);
@@ -44,7 +48,9 @@ export function basename(pathStr: string): string | undefined {
  * @returns The path without the prefix, or null if path is empty
  */
 export function stripRefs(pathStr: string): string | null {
-  if (!pathStr) return null;
+  if (!pathStr) {
+    return null;
+  }
   const log = new LogTask('stripRefs');
   const result = pathStr.replace('refs/heads/', '').replace('refs/tags/', '');
   log.debug(`stripRefs passed ${pathStr} and returns ${result}`);
@@ -58,7 +64,9 @@ export function stripRefs(pathStr: string): string | null {
  * @throws {TypeError} If the input is not a string.
  */
 export function titlecase(text: string): string | undefined {
-  if (!text) return undefined;
+  if (!text) {
+    return undefined;
+  }
   if (typeof text !== 'string') {
     throw new TypeError(`Invalid argument type provided to titlecase(): ${typeof text}`);
   }
@@ -73,7 +81,9 @@ export function titlecase(text: string): string | undefined {
  * @returns The parsed text converted to title case.
  */
 export function prefixParser(text: string | undefined): string | undefined {
-  if (!text) return undefined;
+  if (!text) {
+    return undefined;
+  }
   if (typeof text !== 'string') {
     throw new TypeError(`Invalid argument type provided to prefixParser(): ${typeof text}`);
   }
@@ -87,9 +97,15 @@ export function prefixParser(text: string | undefined): string | undefined {
  * @param prepend - The string to prepend to each wrapped line.
  * @returns The array of wrapped lines.
  */
-export function wrapText(text: string | undefined, content: string[], prepend = ''): string[] {
+export function wrapText(
+  text: string | undefined,
+  content: string[],
+  prepend: string = '',
+): string[] {
   // Constrain the width of the description
-  if (!text) return content;
+  if (!text) {
+    return content;
+  }
   const width = 80;
 
   let description = text
@@ -361,7 +377,7 @@ export function lastIndexOfRegex(str: string, providedRegex: RegExp): number {
   return index;
 }
 
-export function isObject(value: any): value is object {
+export function isObject(value: unknown): value is object {
   const type = typeof value;
   return type === 'object' && !!value;
 }

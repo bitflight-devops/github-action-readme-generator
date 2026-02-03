@@ -23,9 +23,9 @@ describe('Action', () => {
     const { default: LogTask } = await import('../src/logtask/index.js');
     mockLogTask = new LogTask('mockAction');
     tempEnv = { ...process.env };
-    delete process.env.GITHUB_REPOSITORY;
-    delete process.env.INPUT_OWNER;
-    delete process.env.INPUT_REPO;
+    process.env.GITHUB_REPOSITORY = undefined;
+    process.env.INPUT_OWNER = undefined;
+    process.env.INPUT_REPO = undefined;
   });
 
   // restore the environment variables after each test

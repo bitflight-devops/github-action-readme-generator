@@ -79,7 +79,7 @@ export const ALIGNMENT_MARKUP = '<div align="center">';
 /**
  * Represents the set of icons that are omitted in GitHub Actions branding.
  */
-export const GITHUB_ACTIONS_OMITTED_ICONS = new Set([
+export const GITHUB_ACTIONS_OMITTED_ICONS: Set<string> = new Set([
   'coffee',
   'columns',
   'divide-circle',
@@ -98,7 +98,7 @@ export const GITHUB_ACTIONS_OMITTED_ICONS = new Set([
 /**
  * Represents the set of icons available for GitHub Actions branding.
  */
-export const GITHUB_ACTIONS_BRANDING_ICONS = new Set(
+export const GITHUB_ACTIONS_BRANDING_ICONS: Set<string> = new Set(
   Object.keys(icons).filter((item) => !GITHUB_ACTIONS_OMITTED_ICONS.has(item)),
 );
 

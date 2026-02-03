@@ -160,8 +160,8 @@ describe('inputs', () => {
 
       test('loadDefaultConfig from github context GITHUB_REPOSITORY env var', ({ task }) => {
         vi.stubEnv('GITHUB_REPOSITORY', 'user2/test2');
-        delete process.env.INPUT_USER;
-        delete process.env.INPUT_REPO;
+        process.env.INPUT_USER = undefined;
+        process.env.INPUT_REPO = undefined;
         const log = new LogTask(task.name);
         const config = new Provider();
         const result = loadDefaultConfig(log, config);
@@ -169,9 +169,9 @@ describe('inputs', () => {
         expect(result.get('repo')).toBe('test2');
       });
       test('loadDefaultConfig from provided context payload', ({ task }) => {
-        delete process.env.INPUT_USER;
-        delete process.env.INPUT_REPO;
-        delete process.env.GITHUB_REPOSITORY;
+        process.env.INPUT_USER = undefined;
+        process.env.INPUT_REPO = undefined;
+        process.env.GITHUB_REPOSITORY = undefined;
         vi.stubEnv('GITHUB_REPOSITORY', '');
 
         const log = new LogTask(task.name);

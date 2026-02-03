@@ -49,7 +49,7 @@ export default class SVGEditor {
   /**
    * Initializes the SVG window, document, and canvas if not already set up.
    */
-  async initSVG(): Promise<void> {
+  initSVG(): void {
     if (!this.window) {
       this.window = createSVGWindow();
       const { document } = this.window;
@@ -67,11 +67,11 @@ export default class SVGEditor {
    * @param {Partial<BrandColors>} bgcolor - Background color for the image.
    * @returns {Promise<void>} A promise that resolves when the image is generated.
    */
-  async generateSvgImage(
+  generateSvgImage(
     svgPath: string | undefined,
     icon: Partial<FeatherIconNames> = DEFAULT_BRAND_ICON,
     bgcolor: Partial<BrandColors> = DEFAULT_BRAND_COLOR
-  ): Promise<void> {
+  ): void {
     if (!svgPath || svgPath.length === 0) {
       this.log.debug('No svgPath provided');
       return;
@@ -89,7 +89,7 @@ export default class SVGEditor {
     }
     this.log.info(`SVG to generate ${icon} at ${svgPath} with color ${bgcolor}.`);
     // Initialize SVG
-    await this.initSVG();
+    this.initSVG();
     // Generate SVG content
     const svgContent = this.generateSVGContent(icon, bgcolor);
 
@@ -119,7 +119,11 @@ export default class SVGEditor {
    * @param {number} outerViewBox - Size of the canvas for the image.
    * @returns {string} The generated SVG content.
    */
-  generateSVGContent(icon: FeatherIconNames, color: BrandColors, outerViewBox = 100): string {
+  generateSVGContent(
+    icon: FeatherIconNames,
+    color: BrandColors,
+    outerViewBox: number = 100
+  ): string {
     const { canvas, log } = this;
     // Validate canvas
     if (!canvas) {

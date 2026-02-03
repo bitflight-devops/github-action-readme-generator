@@ -14,23 +14,25 @@ import nconf from 'nconf';
 import YAML from 'yaml';
 
 import Action, { type Input } from './Action.js';
-import { configFileName, ConfigKeys, README_SECTIONS, type ReadmeSection } from './constants.js';
+import { ConfigKeys, configFileName, README_SECTIONS, type ReadmeSection } from './constants.js';
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
 
-const { Provider } = nconf;
+const { Provider }: typeof nconf = nconf;
 type IOptions = nconf.IOptions;
 
 /**
  * Get the filename from the import.meta.url
  */
-export const __filename = fileURLToPath(import.meta.url);
+// biome-ignore lint/style/useNamingConvention: ESM polyfill for __filename
+export const __filename: string = fileURLToPath(import.meta.url);
 
 /**
  * Get the directory name from the filename
  */
-export const __dirname = path.dirname(__filename);
+// biome-ignore lint/style/useNamingConvention: ESM polyfill for __dirname
+export const __dirname: string = path.dirname(__filename);
 
 /**
  * Change working directory to output of workingDirectory()
@@ -293,7 +295,7 @@ type ProviderInstance = InstanceType<typeof Provider>;
 
 export function transformGitHubInputsToArgv(
   log: LogTask,
-  config: ProviderInstance,
+  _config: ProviderInstance,
   obj: KVPairType,
 ): undefined | KVPairType {
   /** The obj.key is always in lowercase, but it checks for it without case sensitivity */

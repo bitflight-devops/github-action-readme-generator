@@ -384,6 +384,220 @@ runs:
     });
   });
 
+  /**
+   * CI Environment Replication Tests
+   *
+   * These tests replicate the EXACT conditions in CI workflow:
+   * - GITHUB_REPOSITORY is set to the WORKFLOW repo (NOT the target repo)
+   * - Target repo is in a subdirectory (test-repo/)
+   * - No INPUT_OWNER/INPUT_REPO provided
+   * - .git/config in target directory has the correct owner/repo
+   *
+   * The bug: If code checks GITHUB_REPOSITORY before .git/config in target dir,
+   * it would use the WRONG owner/repo from the workflow repo.
+   *
+   * TEST STATUS:
+   * - These tests WILL FAIL if the source code checks GITHUB_REPOSITORY before
+   *   checking .git/config in the target directory
+   * - These tests WILL PASS once the source code is fixed to prioritize
+   *   .git/config in the target directory over GITHUB_REPOSITORY
+   *
+   * EXPECTED CI BEHAVIOR:
+   * The action should detect owner/repo from the TARGET repository's .git/config,
+   * NOT from GITHUB_REPOSITORY (which points to the workflow's repository)
+   */
+  describe('CI Environment Replication - GITHUB_REPOSITORY mismatch', () => {
+    /**
+     * CI REPLICATION TEST: GITHUB_REPOSITORY is WRONG, .git/config is CORRECT
+     *
+     * This is the EXACT CI failure condition:
+     * - GITHUB_REPOSITORY='bitflight-devops/github-action-readme-generator' (workflow repo)
+     * - Target repo .git/config has 'target-owner/target-repo'
+     * - No INPUT_OWNER/INPUT_REPO provided
+     *
+     * Expected: Should detect from .git/config, NOT GITHUB_REPOSITORY
+     *
+     * SOURCE CODE FIX REQUIRED:
+     * The repositoryFinder function in helpers.ts must check .git/config in
+     * baseDir (target directory) BEFORE checking GITHUB_REPOSITORY
+     */
+    it('CI REPLICATION: should use .git/config from target directory, NOT GITHUB_REPOSITORY', async () => {
+      process.chdir(tempDir);
+
+      const actionContent = `name: CI Replication Test
+description: Testing CI environment where GITHUB_REPOSITORY is wrong
+inputs:
+  test-input:
+    description: A test input
+runs:
+  using: node20
+  main: index.js
+`;
+      const actionPath = createExternalActionYml(tempDir, actionContent);
+      const readmePath = createReadmeWithMarkers(tempDir);
+
+      // Create .git/config with CORRECT owner/repo (simulating target repo)
+      createGitConfig(tempDir, 'target-owner', 'target-repo');
+      createPackageJson(tempDir, '3.0.0');
+
+      // Set GITHUB_REPOSITORY to WRONG value (simulating CI workflow repo)
+      // This is the key CI condition - GITHUB_REPOSITORY != target repo
+      vi.stubEnv('GITHUB_REPOSITORY', 'wrong-owner/wrong-repo');
+      vi.stubEnv('GITHUB_EVENT_PATH', '');
+      // Explicitly NO INPUT_OWNER/INPUT_REPO - simulating CI auto-detection
+      vi.stubEnv('INPUT_OWNER', '');
+      vi.stubEnv('INPUT_REPO', '');
+      vi.stubEnv('INPUT_ACTION', actionPath);
+      vi.stubEnv('INPUT_README', readmePath);
+
+      const log = new LogTask('Test CI Replication');
+
+      const inputs = new Inputs(
+        {
+          configPath: path.join(tempDir, '.ghadocs.json'),
+        },
+        log,
+      );
+
+      // CRITICAL: Should detect from .git/config, NOT GITHUB_REPOSITORY
+      expect(inputs.owner).toBe('target-owner');
+      expect(inputs.repo).toBe('target-repo');
+
+      const generator = new ReadmeGenerator(inputs, log);
+      await generator.generate();
+
+      const generatedReadme = fs.readFileSync(readmePath, 'utf8');
+
+      // Should use target repo owner/repo, NOT the wrong GITHUB_REPOSITORY value
+      expect(generatedReadme).toContain('- uses: target-owner/target-repo@v3.0.0');
+
+      // These patterns would indicate the bug - using wrong GITHUB_REPOSITORY
+      expect(generatedReadme).not.toContain('wrong-owner');
+      expect(generatedReadme).not.toContain('wrong-repo');
+    });
+
+    /**
+     * CI REPLICATION TEST: Subdirectory structure like CI
+     *
+     * CI structure:
+     * - /action-under-test/ (the github-action-readme-generator checkout)
+     * - /test-repo/ (the target repo checkout)
+     *
+     * The action runs from action-under-test/ but targets files in test-repo/
+     *
+     * SOURCE CODE FIX REQUIRED:
+     * When action.yml path points to a subdirectory (test-repo/action.yml),
+     * the code must look for .git/config in that subdirectory, not CWD or
+     * GITHUB_REPOSITORY
+     */
+    it('CI REPLICATION: should detect owner/repo from target subdirectory, not CWD', async () => {
+      // Create subdirectory structure like CI
+      const targetDir = path.join(tempDir, 'test-repo');
+      fs.mkdirSync(targetDir, { recursive: true });
+
+      const actionContent = `name: Subdirectory Test
+description: Testing subdirectory detection
+runs:
+  using: node20
+  main: index.js
+`;
+      const actionPath = createExternalActionYml(targetDir, actionContent);
+      const readmePath = createReadmeWithMarkers(targetDir);
+
+      // .git/config is in the target subdirectory
+      createGitConfig(targetDir, 'subdir-owner', 'subdir-repo');
+      createPackageJson(targetDir, '2.5.0');
+
+      // CWD stays at tempDir (simulating running from action-under-test/)
+      // But action/readme paths point to test-repo/
+      process.chdir(tempDir);
+
+      // GITHUB_REPOSITORY set to wrong value (workflow repo)
+      vi.stubEnv('GITHUB_REPOSITORY', 'workflow-owner/workflow-repo');
+      vi.stubEnv('GITHUB_EVENT_PATH', '');
+      vi.stubEnv('INPUT_OWNER', '');
+      vi.stubEnv('INPUT_REPO', '');
+      vi.stubEnv('INPUT_ACTION', actionPath);
+      vi.stubEnv('INPUT_README', readmePath);
+
+      const log = new LogTask('Test Subdirectory');
+
+      const inputs = new Inputs(
+        {
+          configPath: path.join(tempDir, '.ghadocs.json'),
+        },
+        log,
+      );
+
+      // Should detect from target directory's .git/config
+      expect(inputs.owner).toBe('subdir-owner');
+      expect(inputs.repo).toBe('subdir-repo');
+
+      const generator = new ReadmeGenerator(inputs, log);
+      await generator.generate();
+
+      const generatedReadme = fs.readFileSync(readmePath, 'utf8');
+
+      expect(generatedReadme).toContain('- uses: subdir-owner/subdir-repo@v2.5.0');
+      expect(generatedReadme).not.toContain('workflow-owner');
+    });
+
+    /**
+     * CI REPLICATION TEST: Shallow clone without remote URL
+     *
+     * actions/checkout might create shallow clone where .git/config
+     * doesn't have a usable remote URL. In this case, we need explicit inputs.
+     */
+    it('should fall back to GITHUB_REPOSITORY when .git/config has no remote URL', async () => {
+      process.chdir(tempDir);
+
+      const actionContent = `name: Shallow Clone Test
+description: Testing shallow clone scenario
+runs:
+  using: node20
+  main: index.js
+`;
+      const actionPath = createExternalActionYml(tempDir, actionContent);
+      const readmePath = createReadmeWithMarkers(tempDir);
+
+      // Create .git/config WITHOUT remote URL (simulating shallow clone)
+      const gitDir = path.join(tempDir, '.git');
+      fs.mkdirSync(gitDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(gitDir, 'config'),
+        `[core]
+\trepositoryformatversion = 0
+\tfilemode = true
+`,
+      );
+
+      // GITHUB_REPOSITORY is set, .git/config has no URL
+      vi.stubEnv('GITHUB_REPOSITORY', 'fallback-owner/fallback-repo');
+      vi.stubEnv('GITHUB_EVENT_PATH', '');
+      vi.stubEnv('INPUT_OWNER', '');
+      vi.stubEnv('INPUT_REPO', '');
+      vi.stubEnv('INPUT_ACTION', actionPath);
+      vi.stubEnv('INPUT_README', readmePath);
+
+      const log = new LogTask('Test Shallow Clone');
+
+      // When .git/config has no URL, GITHUB_REPOSITORY is the correct fallback
+      // This is expected behavior - when target repo detection fails, use GITHUB_REPOSITORY
+      const inputs = new Inputs(
+        {
+          configPath: path.join(tempDir, '.ghadocs.json'),
+        },
+        log,
+      );
+
+      // This documents the fallback behavior:
+      // When .git/config in target directory has no remote URL,
+      // GITHUB_REPOSITORY becomes the fallback source
+      expect(inputs.owner).toBe('fallback-owner');
+      expect(inputs.repo).toBe('fallback-repo');
+    });
+  });
+
   describe('Edge cases for owner/repo/version detection', () => {
     /**
      * BUG REPLICATION TEST 4: GITHUB_REPOSITORY environment variable

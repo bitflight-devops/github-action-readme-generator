@@ -544,15 +544,16 @@ items.forEach((item) => {
 for (const item of items) {
   processItem(item);
 }
-```
 
-**Exception**: When the callback explicitly uses the index parameter, forEach is acceptable:
-
-```typescript
-// ✅ This is OK - index is used
+// ❌ Before: forEach with index parameter
 items.forEach((item, index) => {
   console.log(`Item ${index}: ${item}`);
 });
+
+// ✅ After: for...of with entries() for index access
+for (const [index, item] of items.entries()) {
+  console.log(`Item ${index}: ${item}`);
+}
 ```
 
 #### noEvolvingTypes (lint/suspicious/noEvolvingTypes)

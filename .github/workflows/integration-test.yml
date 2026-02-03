@@ -74,11 +74,21 @@ jobs:
             echo "::warning::README not found at ${{ matrix.readme_path }}"
           fi
 
+      - name: Extract owner and repo
+        id: extract
+        run: |
+          OWNER=$(echo "${{ matrix.repo }}" | cut -d'/' -f1)
+          REPO=$(echo "${{ matrix.repo }}" | cut -d'/' -f2)
+          echo "owner=$OWNER" >> "$GITHUB_OUTPUT"
+          echo "repo=$REPO" >> "$GITHUB_OUTPUT"
+
       - name: Run action against test repository
         uses: ./action-under-test
         with:
           action: test-repo/${{ matrix.action_path }}
           readme: test-repo/${{ matrix.readme_path }}
+          owner: ${{ steps.extract.outputs.owner }}
+          repo: ${{ steps.extract.outputs.repo }}
           pretty: true
 
       - name: Verify README was generated

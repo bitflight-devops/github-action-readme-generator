@@ -6,7 +6,7 @@
  * @param {ReadmeSection} sectionToken - The sectionToken used for identifying the section.
  * @param {Inputs} inputs - The Inputs class instance.
  */
-import { ReadmeSection } from '../constants.js';
+import type { ReadmeSection } from '../constants.js';
 import { columnHeader, rowHeader } from '../helpers.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';

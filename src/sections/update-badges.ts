@@ -4,7 +4,7 @@
  * It utilizes the 'LogTask' class for logging purposes.
  */
 
-import { ReadmeSection } from '../constants.js';
+import type { ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 

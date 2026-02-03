@@ -7,10 +7,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import YAML from 'yaml';
 
 import Action from '../src/Action.js';
-import { ReadmeSection } from '../src/constants.js';
+import type { ReadmeSection } from '../src/constants.js';
 import Inputs, {
   collectAllDefaultValuesFromAction,
-  InputContext,
+  type InputContext,
   loadAction,
   loadConfig,
   loadDefaultConfig,

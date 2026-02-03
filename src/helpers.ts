@@ -9,7 +9,7 @@ import type { PackageJson } from 'types-package-json';
 import type Inputs from './inputs.js';
 import LogTask from './logtask/index.js';
 import { unicodeWordMatch } from './unicode-word-match.js';
-import { notEmpty, Nullable } from './util.js';
+import { notEmpty, type Nullable } from './util.js';
 
 export const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);

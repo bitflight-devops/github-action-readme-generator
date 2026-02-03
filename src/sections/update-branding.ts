@@ -1,7 +1,7 @@
 import type { FeatherIconNames } from 'feather-icons';
 
 import type { BrandColors } from '../constants.js';
-import { GITHUB_ACTIONS_OMITTED_ICONS, isValidIcon, ReadmeSection } from '../constants.js';
+import { GITHUB_ACTIONS_OMITTED_ICONS, isValidIcon, type ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import SVGEditor from '../svg-editor.mjs';

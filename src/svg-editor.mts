@@ -12,7 +12,7 @@ import type { Container } from '@svgdotjs/svg.js';
 import { registerWindow, SVG } from '@svgdotjs/svg.js';
 import type { FeatherIconNames } from 'feather-icons';
 import * as feather from 'feather-icons';
-import { createSVGWindow, SVGDocument, SVGWindow } from 'svgdom'; /// main-module.js';
+import { createSVGWindow, type SVGDocument, type SVGWindow } from 'svgdom'; /// main-module.js';
 
 import type { BrandColors } from './constants.js';
 import {

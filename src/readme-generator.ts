@@ -8,9 +8,9 @@
 
 import * as core from '@actions/core';
 
-import { ReadmeSection } from './constants.js';
-import Inputs from './inputs.js';
-import LogTask from './logtask/index.js';
+import type { ReadmeSection } from './constants.js';
+import type Inputs from './inputs.js';
+import type LogTask from './logtask/index.js';
 import updateSection from './sections/index.js';
 
 export type SectionKV = Record<string, string>;

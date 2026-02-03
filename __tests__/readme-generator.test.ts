@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 import * as core from '@actions/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ReadmeSection } from '../src/constants.js';
-import Inputs from '../src/inputs.js';
-import LogTask from '../src/logtask/index.js';
+import type { ReadmeSection } from '../src/constants.js';
+import type Inputs from '../src/inputs.js';
+import type LogTask from '../src/logtask/index.js';
 import updateSection from '../src/sections/index.js';
 
 export const __filename = fileURLToPath(import.meta.url);

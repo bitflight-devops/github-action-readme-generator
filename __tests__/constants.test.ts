@@ -1,9 +1,9 @@
-import { FeatherIconNames, icons } from 'feather-icons';
+import { type FeatherIconNames, icons } from 'feather-icons';
 import { describe, expect, it } from 'vitest';
 
 import {
   ALIGNMENT_MARKUP,
-  BrandColors,
+  type BrandColors,
   brandingSquareEdgeLengthInPixels,
   configFileName,
   ConfigKeys,
@@ -15,7 +15,7 @@ import {
   isValidColor,
   isValidIcon,
   README_SECTIONS,
-  ReadmeSection,
+  type ReadmeSection,
 } from '../src/constants.js';
 
 describe('isValidIcon', () => {

@@ -13,8 +13,8 @@ import { Context } from '@actions/github/lib/context.js';
 import nconf from 'nconf';
 import YAML from 'yaml';
 
-import Action, { Input } from './Action.js';
-import { configFileName, ConfigKeys, README_SECTIONS, ReadmeSection } from './constants.js';
+import Action, { type Input } from './Action.js';
+import { configFileName, ConfigKeys, README_SECTIONS, type ReadmeSection } from './constants.js';
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';

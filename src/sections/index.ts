@@ -6,7 +6,7 @@
  * @param {Inputs} inputs - The Inputs class instance.
  * @returns {Promise<void>} A promise that resolves once the section is updated.
  */
-import { ReadmeSection } from '../constants.js';
+import type { ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import updateBadges from './update-badges.js';

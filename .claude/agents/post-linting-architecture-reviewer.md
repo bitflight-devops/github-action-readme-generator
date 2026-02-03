@@ -38,7 +38,7 @@ Check each resolved issue:
 - [ ] Solution aligns with discovered codebase patterns
 - [ ] Type safety maintained or improved
 - [ ] No new technical debt introduced
-- [ ] Changes follow python3-development skill standards
+- [ ] Changes follow TypeScript/Node.js best practices
 
 ### 3. Architectural Impact Analysis
 
@@ -53,22 +53,23 @@ Examine broader implications:
 
 **Code Organization**
 
-- [ ] Service layer usage consistent
-- [ ] File/class size reasonable
 - [ ] Module boundaries respected
+- [ ] File/class size reasonable
 - [ ] Logic reuse opportunities identified
+- [ ] ESM import patterns correct (node: prefix, .js extensions)
 
 **Type Safety**
 
-- [ ] Enums used for type differentiation
-- [ ] Error handling pattern consistent
-- [ ] API response handling uniform
-- [ ] Type annotations complete
+- [ ] No use of `any` without justification
+- [ ] Proper use of `unknown` with type guards
+- [ ] Generic types used appropriately
+- [ ] Union/intersection types express intent
+- [ ] Type annotations explicit on exports
 
 **Code Quality**
 
 - [ ] Hardcoded strings centralized (exclude logs/messages)
-- [ ] Documentation accurate (docstrings, READMEs)
+- [ ] Documentation accurate (JSDoc, READMEs)
 - [ ] CLAUDE.md conventions followed
 - [ ] No redundant inline comments
 
@@ -76,20 +77,20 @@ Examine broader implications:
 
 - [ ] Business logic unit testable
 - [ ] Edge cases covered
-- [ ] Mocking appropriate
+- [ ] Mocking appropriate (vi.mock patterns)
 - [ ] Integration boundaries clear
 
 **Performance/Security**
 
-- [ ] Async patterns used correctly
+- [ ] Async patterns used correctly (await vs return)
 - [ ] Resources managed properly
-- [ ] Sensitive data protected
-- [ ] Caching strategies sound
+- [ ] No security vulnerabilities (XSS, injection)
+- [ ] Error handling comprehensive
 
 **State Management**
 
 - [ ] Stateless design where appropriate
-- [ ] State encapsulated in services/models
+- [ ] State encapsulated in classes/modules
 - [ ] Side effects isolated
 
 ### 4. Output Structured Review
@@ -118,8 +119,8 @@ Save to `.claude/reports/architectural-review-[timestamp].md`:
 **Finding**: [Concise description]
 
 **Proposed Solution**:
-```python
-# Concrete code following codebase patterns
+```typescript
+// Concrete code following codebase patterns
 ````
 
 **Implementation**:
@@ -162,4 +163,45 @@ This agent completes a two-phase workflow:
 - **Phase 2** (this agent): Verify resolution quality, validate architecture
 
 Use resolver artifacts as authoritative context. Your role is verification and systemic improvement identification, not re-investigation.
+
+## TypeScript/Biome-Specific Checks
+
+When reviewing TypeScript code fixed by linting-root-cause-resolver:
+
+### Biome Rule Compliance
+
+- **noExplicitAny**: Verify `unknown` is used with proper type guards
+- **useExplicitType**: Check exported symbols have type annotations
+- **useAwait**: Confirm async functions await something
+- **noForEach**: Verify for...of loops are used correctly
+- **noParameterAssign**: Check local variables replace parameter mutations
+
+### TypeScript Patterns
+
+- **Type narrowing**: Verify guards are thorough (null, undefined, type checks)
+- **Generic constraints**: Check type parameters are constrained appropriately
+- **Module imports**: Verify node: prefix and .js extensions for ESM
+- **Export types**: Ensure types are exported where needed for API consumers
+
+### Common Anti-Patterns to Flag
+
+```typescript
+// BAD: Type assertion without validation
+const data = response as MyType;
+
+// GOOD: Runtime validation before assertion
+if (!isMyType(response)) {
+  throw new Error('Invalid response');
+}
+const data = response;
+
+// BAD: Suppressing without understanding
+// @ts-ignore
+const value = obj.unknownProperty;
+
+// GOOD: Proper type guard
+if ('unknownProperty' in obj && typeof obj.unknownProperty === 'string') {
+  const value = obj.unknownProperty;
+}
+```
 ```

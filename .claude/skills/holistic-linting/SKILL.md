@@ -1,5 +1,5 @@
 ---
-description: Comprehensive linting and formatting verification workflows. Provides automatic format-lint-resolve pipelines for orchestrators and sub-agents. Use when running linters, fixing ruff/mypy/bandit errors, ensuring code quality before completion, or resolving linting issues systematically.
+description: Comprehensive linting and formatting verification workflows for TypeScript/Biome projects. Provides automatic format-lint-resolve pipelines for orchestrators and sub-agents. Use when running linters, fixing Biome/TypeScript errors, ensuring code quality before completion, or resolving linting issues systematically.
 ---
 
 # Holistic Linting Skill
@@ -12,13 +12,13 @@ Prevent Claude from:
 
 - Completing tasks without formatting and linting modified files
 - Claiming code is "production quality" based on pattern-matching rather than verification
-- Assuming only 2 linters exist (mypy + ruff) when projects may have 4+ linting tools (basedpyright, bandit, etc.)
-- Suppressing linting errors with `# type: ignore` or `# noqa` comments without understanding root causes
+- Suppressing linting errors with `// biome-ignore` or `// @ts-ignore` without understanding root causes
+- Adding workarounds that hide type safety issues
 
 Ensure Claude:
 
 - Automatically formats and lints all modified files before task completion
-- Discovers project linters by scanning configuration files (pyproject.toml, .pre-commit-config.yaml, package.json)
+- Discovers project linters by scanning configuration files (biome.json, tsconfig.json, package.json)
 - Resolves linting issues systematically using root-cause analysis
 - Orchestrates concurrent linting agents when multiple files have issues
 
@@ -77,9 +77,9 @@ Task(
 
 **What NOT to do before delegating**:
 
-- ❌ Do NOT run `ruff format` before delegating
-- ❌ Do NOT run `ruff check` before delegating
-- ❌ Do NOT run `mypy` before delegating
+- ❌ Do NOT run `biome format` before delegating
+- ❌ Do NOT run `biome check` before delegating
+- ❌ Do NOT run `tsc` before delegating
 - ❌ Do NOT gather linting output for the agent
 - ❌ Do NOT read error messages to provide to the agent
 
@@ -93,11 +93,11 @@ Task(
 **Reason**: The agent follows systematic root-cause analysis workflows. It autonomously:
 
 - Discovers project linters by scanning configuration files
-- Runs formatters on modified files (ruff format, prettier, etc.)
-- Executes linters to identify issues (ruff, mypy, pyright, etc.)
+- Runs formatters on modified files (biome format)
+- Executes linters to identify issues (biome check, tsc)
 - Researches rule documentation
 - Traces type flows and architectural context
-- Implements elegant fixes following python3-development patterns
+- Implements elegant fixes following TypeScript best practices
 - Verifies resolution by re-running linters
 - Creates resolution artifacts in `.claude/reports/` and `.claude/artifacts/`
 
@@ -106,9 +106,9 @@ Task(
 Launch concurrent agents (one per file) WITHOUT pre-gathering linting data:
 
 ```text
-Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in src/auth.py")
-Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in src/api.py")
-Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in tests/test_auth.py")
+Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in src/inputs.ts")
+Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in src/helpers.ts")
+Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in __tests__/inputs.test.ts")
 ```
 
 **Reason for concurrency**: Independent file resolutions proceed in parallel, reducing total time.
@@ -192,56 +192,6 @@ Continue workflow until architectural review reports clean results.
 
 **Key Principle**: Orchestrator delegates immediately and reads reports. Agent does ALL actionable work (formatting, linting, resolution). Orchestrator does NOT run commands or gather linting data.
 
-### Common Anti-Patterns to Avoid
-
-**❌ WRONG** - Orchestrator pre-gathering linting data:
-
-```text
-# Don't do this:
-Bash("ruff check src/auth.py")
-# Read the output...
-# Then delegate with the output
-Task(agent="linting-root-cause-resolver", prompt="Fix these errors: [pasted errors]")
-```
-
-**✅ CORRECT** - Orchestrator delegates immediately:
-
-```text
-# Do this instead:
-Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in src/auth.py")
-```
-
-**❌ WRONG** - Orchestrator running formatters:
-
-```text
-# Don't do this:
-Bash("ruff format src/auth.py src/api.py")
-# Then delegate linting
-```
-
-**✅ CORRECT** - Agent handles both formatting and linting:
-
-```text
-# Do this instead:
-Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in src/auth.py")
-```
-
-**❌ WRONG** - Orchestrator verifying agent's work by running linters:
-
-```text
-# Don't do this:
-# Agent completes
-Bash("ruff check src/auth.py")  # Verifying agent's work
-```
-
-**✅ CORRECT** - Trust agent's verification, read reports instead:
-
-```text
-# Do this instead:
-Read(".claude/reports/linting-resolution-[timestamp].md")
-# Report shows agent already verified with linter output
-```
-
 </section>
 
 ## How to Use This Skill
@@ -270,94 +220,48 @@ This skill modifies Claude's standard workflow to include automatic quality chec
 
 ### Linter Detection
 
-Linter detection is handled automatically by scanning project configuration files. The linting hook's `ConfigurationDetector` identifies available tools at runtime by checking:
+This project uses **Biome** exclusively for linting and formatting TypeScript/JavaScript:
 
-| Config File                    | Tools Detected                                       |
-| ------------------------------ | ---------------------------------------------------- |
-| `.pre-commit-config.yaml`      | pre-commit/prek hooks (takes priority, skips others) |
-| `.husky/` directory            | Husky git hooks                                      |
-| `pyproject.toml`               | Ruff, MyPy, basedpyright, bandit                     |
-| `package.json`, `.eslintrc*`   | ESLint                                               |
-| `package.json`, `.prettierrc*` | Prettier                                             |
-| `.clang-format`                | clang-format (C/C++)                                 |
-| `.rubocop.yml`                 | RuboCop (Ruby)                                       |
-| `.shellcheckrc`                | ShellCheck (shell scripts)                           |
-| `.markdownlint.json/.yaml`     | markdownlint                                         |
-
-**Detection Priority** (highest to lowest):
-
-1. Pre-commit/prek (if found, uses hooks exclusively)
-2. Husky
-3. Language-specific tools (Python → JS/TS → Shell → etc.)
-
-The detection uses caching with a 5-minute TTL to avoid repeated disk reads.
+| Config File | Tools |
+|------------|-------|
+| `biome.json` | Biome (lint + format) |
+| `tsconfig.json` | TypeScript compiler |
+| `.markdownlint.json` | markdownlint |
+| `.husky/` | Husky git hooks |
 
 ### Running Formatters and Linters
 
-**Git Hook Tool Detection** (if `.pre-commit-config.yaml` exists):
-
-Use the detection script to identify and run the correct tool:
+**TypeScript/JavaScript Files (Biome)**:
 
 ```bash
-# Detect tool (outputs 'prek' or 'pre-commit')
-uv run ./scripts/detect-hook-tool.py
+# Format and lint with auto-fix (preferred - single command)
+npx biome check --write ./src/ ./__tests__/
 
-# Run detected tool with arguments
-uv run ./scripts/detect-hook-tool.py run --files path/to/file.py
+# Check only (CI mode)
+npx biome check ./src/ ./__tests__/
 
-# Check different repository on specific files
-uv run ./scripts/detect-hook-tool.py --directory /path/to/repo run --files path/to/file.py
+# Format only
+npx biome format --write ./src/
+
+# Lint only
+npx biome lint ./src/
 ```
 
-**Important - Scoped Operations**: Always use `--files` or staged file patterns rather than `--all-files`. Running hooks on all files formats code outside your current branch, causing:
-
-- **Diff pollution**: Unrelated formatting changes appear in merge requests
-- **Merge conflicts**: Changes to files not part of your feature
-- **Broken git blame**: History attribution lost for mass-formatted files
-
-Use `--all-files` ONLY when explicitly requested by the user for repository-wide cleanup.
-
-Detection logic: reads `.git/hooks/pre-commit` line 2, token 5 identifies the tool. Defaults to `prek` if file missing.
-
-**Note**: prek is a Rust-based drop-in replacement for pre-commit. Both tools use the same `.pre-commit-config.yaml` and have identical CLI interfaces.
-
-**For Python files**:
+**TypeScript Type Checking**:
 
 ```bash
-# Format first (auto-fixes trivial issues)
-uv run ruff format path/to/file.py
+# Type check without emitting
+npx tsc --noEmit
 
-# Then lint (reports substantive issues)
-uv run ruff check path/to/file.py
-uv run mypy path/to/file.py
-uv run pyright path/to/file.py
+# Build (includes type checking)
+npm run build
 ```
 
-**For JavaScript/TypeScript files**:
+**Markdown Files**:
 
 ```bash
-# Format first
-npx prettier --write path/to/file.ts
-
-# Then lint
-npx eslint path/to/file.ts
-```
-
-**For Shell scripts**:
-
-```bash
-# Format first
-shfmt -w path/to/script.sh
-
-# Then lint
-shellcheck path/to/script.sh
-```
-
-**For Markdown**:
-
-```bash
-# Lint and auto-fix
-npx markdownlint-cli2 --fix path/to/file.md
+npm run lint:markdown
+npm run lint:markdown:fix
 ```
 
 ### Resolving Linting Issues
@@ -365,51 +269,47 @@ npx markdownlint-cli2 --fix path/to/file.md
 **For Orchestrators**: Delegate immediately to linting-root-cause-resolver WITHOUT running linters yourself:
 
 ```claude
-Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in file1.py")
-Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in file2.py")
+Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in src/inputs.ts")
+Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in src/helpers.ts")
 ```
 
-Do NOT run `ruff check` or `mypy` before delegating. The agent gathers its own linting data.
+Do NOT run `biome check` or `tsc` before delegating. The agent gathers its own linting data.
 
 **For Sub-Agents**: Follow the linter-specific resolution workflow documented below based on the linting tool reporting the issue.
 
 ## Linter-Specific Resolution Workflows
 
-This section provides systematic resolution procedures for each major Python linting tool. Sub-agents executing the linting-root-cause-resolver process MUST follow the appropriate workflow based on the linter reporting issues.
+This section provides systematic resolution procedures for TypeScript/JavaScript linting tools. Sub-agents executing the linting-root-cause-resolver process MUST follow the appropriate workflow based on the linter reporting issues.
 
-### Ruff Resolution Workflow
+### Biome Resolution Workflow
 
-**When to use**: Linting errors with ruff rule codes (E, F, W, B, S, I, UP, C90, N, etc.)
+**When to use**: Linting errors with Biome rule codes (lint/suspicious/*, lint/correctness/*, lint/style/*, lint/complexity/*, lint/security/*, lint/nursery/*)
 
 **Resolution Process**:
 
 1. **Research the Rule**
 
-   Use ruff's built-in documentation system:
+   Look up the rule at Biome's documentation:
 
-   ```bash
-   ruff rule {RULE_CODE}
+   ```text
+   https://biomejs.dev/linter/rules/{rule-name}
    ```
 
    Examples:
+   - `noExplicitAny` → https://biomejs.dev/linter/rules/no-explicit-any
+   - `useAwait` → https://biomejs.dev/linter/rules/use-await
+   - `noForEach` → https://biomejs.dev/linter/rules/no-for-each
 
-   ```bash
-   ruff rule F401  # unused-import
-   ruff rule E501  # line-too-long
-   ruff rule B006  # mutable-default-argument
-   ```
-
-   This command provides:
-
+   This documentation provides:
    - What the rule prevents (design principle)
    - When code violates the rule
    - Example of violating code
    - Example of resolved code
    - Configuration options
 
-2. **Read Rule Documentation Output**
+2. **Read Rule Documentation**
 
-   The ruff rule output contains critical information:
+   The Biome rule documentation contains critical information:
 
    - **Principle**: Why this pattern is problematic
    - **Bad Pattern**: What code triggers the rule
@@ -422,11 +322,10 @@ This section provides systematic resolution procedures for each major Python lin
    Read the complete file containing the linting error:
 
    ```claude
-   Read("/path/to/file.py")
+   Read("/path/to/file.ts")
    ```
 
    Focus on:
-
    - The line with the error
    - Surrounding context (5-10 lines before/after)
    - Related function/class definitions
@@ -442,724 +341,185 @@ This section provides systematic resolution procedures for each major Python lin
    Use Grep to find usage patterns:
 
    ```bash
-   uv run rg "function_name" --type py
+   rg "function_name" --type ts
    ```
 
-5. **Load python3-development Skill**
-
-   Before implementing fixes:
-
-   ```claude
-   Skill(command: "python3-development")
-   ```
-
-   **Motivation**: Ensures fixes follow Python 3.11+ standards, modern typing patterns, and project conventions.
-
-6. **Implement Elegant Fix**
+5. **Implement Elegant Fix**
 
    Apply the fix following these principles:
 
    - Address the root cause, not the symptom
-   - Follow modern Python patterns from python3-development skill
+   - Follow modern TypeScript patterns (TypeScript 5.x+)
    - Maintain or improve code readability
    - Consider performance and maintainability
    - Add comments only if the fix is non-obvious
 
-7. **Verify Resolution**
+6. **Verify Resolution**
 
-   Rerun ruff to confirm the fix:
+   Rerun Biome to confirm the fix:
 
    ```bash
-   uv run ruff check /path/to/file.py
+   npx biome check /path/to/file.ts
    ```
 
-**Example Workflow Execution**:
+**Common Biome Fixes**:
 
-```text
-Issue: ruff reports "F401: 'os' imported but unused" in utils.py
+| Rule | Bad Pattern | Good Pattern |
+|------|------------|--------------|
+| `noExplicitAny` | `obj: any` | `obj: unknown` with type guards |
+| `useExplicitType` | `export const x = new Class()` | `export const x: Class = new Class()` |
+| `useAwait` | `async function f() { return promise; }` | `async function f() { return await promise; }` |
+| `noParameterAssign` | `value = value.trim()` | `const trimmed = value.trim()` |
+| `noForEach` | `arr.forEach(fn)` | `for (const item of arr) { fn(item); }` |
 
-1. Research: ruff rule F401
-   → Output: Unused imports clutter namespace and may hide typos
-   → Fix: Remove unused import or use it
+### TypeScript Resolution Workflow
 
-2. Read code: Read("utils.py")
-   → Line 5: import os
-   → Code never references 'os' module
-
-3. Check context: Grep "import os" in project
-   → Other files use os.path, os.environ
-   → This file genuinely doesn't need it
-
-4. Load python3-development skill
-
-5. Implement: Remove unused import from line 5
-
-6. Verify: ruff check utils.py → Clean
-```
-
-### Mypy Resolution Workflow
-
-**When to use**: Type checking errors with mypy error codes (attr-defined, arg-type, return-value, etc.)
+**When to use**: Type errors with TypeScript error codes (TSxxxx format like TS2345, TS7006, TS2322)
 
 **Resolution Process**:
 
 1. **Research the Error Code**
 
-   Mypy errors contain error codes in brackets like `[attr-defined]` or `[arg-type]`.
+   TypeScript errors have numeric codes like TS2345. Look up the error:
+   - Official handbook: https://www.typescriptlang.org/docs/handbook/
+   - Error messages list: https://typescript.tv/errors/
 
-   Look up the error code in locally-cached documentation:
-
-   ```claude
-   Read("./references/mypy-docs/error_code_list.rst")
-   Read("./references/mypy-docs/error_code_list2.rst")
-   ```
-
-   Search for the error code:
-
-   ```bash
-   grep -n "error-code-{CODE}" ./references/mypy-docs/*.rst
-   ```
-
-   **Motivation**: Mypy error codes map to specific type safety principles. Understanding the principle prevents misunderstanding type relationships.
-
-2. **Read Error Code Documentation**
-
-   The mypy documentation explains:
-
-   - What type safety principle is violated
-   - When this is an error (type violations)
-   - When this is NOT an error (valid patterns)
-   - Example of error-producing code
-   - Example of corrected code
-
-   **Key insight**: Mypy errors often indicate misunderstanding about what types a function accepts or returns.
-
-3. **Trace Type Flow**
+2. **Trace Type Flow**
 
    Follow the data flow to understand type relationships:
-
-   a. **Read the error location**:
-
-   ```claude
-   Read("/path/to/file.py")
-   ```
-
-   b. **Identify the type mismatch**:
-
-   - What type does mypy think the variable is?
-   - What type does mypy expect?
+   - What type does TypeScript think the variable is?
+   - What type does TypeScript expect?
    - Where does the variable get its type?
 
-   c. **Trace upstream**:
-
-   - Read function signatures
-   - Check return type annotations
-   - Review variable assignments
-
-   d. **Check library type stubs**:
-
-   - If the error involves a library, check its type stubs
-   - Use `python -c "import library; print(library.__file__)"` to locate
-   - Read `.pyi` stub files or `py.typed` marker
-
-4. **Check Architectural Context**
+3. **Check Architectural Context**
 
    Understand the design intent:
-
    - What is this function supposed to do?
    - What types should it accept and return?
    - Is the current type annotation accurate?
-   - Are there implicit contracts not captured in types?
 
-5. **Load python3-development Skill**
-
-   Before implementing fixes:
-
-   ```claude
-   Skill(command: "python3-development")
-   ```
-
-   **Motivation**: Ensures type annotations follow Python 3.11+ syntax (native generics, `|` union syntax, modern typing patterns).
-
-6. **Implement Elegant Fix**
+4. **Implement Elegant Fix**
 
    Choose the appropriate fix strategy:
 
    **Strategy A: Fix the type annotation** (if annotation is wrong)
-
-   ```python
-   # Before: Function returns dict but annotated as returning Response
-   def get_data() -> Response:
-       return {"key": "value"}  # mypy error: Incompatible return value type
-
-   # After: Correct annotation to match actual return
-   def get_data() -> dict[str, str]:
-       return {"key": "value"}
-   ```
-
    **Strategy B: Fix the implementation** (if annotation is correct)
-
-   ```python
-   # Before: Function should return Response but returns dict
-   def get_data() -> Response:
-       return {"key": "value"}  # mypy error: Incompatible return value type
-
-   # After: Fix implementation to return correct type
-   def get_data() -> Response:
-       return Response(data={"key": "value"})
-   ```
-
    **Strategy C: Add type narrowing** (if type is conditional)
+   **Strategy D: Use type assertion** (only after validation)
 
-   ```python
-   # Before: Mypy can't prove value is not None
-   def process(value: str | None) -> str:
-       return value.upper()  # mypy error: Item "None" has no attribute "upper"
-
-   # After: Add type guard
-   def process(value: str | None) -> str:
-       if value is None:
-           raise ValueError("value cannot be None")
-       return value.upper()
-   ```
-
-   **Strategy D: Use TypeGuard for complex narrowing**
-
-   ```python
-   from typing import TypeGuard
-
-   def is_valid_response(data: dict[str, Any]) -> TypeGuard[dict[str, str]]:
-       return all(isinstance(v, str) for v in data.values())
-
-   def process(data: dict[str, Any]) -> dict[str, str]:
-       if not is_valid_response(data):
-           raise ValueError("Invalid data format")
-       return data  # mypy now knows this is dict[str, str]
-   ```
-
-7. **Verify Resolution**
-
-   Rerun mypy to confirm the fix:
+5. **Verify Resolution**
 
    ```bash
-   uv run mypy /path/to/file.py
+   npx tsc --noEmit
    ```
 
-**Example Workflow Execution**:
-
-```text
-Issue: mypy reports "Incompatible return value type (got dict[str, Any], expected Response)" in api_client.py:45
-
-1. Research: Search error_code_list.rst for "return-value"
-   → Found: Error code [return-value]
-   → Principle: Function must return type matching its annotation
-
-2. Read documentation:
-   → This occurs when returned expression type doesn't match declared return type
-   → Common cause: Function signature doesn't match implementation
-
-3. Trace type flow:
-   - Read api_client.py line 45
-   - Function signature: def fetch_data() -> Response:
-   - Actual return: return response.json()
-   - response.json() returns dict[str, Any], not Response
-
-4. Check context:
-   - fetch_data should return parsed JSON as dict, not Response object
-   - Other functions in module follow pattern: parse response to dict
-   - Function signature is incorrect, not the implementation
-
-5. Load python3-development skill
-
-6. Implement: Change function signature from Response to dict[str, Any]
-   def fetch_data() -> dict[str, Any]:
-       return response.json()
-
-7. Verify: mypy api_client.py → Clean
-```
-
-### Pyright/Basedpyright Resolution Workflow
-
-**When to use**: Type checking errors with pyright diagnostic rules (reportGeneralTypeIssues, reportOptionalMemberAccess, reportUnknownVariableType, etc.)
-
-**Resolution Process**:
-
-1. **Research the Diagnostic Rule**
-
-   Pyright errors reference diagnostic rule names like `reportOptionalMemberAccess` or `reportGeneralTypeIssues`.
-
-   Look up the rule in basedpyright documentation:
-
-   **For rule settings and descriptions**:
-
-   Use MCP tools for documentation lookup (in order of preference):
-
-   ```claude
-   # Option 1 (Preferred): Use Ref MCP for high-fidelity documentation
-   mcp__Ref__ref_search_documentation(query="basedpyright {RULE_NAME} diagnostic rule configuration")
-   # Then read the URL from results:
-   mcp__Ref__ref_read_url(url="<exact_url_from_search_results>")
-
-   # Option 2: Use exa for code context if Ref doesn't have it
-   mcp__exa__get_code_context_exa(query="basedpyright {RULE_NAME} diagnostic rule examples")
-
-   # Fallback: Use WebFetch only if MCP tools don't work
-   WebFetch(url="https://docs.basedpyright.com/latest/configuration/config-files/",
-           prompt="Find documentation for diagnostic rule {RULE_NAME}")
-   ```
-
-   **For features and PEP support**:
-
-   ```claude
-   # Option 1 (Preferred): Use Ref MCP for high-fidelity documentation
-   mcp__Ref__ref_search_documentation(query="basedpyright Python typing features PEP {RULE_NAME}")
-   mcp__Ref__ref_read_url(url="<exact_url_from_search_results>")
-
-   # Fallback: Use WebFetch only if MCP tools don't work
-   WebFetch(url="https://docs.basedpyright.com/latest/getting_started/features/",
-
-   > [Web resource access, definitive guide for getting accurate data for high quality results](./references/accessing_online_resources.md)
-           prompt="Explain what Python typing features and PEPs are covered related to {RULE_NAME}")
-   ```
-
-   **Motivation**: Pyright is more strict than mypy in many areas. Understanding what the rule enforces helps identify whether the issue is a genuine type safety problem or overly strict checking.
-
-2. **Read Diagnostic Rule Documentation**
-
-   The basedpyright documentation explains:
-
-   - What type safety issue the rule detects
-   - Configuration levels (basic, standard, strict, all)
-   - Whether the rule can be disabled per-project
-   - Related typing features and PEPs
-
-3. **Read the Affected Code**
-
-   Read the complete file containing the type error:
-
-   ```claude
-   Read("/path/to/file.py")
-   ```
-
-   Focus on:
-
-   - The exact line with the error
-   - Type annotations in the surrounding function/class
-   - Import statements for typing constructs
-
-4. **Understand the Type Inference Issue**
-
-   Pyright has sophisticated type inference. Common issues:
-
-   **Optional member access**:
-
-   ```python
-   # Error: reportOptionalMemberAccess
-   value: str | None = get_value()
-   result = value.upper()  # Error: 'value' could be 'None'
-   ```
-
-   **Unknown variable type**:
-
-   ```python
-   # Error: reportUnknownVariableType
-   result = some_function()  # some_function has no return type annotation
-   ```
-
-   **Type narrowing not recognized**:
-
-   ```python
-   # Error: pyright doesn't recognize the narrowing
-   value: int | str = get_value()
-   if type(value) == int:  # Use isinstance() instead
-       result = value + 1
-   ```
-
-5. **Check Architectural Context**
-
-   Determine if the error reveals a real issue:
-
-   - Is the type annotation incomplete or wrong?
-   - Is there missing type narrowing?
-   - Is the code relying on runtime behavior not captured in types?
-   - Should the function signature be more precise?
-
-6. **Load python3-development Skill**
-
-   Before implementing fixes:
-
-   ```claude
-   Skill(command: "python3-development")
-   ```
-
-   **Motivation**: Ensures fixes use modern Python 3.11+ typing features that pyright fully supports.
-
-7. **Implement Elegant Fix**
-
-   Choose the appropriate fix strategy:
-
-   **Strategy A: Add type narrowing guards**
-
-   ```python
-   # Before:
-   def process(value: str | None) -> str:
-       return value.upper()  # reportOptionalMemberAccess
-
-   # After:
-   def process(value: str | None) -> str:
-       if value is None:
-           raise ValueError("value is required")
-       return value.upper()  # pyright knows value is str here
-   ```
-
-   **Strategy B: Add missing type annotations**
-
-   ```python
-   # Before:
-   def fetch_data():  # reportUnknownVariableType on callers
-       return {"key": "value"}
-
-   # After:
-   def fetch_data() -> dict[str, str]:
-       return {"key": "value"}
-   ```
-
-   **Strategy C: Use assert for type narrowing**
-
-   ```python
-   # Before:
-   value: int | str = get_value()
-   result = value + 1  # reportGeneralTypeIssues
-
-   # After:
-   value: int | str = get_value()
-   assert isinstance(value, int), "Expected int"
-   result = value + 1  # pyright knows value is int
-   ```
-
-   **Strategy D: Use typing.cast for complex cases**
-
-   ```python
-   from typing import cast
-
-   # Before:
-   data: dict[str, Any] = get_data()
-   name: str = data["name"]  # reportUnknownVariableType
-
-   # After (if you've validated data structure):
-   from typing import TypedDict
-
-   class UserData(TypedDict):
-       name: str
-       age: int
-
-   data = cast(UserData, get_data())
-   name: str = data["name"]  # pyright knows this is str
-   ```
-
-   **Strategy E: Configure rule if genuinely too strict**
-
-   Only as a last resort, adjust `pyproject.toml`:
-
-   ```toml
-   [tool.pyright]
-   reportOptionalMemberAccess = "warning"  # Downgrade from error
-   ```
-
-8. **Verify Resolution**
-
-   Rerun pyright/basedpyright to confirm:
-
-   ```bash
-   uv run pyright /path/to/file.py
-   # or
-   uv run basedpyright /path/to/file.py
-   ```
-
-**Example Workflow Execution**:
-
-```text
-Issue: pyright reports "reportOptionalMemberAccess: 'upper' is not a known member of 'None'" in validator.py:23
-
-1. Research: Use MCP tools to fetch basedpyright docs for reportOptionalMemberAccess
-   → mcp__Ref__ref_search_documentation for verbatim documentation
-   → Rule detects accessing members on values that could be None
-   → Prevents AttributeError at runtime
-   → Configuration: Can be set to basic/standard/strict
-
-2. Read documentation:
-   → Rule enforces proper handling of Optional types
-   → Requires explicit None checks before member access
-   → Prevents common NoneType AttributeError crashes
-
-3. Read code: Read("validator.py")
-   → Line 23: return data.upper()
-   → Function signature: def validate(data: str | None) -> str:
-   → No None check before calling .upper()
-
-4. Understand issue:
-   → data could be None at runtime
-   → .upper() would raise AttributeError if data is None
-   → This is a genuine bug caught by type checker
-
-5. Load python3-development skill
-
-6. Implement: Add type narrowing
-   def validate(data: str | None) -> str:
-       if data is None:
-           raise ValueError("data cannot be None")
-       return data.upper()
-
-7. Verify: pyright validator.py → Clean
-```
-
-## Integration: Resolution Process with python3-development
-
-All linter resolution workflows integrate with the python3-development skill at the implementation stage. This integration ensures:
-
-1. **Modern Python Patterns**: Fixes use Python 3.11+ syntax
-
-   - Native generics (`list[str]` not `List[str]`)
-   - Union syntax (`str | None` not `Optional[str]`)
-   - Structural pattern matching where appropriate
-
-2. **Idiomatic Code**: Solutions follow Python best practices
-
-   - Clear naming conventions
-   - Appropriate use of comprehensions
-   - Proper exception handling
-   - Single Responsibility Principle
-
-3. **Type Safety**: Type annotations are complete and accurate
-
-   - Precise return types
-   - Correct parameter types
-   - Proper use of generics and protocols
-
-4. **Project Consistency**: Fixes align with existing codebase patterns
-   - Consistent with project's CLAUDE.md standards
-   - Matches existing module organization
-   - Follows project-specific conventions
-
-**Activation pattern**:
-
-```text
-[Identify linting issue] → [Research rule] → [Read code] → [Check architecture]
-→ [Load python3-development skill] → [Implement elegant fix] → [Verify]
-```
-
-## Bundled Resources
-
-### Agent: linting-root-cause-resolver
-
-Location: [`./agents/linting-root-cause-resolver.md`](./agents/linting-root-cause-resolver.md)
-
-This agent systematically investigates and resolves linting errors by understanding root causes rather than suppressing them with ignore comments.
-
-**To install the agent**:
-
-```bash
-# Install to user scope (~/.claude/agents/)
-python holistic-linting/scripts/install-agents.py --scope user
-
-# Install to project scope (<git-root>/.claude/agents/)
-python holistic-linting/scripts/install-agents.py --scope project
-
-# Overwrite existing agent file
-python holistic-linting/scripts/install-agents.py --scope user --force
-```
-
-**Philosophy**:
-
-- Linting errors are symptoms of deeper issues
-- Never silence errors without understanding them
-- Always verify assumptions through investigation
-- Prioritize clarity and correctness over quick fixes
-
-### Rules Knowledge Base
-
-Comprehensive documentation of linting rules from three major tools:
-
-#### Ruff Rules (933 rules documented)
-
-Location: [`./references/rules/ruff/index.md`](./references/rules/ruff/index.md)
-
-Covers all Ruff rule families including:
-
-- **E/W** (pycodestyle errors and warnings)
-- **F** (Pyflakes logical errors)
-- **B** (flake8-bugbear common bugs)
-- **S** (Bandit security checks)
-- **I** (isort import sorting)
-- **UP** (pyupgrade modern Python patterns)
-- And 13 more families
-
-Each rule documents:
-
-- What it prevents (design principle)
-- When it's a violation (examples)
-- When it's NOT a violation (edge cases)
-- Violating code examples
-- Resolved code examples
-- Configuration options
-
-#### MyPy Error Codes
-
-Location: [`./references/rules/mypy/index.md`](./references/rules/mypy/index.md)
-
-Comprehensive type checking error documentation organized by category:
-
-- Attribute access errors
-- Name resolution errors
-- Function call type checking
-- Assignment compatibility
-- Collection type checking
-- Operator usage
-- Import resolution
-- Abstract class enforcement
-- Async/await patterns
-
-Each error code documents:
-
-- Type safety principle it enforces
-- When this is an error (type violations)
-- When this is NOT an error (valid patterns)
-- Error-producing code examples
-- Corrected code examples
-- Configuration options (mypy.ini, pyproject.toml)
-
-#### Bandit Security Checks (65+ checks documented)
-
-Location: [`./references/rules/bandit/index.md`](./references/rules/bandit/index.md)
-
-Security vulnerability documentation organized by category:
-
-- Credentials and secrets
-- Cryptography weaknesses
-- SSL/TLS vulnerabilities
-- Injection attacks (command, SQL, XML)
-- Deserialization risks
-- File permissions
-- Unsafe functions
-- Framework configuration
-- Dangerous imports
-
-Each check documents:
-
-- Security risk (what vulnerability it prevents)
-- When this is vulnerable (insecure patterns)
-- When this is NOT vulnerable (safe usage)
-- Vulnerable code examples
-- Secure code examples with mitigations
-- Severity level (LOW, MEDIUM, HIGH)
-
-### Scripts
-
-Available in [`./scripts/`](./scripts/):
-
-1. **install-agents.py** - Install the linting-root-cause-resolver agent to user or project scope
-
-## Slash Commands
-
-### `/lint` Command
-
-The `/lint` slash command provides manual invocation of linting workflows.
-
-**Usage**:
-
-```bash
-/lint                    # Lint all files in current directory
-/lint path/to/file.py    # Lint specific file
-/lint path/to/directory  # Lint all files in directory
-```
-
-See [`/.claude/commands/lint.md`](/.claude/commands/lint.md) for the full command implementation.
-
-## Integration with Claude Code Hooks
-
-This skill complements the [claude-linting-hook](https://github.com/yourrepo/claude-linting-hook) which provides automatic PostToolUse linting via Claude Code hooks. The hook and skill serve different purposes:
-
-**claude-linting-hook** (PostToolUse hook):
-
-- Triggers automatically after Edit/Write
-- Provides immediate feedback during development
-- Blocks on substantive issues
-- Runs in hook execution context
-
-**holistic-linting skill** (Workflow guidance):
-
-- Guides Claude's task completion workflow
-- Ensures linting happens before claiming "done"
-- Provides rules knowledge base for investigation
-- Includes systematic resolution process via linting-root-cause-resolver agent
-
-Use both together for comprehensive linting coverage:
-
-1. Hook catches issues immediately during editing
-2. Skill ensures systematic resolution before task completion
-3. Knowledge base supports root-cause analysis
-
-## Examples
-
-### Example 1: Orchestrator completes Python feature implementation
-
-```text
-User: "Add authentication middleware to the API"
-
-Orchestrator:
-1. [Implements authentication middleware in auth.py]
-2. [Implementation complete, now applying holistic-linting skill]
-3. [Delegates to linting agent WITHOUT running linters]
-4. Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in auth.py")
-5. [Agent formats with ruff format, runs ruff check + mypy]
-6. [Agent finds 3 ruff errors, 2 mypy type issues]
-7. [Agent resolves all 5 issues at root cause]
-8. [Agent verifies: ruff check + mypy - clean]
-9. [Agent produces resolution report in .claude/reports/]
-10. [Orchestrator reads report confirming clean resolution]
-11. Task complete ✓
-```
-
-### Example 2: Sub-agent writes Python module
-
-```text
-Orchestrator delegates: "Create database connection pool module"
-
-Sub-agent:
-1. [Writes db_pool.py with connection logic]
-2. [Before completing, applies holistic-linting skill]
-3. Formatting: uv run ruff format db_pool.py
-4. Linting: uv run ruff check db_pool.py && uv run mypy db_pool.py
-5. [Finds 1 mypy error: Missing return type annotation]
-6. [Investigates: function should return ConnectionPool]
-7. [Fixes: Adds -> ConnectionPool annotation]
-8. [Verifies: uv run mypy db_pool.py - clean]
-9. Returns to orchestrator with completed, lint-free module ✓
+## Biome Rule Categories
+
+The project enforces strict linting with these rule categories:
+
+### Error Level (Blocks CI)
+- `correctness/*` - Catch bugs (unused imports, variables)
+- `security/*` - Prevent XSS, injection
+- `nursery/useExplicitType` - Require explicit types on exports
+- `suspicious/useAwait` - Async functions must use await
+- `suspicious/noEvolvingTypes` - Variables must have stable types
+
+### Warning Level (Should Fix)
+- `complexity/noForEach` - Prefer for...of loops
+- `complexity/useLiteralKeys` - Prefer obj.key over obj['key']
+- `style/noParameterAssign` - Don't reassign parameters
+- `style/useNodejsImportProtocol` - Use node: prefix
+- `suspicious/noConsole` - Avoid console in production
+- `suspicious/noExplicitAny` - Use unknown instead
+
+### Test File Overrides (__tests__/**/*.ts)
+Relaxed rules for test files:
+- `useAwait`: off (vi.mock uses async callbacks)
+- `useNamingConvention`: off (legacy patterns)
+- `noMisplacedAssertion`: off (assertions in mock callbacks)
+- `noConsole`: off (debug logging in tests)
+- `useExplicitType`: off (inference in tests is fine)
+
+## Integration with Git Hooks
+
+Pre-commit runs:
+1. `lint-staged` - Formats and checks staged files
+2. `npm run build` - Ensures build succeeds
+3. `npm run generate-docs` - Updates README from action.yml
+
+lint-staged config (from package.json):
+```json
+{
+  "*.{md,yaml,yml,sh}": "prettier --write",
+  "{src,__tests__}/**/*.ts": "biome check --write",
+  "*.json": "biome format --write"
+}
 ```
 
 ## Best Practices
 
 1. **Orchestrators delegate immediately** - Do NOT run formatters or linters before delegating. Agent gathers its own context.
-2. **Let detection find your linters** - The ConfigurationDetector scans project config files automatically. Don't assume which linters are available.
-3. **Format before linting (Sub-Agents only)** - Formatters auto-fix trivial issues (end-of-file, whitespace)
-4. **Run linters concurrently (Sub-Agents only)** - Use parallel execution for multiple files or multiple linters
-5. **Use the rules knowledge base** - Reference official rule documentation when investigating
-6. **Never suppress without understanding** - Don't add `# type: ignore` or `# noqa` without root cause analysis
-7. **Orchestrators delegate, sub-agents execute** - Orchestrators launch agents and read reports. Sub-agents run formatters, linters, and resolve issues.
-8. **Verify after fixes (Sub-Agents only)** - Always re-run linters to confirm issues are resolved
-9. **Trust agent verification (Orchestrators)** - Read resolution reports instead of re-running linters to verify
+2. **Format before linting (Sub-Agents only)** - Formatters auto-fix trivial issues
+3. **Run linters concurrently (Sub-Agents only)** - Use parallel execution for multiple files
+4. **Never suppress without understanding** - Don't add `// biome-ignore` or `// @ts-ignore` without root cause analysis
+5. **Orchestrators delegate, sub-agents execute** - Orchestrators launch agents and read reports. Sub-agents run formatters, linters, and resolve issues.
+6. **Verify after fixes (Sub-Agents only)** - Always re-run linters to confirm issues are resolved
+7. **Trust agent verification (Orchestrators)** - Read resolution reports instead of re-running linters to verify
 
 ## Troubleshooting
 
-**Problem**: "I don't know which linters this project uses" **Solution**: Linters are detected automatically by scanning config files (pyproject.toml, package.json, .pre-commit-config.yaml, etc.). Check the Linter Detection section for supported tools.
+**Problem**: "I don't know which linters this project uses"
+**Solution**: This project uses Biome for TypeScript/JavaScript and markdownlint for markdown. Check biome.json for configuration.
 
-**Problem**: "Linting errors but I don't understand the rule" **Solution**: Reference the rules knowledge base at `./references/rules/{ruff,mypy,bandit}/index.md`
+**Problem**: "Linting errors but I don't understand the rule"
+**Solution**: Look up the rule at https://biomejs.dev/linter/rules/{rule-name}
 
-**Problem**: "Multiple files with linting errors" **Solution**: If orchestrator, launch concurrent linting-root-cause-resolver agents (one per file). If sub-agent, resolve each file sequentially.
+**Problem**: "Multiple files with linting errors"
+**Solution**: If orchestrator, launch concurrent linting-root-cause-resolver agents (one per file). If sub-agent, resolve each file sequentially.
 
-**Problem**: "Linter not found (command not available)" **Solution**: Check that linters are installed. Use `uv run <tool>` for Python tools to ensure virtual environment activation.
+**Problem**: "Type error I don't understand"
+**Solution**: Research the TS error code, trace the type flow, understand what types are expected vs actual.
 
-**Problem**: "False positive linting error" **Solution**: Investigate using the rule's documentation. If truly a false positive, configure the rule in pyproject.toml/config file rather than using ignore comments.
+**Problem**: "False positive linting error"
+**Solution**: Investigate using the rule's documentation. If truly a false positive, configure the rule in biome.json rather than using ignore comments.
+
+## Examples
+
+### Example 1: Orchestrator completes TypeScript feature implementation
+
+```text
+User: "Add authentication middleware to the API"
+
+Orchestrator:
+1. [Implements authentication middleware in auth.ts]
+2. [Implementation complete, now applying holistic-linting skill]
+3. [Delegates to linting agent WITHOUT running linters]
+4. Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in auth.ts")
+5. [Agent formats with biome format, runs biome check + tsc]
+6. [Agent finds 2 Biome errors, 1 TypeScript type issue]
+7. [Agent resolves all 3 issues at root cause]
+8. [Agent verifies: biome check + tsc - clean]
+9. [Agent produces resolution report in .claude/reports/]
+10. [Orchestrator reads report confirming clean resolution]
+11. Task complete ✓
+```
+
+### Example 2: Sub-agent writes TypeScript module
+
+```text
+Orchestrator delegates: "Create database connection pool module"
+
+Sub-agent:
+1. [Writes db_pool.ts with connection logic]
+2. [Before completing, applies holistic-linting skill]
+3. Formatting: npx biome format --write db_pool.ts
+4. Linting: npx biome check db_pool.ts && npx tsc --noEmit
+5. [Finds 1 Biome error: noExplicitAny on parameter]
+6. [Investigates: parameter should be ConnectionConfig type]
+7. [Fixes: Changes `any` to `unknown`, adds type guard]
+8. [Verifies: npx biome check db_pool.ts - clean]
+9. Returns to orchestrator with completed, lint-free module ✓
+```
 
 ## Skill Activation
 
@@ -1171,7 +531,22 @@ To manually reference this skill in a session:
 Activate the holistic-linting skill: Skill(command: "holistic-linting")
 ```
 
-## Related Skills
+## Bundled Resources
 
-- **python3-development** - Modern Python development patterns and best practices
-- **uv** - Python package and project management with uv
+### Agent: linting-root-cause-resolver
+
+Location: [`.claude/agents/linting-root-cause-resolver.md`](.claude/agents/linting-root-cause-resolver.md)
+
+This agent systematically investigates and resolves linting errors by understanding root causes rather than suppressing them with ignore comments.
+
+### Agent: post-linting-architecture-reviewer
+
+Location: [`.claude/agents/post-linting-architecture-reviewer.md`](.claude/agents/post-linting-architecture-reviewer.md)
+
+This agent verifies linting resolution quality and identifies systemic improvements.
+
+### Project Configuration
+
+Location: [`PROJECT-CONFIG.md`](PROJECT-CONFIG.md)
+
+Project-specific Biome configuration and resolution patterns.

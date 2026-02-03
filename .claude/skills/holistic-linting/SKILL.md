@@ -470,6 +470,8 @@ function validate(obj: unknown): obj is ActionType {
 
 #### useExplicitType (lint/nursery/useExplicitType)
 
+**NOTE**: This rule is in the nursery category (available since v1.9.3). Nursery rules may change in future releases. It must be explicitly enabled in biome.json under `linter.rules.nursery`.
+
 ```typescript
 // ❌ Before: Exported values without explicit types
 export const config = new Configuration();
@@ -485,6 +487,8 @@ export function getData(): Promise<Response> {
 ```
 
 #### useAwait (lint/suspicious/useAwait)
+
+**NOTE**: This rule is NOT recommended by default. It must be explicitly enabled in biome.json. Check project configuration before flagging this.
 
 ```typescript
 // ❌ Before: Async function without await
@@ -505,6 +509,8 @@ function fetchData(): Promise<Response> {
 
 #### noParameterAssign (lint/style/noParameterAssign)
 
+**NOTE**: This rule has a `propertyAssignment` option (allow/deny) that controls whether assigning to properties of parameters is allowed. Default is `allow`.
+
 ```typescript
 // ❌ Before: Reassigning parameter obscures original value
 function process(value: string): string {
@@ -518,6 +524,11 @@ function process(value: string): string {
   const trimmed = value.trim();
   const normalized = trimmed.toLowerCase();
   return normalized;
+}
+
+// ✅ Property assignment is allowed by default (propertyAssignment: "allow")
+function updateConfig(config: ConfigType): void {
+  config.updated = true;  // OK - assigning to property, not parameter itself
 }
 ```
 
@@ -535,7 +546,18 @@ for (const item of items) {
 }
 ```
 
+**Exception**: When the callback explicitly uses the index parameter, forEach is acceptable:
+
+```typescript
+// ✅ This is OK - index is used
+items.forEach((item, index) => {
+  console.log(`Item ${index}: ${item}`);
+});
+```
+
 #### noEvolvingTypes (lint/suspicious/noEvolvingTypes)
+
+**NOTE**: This rule is NOT recommended by default (available since v1.6.3). It must be explicitly enabled in biome.json. Check project configuration before flagging this.
 
 ```typescript
 // ❌ Before: Type evolves based on assignments
@@ -866,7 +888,7 @@ Location: https://biomejs.dev/linter/rules/
 Comprehensive linting rules organized by category:
 
 - **lint/suspicious/** - Detect likely bugs and suspicious patterns
-  - noExplicitAny, noEvolvingTypes, useAwait, noConsole, etc.
+  - noExplicitAny (recommended), noEvolvingTypes (NOT recommended by default), useAwait (NOT recommended by default), noConsole, etc.
 - **lint/correctness/** - Detect incorrect or useless code
   - noUnusedVariables, noUnusedImports, useExhaustiveDependencies, etc.
 - **lint/style/** - Enforce consistent code style
@@ -875,8 +897,8 @@ Comprehensive linting rules organized by category:
   - noForEach, useLiteralKeys, noExcessiveCognitiveComplexity, etc.
 - **lint/security/** - Detect security vulnerabilities
   - noDangerouslySetInnerHtml, noGlobalEval, etc.
-- **lint/nursery/** - New rules being tested
-  - useExplicitType, etc.
+- **lint/nursery/** - New rules being tested (must be explicitly enabled)
+  - useExplicitType (since v1.9.3), etc.
 - **lint/a11y/** - Accessibility rules
   - useAltText, useValidAriaValues, etc.
 

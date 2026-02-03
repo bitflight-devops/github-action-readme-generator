@@ -170,6 +170,9 @@ npm run lint:markdown:fix
    ```
 
    **useAwait → Add await or remove async**
+
+   **NOTE**: This rule is NOT recommended by default. It must be explicitly enabled in biome.json. Check project configuration before flagging this.
+
    ```typescript
    // Before (no await in function)
    async function getData(): Promise<string> {
@@ -188,6 +191,9 @@ npm run lint:markdown:fix
    ```
 
    **noParameterAssign → Use local variable**
+
+   **NOTE**: This rule has a `propertyAssignment` option (allow/deny). Property assignment to parameters is allowed by default.
+
    ```typescript
    // Before
    function process(value: string) {
@@ -199,6 +205,11 @@ npm run lint:markdown:fix
    function process(value: string) {
      const trimmed = value.trim();
      return trimmed;
+   }
+
+   // ✅ Property assignment is allowed by default
+   function updateConfig(config: ConfigType) {
+     config.updated = true;  // OK - property assignment
    }
    ```
 
@@ -213,6 +224,14 @@ npm run lint:markdown:fix
    for (const item of items) {
      processItem(item);
    }
+   ```
+
+   **NOTE**: Exception - When the callback explicitly uses the index parameter, forEach is acceptable:
+   ```typescript
+   // ✅ This is OK - index is used
+   items.forEach((item, index) => {
+     console.log(`Item ${index}: ${item}`);
+   });
    ```
 
 6. **Verify Resolution**

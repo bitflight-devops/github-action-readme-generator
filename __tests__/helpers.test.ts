@@ -6,12 +6,14 @@ import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
 
 import {
   basename,
+  columnHeader,
   getCurrentVersionString,
   indexOfRegex,
   lastIndexOfRegex,
   prefixParser,
   remoteGitUrlPattern,
   repositoryFinder,
+  rowHeader,
   stripRefs,
   titlecase,
   undefinedOnEmpty,
@@ -218,6 +220,46 @@ describe('helpers', () => {
         '> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod ultricies',
         '> mi, nec convallis nisi.',
       ]);
+    });
+  });
+
+  describe('rowHeader', () => {
+    it('should return empty string if the value is empty', () => {
+      expect(rowHeader('')).toBe('');
+    });
+
+    it('should wrap the value in bold and code tags', () => {
+      expect(rowHeader('my-input')).toBe('<b><code>my-input</code></b>');
+    });
+
+    it('should remove bold markdown formatting before wrapping', () => {
+      expect(rowHeader('**bold-text**')).toBe('<b><code>bold-text</code></b>');
+    });
+
+    it('should remove italic markdown formatting before wrapping', () => {
+      expect(rowHeader('*italic-text*')).toBe('<b><code>italic-text</code></b>');
+    });
+
+    it('should remove strikethrough markdown formatting before wrapping', () => {
+      expect(rowHeader('~~strikethrough~~')).toBe('<b><code>strikethrough</code></b>');
+    });
+
+    it('should trim whitespace before wrapping', () => {
+      expect(rowHeader('  spaced  ')).toBe('<b><code>spaced</code></b>');
+    });
+  });
+
+  describe('columnHeader', () => {
+    it('should return empty string if the value is empty', () => {
+      expect(columnHeader('')).toBe('');
+    });
+
+    it('should return titlecased header', () => {
+      expect(columnHeader('input')).toBe('Input');
+    });
+
+    it('should remove markdown formatting', () => {
+      expect(columnHeader('**bold**')).toBe('Bold');
     });
   });
 

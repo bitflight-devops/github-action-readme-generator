@@ -178,6 +178,7 @@ Duration: Total ~40-60 seconds for full validation.
 - `dist/` is NOT tracked in git on development branches
 - CI uses `git add -f dist` to force-add during deploy (bypasses .gitignore)
 - Local builds create dist/ but it never shows in `git status`
+- **CI tests build dist/ on-the-fly** - Integration tests run `npm ci && npm run build` before using the action, so tests pass without dist/ being tracked
 
 ### What You Should Do
 

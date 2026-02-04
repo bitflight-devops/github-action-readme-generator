@@ -1,3 +1,21 @@
+## [1.9.3](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.9.2...v1.9.3) (2026-02-04)
+
+
+### Bug Fixes
+
+* auto-detect owner/repo/version from target repo directory ([c3099a5](https://github.com/bitflight-devops/github-action-readme-generator/commit/c3099a59fb75f14d2444a4978ff31383587cf9bd))
+* detect version from target repo releases/tags ([f20021d](https://github.com/bitflight-devops/github-action-readme-generator/commit/f20021dbb67ab40408e70b079958f0083dac2907))
+* document project's actual rule enforcement, not Biome defaults ([8006731](https://github.com/bitflight-devops/github-action-readme-generator/commit/800673191577a64eb6ad39b6890910380745864e))
+* enable strict Biome linting and fix all violations ([8506785](https://github.com/bitflight-devops/github-action-readme-generator/commit/85067859b45980fe350d2ae0b87e2e01c6e6195f))
+* fail integration tests when validation checks fail ([42898b4](https://github.com/bitflight-devops/github-action-readme-generator/commit/42898b42a2720de38948107a89e6753b5b43d694))
+* fetch tags when checking out test repositories ([c2c61c7](https://github.com/bitflight-devops/github-action-readme-generator/commit/c2c61c77481f29a3967c8bb892eb76ae563777e5))
+* handle .git URLs without suffix in actions/checkout ([e694d09](https://github.com/bitflight-devops/github-action-readme-generator/commit/e694d091439416cb0c535fb38cf25abc096a5be9))
+* pass owner/repo to integration tests ([4e4c3fd](https://github.com/bitflight-devops/github-action-readme-generator/commit/4e4c3fdf998dc794ec8f2d67ceb23acb7febbdd5))
+* prioritize .git/config from target directory over GITHUB_REPOSITORY ([ac2e10e](https://github.com/bitflight-devops/github-action-readme-generator/commit/ac2e10ef62dff20992d146092cb65d94f6bb1c1a))
+* prioritize git tags for version detection (GitHub Actions standard) ([e5c9434](https://github.com/bitflight-devops/github-action-readme-generator/commit/e5c943446c445568a085fa6f673dc4f7c5b61f94))
+* replace forEach exception with proper for...of entries() pattern ([6f5873c](https://github.com/bitflight-devops/github-action-readme-generator/commit/6f5873c44d4a345c712d906155d047d414c2325f))
+* show full diff in integration test output ([acee396](https://github.com/bitflight-devops/github-action-readme-generator/commit/acee39619dc8f1a208aed80ad2d72320d5d8940a))
+
 ## [1.9.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.9.1...v1.9.2) (2026-02-01)
 
 

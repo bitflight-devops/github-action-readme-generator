@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.9.3...v1.10.0) (2026-02-04)
+
+
+### Features
+
+* add version_source input for flexible version detection ([d8cbcfd](https://github.com/bitflight-devops/github-action-readme-generator/commit/d8cbcfdb5a1e32d25f94f20dd5078195647a0b7e))
+
 ## [1.9.3](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.9.2...v1.9.3) (2026-02-04)
 
 

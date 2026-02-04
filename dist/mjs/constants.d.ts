@@ -17,6 +17,18 @@ export declare const configFileName = ".ghadocs.json";
 /**
  * Enumerates the keys for the configuration options.
  */
+/**
+ * Valid version source options for determining action version.
+ */
+export declare const VERSION_SOURCES: readonly ["git-tag", "git-branch", "git-sha", "package-json", "explicit"];
+/**
+ * Type for version source options.
+ */
+export type VersionSource = (typeof VERSION_SOURCES)[number];
+/**
+ * Checks if the given value is a valid version source.
+ */
+export declare function isValidVersionSource(value: string): value is VersionSource;
 export declare enum ConfigKeys {
     Owner = "owner",
     Repo = "repo",
@@ -31,6 +43,7 @@ export declare enum ConfigKeys {
     VersioningOverride = "versioning:override",
     VersioningPrefix = "versioning:prefix",
     VersioningBranch = "versioning:branch",
+    VersioningSource = "versioning:source",
     IncludeGithubVersionBadge = "versioning:badge",
     DebugNconf = "debug:nconf",
     DebugReadme = "debug:readme",

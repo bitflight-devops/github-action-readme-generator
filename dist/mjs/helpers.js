@@ -165,7 +165,7 @@ export function repositoryFinder(inputRepo, context, baseDir) {
         try {
             const gitConfigPath = path.join(baseDir, '.git', 'config');
             const fileContent = readFile(gitConfigPath);
-            log.debug(`loading ${gitConfigPath}:\n***\n${fileContent}\n***`);
+            log.debug(`Reading git config from: ${gitConfigPath}`);
             const results = remoteGitUrlPattern.exec(fileContent);
             if (results?.groups?.owner && results?.groups?.repo) {
                 // Strip .git suffix if present (actions/checkout may or may not include it)
@@ -175,6 +175,9 @@ export function repositoryFinder(inputRepo, context, baseDir) {
                     owner: results.groups.owner,
                     repo,
                 };
+            }
+            else {
+                log.debug(`No remote URL found in ${gitConfigPath}`);
             }
         }
         catch (error) {
@@ -214,7 +217,7 @@ export function repositoryFinder(inputRepo, context, baseDir) {
      */
     try {
         const fileContent = readFile('.git/config');
-        log.debug(`loading .git/config:\n***\n${fileContent}\n***`);
+        log.debug('Reading git config from: .git/config');
         const results = remoteGitUrlPattern.exec(fileContent);
         if (results?.groups?.owner && results?.groups?.repo) {
             // Strip .git suffix if present
@@ -224,6 +227,9 @@ export function repositoryFinder(inputRepo, context, baseDir) {
                 owner: results.groups.owner,
                 repo,
             };
+        }
+        else {
+            log.debug('No remote URL found in .git/config');
         }
     }
     catch (error) {
@@ -304,6 +310,83 @@ export function rowHeader(value) {
     // Add code formatting
     return `<code>${text}</code>`;
 }
+/**
+ * Gets the version from git tags.
+ */
+function getVersionFromGitTag(actionDir, log) {
+    try {
+        const gitVersion = execSync('git describe --tags --abbrev=0 2>/dev/null || git tag -l "v*" --sort=-v:refname | head -1', {
+            cwd: actionDir,
+            encoding: 'utf8',
+        }).trim();
+        if (gitVersion) {
+            // Remove 'v' prefix if present for consistency, we'll add it back with the configured prefix
+            const version = gitVersion.replace(/^v/, '');
+            log.debug(`version from git tags: ${version}`);
+            return version;
+        }
+    }
+    catch {
+        log.debug(`Could not get version from git tags in ${actionDir}`);
+    }
+    return undefined;
+}
+/**
+ * Gets the current git branch name.
+ */
+function getVersionFromGitBranch(actionDir, log) {
+    try {
+        const branch = execSync('git rev-parse --abbrev-ref HEAD', {
+            cwd: actionDir,
+            encoding: 'utf8',
+        }).trim();
+        if (branch && branch !== 'HEAD') {
+            log.debug(`version from git branch: ${branch}`);
+            return branch;
+        }
+    }
+    catch {
+        log.debug(`Could not get branch name in ${actionDir}`);
+    }
+    return undefined;
+}
+/**
+ * Gets the current git commit SHA (short form).
+ */
+function getVersionFromGitSha(actionDir, log) {
+    try {
+        const sha = execSync('git rev-parse --short HEAD', {
+            cwd: actionDir,
+            encoding: 'utf8',
+        }).trim();
+        if (sha) {
+            log.debug(`version from git sha: ${sha}`);
+            return sha;
+        }
+    }
+    catch {
+        log.debug(`Could not get commit SHA in ${actionDir}`);
+    }
+    return undefined;
+}
+/**
+ * Gets the version from package.json.
+ */
+function getVersionFromPackageJson(actionDir, log) {
+    const packageJsonPath = path.join(actionDir, 'package.json');
+    log.debug(`Looking for package.json at: ${packageJsonPath}`);
+    try {
+        accessSync(packageJsonPath);
+        const packageData = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+        const version = packageData.version;
+        log.debug(`version from package.json: ${version ?? 'not found'}`);
+        return version;
+    }
+    catch {
+        log.debug(`package.json not found at ${packageJsonPath}`);
+    }
+    return undefined;
+}
 export function getCurrentVersionString(inputs) {
     let versionString = '';
     const log = new LogTask('getCurrentVersionString');
@@ -312,48 +395,59 @@ export function getCurrentVersionString(inputs) {
     const isVersioningEnabled = versioningEnabled === undefined || versioningEnabled === true || versioningEnabled === 'true';
     if (isVersioningEnabled) {
         log.debug('version string in generated example is enabled');
-        const oRide = inputs.config.get('versioning:override');
-        let detectedVersion;
+        const override = inputs.config.get('versioning:override');
+        const versionSource = inputs.config.get('versioning:source') ?? 'git-tag';
         const actionDir = path.dirname(inputs.action.path);
-        // Priority 1: Git tags from target directory (primary for GitHub Actions)
-        // GitHub Actions are referenced by git tags (uses: owner/repo@v1.2.3)
-        try {
-            const gitVersion = execSync('git describe --tags --abbrev=0 2>/dev/null || git tag -l "v*" --sort=-v:refname | head -1', {
-                cwd: actionDir,
-                encoding: 'utf8',
-            }).trim();
-            if (gitVersion) {
-                // Remove 'v' prefix if present for consistency, we'll add it back with the configured prefix
-                detectedVersion = gitVersion.replace(/^v/, '');
-                log.debug(`version from git tags: ${detectedVersion}`);
+        log.debug(`version source: ${versionSource}`);
+        let detectedVersion;
+        // If override is set and we're in explicit mode, use it directly
+        if (versionSource === 'explicit') {
+            if (override && override.length > 0) {
+                detectedVersion = override;
+                log.debug(`using explicit version override: ${detectedVersion}`);
+            }
+            else {
+                log.debug('explicit mode but no version_override set, falling back to 0.0.0');
+                detectedVersion = '0.0.0';
             }
         }
-        catch {
-            log.debug(`Could not get version from git tags in ${actionDir}`);
-        }
-        // Priority 2: package.json from target directory (for npm-based actions)
-        if (!detectedVersion) {
-            const packageJsonPath = path.join(actionDir, 'package.json');
-            log.debug(`Looking for package.json at: ${packageJsonPath}`);
-            try {
-                accessSync(packageJsonPath);
-                const packageData = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
-                detectedVersion = packageData.version;
-                log.debug(`version from package.json: ${detectedVersion ?? 'not found'}`);
+        else {
+            // Get version based on selected source
+            switch (versionSource) {
+                case 'git-branch':
+                    detectedVersion = getVersionFromGitBranch(actionDir, log);
+                    break;
+                case 'git-sha':
+                    detectedVersion = getVersionFromGitSha(actionDir, log);
+                    break;
+                case 'package-json':
+                    detectedVersion = getVersionFromPackageJson(actionDir, log);
+                    break;
+                case 'git-tag':
+                default:
+                    // For git-tag (default), use the legacy fallback behavior
+                    detectedVersion = getVersionFromGitTag(actionDir, log);
+                    if (!detectedVersion) {
+                        detectedVersion = getVersionFromPackageJson(actionDir, log);
+                    }
+                    if (!detectedVersion) {
+                        detectedVersion = process.env.npm_package_version;
+                        log.debug(`Falling back to env:npm_package_version: ${detectedVersion ?? 'not found'}`);
+                    }
+                    break;
             }
-            catch {
-                log.debug(`package.json not found at ${packageJsonPath}`);
+            // Override takes precedence if set (except for explicit mode which is handled above)
+            if (override && override.length > 0) {
+                detectedVersion = override;
+                log.debug(`using version override: ${detectedVersion}`);
             }
         }
-        // Priority 3: npm_package_version env var (backward compatibility when running in same directory)
-        if (!detectedVersion) {
-            detectedVersion = process.env.npm_package_version;
-            log.debug(`Falling back to env:npm_package_version: ${detectedVersion ?? 'not found'}`);
-        }
-        versionString = oRide && oRide.length > 0 ? oRide : (detectedVersion ?? '0.0.0');
+        versionString = detectedVersion ?? '0.0.0';
         // Get prefix, defaulting to 'v' if not set
+        // For git-branch and git-sha, we typically don't want a prefix
         const prefix = inputs.config.get('versioning:prefix') ?? 'v';
-        if (versionString && !versionString.startsWith(prefix)) {
+        const shouldApplyPrefix = versionSource !== 'git-branch' && versionSource !== 'git-sha';
+        if (shouldApplyPrefix && versionString && !versionString.startsWith(prefix)) {
             versionString = `${prefix}${versionString}`;
         }
     }

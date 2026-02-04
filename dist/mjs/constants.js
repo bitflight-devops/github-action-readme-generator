@@ -22,6 +22,22 @@ export const configFileName = '.ghadocs.json';
 /**
  * Enumerates the keys for the configuration options.
  */
+/**
+ * Valid version source options for determining action version.
+ */
+export const VERSION_SOURCES = [
+    'git-tag',
+    'git-branch',
+    'git-sha',
+    'package-json',
+    'explicit',
+];
+/**
+ * Checks if the given value is a valid version source.
+ */
+export function isValidVersionSource(value) {
+    return VERSION_SOURCES.includes(value);
+}
 export var ConfigKeys;
 (function (ConfigKeys) {
     ConfigKeys["Owner"] = "owner";
@@ -37,6 +53,7 @@ export var ConfigKeys;
     ConfigKeys["VersioningOverride"] = "versioning:override";
     ConfigKeys["VersioningPrefix"] = "versioning:prefix";
     ConfigKeys["VersioningBranch"] = "versioning:branch";
+    ConfigKeys["VersioningSource"] = "versioning:source";
     ConfigKeys["IncludeGithubVersionBadge"] = "versioning:badge";
     ConfigKeys["DebugNconf"] = "debug:nconf";
     ConfigKeys["DebugReadme"] = "debug:readme";

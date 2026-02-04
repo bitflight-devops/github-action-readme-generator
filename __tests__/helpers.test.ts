@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
 
 import {
   basename,
+  getCurrentVersionString,
   indexOfRegex,
   lastIndexOfRegex,
   prefixParser,
@@ -16,6 +17,7 @@ import {
   undefinedOnEmpty,
   wrapText,
 } from '../src/helpers.js';
+import type Inputs from '../src/inputs.js';
 import {
   actionTestString,
   ghadocsTestString,
@@ -288,6 +290,111 @@ describe('helpers', () => {
     test('lastIndexOfRegex should return the correct index', () => {
       expect(lastIndexOfRegex(str, regex)).toBe(5);
       expect(lastIndexOfRegex(str, /z/g)).toBe(-1);
+    });
+  });
+
+  describe('getCurrentVersionString', () => {
+    /**
+     * Helper to create a mock Inputs object for testing version source
+     */
+    function createMockInputs(configValues: Record<string, unknown>): Inputs {
+      return {
+        config: {
+          get: (key: string) => configValues[key],
+        },
+        action: {
+          path: '/test/action.yml',
+        },
+      } as unknown as Inputs;
+    }
+
+    describe('version_source option', () => {
+      it('should use git-tag as default version source', () => {
+        const inputs = createMockInputs({
+          'versioning:enabled': true,
+          'versioning:source': undefined, // default should be git-tag
+          'versioning:prefix': 'v',
+        });
+
+        // This test verifies the default behavior falls back to git-tag
+        const result = getCurrentVersionString(inputs);
+        // Without actual git, it should fall back to 0.0.0
+        expect(result).toMatch(/^v/);
+      });
+
+      it('should return fallback for git-branch when git command fails', () => {
+        // When git is not available (like in test env), it falls back to 0.0.0
+        // but should NOT apply prefix for git-branch source
+        const inputs = createMockInputs({
+          'versioning:enabled': true,
+          'versioning:source': 'git-branch',
+          'versioning:prefix': 'v',
+        });
+
+        const result = getCurrentVersionString(inputs);
+        // When git-branch fails, it falls back to 0.0.0 but without prefix
+        expect(result).toBe('0.0.0');
+      });
+
+      it('should return fallback for git-sha when git command fails', () => {
+        // When git is not available (like in test env), it falls back to 0.0.0
+        // but should NOT apply prefix for git-sha source
+        const inputs = createMockInputs({
+          'versioning:enabled': true,
+          'versioning:source': 'git-sha',
+          'versioning:prefix': 'v',
+        });
+
+        const result = getCurrentVersionString(inputs);
+        // When git-sha fails, it falls back to 0.0.0 but without prefix
+        expect(result).toBe('0.0.0');
+      });
+
+      it('should use version_override in explicit mode', () => {
+        const inputs = createMockInputs({
+          'versioning:enabled': true,
+          'versioning:source': 'explicit',
+          'versioning:override': '1.0.0',
+          'versioning:prefix': 'v',
+        });
+
+        const result = getCurrentVersionString(inputs);
+        expect(result).toBe('v1.0.0');
+      });
+
+      it('should return v0.0.0 in explicit mode without override', () => {
+        const inputs = createMockInputs({
+          'versioning:enabled': true,
+          'versioning:source': 'explicit',
+          'versioning:override': '',
+          'versioning:prefix': 'v',
+        });
+
+        const result = getCurrentVersionString(inputs);
+        expect(result).toBe('v0.0.0');
+      });
+
+      it('should use branch name when versioning is disabled', () => {
+        const inputs = createMockInputs({
+          'versioning:enabled': false,
+          'versioning:branch': 'main',
+        });
+
+        const result = getCurrentVersionString(inputs);
+        expect(result).toBe('main');
+      });
+
+      it('should apply override even when not in explicit mode', () => {
+        const inputs = createMockInputs({
+          'versioning:enabled': true,
+          'versioning:source': 'git-tag',
+          'versioning:override': '2.0.0',
+          'versioning:prefix': 'v',
+        });
+
+        const result = getCurrentVersionString(inputs);
+        expect(result).toBe('v2.0.0');
+      });
     });
   });
 });

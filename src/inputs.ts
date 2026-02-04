@@ -194,6 +194,21 @@ argvOptions[ConfigKeys.VersioningBranch] = {
 };
 
 /**
+ * Versioning source option configuration.
+ * @property {string | string[]} alias - Alias(es) for the version_source option.
+ * @property {string} describe - Description for the version_source option.
+ * @property {boolean} parseValues - Specifies whether to parse values for the version_source option.
+ * @property {string} type - Type of the version_source option.
+ */
+argvOptions[ConfigKeys.VersioningSource] = {
+  alias: ['version-source', 'version_source', 'versioning_source'],
+  describe:
+    'How to detect the action version (git-tag, git-branch, git-sha, package-json, explicit)',
+  parseValues: true,
+  type: 'string',
+};
+
+/**
  * Include GitHub version badge option configuration.
  * @property {string | string[]} alias - Alias(es) for the include_github_version_badge option.
  * @property {string} describe - Description for the include_github_version_badge option.
@@ -260,6 +275,7 @@ const ConfigKeysInputsMap: Record<string, string> = {
   version_prefix: ConfigKeys.VersioningPrefix,
   versioning_default_branch: ConfigKeys.VersioningBranch,
   version_override: ConfigKeys.VersioningOverride,
+  version_source: ConfigKeys.VersioningSource,
   include_github_version_badge: ConfigKeys.IncludeGithubVersionBadge,
   owner: ConfigKeys.Owner,
   repo: ConfigKeys.Repo,

@@ -84,6 +84,7 @@ describe('ConfigKeys', () => {
       VersioningOverride: 'versioning:override',
       VersioningPrefix: 'versioning:prefix',
       VersioningBranch: 'versioning:branch',
+      VersioningSource: 'versioning:source',
       IncludeGithubVersionBadge: 'versioning:badge',
       DebugNconf: 'debug:nconf',
       DebugReadme: 'debug:readme',

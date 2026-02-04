@@ -9,6 +9,7 @@
   "branding_svg_path": ".github/ghadocs/branding.svg",
   "versioning": {
     "enabled": true,
+    "source": "git-tag",
     "prefix": "v",
     "override": "",
     "branch": "main"

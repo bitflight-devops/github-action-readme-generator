@@ -370,26 +370,50 @@ export function getCurrentVersionString(inputs: Inputs): string {
   if (isVersioningEnabled) {
     log.debug('version string in generated example is enabled');
     const oRide = inputs.config.get('versioning:override') as string;
-    let packageVersion: string | undefined;
+    let detectedVersion: string | undefined;
 
-    // First, try to read package.json from the action directory (target repository)
-    // This is the primary source for version when running against external repos
     const actionDir = path.dirname(inputs.action.path);
-    const packageJsonPath = path.join(actionDir, 'package.json');
-    log.debug(`Looking for package.json at: ${packageJsonPath}`);
+
+    // Priority 1: Git tags from target directory (primary for GitHub Actions)
+    // GitHub Actions are referenced by git tags (uses: owner/repo@v1.2.3)
     try {
-      accessSync(packageJsonPath);
-      const packageData: Partial<PackageJson> = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
-      packageVersion = packageData.version;
-      log.debug(`version string from target repo package.json: ${packageVersion ?? 'not found'}`);
-    } catch (error) {
-      log.debug(`package.json not found at ${packageJsonPath}. ${error}`);
-      // Fall back to npm_package_version for backward compatibility when running from same directory
-      packageVersion = process.env.npm_package_version;
-      log.debug(`Falling back to env:npm_package_version: ${packageVersion ?? 'not found'}`);
+      const gitVersion = execSync(
+        'git describe --tags --abbrev=0 2>/dev/null || git tag -l "v*" --sort=-v:refname | head -1',
+        {
+          cwd: actionDir,
+          encoding: 'utf8',
+        },
+      ).trim();
+      if (gitVersion) {
+        // Remove 'v' prefix if present for consistency, we'll add it back with the configured prefix
+        detectedVersion = gitVersion.replace(/^v/, '');
+        log.debug(`version from git tags: ${detectedVersion}`);
+      }
+    } catch {
+      log.debug(`Could not get version from git tags in ${actionDir}`);
     }
 
-    versionString = oRide && oRide.length > 0 ? oRide : (packageVersion ?? '0.0.0');
+    // Priority 2: package.json from target directory (for npm-based actions)
+    if (!detectedVersion) {
+      const packageJsonPath = path.join(actionDir, 'package.json');
+      log.debug(`Looking for package.json at: ${packageJsonPath}`);
+      try {
+        accessSync(packageJsonPath);
+        const packageData: Partial<PackageJson> = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+        detectedVersion = packageData.version;
+        log.debug(`version from package.json: ${detectedVersion ?? 'not found'}`);
+      } catch {
+        log.debug(`package.json not found at ${packageJsonPath}`);
+      }
+    }
+
+    // Priority 3: npm_package_version env var (backward compatibility when running in same directory)
+    if (!detectedVersion) {
+      detectedVersion = process.env.npm_package_version;
+      log.debug(`Falling back to env:npm_package_version: ${detectedVersion ?? 'not found'}`);
+    }
+
+    versionString = oRide && oRide.length > 0 ? oRide : (detectedVersion ?? '0.0.0');
 
     // Get prefix, defaulting to 'v' if not set
     const prefix = (inputs.config.get('versioning:prefix') as string) ?? 'v';

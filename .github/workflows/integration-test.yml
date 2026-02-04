@@ -263,11 +263,11 @@ jobs:
               echo "Size difference: $DIFF bytes"
             fi
             
-            # Show diff summary (first 50 lines) - diff exits with 1 when files differ, so we use || true
+            # Show full diff - diff exits with 1 when files differ, so we use || true
             echo ""
-            echo "Diff summary (first 50 lines):"
+            echo "Diff between original and generated README:"
             if [ -f "README.backup.md" ] && [ -f "${{ matrix.readme_path }}" ]; then
-              diff -u README.backup.md "${{ matrix.readme_path }}" | head -50 || true
+              diff -u README.backup.md "${{ matrix.readme_path }}" || true
             else
               echo "::warning::Cannot compare - one or both files missing"
             fi

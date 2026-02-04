@@ -177,7 +177,7 @@ This configuration will automatically regenerate your README whenever `action.ym
 <!-- start usage -->
 
 ```yaml
-- uses: bitflight-devops/github-action-readme-generator@v1
+- uses: bitflight-devops/github-action-readme-generator@v1.9.3
   with:
     # Description: The absolute or relative path to the `action.yml` file to read in
     # from.
@@ -237,6 +237,17 @@ This configuration will automatically regenerate your README whenever `action.ym
     # Default: main
     versioning_default_branch: ""
 
+    # Description: How to detect the action version for the usage example. Options:
+    #
+    # - `git-tag` - Latest git tag (default, standard for GitHub Actions)
+    # - `git-branch` - Current branch name (for bleeding edge users)
+    # - `git-sha` - Current commit SHA (for exact pinning)
+    # - `package-json` - Read from package.json version field
+    # - `explicit` - Use value from `version_override` input only
+    #
+    # Default: git-tag
+    version_source: ""
+
     # Description: Add a prefix to the README title. The title template looks like
     # this:
     #
@@ -289,6 +300,7 @@ This configuration will automatically regenerate your README whenever `action.ym
 | <code>version_override</code>             | Set a specific version to display in the README.md, maybe you want to use a major or minor version                                                                                                                                                                                                                                                                                                                                                                                                                                        |                                           | **false**    |
 | <code>version_prefix</code>               | Prefix the version with this value, if it isn't already prefixed                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | <code>v</code>                            | **false**    |
 | <code>versioning_default_branch</code>    | If versioning is disabled, use this branch in the usage example, where the default is <code>main</code><br />Output if your action repo is <code>reviewdog/action-eslint</code>:<br /><code>uses: reviewdog/action-eslint@main</code>                                                                                                                                                                                                                                                                                                     | <code>main</code>                         | **false**    |
+| <code>version_source</code>               | How to detect the action version for the usage example.<br />Options:<br />- <code>git-tag</code> - Latest git tag (default, standard for GitHub Actions)<br />- <code>git-branch</code> - Current branch name (for bleeding edge users)<br />- <code>git-sha</code> - Current commit SHA (for exact pinning)<br />- <code>package-json</code> - Read from package.json version field<br />- <code>explicit</code> - Use value from <code>version_override</code> input only                                                              | <code>git-tag</code>                      | **false**    |
 | <code>title_prefix</code>                 | Add a prefix to the README title.<br />The title template looks like this:<br /># {brand}{prefix}{title}                                                                                                                                                                                                                                                                                                                                                                                                                                  | <code>GitHub Action: </code>              | **false**    |
 | <code>include_github_version_badge</code> | Include additional badge showing latest tag                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | <code>true</code>                         | **false**    |
 | <code>branding_svg_path</code>            | Create the branding svg image from the branding object in <code>action.yml</code><br />then save it to this path.<br />Then update the <code>README.md</code> file to source the branding image from this path.<br />You can use a section template like this:<br /><code>\<!-- start branding -->\<!-- stop branding --></code><br />or use the action input:<br /><code>branding_as_title_prefix: true</code><br />to prefix the 'title' section with the image.<br />The title template looks like this:<br /># {brand}{prefix}{title} | <code>.github/ghadocs/branding.svg</code> | **false**    |

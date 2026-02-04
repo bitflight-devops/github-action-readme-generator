@@ -79,10 +79,10 @@ export declare function columnHeader(value: string): string;
 /**
  * Formats the given value as a row header in HTML.
  *
- * Removes formatting from the string and converts it to code style.
+ * Removes formatting from the string and converts it to bold code style.
  *
  * @param value - The string to format as a header
- * @returns The formatted row header string
+ * @returns The formatted row header string wrapped in bold and code tags
  */
 export declare function rowHeader(value: string): string;
 export declare function getCurrentVersionString(inputs: Inputs): string;

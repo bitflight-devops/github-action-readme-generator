@@ -157,43 +157,27 @@ Duration: Total ~40-60 seconds for full validation.
 
 **RULE: NEVER commit dist/ files manually. CI handles this automatically.**
 
-### Decision Logic for AI Agents
-
-```
-IF git status shows dist/ files as modified:
-  THEN ignore them - do NOT commit
-  REASON: Pre-commit hook rebuilds dist/ for validation only
-
-IF you are tempted to run `git add dist/`:
-  THEN STOP - this is incorrect
-  REASON: Only CI should commit dist/ files
-
-IF pre-commit hook completes successfully:
-  THEN commit ONLY your source changes (src/, package.json, etc.)
-  AND leave dist/ changes uncommitted
-```
-
 ### How Dist Files Work
 
-1. **Developer commits source changes** (src/\*.ts, package.json, etc.)
-2. **Pre-commit hook runs** → rebuilds dist/ for validation → you see dist/ modified in git status
-3. **Developer commits** → do NOT include dist/ → ignore the modifications
-4. **CI deploy workflow** (`.github/workflows/deploy.yml` lines 87-92):
+1. **dist/ is gitignored and untracked** - You will NOT see dist/ in `git status`
+2. **Developer commits source changes** (src/\*.ts, package.json, tests, etc.)
+3. **Pre-commit hook runs** → rebuilds dist/ locally for validation
+4. **CI deploy workflow** (`.github/workflows/deploy.yml`) commits dist/ during releases:
    ```bash
    npm run build --if-present
-   git add -f dist
+   git add -f dist          # Force-add bypasses .gitignore
    npm run generate-docs
    git commit -n -m 'build(release): bundle distribution files'
    npx semantic-release@latest
    ```
-5. **CI commits dist/ files** with specific message `build(release): bundle distribution files`
+5. **Released versions include dist/** - Users get the built files from release tags
 
-### Why Dist Files Are Tracked But Ignored
+### Why This Works
 
 - `dist/` IS in `.gitignore` (line 3: `/dist/`)
-- BUT dist files ARE tracked in git (committed previously by CI)
-- `.gitignore` prevents accidental manual commits
-- CI uses `git add -f dist` to force-add during deploy
+- `dist/` is NOT tracked in git on development branches
+- CI uses `git add -f dist` to force-add during deploy (bypasses .gitignore)
+- Local builds create dist/ but it never shows in `git status`
 
 ### What You Should Do
 
@@ -209,7 +193,6 @@ IF pre-commit hook completes successfully:
 - `git add dist/` or `git add -f dist/`
 - `git commit` with dist/ files included
 - Bypass hooks with `HUSKY=0` unless investigating hook failures
-- Worry about dist/ showing as modified in git status
 
 ## Project Structure
 

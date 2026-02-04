@@ -63,6 +63,7 @@ jobs:
         with:
           repository: ${{ matrix.repo }}
           path: test-repo
+          fetch-tags: true
 
       - name: Backup original README
         working-directory: test-repo

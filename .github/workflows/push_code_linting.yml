@@ -54,7 +54,7 @@ jobs:
         continue-on-error: true
 
       - name: Biome reviewdog
-        uses: mongolyy/reviewdog-action-biome@v1
+        uses: mongolyy/reviewdog-action-biome@v2
         with:
           reporter: github-pr-review
           github_token: ${{ secrets.GITHUB_TOKEN }}

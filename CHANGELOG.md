@@ -1,3 +1,10 @@
+## [1.10.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.0...v1.10.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* restore bold formatting in table first column ([c07a40d](https://github.com/bitflight-devops/github-action-readme-generator/commit/c07a40dd260c98b37df4d5b180c80eac3289e344))
+
 # [1.10.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.9.3...v1.10.0) (2026-02-04)
 
 

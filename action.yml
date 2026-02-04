@@ -69,6 +69,23 @@ inputs:
       `uses: reviewdog/action-eslint@main`
     required: false
     default: main
+  version_source:
+    description: >
+      How to detect the action version for the usage example.
+
+      Options:
+
+      - `git-tag` - Latest git tag (default, standard for GitHub Actions)
+
+      - `git-branch` - Current branch name (for bleeding edge users)
+
+      - `git-sha` - Current commit SHA (for exact pinning)
+
+      - `package-json` - Read from package.json version field
+
+      - `explicit` - Use value from `version_override` input only
+    required: false
+    default: git-tag
   title_prefix:
     description: |
       Add a prefix to the README title.

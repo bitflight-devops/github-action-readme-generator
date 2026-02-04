@@ -11,16 +11,4 @@
 
 ## TODOs
 
-- **Version source input**: Add an input that lets users choose how to detect the action version:
-  - `git-tag` - Latest git tag (default, GitHub Actions standard)
-  - `git-branch` - Current branch name (for bleeding edge users)
-  - `git-sha` - Current commit SHA (for exact pinning)
-  - `package.json` - Read from package.json version field
-  - `explicit` - User provides version directly via `version_override`
-
-  Other versioning considerations for GitHub Actions:
-  - GitHub Releases (typically tied to tags)
-  - Calver (calendar versioning like `2024.01.15`)
-  - Major version tags (`v1`, `v2` that float to latest minor/patch)
-
 - **Restore bold formatting in table first column**: The `rowHeader()` function in `src/helpers.ts` was changed from `<b><code>text</code></b>` to just `<code>text</code>` in commit `0451f2c` (Nov 2023 refactor). Original behavior at commit `2e670c4` had bold first columns. Consider restoring `<b><code>` wrapper.

@@ -22,3 +22,5 @@
   - GitHub Releases (typically tied to tags)
   - Calver (calendar versioning like `2024.01.15`)
   - Major version tags (`v1`, `v2` that float to latest minor/patch)
+
+- **Restore bold formatting in table first column**: The `rowHeader()` function in `src/helpers.ts` was changed from `<b><code>text</code></b>` to just `<code>text</code>` in commit `0451f2c` (Nov 2023 refactor). Original behavior at commit `2e670c4` had bold first columns. Consider restoring `<b><code>` wrapper.

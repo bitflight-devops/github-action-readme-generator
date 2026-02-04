@@ -33,37 +33,37 @@ type JavascriptAction = `Node${string}` | `node${string}`;
  * Defines the runs property for container actions.
  */
 type RunsContainer = {
-    'using': ContainerAction;
-    'image': string;
-    'args'?: string[];
+    using: ContainerAction;
+    image: string;
+    args?: string[];
     'pre-entrypoint'?: string;
     'post-entrypoint'?: string;
-    'entrypoint'?: string;
+    entrypoint?: string;
 };
 /**
  * Defines the runs property for JavaScript actions.
  */
 type RunsJavascript = {
     /** The runner used to execute the action */
-    'using': JavascriptAction;
+    using: JavascriptAction;
     /** The entrypoint file for the action */
-    'main': string;
-    'pre'?: string;
+    main: string;
+    pre?: string;
     'pre-if'?: string;
     'post-if'?: string;
-    'post'?: string;
+    post?: string;
 };
 /**
  * Defines the steps property for composite actions.
  */
 type Steps = {
-    'shell'?: string;
-    'if'?: string;
-    'run'?: string;
-    'name'?: string;
-    'id'?: string;
+    shell?: string;
+    if?: string;
+    run?: string;
+    name?: string;
+    id?: string;
     'working-directory'?: string;
-    'env': {
+    env: {
         [key: string]: string;
     };
 };
@@ -103,7 +103,7 @@ export type ActionYaml = {
  * Parses and represents metadata from action.yml.
  */
 export default class Action implements ActionYaml {
-    static validate(obj: any): obj is ActionType;
+    static validate(obj: unknown): obj is ActionType;
     log: LogTask;
     /** Name of the action */
     name: string;

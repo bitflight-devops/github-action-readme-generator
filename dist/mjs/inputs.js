@@ -6,25 +6,16 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import * as core from '@actions/core';
 import { Context } from '@actions/github/lib/context.js';
 import nconf from 'nconf';
 import YAML from 'yaml';
 import Action from './Action.js';
-import { configFileName, ConfigKeys, README_SECTIONS } from './constants.js';
+import { ConfigKeys, configFileName, README_SECTIONS } from './constants.js';
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
 const { Provider } = nconf;
-/**
- * Get the filename from the import.meta.url
- */
-export const __filename = fileURLToPath(import.meta.url);
-/**
- * Get the directory name from the filename
- */
-export const __dirname = path.dirname(__filename);
 /**
  * Change working directory to output of workingDirectory()
  */
@@ -243,12 +234,17 @@ const ConfigKeysInputsMap = {
     title_prefix: ConfigKeys.TitlePrefix,
     pretty: ConfigKeys.Prettier,
 };
-export function transformGitHubInputsToArgv(log, config, obj) {
+export function transformGitHubInputsToArgv(log, _config, obj) {
     /** The obj.key is always in lowercase, but it checks for it without case sensitivity */
     if (/^(INPUT|input)_[A-Z_a-z]\w*$/.test(obj.key)) {
         log.debug(`Parsing input: ${obj.key} with ith value: ${obj.value}`);
         const keyParsed = obj.key.replace(/^(INPUT|input)_/, '').toLocaleLowerCase();
         const key = ConfigKeysInputsMap[keyParsed] || keyParsed;
+        // Skip empty values for owner/repo to allow fallback detection from .git/config or GITHUB_REPOSITORY
+        if ((key === 'owner' || key === 'repo') && (!obj.value || obj.value === '')) {
+            log.debug(`Ignoring empty ${key} input to allow auto-detection`);
+            return undefined;
+        }
         log.debug(`New input is ${key} with the value ${obj.value}`);
         return { key, value: obj.value };
     }
@@ -281,8 +277,8 @@ export function collectAllDefaultValuesFromAction(log, providedMetaActionPath, p
     log.debug('Collecting default values from action.yml');
     // This loads the defaults from THIS action's own action.yml file (github-action-readme-generator's action.yml)
     // NOT the user's action.yml file (which is loaded separately via the 'action' input parameter)
-    // Therefore, we use __dirname to find this package's action.yml regardless of where it's installed
-    const thisActionPath = path.join(__dirname, providedMetaActionPath ?? metaActionPath);
+    // Therefore, we use import.meta.dirname to find this package's action.yml regardless of where it's installed
+    const thisActionPath = path.join(import.meta.dirname, providedMetaActionPath ?? metaActionPath);
     try {
         const defaultValues = {};
         const thisAction = new Action(thisActionPath);
@@ -352,7 +348,11 @@ export function loadDefaultConfig(log, config, providedContext) {
     const repoFromConfig = config.get('repo');
     const ownerInput = ownerFromConfig ?? process.env.INPUT_OWNER ?? '';
     const repoInput = repoFromConfig ?? process.env.INPUT_REPO ?? '';
-    const repositoryDetail = repositoryFinder(`${ownerInput}/${repoInput}`, context);
+    // Get the action path to derive the target repo directory for .git/config lookup
+    const actionPath = config.get(ConfigKeys.pathsAction);
+    const actionDir = actionPath ? path.dirname(path.resolve(actionPath)) : undefined;
+    log.debug(`Action directory for repository detection: ${actionDir ?? 'not specified'}`);
+    const repositoryDetail = repositoryFinder(`${ownerInput}/${repoInput}`, context, actionDir);
     log.debug(`repositoryDetail: ${repositoryDetail}`);
     // Apply the default values from the action.yml file
     return config.defaults({

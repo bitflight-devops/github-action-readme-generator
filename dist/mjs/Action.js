@@ -13,10 +13,17 @@ import LogTask from './logtask/index.js';
  */
 export default class Action {
     static validate(obj) {
-        if ('name' in obj && 'description' in obj && 'runs' in obj && 'using' in obj.runs) {
-            return (typeof obj.name === 'string' &&
-                typeof obj.description === 'string' &&
-                typeof obj.runs.using === 'string');
+        if (typeof obj !== 'object' || obj === null) {
+            return false;
+        }
+        const record = obj;
+        if ('name' in record && 'description' in record && 'runs' in record) {
+            const runs = record.runs;
+            if (runs && 'using' in runs) {
+                return (typeof record.name === 'string' &&
+                    typeof record.description === 'string' &&
+                    typeof runs.using === 'string');
+            }
         }
         return false;
     }

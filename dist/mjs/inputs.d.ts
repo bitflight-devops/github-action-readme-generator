@@ -1,19 +1,11 @@
 import { Context } from '@actions/github/lib/context.js';
 import nconf from 'nconf';
-import Action, { Input } from './Action.js';
-import { ReadmeSection } from './constants.js';
+import Action, { type Input } from './Action.js';
+import { type ReadmeSection } from './constants.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
 declare const Provider: typeof nconf.Provider;
 type IOptions = nconf.IOptions;
-/**
- * Get the filename from the import.meta.url
- */
-export declare const __filename: string;
-/**
- * Get the directory name from the filename
- */
-export declare const __dirname: string;
 /**
  * Change working directory to output of workingDirectory()
  */
@@ -37,7 +29,7 @@ type KVPairType = {
  * Type alias for Provider instance
  */
 type ProviderInstance = InstanceType<typeof Provider>;
-export declare function transformGitHubInputsToArgv(log: LogTask, config: ProviderInstance, obj: KVPairType): undefined | KVPairType;
+export declare function transformGitHubInputsToArgv(log: LogTask, _config: ProviderInstance, obj: KVPairType): undefined | KVPairType;
 /**
  * Sets config value from action file default
  *

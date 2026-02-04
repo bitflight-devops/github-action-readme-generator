@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import chalkPkg from 'chalk';
 import { notEmpty } from '../util.js';
 // Chalk color styles
-const { bgRedBright, cyan, green, greenBright, whiteBright, yellow, yellowBright } = chalkPkg;
+const { bgRedBright, cyan, green, greenBright, whiteBright, yellow, yellowBright, } = chalkPkg;
 // Constants for different log step types
 var LogGroup;
 (function (LogGroup) {

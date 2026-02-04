@@ -5,9 +5,9 @@
  * If an error occurs during the update of a section, it logs the error message and stops the process.
  * Finally, it saves the updated README.md file and calls the 'save' function.
  */
-import { ReadmeSection } from './constants.js';
-import Inputs from './inputs.js';
-import LogTask from './logtask/index.js';
+import type { ReadmeSection } from './constants.js';
+import type Inputs from './inputs.js';
+import type LogTask from './logtask/index.js';
 export type SectionKV = Record<string, string>;
 /**
  * Class for managing README generation.

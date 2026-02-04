@@ -1,6 +1,6 @@
 import type { FeatherIconNames } from 'feather-icons';
 import type { BrandColors } from '../constants.js';
-import { ReadmeSection } from '../constants.js';
+import { type ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 export interface IBranding {
     alt: string;

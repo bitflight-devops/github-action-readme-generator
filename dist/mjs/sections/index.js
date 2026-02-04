@@ -18,28 +18,28 @@ export default async function updateSection(section, inputs) {
     }
     switch (section) {
         case 'branding': {
-            return updateBranding(section, inputs);
+            return await updateBranding(section, inputs);
         }
         case 'badges': {
-            return updateBadges(section, inputs);
+            return await updateBadges(section, inputs);
         }
         case 'usage': {
-            return updateUsage(section, inputs);
+            return await updateUsage(section, inputs);
         }
         case 'title': {
-            return updateTitle(section, inputs);
+            return await updateTitle(section, inputs);
         }
         case 'description': {
-            return updateDescription(section, inputs);
+            return await updateDescription(section, inputs);
         }
         case 'inputs': {
-            return updateInputs(section, inputs);
+            return await updateInputs(section, inputs);
         }
         case 'outputs': {
-            return updateOutputs(section, inputs);
+            return await updateOutputs(section, inputs);
         }
         case 'contents': {
-            return updateContents(section, inputs);
+            return await updateContents(section, inputs);
         }
         default: {
             log.debug(`unknown section found <!-- start ${section} -->. No updates were made.`);

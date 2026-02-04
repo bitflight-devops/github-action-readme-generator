@@ -1,12 +1,9 @@
 import { execSync } from 'node:child_process';
 import { accessSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import LogTask from './logtask/index.js';
 import { unicodeWordMatch } from './unicode-word-match.js';
 import { notEmpty } from './util.js';
-export const __filename = fileURLToPath(import.meta.url);
-export const __dirname = path.dirname(__filename);
 /**
  * Returns the input value if it is not empty, otherwise returns undefined.
  * @param value - The input value to check.
@@ -24,8 +21,9 @@ export function undefinedOnEmpty(value) {
  * @returns The basename of the path.
  */
 export function basename(pathStr) {
-    if (!pathStr)
+    if (!pathStr) {
         return undefined;
+    }
     const log = new LogTask('basename');
     const result = path.basename(pathStr);
     log.debug(`Basename passed ${pathStr} and returns ${result}`);
@@ -38,8 +36,9 @@ export function basename(pathStr) {
  * @returns The path without the prefix, or null if path is empty
  */
 export function stripRefs(pathStr) {
-    if (!pathStr)
+    if (!pathStr) {
         return null;
+    }
     const log = new LogTask('stripRefs');
     const result = pathStr.replace('refs/heads/', '').replace('refs/tags/', '');
     log.debug(`stripRefs passed ${pathStr} and returns ${result}`);
@@ -52,8 +51,9 @@ export function stripRefs(pathStr) {
  * @throws {TypeError} If the input is not a string.
  */
 export function titlecase(text) {
-    if (!text)
+    if (!text) {
         return undefined;
+    }
     if (typeof text !== 'string') {
         throw new TypeError(`Invalid argument type provided to titlecase(): ${typeof text}`);
     }
@@ -65,8 +65,9 @@ export function titlecase(text) {
  * @returns The parsed text converted to title case.
  */
 export function prefixParser(text) {
-    if (!text)
+    if (!text) {
         return undefined;
+    }
     if (typeof text !== 'string') {
         throw new TypeError(`Invalid argument type provided to prefixParser(): ${typeof text}`);
     }
@@ -81,8 +82,9 @@ export function prefixParser(text) {
  */
 export function wrapText(text, content, prepend = '') {
     // Constrain the width of the description
-    if (!text)
+    if (!text) {
         return content;
+    }
     const width = 80;
     let description = text
         .trim()
@@ -134,14 +136,18 @@ export function repoObjFromRepoName(repository, log, from) {
     }
     return undefined;
 }
-export const remoteGitUrlPattern = /url( )?=( )?.*github\.com[/:](?<owner>.*)\/(?<repo>.*)\.git/;
+// Pattern to match GitHub remote URLs in .git/config
+// Handles both HTTPS (github.com/) and SSH (github.com:) formats
+// Captures the repo name with or without .git suffix - suffix is stripped in code
+export const remoteGitUrlPattern = /url\s*=\s*.*github\.com[/:](?<owner>[^/\s]+)\/(?<repo>[^\s]+)/;
 /**
  * Finds the repository information from the input, context, environment variables, or git configuration.
  * @param inputRepo - The input repository string.
  * @param context - The GitHub context object.
+ * @param baseDir - Optional base directory to look for .git/config (defaults to CWD).
  * @returns The repository information (owner and repo) or null if not found.
  */
-export function repositoryFinder(inputRepo, context) {
+export function repositoryFinder(inputRepo, context, baseDir) {
     const log = new LogTask('repositoryFinder');
     /**
      * Attempt to get git user and repo from input
@@ -151,31 +157,72 @@ export function repositoryFinder(inputRepo, context) {
         return repoObj;
     }
     /**
+     * When baseDir is provided, prioritize .git/config from that directory
+     * This is critical for external repos where GITHUB_REPOSITORY points to
+     * the workflow repo, not the target repo being documented
+     */
+    if (baseDir) {
+        try {
+            const gitConfigPath = path.join(baseDir, '.git', 'config');
+            const fileContent = readFile(gitConfigPath);
+            log.debug(`loading ${gitConfigPath}:\n***\n${fileContent}\n***`);
+            const results = remoteGitUrlPattern.exec(fileContent);
+            if (results?.groups?.owner && results?.groups?.repo) {
+                // Strip .git suffix if present (actions/checkout may or may not include it)
+                const repo = results.groups.repo.replace(/\.git$/, '');
+                log.debug(`repositoryFinder using '${gitConfigPath}' and returns ${JSON.stringify({ owner: results.groups.owner, repo })}`);
+                return {
+                    owner: results.groups.owner,
+                    repo,
+                };
+            }
+        }
+        catch (error) {
+            log.debug(`Couldn't read .git/config from baseDir ${baseDir}: ${error}`);
+            // Fall through to other methods
+        }
+    }
+    /**
      * Attempt to get git user and repo from GitHub context,
      * which includes checking for GITHUB_REPOSITORY environment variable
      */
     if (context) {
         try {
             const result = { ...context.repo };
-            log.debug(`repositoryFinder using GitHub context and returns ${JSON.stringify(result)}`);
-            return result;
+            if (result.owner && result.repo) {
+                log.debug(`repositoryFinder using GitHub context and returns ${JSON.stringify(result)}`);
+                return result;
+            }
         }
         catch (error) {
             log.debug(`repositoryFinder using GitHub context gives error ${JSON.stringify(error)}`);
         }
     }
     /**
-     * Attempt to get git user and repo from .git/config
+     * Fallback: Try to parse GITHUB_REPOSITORY environment variable directly
+     * This handles cases where the Context class doesn't pick up the value
+     */
+    const githubRepo = process.env.GITHUB_REPOSITORY;
+    if (githubRepo) {
+        const repoFromEnv = repoObjFromRepoName(githubRepo, log, 'GITHUB_REPOSITORY env');
+        if (repoFromEnv) {
+            return repoFromEnv;
+        }
+    }
+    /**
+     * Last resort: Attempt to get git user and repo from .git/config in CWD
      */
     try {
         const fileContent = readFile('.git/config');
         log.debug(`loading .git/config:\n***\n${fileContent}\n***`);
         const results = remoteGitUrlPattern.exec(fileContent);
         if (results?.groups?.owner && results?.groups?.repo) {
-            log.debug(`repositoryFinder using '.git/config' and returns ${JSON.stringify(results.groups)}`);
+            // Strip .git suffix if present
+            const repo = results.groups.repo.replace(/\.git$/, '');
+            log.debug(`repositoryFinder using '.git/config' and returns ${JSON.stringify({ owner: results.groups.owner, repo })}`);
             return {
                 owner: results.groups.owner,
-                repo: results.groups.repo,
+                repo,
             };
         }
     }
@@ -260,27 +307,54 @@ export function rowHeader(value) {
 export function getCurrentVersionString(inputs) {
     let versionString = '';
     const log = new LogTask('getCurrentVersionString');
-    if (inputs.config.get('versioning:enabled')) {
+    // Default to enabled if not explicitly set (matches action.yml default of "true")
+    const versioningEnabled = inputs.config.get('versioning:enabled');
+    const isVersioningEnabled = versioningEnabled === undefined || versioningEnabled === true || versioningEnabled === 'true';
+    if (isVersioningEnabled) {
         log.debug('version string in generated example is enabled');
         const oRide = inputs.config.get('versioning:override');
-        let packageVersion = process.env.npm_package_version;
-        log.debug(`version string in env:npm_package_version is ${packageVersion ?? 'not found'}`);
-        if (!packageVersion) {
-            log.debug('version string in env:npm_package_version is not found, trying to use git');
-            try {
-                accessSync('package.json');
-                const packageData = JSON.parse(readFileSync('package.json', 'utf8'));
-                packageVersion = packageData.version;
+        let detectedVersion;
+        const actionDir = path.dirname(inputs.action.path);
+        // Priority 1: Git tags from target directory (primary for GitHub Actions)
+        // GitHub Actions are referenced by git tags (uses: owner/repo@v1.2.3)
+        try {
+            const gitVersion = execSync('git describe --tags --abbrev=0 2>/dev/null || git tag -l "v*" --sort=-v:refname | head -1', {
+                cwd: actionDir,
+                encoding: 'utf8',
+            }).trim();
+            if (gitVersion) {
+                // Remove 'v' prefix if present for consistency, we'll add it back with the configured prefix
+                detectedVersion = gitVersion.replace(/^v/, '');
+                log.debug(`version from git tags: ${detectedVersion}`);
             }
-            catch (error) {
-                log.debug(`package.json not found. ${error}`);
-            }
-            log.debug(`version string in package.json:version is ${packageVersion ?? 'not found'}`);
         }
-        versionString = oRide && oRide.length > 0 ? oRide : (packageVersion ?? '0.0.0');
-        if (versionString &&
-            !versionString.startsWith(inputs.config.get('versioning:prefix'))) {
-            versionString = `${inputs.config.get('versioning:prefix')}${versionString}`;
+        catch {
+            log.debug(`Could not get version from git tags in ${actionDir}`);
+        }
+        // Priority 2: package.json from target directory (for npm-based actions)
+        if (!detectedVersion) {
+            const packageJsonPath = path.join(actionDir, 'package.json');
+            log.debug(`Looking for package.json at: ${packageJsonPath}`);
+            try {
+                accessSync(packageJsonPath);
+                const packageData = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+                detectedVersion = packageData.version;
+                log.debug(`version from package.json: ${detectedVersion ?? 'not found'}`);
+            }
+            catch {
+                log.debug(`package.json not found at ${packageJsonPath}`);
+            }
+        }
+        // Priority 3: npm_package_version env var (backward compatibility when running in same directory)
+        if (!detectedVersion) {
+            detectedVersion = process.env.npm_package_version;
+            log.debug(`Falling back to env:npm_package_version: ${detectedVersion ?? 'not found'}`);
+        }
+        versionString = oRide && oRide.length > 0 ? oRide : (detectedVersion ?? '0.0.0');
+        // Get prefix, defaulting to 'v' if not set
+        const prefix = inputs.config.get('versioning:prefix') ?? 'v';
+        if (versionString && !versionString.startsWith(prefix)) {
+            versionString = `${prefix}${versionString}`;
         }
     }
     else {

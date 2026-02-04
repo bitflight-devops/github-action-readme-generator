@@ -18,7 +18,7 @@ const log = new LogTask('prettier');
  */
 export async function formatYaml(value, filepath) {
     const fp = filepath ? { filepath } : {};
-    return format(value, {
+    return await format(value, {
         semi: false,
         parser: 'yaml',
         embeddedLanguageFormatting: 'auto',
@@ -33,7 +33,7 @@ export async function formatYaml(value, filepath) {
  */
 export async function formatMarkdown(value, filepath) {
     const fp = filepath ? { filepath } : {};
-    return format(value, {
+    return await format(value, {
         semi: false,
         parser: 'markdown',
         embeddedLanguageFormatting: 'auto',
@@ -48,8 +48,9 @@ export async function formatMarkdown(value, filepath) {
  * @returns {Promise<string[]>} A promise that resolves with the updated content array.
  */
 export async function wrapDescription(value, content, prefix = '    # ') {
-    if (!value)
+    if (!value) {
         return content ?? [];
+    }
     // const valueWithoutPrefix = prefix && prefix.length > 0 ? value.replace(prefix, '') : value;
     let formattedString = '';
     try {

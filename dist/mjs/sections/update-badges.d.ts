@@ -3,7 +3,7 @@
  * The function is responsible for updating the badges section in the README.md file based on the provided inputs.
  * It utilizes the 'LogTask' class for logging purposes.
  */
-import { ReadmeSection } from '../constants.js';
+import type { ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 /**
  * Interface for a badge.

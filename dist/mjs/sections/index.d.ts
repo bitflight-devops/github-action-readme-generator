@@ -6,6 +6,6 @@
  * @param {Inputs} inputs - The Inputs class instance.
  * @returns {Promise<void>} A promise that resolves once the section is updated.
  */
-import { ReadmeSection } from '../constants.js';
+import type { ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 export default function updateSection(section: ReadmeSection, inputs: Inputs): Promise<Record<string, string>>;

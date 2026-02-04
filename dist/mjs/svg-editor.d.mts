@@ -21,7 +21,7 @@ export default class SVGEditor {
     /**
      * Initializes the SVG window, document, and canvas if not already set up.
      */
-    initSVG(): Promise<void>;
+    initSVG(): void;
     /**
      * Generates a branded SVG image.
      * @param {string | undefined} svgPath - Path to write the generated SVG file to.
@@ -29,7 +29,7 @@ export default class SVGEditor {
      * @param {Partial<BrandColors>} bgcolor - Background color for the image.
      * @returns {Promise<void>} A promise that resolves when the image is generated.
      */
-    generateSvgImage(svgPath: string | undefined, icon?: Partial<FeatherIconNames>, bgcolor?: Partial<BrandColors>): Promise<void>;
+    generateSvgImage(svgPath: string | undefined, icon?: Partial<FeatherIconNames>, bgcolor?: Partial<BrandColors>): void;
     /**
      * Writes the SVG xml to disk.
      * @param {string} svgPath - File path to save the SVG to.

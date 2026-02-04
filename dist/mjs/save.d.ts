@@ -4,8 +4,8 @@
  * If the 'save' property is set to true in the configuration inputs, the function saves the configuration to the file specified in the 'configPath' property of the 'inputs' parameter.
  * This script is used to update the usage section in the README.md file to match the contents of the action.yml file.
  */
-import Inputs from './inputs.js';
-import LogTask from './logtask/index.js';
+import type Inputs from './inputs.js';
+import type LogTask from './logtask/index.js';
 /**
  * This script rebuilds the usage section in the README.md to be consistent with the action.yml
  * @param {Inputs} inputs - the inputs class

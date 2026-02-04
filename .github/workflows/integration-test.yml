@@ -122,7 +122,8 @@ jobs:
             CHECKS_FAILED=$((CHECKS_FAILED + 1))
           fi
 
-          if echo "$README_CONTENT" | grep -q "## "; then
+          # Check for any markdown header (H1, H2, H3, etc.) - title section generates H1
+          if echo "$README_CONTENT" | grep -qE "^#+ "; then
             echo "✓ Found markdown headers"
             CHECKS_PASSED=$((CHECKS_PASSED + 1))
           else

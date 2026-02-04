@@ -167,7 +167,10 @@ export function repoObjFromRepoName(
   }
   return undefined;
 }
-export const remoteGitUrlPattern = /url( )?=( )?.*github\.com[/:](?<owner>.*)\/(?<repo>.*)\.git/;
+// Pattern to match GitHub remote URLs in .git/config
+// Handles both HTTPS (github.com/) and SSH (github.com:) formats
+// Captures the repo name with or without .git suffix - suffix is stripped in code
+export const remoteGitUrlPattern = /url\s*=\s*.*github\.com[/:](?<owner>[^/\s]+)\/(?<repo>[^\s]+)/;
 /**
  * Finds the repository information from the input, context, environment variables, or git configuration.
  * @param inputRepo - The input repository string.
@@ -202,12 +205,14 @@ export function repositoryFinder(
       log.debug(`loading ${gitConfigPath}:\n***\n${fileContent}\n***`);
       const results = remoteGitUrlPattern.exec(fileContent);
       if (results?.groups?.owner && results?.groups?.repo) {
+        // Strip .git suffix if present (actions/checkout may or may not include it)
+        const repo = results.groups.repo.replace(/\.git$/, '');
         log.debug(
-          `repositoryFinder using '${gitConfigPath}' and returns ${JSON.stringify(results.groups)}`,
+          `repositoryFinder using '${gitConfigPath}' and returns ${JSON.stringify({ owner: results.groups.owner, repo })}`,
         );
         return {
           owner: results.groups.owner,
-          repo: results.groups.repo,
+          repo,
         };
       }
     } catch (error) {
@@ -252,12 +257,14 @@ export function repositoryFinder(
     log.debug(`loading .git/config:\n***\n${fileContent}\n***`);
     const results = remoteGitUrlPattern.exec(fileContent);
     if (results?.groups?.owner && results?.groups?.repo) {
+      // Strip .git suffix if present
+      const repo = results.groups.repo.replace(/\.git$/, '');
       log.debug(
-        `repositoryFinder using '.git/config' and returns ${JSON.stringify(results.groups)}`,
+        `repositoryFinder using '.git/config' and returns ${JSON.stringify({ owner: results.groups.owner, repo })}`,
       );
       return {
         owner: results.groups.owner,
-        repo: results.groups.repo,
+        repo,
       };
     }
   } catch (error) {
@@ -358,9 +365,7 @@ export function getCurrentVersionString(inputs: Inputs): string {
   // Default to enabled if not explicitly set (matches action.yml default of "true")
   const versioningEnabled = inputs.config.get('versioning:enabled');
   const isVersioningEnabled =
-    versioningEnabled === undefined ||
-    versioningEnabled === true ||
-    versioningEnabled === 'true';
+    versioningEnabled === undefined || versioningEnabled === true || versioningEnabled === 'true';
 
   if (isVersioningEnabled) {
     log.debug('version string in generated example is enabled');
@@ -381,9 +386,7 @@ export function getCurrentVersionString(inputs: Inputs): string {
       log.debug(`package.json not found at ${packageJsonPath}. ${error}`);
       // Fall back to npm_package_version for backward compatibility when running from same directory
       packageVersion = process.env.npm_package_version;
-      log.debug(
-        `Falling back to env:npm_package_version: ${packageVersion ?? 'not found'}`,
-      );
+      log.debug(`Falling back to env:npm_package_version: ${packageVersion ?? 'not found'}`);
     }
 
     versionString = oRide && oRide.length > 0 ? oRide : (packageVersion ?? '0.0.0');

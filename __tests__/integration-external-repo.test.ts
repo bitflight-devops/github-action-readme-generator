@@ -354,8 +354,11 @@ runs:
         /<!-- start usage -->\n([\s\S]*?)\n<!-- end usage -->/,
       );
       expect(usageMatch).not.toBeNull();
+      if (!usageMatch) {
+        throw new Error('usageMatch is null');
+      }
 
-      const usageSection = usageMatch![1];
+      const usageSection = usageMatch[1];
 
       // Validate the usage section format
       expect(usageSection).toContain('```yaml');
@@ -368,10 +371,13 @@ runs:
       // BUG: Currently may be `/@undefined` or similar
       const usageLineMatch = usageSection.match(/- uses: ([^@]+)@([^\s]+)/);
       expect(usageLineMatch).not.toBeNull();
+      if (!usageLineMatch) {
+        throw new Error('usageLineMatch is null');
+      }
 
       // BUG VALIDATION: These should be actual values, not empty/undefined
-      const ownerRepo = usageLineMatch![1];
-      const version = usageLineMatch![2];
+      const ownerRepo = usageLineMatch[1];
+      const version = usageLineMatch[2];
 
       expect(ownerRepo).toBe('format-test-owner/format-test-repo');
       expect(version).toBe('v1.0.0');

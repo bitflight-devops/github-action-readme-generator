@@ -96,7 +96,8 @@ describe('helpers', () => {
       expect(match).toBeDefined();
       expect(match?.groups).toBeDefined();
       expect(match?.groups?.owner).toBe('owner');
-      expect(match?.groups?.repo).toBe('repo');
+      // Regex captures repo with .git suffix; the function strips it later
+      expect(match?.groups?.repo).toBe('repo.git');
     });
   });
 
@@ -263,9 +264,10 @@ describe('helpers', () => {
       vi.stubEnv('GITHUB_REPOSITORY', '');
 
       const resultRegExp = remoteGitUrlPattern.exec(gitConfigTestString);
+      // Regex captures repo with .git suffix, function strips it
       expect(resultRegExp?.groups).toEqual({
         owner: 'ownergit',
-        repo: 'repogit',
+        repo: 'repogit.git',
       });
       const result = repositoryFinder(null, null);
       expect(vi.isMockFunction(fs.readFileSync)).toBe(true);

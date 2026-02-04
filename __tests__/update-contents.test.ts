@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ReadmeSection } from '../src/constants.js';
+import type { ReadmeSection } from '../src/constants.js';
 import type Inputs from '../src/inputs.js';
 import updateContents from '../src/sections/update-contents.js';
 

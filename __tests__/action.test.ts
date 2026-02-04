@@ -1,14 +1,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
 import YAML from 'yaml';
 
 import { actionTestString, actTestYmlPath } from './action.constants.js';
-
-export const __filename = fileURLToPath(import.meta.url);
-export const __dirname = path.dirname(__filename);
 
 vi.mock('node:fs', async () => {
   return import('../__mocks__/node:fs.js');
@@ -23,9 +19,9 @@ describe('Action', () => {
     const { default: LogTask } = await import('../src/logtask/index.js');
     mockLogTask = new LogTask('mockAction');
     tempEnv = { ...process.env };
-    delete process.env.GITHUB_REPOSITORY;
-    delete process.env.INPUT_OWNER;
-    delete process.env.INPUT_REPO;
+    process.env.GITHUB_REPOSITORY = undefined;
+    process.env.INPUT_OWNER = undefined;
+    process.env.INPUT_REPO = undefined;
   });
 
   // restore the environment variables after each test

@@ -1,16 +1,11 @@
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import * as core from '@actions/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ReadmeSection } from '../src/constants.js';
-import Inputs from '../src/inputs.js';
-import LogTask from '../src/logtask/index.js';
+import type { ReadmeSection } from '../src/constants.js';
+import type Inputs from '../src/inputs.js';
+import type LogTask from '../src/logtask/index.js';
 import updateSection from '../src/sections/index.js';
 
-export const __filename = fileURLToPath(import.meta.url);
-export const __dirname = path.dirname(__filename);
 type ReadmeGeneratorInstance = InstanceType<
   typeof import('../src/readme-generator.js').ReadmeGenerator
 >;
@@ -95,6 +90,7 @@ describe('ReadmeGenerator', () => {
     });
 
     it('should not output sections if not running in GitHub Actions', () => {
+      // biome-ignore lint/performance/noDelete: Need actual deletion for env var test
       delete process.env.GITHUB_ACTIONS;
       const sections: Record<string, string> = { key: 'value' };
 

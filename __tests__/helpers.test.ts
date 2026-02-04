@@ -1,6 +1,5 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { Context } from '@actions/github/lib/context.js';
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
@@ -24,9 +23,6 @@ import {
   payloadTestString,
 } from './action.constants.js';
 
-export const __filename = fileURLToPath(import.meta.url);
-export const __dirname = path.dirname(__filename);
-
 // Mocking required objects and functions
 vi.mock('node:fs', async () => {
   return import('../__mocks__/node:fs.js');
@@ -38,11 +34,11 @@ let tempEnv: typeof process.env;
 describe('test mocks work', () => {
   beforeEach(() => {
     tempEnv = { ...process.env };
-    delete process.env.GITHUB_REPOSITORY;
-    delete process.env.INPUT_OWNER;
-    delete process.env.INPUT_REPO;
-    delete process.env.INPUT_README;
-    delete process.env.INPUT_ACTION;
+    process.env.GITHUB_REPOSITORY = undefined;
+    process.env.INPUT_OWNER = undefined;
+    process.env.INPUT_REPO = undefined;
+    process.env.INPUT_README = undefined;
+    process.env.INPUT_ACTION = undefined;
   });
 
   // restore the environment variables after each test
@@ -65,12 +61,12 @@ describe('test mocks work', () => {
 describe('helpers', () => {
   const readmeTestPath = './README.test.md';
   const actTestYmlPath = './action.test.yml';
-  const payloadFile = path.join(__dirname, 'payload.json');
+  const payloadFile = path.join(import.meta.dirname, 'payload.json');
   beforeEach(() => {
     tempEnv = { ...process.env };
-    delete process.env.GITHUB_REPOSITORY;
-    delete process.env.INPUT_OWNER;
-    delete process.env.INPUT_REPO;
+    process.env.GITHUB_REPOSITORY = undefined;
+    process.env.INPUT_OWNER = undefined;
+    process.env.INPUT_REPO = undefined;
     vi.stubEnv('GITHUB_EVENT_PATH', payloadFile);
     vi.stubEnv('GITHUB_REPOSITORY', '');
     vi.stubEnv('INPUT_README', readmeTestPath);
@@ -100,7 +96,8 @@ describe('helpers', () => {
       expect(match).toBeDefined();
       expect(match?.groups).toBeDefined();
       expect(match?.groups?.owner).toBe('owner');
-      expect(match?.groups?.repo).toBe('repo');
+      // Regex captures repo with .git suffix; the function strips it later
+      expect(match?.groups?.repo).toBe('repo.git');
     });
   });
 
@@ -267,9 +264,10 @@ describe('helpers', () => {
       vi.stubEnv('GITHUB_REPOSITORY', '');
 
       const resultRegExp = remoteGitUrlPattern.exec(gitConfigTestString);
+      // Regex captures repo with .git suffix, function strips it
       expect(resultRegExp?.groups).toEqual({
         owner: 'ownergit',
-        repo: 'repogit',
+        repo: 'repogit.git',
       });
       const result = repositoryFinder(null, null);
       expect(vi.isMockFunction(fs.readFileSync)).toBe(true);

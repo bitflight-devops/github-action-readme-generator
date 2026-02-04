@@ -4,7 +4,7 @@
  * @param {ReadmeSection} sectionToken - The sectionToken representing the section of the README to update.
  * @param {Inputs} inputs - The Inputs class instance.
  */
-import { ReadmeSection } from '../constants.js';
+import type { ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 

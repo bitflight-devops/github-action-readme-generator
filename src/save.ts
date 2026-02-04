@@ -6,8 +6,8 @@
  */
 
 import { GHActionDocsConfig } from './config.js';
-import Inputs from './inputs.js';
-import LogTask from './logtask/index.js';
+import type Inputs from './inputs.js';
+import type LogTask from './logtask/index.js';
 
 /**
  * This script rebuilds the usage section in the README.md to be consistent with the action.yml

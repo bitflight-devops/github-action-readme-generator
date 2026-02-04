@@ -1,10 +1,11 @@
 import type { FeatherIconNames } from 'feather-icons';
 
 import type { BrandColors } from '../constants.js';
-import { GITHUB_ACTIONS_OMITTED_ICONS, isValidIcon, ReadmeSection } from '../constants.js';
+import { GITHUB_ACTIONS_OMITTED_ICONS, isValidIcon, type ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import SVGEditor from '../svg-editor.mjs';
+
 /**
  * Wiith thanks to
  * https://github.com/haya14busa/github-action-brandings/blob/master/main.js
@@ -81,7 +82,7 @@ export function getValidIconName(icon?: Partial<FeatherIconNames>): FeatherIconN
  * @param width - The width of the image (default is '15%').
  * @returns The HTML image markup with branding information or an error message.
  */
-export function generateImgMarkup(inputs: Inputs, width = '15%'): string {
+export function generateImgMarkup(inputs: Inputs, width: string = '15%'): string {
   // Create a log task for debugging
   const log = new LogTask('generateImgMarkup');
   if (!inputs.action.branding) {

@@ -1,16 +1,15 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { Provider } from 'nconf';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import YAML from 'yaml';
 
 import Action from '../src/Action.js';
-import { ReadmeSection } from '../src/constants.js';
+import type { ReadmeSection } from '../src/constants.js';
 import Inputs, {
   collectAllDefaultValuesFromAction,
-  InputContext,
+  type InputContext,
   loadAction,
   loadConfig,
   loadDefaultConfig,
@@ -21,9 +20,6 @@ import Inputs, {
 import LogTask from '../src/logtask/index.js';
 import ReadmeEditor from '../src/readme-editor.js';
 import { actionTestString } from './action.constants.js';
-
-export const __filename = fileURLToPath(import.meta.url);
-export const __dirname = path.dirname(__filename);
 
 // Mocking required objects and functions
 vi.mock('node:fs', async () => {
@@ -39,7 +35,7 @@ describe('inputs', () => {
   const readmeTestPath = './README.test.md';
   const actTestYmlPath = './action.test.yml';
   // const fsMocksFile = './mocks/fs.js';
-  const payloadFile = path.join(__dirname, 'payload.json');
+  const payloadFile = path.join(import.meta.dirname, 'payload.json');
 
   describe('test mocks work', () => {
     test('Yaml parses correctly', () => {
@@ -122,7 +118,7 @@ describe('inputs', () => {
 
       // This test verifies that collectAllDefaultValuesFromAction loads THIS action's own action.yml
       // (github-action-readme-generator's action.yml), not the user's action.yml
-      // It uses __dirname to find the action.yml file relative to where the code is installed
+      // It uses import.meta.dirname to find the action.yml file relative to where the code is installed
       const relativePath = actTestYmlPath;
       const result = collectAllDefaultValuesFromAction(log, relativePath);
 
@@ -160,8 +156,8 @@ describe('inputs', () => {
 
       test('loadDefaultConfig from github context GITHUB_REPOSITORY env var', ({ task }) => {
         vi.stubEnv('GITHUB_REPOSITORY', 'user2/test2');
-        delete process.env.INPUT_USER;
-        delete process.env.INPUT_REPO;
+        process.env.INPUT_USER = undefined;
+        process.env.INPUT_REPO = undefined;
         const log = new LogTask(task.name);
         const config = new Provider();
         const result = loadDefaultConfig(log, config);
@@ -169,9 +165,9 @@ describe('inputs', () => {
         expect(result.get('repo')).toBe('test2');
       });
       test('loadDefaultConfig from provided context payload', ({ task }) => {
-        delete process.env.INPUT_USER;
-        delete process.env.INPUT_REPO;
-        delete process.env.GITHUB_REPOSITORY;
+        process.env.INPUT_USER = undefined;
+        process.env.INPUT_REPO = undefined;
+        process.env.GITHUB_REPOSITORY = undefined;
         vi.stubEnv('GITHUB_REPOSITORY', '');
 
         const log = new LogTask(task.name);

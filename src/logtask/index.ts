@@ -4,24 +4,32 @@ import chalkPkg from 'chalk';
 import { notEmpty } from '../util.js';
 
 // Chalk color styles
-const { bgRedBright, cyan, green, greenBright, whiteBright, yellow, yellowBright } = chalkPkg;
+const {
+  bgRedBright,
+  cyan,
+  green,
+  greenBright,
+  whiteBright,
+  yellow,
+  yellowBright,
+}: typeof chalkPkg = chalkPkg;
 
 // Constants for different log step types
 
 enum LogGroup {
   NO_GROUP = 0,
-  START_GROUP,
-  END_GROUP,
-  IS_ERROR,
-  IS_FAILED,
-  IS_TITLE,
+  START_GROUP = 1,
+  END_GROUP = 2,
+  IS_ERROR = 3,
+  IS_FAILED = 4,
+  IS_TITLE = 5,
 }
 
 function inGitHubActions(): boolean {
   return notEmpty(process.env.GITHUB_ACTIONS) && process.env.GITHUB_ACTIONS === 'true';
 }
 
-function highlightMessage(step: string, message: string): { desc: any; failed: any } {
+function highlightMessage(step: string, message: string): { desc: string; failed: boolean } {
   let failed = false;
   const ci = inGitHubActions();
   let desc: string;
@@ -190,7 +198,12 @@ export default class LogTask {
    * @param message - The message of the step.
    * @param startGroup - The start group type.
    */
-  logStep(emojiStr: string, step: string, message: string, startGroup = LogGroup.NO_GROUP): void {
+  logStep(
+    emojiStr: string,
+    step: string,
+    message: string,
+    startGroup: LogGroup = LogGroup.NO_GROUP,
+  ): void {
     // Logic to determine the log message color and format based on the step type
     if (step.length > LogTask.indentWidth) {
       LogTask.indentWidth = step.length;
@@ -205,7 +218,7 @@ export default class LogTask {
    * Logs a debug message.
    * @param message - The message of the debug message.
    */
-  debug(message = ''): void {
+  debug(message: string = ''): void {
     // Logic to log a debug message
     if (LogTask.isDebug() && message !== '') {
       this.logStep('🐞', 'DEBUG', message);
@@ -216,7 +229,7 @@ export default class LogTask {
    * Logs a start message.
    * @param message - The message of the start message.
    */
-  start(message = ''): void {
+  start(message: string = ''): void {
     // Logic to log a start message
     const desc = message === '' ? `Starting ${this.name}...` : message;
 
@@ -227,7 +240,7 @@ export default class LogTask {
    * Logs an info message.
    * @param message - The message of the info message.
    */
-  info(message = ''): void {
+  info(message: string = ''): void {
     // Logic to log an info message
     this.logStep('✨', 'INFO', message);
   }
@@ -236,7 +249,7 @@ export default class LogTask {
    * Logs a warning message.
    * @param message - The message of the warning message.
    */
-  warn(message = ''): void {
+  warn(message: string = ''): void {
     // Logic to log a warning message
     this.logStep('⚠️', 'WARN', message);
   }
@@ -246,7 +259,7 @@ export default class LogTask {
    * @param message - The message of the success message.
    * @param ingroup - Indicates whether the success message is in a group.
    */
-  success(message = '', ingroup = true): void {
+  success(message: string = '', ingroup: boolean = true): void {
     // Logic to log a success message
     const desc = message === '' ? `Completed ${this.name}.` : message;
     if (ingroup) {
@@ -263,7 +276,7 @@ export default class LogTask {
    * @param message - The message of the failure message.
    * @param ingroup - Indicates whether the failure message is in a group.
    */
-  fail(message = '', ingroup = true): void {
+  fail(message: string = '', ingroup: boolean = true): void {
     // Logic to log a failure message
     const desc = message === '' ? `Failed ${this.name}.` : message;
     if (ingroup) {
@@ -280,7 +293,7 @@ export default class LogTask {
    * Logs an error message.
    * @param message - The message of the error message.
    */
-  error(message = ''): void {
+  error(message: string = ''): void {
     // Logic to log an error message
     this.logStep('🔴', 'ERROR', message, LogGroup.IS_ERROR);
   }
@@ -289,7 +302,7 @@ export default class LogTask {
    * Logs a title message.
    * @param message - The message of the title message.
    */
-  title(message = ''): void {
+  title(message: string = ''): void {
     // Logic to log a title message
     this.logStep('📓', '#####', message, LogGroup.IS_TITLE);
   }

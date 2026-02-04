@@ -51,7 +51,16 @@ jobs:
           echo "$HOME/.local/bin" >> "${GITHUB_PATH}"
           echo "HOME=$HOME" >> "${GITHUB_ENV}"
 
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
+        with:
+          version: latest
+
       - run: npm install
+
+      - name: Biome check
+        run: biome check ./src/ ./__tests__/
+
       - run: npm run test
       - run: npm run coverage
       - name: "Report Coverage"

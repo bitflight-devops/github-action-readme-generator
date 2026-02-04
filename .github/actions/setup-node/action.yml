@@ -51,7 +51,7 @@ runs:
         echo "version=${NODE_VERSION}" | tee -a "$GITHUB_OUTPUT"
         echo "NODE_VERSION=${NODE_VERSION}" >> "$GITHUB_ENV"
 
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v6
       with:
         node-version: "${{ steps.node.outputs.version }}"
         cache: npm

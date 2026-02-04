@@ -63,6 +63,7 @@ jobs:
         with:
           repository: ${{ matrix.repo }}
           path: test-repo
+          fetch-tags: true
 
       - name: Backup original README
         working-directory: test-repo
@@ -74,7 +75,12 @@ jobs:
             echo "::warning::README not found at ${{ matrix.readme_path }}"
           fi
 
-      - name: Run action against test repository
+      # NOTE: We intentionally do NOT pass owner, repo, or version_override
+      # The action should auto-detect these from the target repository's:
+      # - .git/config (for owner/repo)
+      # - package.json or GitHub releases/tags (for version)
+      # If auto-detection fails, the test should FAIL to expose the bug
+      - name: Run action against test repository (testing auto-detection)
         uses: ./action-under-test
         with:
           action: test-repo/${{ matrix.action_path }}
@@ -117,7 +123,8 @@ jobs:
             CHECKS_FAILED=$((CHECKS_FAILED + 1))
           fi
 
-          if echo "$README_CONTENT" | grep -q "## "; then
+          # Check for any markdown header (H1, H2, H3, etc.) - title section generates H1
+          if echo "$README_CONTENT" | grep -qE "^#+ "; then
             echo "✓ Found markdown headers"
             CHECKS_PASSED=$((CHECKS_PASSED + 1))
           else
@@ -134,7 +141,104 @@ jobs:
           fi
 
           echo ""
-          echo "Section validation: $CHECKS_PASSED passed, $CHECKS_FAILED warnings"
+          echo "Section validation: $CHECKS_PASSED passed, $CHECKS_FAILED failed"
+
+          if [ "$CHECKS_FAILED" -gt 0 ]; then
+            echo "::error::Integration test failed: $CHECKS_FAILED validation checks did not pass"
+            exit 1
+          fi
+
+      - name: Validate auto-detected owner/repo/version
+        working-directory: test-repo
+        run: |
+          # Extract expected values from the matrix repo
+          EXPECTED_OWNER=$(echo "${{ matrix.repo }}" | cut -d'/' -f1)
+          EXPECTED_REPO=$(echo "${{ matrix.repo }}" | cut -d'/' -f2)
+
+          echo "Expected owner: $EXPECTED_OWNER"
+          echo "Expected repo: $EXPECTED_REPO"
+          echo ""
+
+          README_CONTENT=$(cat "${{ matrix.readme_path }}")
+
+          # Extract the usage line (e.g., "uses: owner/repo@version")
+          USAGE_LINE=$(echo "$README_CONTENT" | grep -E "uses:\s+\S+/\S+@" | head -1 || echo "")
+
+          if [ -z "$USAGE_LINE" ]; then
+            echo "::error::No 'uses: owner/repo@version' pattern found in README"
+            echo "README content around usage section:"
+            echo "$README_CONTENT" | grep -A5 -B5 "uses:" | head -20 || echo "(no uses: found)"
+            exit 1
+          fi
+
+          echo "Found usage line: $USAGE_LINE"
+
+          # Extract the owner/repo@version part
+          USES_VALUE=$(echo "$USAGE_LINE" | grep -oE "[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+" | head -1 || echo "")
+
+          if [ -z "$USES_VALUE" ]; then
+            echo "::error::Could not parse owner/repo@version from usage line"
+            exit 1
+          fi
+
+          echo "Parsed uses value: $USES_VALUE"
+
+          # Extract components
+          DETECTED_OWNER=$(echo "$USES_VALUE" | cut -d'/' -f1)
+          REPO_VERSION=$(echo "$USES_VALUE" | cut -d'/' -f2)
+          DETECTED_REPO=$(echo "$REPO_VERSION" | cut -d'@' -f1)
+          DETECTED_VERSION=$(echo "$REPO_VERSION" | cut -d'@' -f2)
+
+          echo ""
+          echo "Auto-detected values:"
+          echo "  Owner: $DETECTED_OWNER"
+          echo "  Repo: $DETECTED_REPO"
+          echo "  Version: $DETECTED_VERSION"
+          echo ""
+
+          # Validate owner
+          if [ "$DETECTED_OWNER" != "$EXPECTED_OWNER" ]; then
+            echo "::error::Owner mismatch! Expected '$EXPECTED_OWNER', got '$DETECTED_OWNER'"
+            echo "This indicates the auto-detection is reading from the wrong directory"
+            exit 1
+          fi
+          echo "✓ Owner is correct: $DETECTED_OWNER"
+
+          # Validate repo
+          if [ "$DETECTED_REPO" != "$EXPECTED_REPO" ]; then
+            echo "::error::Repo mismatch! Expected '$EXPECTED_REPO', got '$DETECTED_REPO'"
+            echo "This indicates the auto-detection is reading from the wrong directory"
+            exit 1
+          fi
+          echo "✓ Repo is correct: $DETECTED_REPO"
+
+          # Validate version is not invalid
+          INVALID_VERSIONS="v0.0.0 0.0.0 undefined null latest"
+          for INVALID in $INVALID_VERSIONS; do
+            if [ "$DETECTED_VERSION" = "$INVALID" ]; then
+              echo "::error::Invalid version detected: '$DETECTED_VERSION'"
+              echo "This indicates version auto-detection failed"
+              exit 1
+            fi
+          done
+
+          # Validate version is not empty
+          if [ -z "$DETECTED_VERSION" ]; then
+            echo "::error::Version is empty - auto-detection failed"
+            exit 1
+          fi
+
+          # Validate version format (should start with 'v' followed by a number, or be a semver)
+          if ! echo "$DETECTED_VERSION" | grep -qE "^v?[0-9]"; then
+            echo "::error::Version '$DETECTED_VERSION' does not look like a valid version"
+            echo "Expected format: v1.2.3 or 1.2.3"
+            exit 1
+          fi
+
+          echo "✓ Version appears valid: $DETECTED_VERSION"
+          echo ""
+          echo "✅ Auto-detection validation PASSED"
+          echo "   uses: $EXPECTED_OWNER/$EXPECTED_REPO@$DETECTED_VERSION"
 
       - name: Compare with original (if exists)
         if: always()
@@ -159,11 +263,11 @@ jobs:
               echo "Size difference: $DIFF bytes"
             fi
             
-            # Show diff summary (first 50 lines) - diff exits with 1 when files differ, so we use || true
+            # Show full diff - diff exits with 1 when files differ, so we use || true
             echo ""
-            echo "Diff summary (first 50 lines):"
+            echo "Diff between original and generated README:"
             if [ -f "README.backup.md" ] && [ -f "${{ matrix.readme_path }}" ]; then
-              diff -u README.backup.md "${{ matrix.readme_path }}" | head -50 || true
+              diff -u README.backup.md "${{ matrix.readme_path }}" || true
             else
               echo "::warning::Cannot compare - one or both files missing"
             fi

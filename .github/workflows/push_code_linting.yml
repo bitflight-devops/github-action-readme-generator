@@ -17,11 +17,12 @@ concurrency:
   group: ci-linting-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  eslint_annotation:
-    name: runner / eslint
+  biome_annotation:
+    name: runner / biome
     if: (!contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       issues: write
       pull-requests: write
       actions: write
@@ -30,9 +31,16 @@ jobs:
     env:
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-      GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
     steps:
       - uses: actions/checkout@v6.0.2
+
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
+        with:
+          version: latest
+
+      - name: Run Biome lint
+        run: biome lint ./src/ ./__tests__/
 
       - name: Install compatible Nodejs version
         id: setup-node
@@ -40,12 +48,14 @@ jobs:
 
       - name: Install Deps
         run: npm install
+
       - uses: xt0rted/markdownlint-problem-matcher@v3.0.0
       - run: npm run lint:markdown
         continue-on-error: true
-      - name: eslint
-        uses: reviewdog/action-eslint@v1.34.0
+
+      - name: Biome reviewdog
+        uses: mongolyy/reviewdog-action-biome@v1
         with:
-          reporter: github-pr-review # Change reporter.
-          eslint_flags: src/
+          reporter: github-pr-review
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_error: true

@@ -1,4 +1,4 @@
-import { ReadmeSection } from '../constants.js';
+import type { ReadmeSection } from '../constants.js';
 import { getCurrentVersionString } from '../helpers.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';

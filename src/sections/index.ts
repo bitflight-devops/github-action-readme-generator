@@ -6,7 +6,7 @@
  * @param {Inputs} inputs - The Inputs class instance.
  * @returns {Promise<void>} A promise that resolves once the section is updated.
  */
-import { ReadmeSection } from '../constants.js';
+import type { ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import updateBadges from './update-badges.js';
@@ -18,7 +18,7 @@ import updateOutputs from './update-outputs.js';
 import updateTitle from './update-title.js';
 import updateUsage from './update-usage.js';
 
-const log = new LogTask('updateSection');
+const log: LogTask = new LogTask('updateSection');
 
 export default async function updateSection(
   section: ReadmeSection,
@@ -33,28 +33,28 @@ export default async function updateSection(
   }
   switch (section) {
     case 'branding': {
-      return updateBranding(section, inputs);
+      return await updateBranding(section, inputs);
     }
     case 'badges': {
-      return updateBadges(section, inputs);
+      return await updateBadges(section, inputs);
     }
     case 'usage': {
-      return updateUsage(section, inputs);
+      return await updateUsage(section, inputs);
     }
     case 'title': {
-      return updateTitle(section, inputs);
+      return await updateTitle(section, inputs);
     }
     case 'description': {
-      return updateDescription(section, inputs);
+      return await updateDescription(section, inputs);
     }
     case 'inputs': {
-      return updateInputs(section, inputs);
+      return await updateInputs(section, inputs);
     }
     case 'outputs': {
-      return updateOutputs(section, inputs);
+      return await updateOutputs(section, inputs);
     }
     case 'contents': {
-      return updateContents(section, inputs);
+      return await updateContents(section, inputs);
     }
     default: {
       log.debug(`unknown section found <!-- start ${section} -->. No updates were made.`);

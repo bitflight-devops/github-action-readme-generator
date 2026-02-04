@@ -11,7 +11,7 @@ module.exports = {
   semi: true,
   arrowParens: 'always',
   singleQuote: true,
-  quoteProps: 'consistent',
+  quoteProps: 'as-needed',
 
   overrides: [
     {
@@ -25,7 +25,7 @@ module.exports = {
     {
       files: 'package*.json',
       options: {
-        printWidth: 1000,
+        printWidth: 320,
       },
     },
     {

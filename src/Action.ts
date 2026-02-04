@@ -44,12 +44,12 @@ type JavascriptAction = `Node${string}` | `node${string}`;
  * Defines the runs property for container actions.
  */
 type RunsContainer = {
-  'using': ContainerAction;
-  'image': string;
-  'args'?: string[];
+  using: ContainerAction;
+  image: string;
+  args?: string[];
   'pre-entrypoint'?: string;
   'post-entrypoint'?: string;
-  'entrypoint'?: string;
+  entrypoint?: string;
 };
 
 /**
@@ -57,30 +57,30 @@ type RunsContainer = {
  */
 type RunsJavascript = {
   /** The runner used to execute the action */
-  'using': JavascriptAction;
+  using: JavascriptAction;
 
   /** The entrypoint file for the action */
-  'main': string;
+  main: string;
 
-  'pre'?: string;
+  pre?: string;
   'pre-if'?: string;
 
   'post-if'?: string;
 
-  'post'?: string;
+  post?: string;
 };
 
 /**
  * Defines the steps property for composite actions.
  */
 type Steps = {
-  'shell'?: string;
-  'if'?: string;
-  'run'?: string;
-  'name'?: string;
-  'id'?: string;
+  shell?: string;
+  if?: string;
+  run?: string;
+  name?: string;
+  id?: string;
   'working-directory'?: string;
-  'env': { [key: string]: string };
+  env: { [key: string]: string };
 };
 
 /**
@@ -123,13 +123,20 @@ export type ActionYaml = {
  * Parses and represents metadata from action.yml.
  */
 export default class Action implements ActionYaml {
-  static validate(obj: any): obj is ActionType {
-    if ('name' in obj && 'description' in obj && 'runs' in obj && 'using' in obj.runs) {
-      return (
-        typeof obj.name === 'string' &&
-        typeof obj.description === 'string' &&
-        typeof obj.runs.using === 'string'
-      );
+  static validate(obj: unknown): obj is ActionType {
+    if (typeof obj !== 'object' || obj === null) {
+      return false;
+    }
+    const record = obj as Record<string, unknown>;
+    if ('name' in record && 'description' in record && 'runs' in record) {
+      const runs = record.runs as Record<string, unknown> | undefined;
+      if (runs && 'using' in runs) {
+        return (
+          typeof record.name === 'string' &&
+          typeof record.description === 'string' &&
+          typeof runs.using === 'string'
+        );
+      }
     }
     return false;
   }

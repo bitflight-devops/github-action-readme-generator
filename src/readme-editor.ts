@@ -90,7 +90,11 @@ export default class ReadmeEditor {
    * @param {string | string[]} providedContent - The content to update the section with.
    * @param {boolean} addNewlines - Whether to add newlines before and after the content.
    */
-  updateSection(name: string, providedContent: string | string[], addNewlines = true): void {
+  updateSection(
+    name: string,
+    providedContent: string | string[],
+    addNewlines: boolean = true,
+  ): void {
     const log = new LogTask(name);
     const content = (
       Array.isArray(providedContent) ? providedContent.join(EOL) : (providedContent ?? '')

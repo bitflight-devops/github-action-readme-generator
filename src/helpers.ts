@@ -2,13 +2,17 @@ import { execSync } from 'node:child_process';
 import { accessSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
-import type { Context } from '@actions/github/lib/context.js';
+// biome-ignore lint/style/useImportType: context is imported as a value to derive the type using typeof
+import { context } from '@actions/github';
 import type { PackageJson } from 'types-package-json';
 
 import type Inputs from './inputs.js';
 import LogTask from './logtask/index.js';
 import { unicodeWordMatch } from './unicode-word-match.js';
 import { type Nullable, notEmpty } from './util.js';
+
+// Type alias for Context from the exported context instance
+type Context = typeof context;
 /**
  * Returns the input value if it is not empty, otherwise returns undefined.
  * @param value - The input value to check.

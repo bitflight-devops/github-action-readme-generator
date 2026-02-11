@@ -1,5 +1,7 @@
-import { Context } from '@actions/github/lib/context.js';
+import { context as githubContext } from '@actions/github';
 import nconf from 'nconf';
+type Context = typeof githubContext;
+declare const Context: new () => Context;
 import Action, { type Input } from './Action.js';
 import { type ReadmeSection } from './constants.js';
 import LogTask from './logtask/index.js';

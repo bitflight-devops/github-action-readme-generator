@@ -1,3 +1,11 @@
+## [1.10.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.1...v1.10.2) (2026-02-11)
+
+
+### Bug Fixes
+
+* initial plan for @actions/github v9 compatibility ([808b3a3](https://github.com/bitflight-devops/github-action-readme-generator/commit/808b3a370ecb1da8a1146384eb7b34630bac7374))
+* update @actions/github imports for v9.0.0 compatibility ([1e71bf4](https://github.com/bitflight-devops/github-action-readme-generator/commit/1e71bf4153366109c0962bb44c289542031fe30c))
+
 ## [1.10.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.0...v1.10.1) (2026-02-04)
 
 

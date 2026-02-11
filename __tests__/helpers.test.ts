@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { Context } from '@actions/github/lib/context.js';
+import { context as githubContext } from '@actions/github';
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
 
 import {
@@ -26,6 +26,10 @@ import {
   gitConfigTestString,
   payloadTestString,
 } from './action.constants.js';
+
+// Get Context type and constructor from the exported context instance
+type Context = typeof githubContext;
+const Context = githubContext.constructor as new () => Context;
 
 // Mocking required objects and functions
 vi.mock('node:fs', async () => {

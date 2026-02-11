@@ -1,7 +1,8 @@
-import type { Context } from '@actions/github/lib/context.js';
+import { context } from '@actions/github';
 import type Inputs from './inputs.js';
 import LogTask from './logtask/index.js';
 import { type Nullable } from './util.js';
+type Context = typeof context;
 /**
  * Returns the input value if it is not empty, otherwise returns undefined.
  * @param value - The input value to check.
@@ -89,3 +90,4 @@ export declare function getCurrentVersionString(inputs: Inputs): string;
 export declare function indexOfRegex(str: string, providedRegex: RegExp): number;
 export declare function lastIndexOfRegex(str: string, providedRegex: RegExp): number;
 export declare function isObject(value: unknown): value is object;
+export {};

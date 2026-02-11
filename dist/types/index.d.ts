@@ -448,8 +448,10 @@ declare module "src/readme-editor" {
     }
 }
 declare module "src/inputs" {
-    import { Context } from '@actions/github/lib/context.js';
+    import { context as githubContext } from '@actions/github';
     import nconf from 'nconf';
+    type Context = typeof githubContext;
+    const Context: new () => Context;
     import Action, { type Input } from "src/Action";
     import { type ReadmeSection } from "src/constants";
     import LogTask from "src/logtask/index";
@@ -603,10 +605,11 @@ declare module "src/unicode-word-match" {
     export const unicodeWordMatch: RegExp;
 }
 declare module "src/helpers" {
-    import type { Context } from '@actions/github/lib/context.js';
+    import { context } from '@actions/github';
     import type Inputs from "src/inputs";
     import LogTask from "src/logtask/index";
     import { type Nullable } from "src/util";
+    type Context = typeof context;
     /**
      * Returns the input value if it is not empty, otherwise returns undefined.
      * @param value - The input value to check.

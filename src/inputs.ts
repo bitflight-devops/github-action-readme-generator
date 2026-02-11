@@ -8,9 +8,13 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import * as core from '@actions/core';
-import { Context } from '@actions/github/lib/context.js';
+import { context as githubContext } from '@actions/github';
 import nconf from 'nconf';
 import YAML from 'yaml';
+
+// Get Context type and constructor from the exported context instance
+type Context = typeof githubContext;
+const Context = githubContext.constructor as new () => Context;
 
 import Action, { type Input } from './Action.js';
 import { ConfigKeys, configFileName, README_SECTIONS, type ReadmeSection } from './constants.js';

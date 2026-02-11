@@ -7,9 +7,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as core from '@actions/core';
-import { Context } from '@actions/github/lib/context.js';
+import { context as githubContext } from '@actions/github';
 import nconf from 'nconf';
 import YAML from 'yaml';
+const Context = githubContext.constructor;
 import Action from './Action.js';
 import { ConfigKeys, configFileName, README_SECTIONS } from './constants.js';
 import { repositoryFinder } from './helpers.js';

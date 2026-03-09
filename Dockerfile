@@ -1,5 +1,5 @@
 # Use an official Node.js runtime as a parent image
-FROM node:25.7.0
+FROM node:25.8.0
 
 RUN \
     --mount=type=cache,target=/root/.npm \

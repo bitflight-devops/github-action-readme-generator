@@ -387,6 +387,29 @@ function getVersionFromPackageJson(actionDir, log) {
     }
     return undefined;
 }
+/**
+ * Detects the version string from the configured version source.
+ * Returns undefined if detection fails for the given source.
+ */
+function detectVersionFromSource(versionSource, actionDir, log) {
+    switch (versionSource) {
+        case 'git-branch':
+            return getVersionFromGitBranch(actionDir, log);
+        case 'git-sha':
+            return getVersionFromGitSha(actionDir, log);
+        case 'package-json':
+            return getVersionFromPackageJson(actionDir, log);
+        default:
+            // For git-tag (default), use the legacy fallback behavior
+            return (getVersionFromGitTag(actionDir, log) ??
+                getVersionFromPackageJson(actionDir, log) ??
+                (() => {
+                    const envVersion = process.env.npm_package_version;
+                    log.debug(`Falling back to env:npm_package_version: ${envVersion ?? 'not found'}`);
+                    return envVersion;
+                })());
+    }
+}
 export function getCurrentVersionString(inputs) {
     let versionString = '';
     const log = new LogTask('getCurrentVersionString');
@@ -402,42 +425,13 @@ export function getCurrentVersionString(inputs) {
         let detectedVersion;
         // If override is set and we're in explicit mode, use it directly
         if (versionSource === 'explicit') {
-            if (override && override.length > 0) {
-                detectedVersion = override;
-                log.debug(`using explicit version override: ${detectedVersion}`);
-            }
-            else {
-                log.debug('explicit mode but no version_override set, falling back to 0.0.0');
-                detectedVersion = '0.0.0';
-            }
+            detectedVersion = override?.length > 0 ? override : '0.0.0';
+            log.debug(`explicit mode: using ${detectedVersion}`);
         }
         else {
-            // Get version based on selected source
-            switch (versionSource) {
-                case 'git-branch':
-                    detectedVersion = getVersionFromGitBranch(actionDir, log);
-                    break;
-                case 'git-sha':
-                    detectedVersion = getVersionFromGitSha(actionDir, log);
-                    break;
-                case 'package-json':
-                    detectedVersion = getVersionFromPackageJson(actionDir, log);
-                    break;
-                case 'git-tag':
-                default:
-                    // For git-tag (default), use the legacy fallback behavior
-                    detectedVersion = getVersionFromGitTag(actionDir, log);
-                    if (!detectedVersion) {
-                        detectedVersion = getVersionFromPackageJson(actionDir, log);
-                    }
-                    if (!detectedVersion) {
-                        detectedVersion = process.env.npm_package_version;
-                        log.debug(`Falling back to env:npm_package_version: ${detectedVersion ?? 'not found'}`);
-                    }
-                    break;
-            }
+            detectedVersion = detectVersionFromSource(versionSource, actionDir, log);
             // Override takes precedence if set (except for explicit mode which is handled above)
-            if (override && override.length > 0) {
+            if (override?.length > 0) {
                 detectedVersion = override;
                 log.debug(`using version override: ${detectedVersion}`);
             }

@@ -6,7 +6,7 @@ updates:
     schedule:
       interval: "monthly"
     assignees:
-      - jamie-bitflight
+      - Jamie-BitFlight
     labels:
       - "github-actions"
       - "dependencies"
@@ -15,7 +15,7 @@ updates:
     schedule:
       interval: "weekly"
     assignees:
-      - jamie-bitflight
+      - Jamie-BitFlight
     labels:
       - "docker"
       - "dependencies"
@@ -24,7 +24,7 @@ updates:
     schedule:
       interval: "weekly"
     assignees:
-      - jamie-bitflight
+      - Jamie-BitFlight
     labels:
       - "npm"
       - "dependencies"

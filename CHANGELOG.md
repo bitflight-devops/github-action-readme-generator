@@ -1,3 +1,10 @@
+## [1.10.4](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.3...v1.10.4) (2026-04-03)
+
+
+### Bug Fixes
+
+* resolve vitest version mismatch causing npm ci failures in integration tests ([1ce0b7c](https://github.com/bitflight-devops/github-action-readme-generator/commit/1ce0b7cfc4f444e61d7a0f2310f2da4ccfae13b7))
+
 ## [1.10.3](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.2...v1.10.3) (2026-02-13)
 
 

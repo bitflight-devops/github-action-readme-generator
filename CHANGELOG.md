@@ -1,3 +1,10 @@
+## [1.10.5](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.4...v1.10.5) (2026-04-29)
+
+
+### Bug Fixes
+
+* correct assignee username capitalization in dependabot.yml ([3724639](https://github.com/bitflight-devops/github-action-readme-generator/commit/37246393442f6372e5ee47baef728ca19a15fb39))
+
 ## [1.10.4](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.3...v1.10.4) (2026-04-03)
 
 

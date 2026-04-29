@@ -1,3 +1,11 @@
+## [1.10.6](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.5...v1.10.6) (2026-04-29)
+
+
+### Bug Fixes
+
+* bundle prettier into dist by removing it from esbuild external list ([8021b21](https://github.com/bitflight-devops/github-action-readme-generator/commit/8021b21fa0cd853ac36747f1d3de19581d890ccb))
+* remove unused stdout variable to fix biome lint error ([576a50c](https://github.com/bitflight-devops/github-action-readme-generator/commit/576a50c2676c50d816c9cc03b449aca24e859c64))
+
 ## [1.10.5](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.4...v1.10.5) (2026-04-29)
 
 

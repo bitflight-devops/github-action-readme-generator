@@ -18,7 +18,7 @@ await esbuild
     format: 'esm',
     target: 'node20',
     metafile: true,
-    external: ['prettier'],
+    external: [],
     banner: {
       js: ESM_REQUIRE_SHIM,
     },

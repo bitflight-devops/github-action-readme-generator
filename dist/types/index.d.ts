@@ -700,6 +700,7 @@ declare module "src/helpers" {
 }
 declare module "__tests__/helpers.test" { }
 declare module "__tests__/inputs.test" { }
+declare module "__tests__/integration-bundled-binary.test" { }
 declare module "src/sections/update-badges" {
     /**
      * This TypeScript code imports necessary modules and defines a function named 'updateBadges' which takes a sectionToken (ReadmeSection) and an instance of the 'Inputs' class as its parameters.

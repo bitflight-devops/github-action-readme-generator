@@ -29,10 +29,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 describe('Integration Test - Bundled Binary Self-Containment', () => {
   let tempDir: string;
-  const binaryPath = path.resolve(
-    import.meta.dirname,
-    '../dist/bin/index.js',
-  );
+  const binaryPath = path.resolve(import.meta.dirname, '../dist/bin/index.js');
 
   beforeEach(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gha-bundled-binary-test-'));
@@ -101,12 +98,11 @@ runs:
     expect(fs.existsSync(path.join(tempDir, 'node_modules'))).toBe(false);
 
     // Run the binary from tempDir — no node_modules anywhere in the hierarchy above tempDir
-    let stdout = '';
     let stderr = '';
     let exitCode = 0;
 
     try {
-      stdout = execSync(
+      execSync(
         `node "${isolatedBinaryPath}" --owner testowner --repo testrepo` +
           ` --paths:action "${path.join(tempDir, 'action.yml')}"` +
           ` --paths:readme "${readmePath}"`,
@@ -125,7 +121,6 @@ runs:
       );
     } catch (error: unknown) {
       const execError = error as { stdout?: string; stderr?: string; status?: number };
-      stdout = execError.stdout ?? '';
       stderr = execError.stderr ?? '';
       exitCode = execError.status ?? 1;
     }

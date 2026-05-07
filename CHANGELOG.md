@@ -1,3 +1,10 @@
+## [1.10.7](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.6...v1.10.7) (2026-05-07)
+
+
+### Bug Fixes
+
+* **deps-dev:** update esbuild-node-externals for esbuild 0.28 ([3546201](https://github.com/bitflight-devops/github-action-readme-generator/commit/3546201f063474015ada6928d267c59b6dfcecbc))
+
 ## [1.10.6](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.5...v1.10.6) (2026-04-29)
 
 

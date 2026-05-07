@@ -174,7 +174,7 @@
     "cz-conventional-changelog": "^3.3.0",
     "dotenv": "^17.2.4",
     "esbuild": "^0.28.0",
-    "esbuild-node-externals": "^1.20.1",
+    "esbuild-node-externals": "^1.22.0",
     "husky": "^9.1.7",
     "is-ci": "^4.1.0",
     "lint-staged": "^16.2.7",

@@ -177,7 +177,7 @@
     "esbuild-node-externals": "^1.22.0",
     "husky": "^9.1.7",
     "is-ci": "^4.1.0",
-    "lint-staged": "^16.2.7",
+    "lint-staged": "^17.0.4",
     "markdownlint-cli": "^0.48.0",
     "rimraf": "^6.1.2",
     "run-script-os": "^1.1.6",

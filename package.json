@@ -184,7 +184,7 @@
     "semantic-release": "^25.0.2",
     "ts-node": "^10.9.1",
     "types-package-json": "^2.0.39",
-    "typescript": "^5.7.3",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.2"
   },
   "engines": {

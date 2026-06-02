@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Checkout this action (PR code)
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
         with:
           path: action-under-test
 
@@ -59,7 +59,7 @@ jobs:
           npm run build
 
       - name: Checkout target repository (${{ matrix.repo }})
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
         with:
           repository: ${{ matrix.repo }}
           path: test-repo

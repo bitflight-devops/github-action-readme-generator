@@ -160,7 +160,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.15",
     "@commitlint/cli": "^21.0.1",
-    "@commitlint/config-conventional": "^20.3.1",
+    "@commitlint/config-conventional": "^21.0.2",
     "@commitlint/prompt": "^21.0.1",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/exec": "^7.1.0",

@@ -95,9 +95,9 @@
     // "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
     "esModuleInterop": true,
     "module": "NodeNext",
-    "moduleResolution": "NodeNext"
+    "moduleResolution": "NodeNext",
+    "ignoreDeprecations": "6.0"
   },
-  "ignoreDeprecations": "5.0",
   "include": ["**/*.ts", "**/*.mts"],
   "exclude": [
     "./bin",

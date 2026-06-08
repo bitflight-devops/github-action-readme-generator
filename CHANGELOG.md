@@ -1,3 +1,10 @@
+## [1.10.8](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.7...v1.10.8) (2026-06-08)
+
+
+### Bug Fixes
+
+* **tsconfig:** make TS6 declaration build compatible ([4dc9755](https://github.com/bitflight-devops/github-action-readme-generator/commit/4dc97555fa4f7ac3f12364434a434484d881b195))
+
 ## [1.10.7](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.6...v1.10.7) (2026-05-07)
 
 

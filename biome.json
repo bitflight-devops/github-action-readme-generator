@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.13/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -54,13 +54,13 @@
       "!__tests__/payload.json"
     ],
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "a11y": {
-        "recommended": true,
+        "preset": "recommended",
         "noNoninteractiveElementInteractions": "error"
       },
       "complexity": {
-        "recommended": true,
+        "preset": "recommended",
         "noForEach": "warn",
         "useLiteralKeys": "warn",
         "noExcessiveCognitiveComplexity": {
@@ -75,24 +75,21 @@
         "noUselessStringConcat": "error"
       },
       "correctness": {
-        "recommended": true,
+        "preset": "recommended",
         "noUnusedImports": "error",
         "noUnusedVariables": "error",
         "noUnusedFunctionParameters": "warn",
         "noUnusedPrivateClassMembers": "error",
         "useImportExtensions": "off",
-        "noUndeclaredDependencies": "warn"
+        "noUndeclaredDependencies": "warn",
+        "noDuplicateAttributes": "error"
       },
       "nursery": {
-        "recommended": true,
-        "noDuplicateAttributes": "error",
-        "noProto": "error",
-        "noScriptUrl": "error",
-        "useExplicitType": "error",
-        "useSpread": "error"
+        "preset": "recommended",
+        "useExplicitType": "error"
       },
       "performance": {
-        "recommended": true,
+        "preset": "recommended",
         "noAccumulatingSpread": "error",
         "noBarrelFile": "warn",
         "noDelete": "warn",
@@ -100,12 +97,13 @@
         "noReExportAll": "warn"
       },
       "security": {
-        "recommended": true,
+        "preset": "recommended",
         "noDangerouslySetInnerHtml": "error",
-        "noDangerouslySetInnerHtmlWithChildren": "error"
+        "noDangerouslySetInnerHtmlWithChildren": "error",
+        "noScriptUrl": "error"
       },
       "style": {
-        "recommended": true,
+        "preset": "recommended",
         "noNonNullAssertion": "warn",
         "noParameterAssign": "warn",
         "useDefaultParameterLast": "warn",
@@ -170,10 +168,11 @@
         "useSelfClosingElements": "error",
         "useShorthandAssign": "error",
         "useThrowNewError": "error",
-        "useThrowOnlyError": "error"
+        "useThrowOnlyError": "error",
+        "useSpreadOverApply": "error"
       },
       "suspicious": {
-        "recommended": true,
+        "preset": "recommended",
         "noAssignInExpressions": "warn",
         "noConsole": "warn",
         "noExplicitAny": "warn",
@@ -187,7 +186,8 @@
         "noUnsafeDeclarationMerging": "error",
         "useAwait": "error",
         "useErrorMessage": "error",
-        "useNumberToFixedDigitsArgument": "error"
+        "useNumberToFixedDigitsArgument": "error",
+        "noProto": "error"
       }
     }
   },

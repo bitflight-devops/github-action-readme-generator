@@ -1,3 +1,10 @@
+## [1.10.9](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.8...v1.10.9) (2026-07-05)
+
+
+### Bug Fixes
+
+* migrate biome.json config to schema 2.5.1 ([#592](https://github.com/bitflight-devops/github-action-readme-generator/issues/592)) ([9443437](https://github.com/bitflight-devops/github-action-readme-generator/commit/9443437b5bb54bd74af7a75b396427b6ea2a89fe))
+
 ## [1.10.8](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.7...v1.10.8) (2026-06-08)
 
 

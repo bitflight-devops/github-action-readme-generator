@@ -167,7 +167,7 @@
     "@semantic-release/git": "^10.0.1",
     "@tsconfig/node20": "^20.1.2",
     "@types/nconf": "^0.10.5",
-    "@types/node": "^25.0.9",
+    "@types/node": "^26.1.1",
     "@vitest/coverage-v8": "^4.1.2",
     "commitizen": "^4.3.1",
     "conventional-commits": "^1.6.0",

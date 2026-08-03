@@ -48,7 +48,7 @@ jobs:
       - name: Setup Node.js for building action
         uses: actions/setup-node@v7.0.0
         with:
-          node-version: "20.x"
+          node-version: "24.x"
           cache: "npm"
           cache-dependency-path: action-under-test/package-lock.json
 

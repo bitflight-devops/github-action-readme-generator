@@ -39,9 +39,11 @@ runtime behavior of the generator changes.
 | Node requirement | Vite 7+/Vite+ requires **Node 20.19+ or 22.12+**. TypeScript 7 requires Node 20+. | Vite release notes, TS7 docs |
 
 **Consequence:** everything the user asked for (TS7, Vite+, oxlint, oxfmt)
-is real, shipped (beta/GA, not vaporware), and fits this project's
-Node-20-strict constraint — provided the floor moves from `>=20.11.0` to
-`>=20.19.0`.
+is real, shipped (beta/GA, not vaporware). It does **not** fit this
+project's current "strict Node 20.x" constraint, though — Node 20 is
+itself end-of-life as of 2026-04-30 (see §5, revised). The Node floor
+needs to move to Node 24 (Active LTS), not just far enough to clear
+Vite+'s stated 20.19+ minimum.
 
 ## 3. Current-state audit (what's actually here today)
 
@@ -154,21 +156,69 @@ Under active decision, not assumed either way:
   Vitest rather than replacing it, so `__tests__/**` and
   `vitest.config.ts`'s `test` block move into `vite.config.ts` verbatim.
 
-## 5. Node/engine version bump
+## 5. Node/engine version — revised: Node 20 is EOL, target Node 24, not 20.19+
 
-Vite+ requires Node **20.19+ or 22.12+**. Current `engines.node` is
-`>=20.11.0 <26.0.0` and `volta.node` is pinned to `20.9.0` (already
-inconsistent with `engines` today — `20.9.0 < 20.11.0`). Action:
+Originally this section just covered Vite+'s minimum (Node 20.19+/22.12+).
+That undersold the problem. Checked the actual Node.js LTS schedule as of
+today (2026-08-03):
 
-- Bump `engines.node` to `>=20.19.0 <26.0.0`.
-- Bump `volta.node` to `20.19.0` (or the latest 20.x LTS patch at
-  execution time) — stays inside the "strict Node 20.x" rule in
-  `.github/copilot-instructions.md`, so that document's constraint is
-  still honored; only its *tooling* sections (ESLint/Prettier references)
-  need updating to describe Oxlint/Oxfmt/Vite+/TS7 instead.
-- CI `test.yml` matrix currently pins `"20.0.0"` as one of its three
-  versions — that value now fails the new floor and must become
-  `"20.19.0"`.
+| Line | Status (2026-08-03) | EOL |
+|---|---|---|
+| Node 20 | **End-of-life** — no longer receives security patches | **2026-04-30 (already passed)** |
+| Node 22 | Maintenance LTS | 2027-04-30 |
+| Node 24 | **Active LTS** | 2028-04-30 |
+| Node 26 | Current; becomes Active LTS | 2026-10-28 (becomes LTS) |
+
+`.github/copilot-instructions.md`'s "STRICT Node 20.x" rule and this
+repo's `engines.node` (`>=20.11.0 <26.0.0`)/`volta.node` (`20.9.0`)/
+`.node-version` (`20.x`) are all pinned to an already-EOL line. That's a
+correctness problem independent of whether TS7/Vite+/Oxlint/Oxfmt happen
+at all — it should be treated as its own fix, not bundled as a footnote
+of this conversion.
+
+**More urgent than our own dev tooling: `action.yml`'s `runs: using:
+"node20"` is on a hard deprecation clock set by GitHub, not by us.**
+GitHub started defaulting hosted runners to Node 24 for JavaScript
+actions in 2026, and is removing Node 20 support from hosted runners
+entirely later in fall 2026 — after that, any action still declaring
+`using: "node20"` stops working outright, regardless of anything in this
+plan. This needs `using: "node24"` before that removal date, full stop.
+
+**Evidence already in this repo pointing the same direction, found by
+reading the workflow files, not assumed:** `test.yml`'s CI matrix already
+includes `"24.x"` as one of its three tested Node versions, and
+`deploy.yml` already has a dedicated `actions/setup-node@v7` step pinned
+to `"24.x"` specifically to run `semantic-release`. Node 24 is already
+exercised elsewhere in this repo's own CI — bumping the dev/build floor
+to match isn't introducing an untested version.
+
+Revised recommendation: target **Node 24 (Active LTS, EOL 2028-04-30)**
+as the floor, not the Vite+ minimum of 20.19+. Concrete changes:
+
+- `action.yml`: `runs.using` → `"node24"`. This is independent of the
+  TS7/Vite+/Oxlint/Oxfmt cut-over and time-sensitive — recommend doing it
+  as its own immediate PR rather than waiting for this plan's Phase 4,
+  since GitHub's Node-20-runner removal date doesn't wait on us finishing
+  a tooling migration.
+- `package.json`: `engines.node` → `>=24.0.0` (upper bound needs a
+  decision — the current `<26.0.0` cap would exclude Node 26 once it
+  becomes Active LTS on 2026-10-28; whether to cap at all, and at what,
+  isn't something I've verified against Vite+/TS7's tested range, so
+  flagging rather than picking a number).
+- `.node-version` → `24.x` (or a specific 24.x LTS patch), `volta.node`
+  → matching pin. The `.github/actions/setup-node` composite action reads
+  `.node-version` (and falls back to `engines.node` via
+  `scripts/latest_valid_node_version.sh`) to resolve what version to
+  install, so updating these two files is what actually drives CI, not
+  just documentation.
+- `test.yml` CI matrix: drop the two Node-20 entries (`"20.0.0"`,
+  `"20.17.0"`), replace with `24.x` (already present) and, if broader
+  coverage is wanted, `22.x` (current Maintenance LTS) — not `20.x` in
+  any form.
+- `.github/copilot-instructions.md` / `CLAUDE.md`: replace "STRICT Node
+  20.x" with the new floor. This is a factual correction (Node 20 is
+  EOL), not a style preference, so it should happen regardless of how
+  the rest of the tooling conversion is sequenced.
 
 ## 6. `tsconfig.json` changes for TS7
 
@@ -368,11 +418,12 @@ files, rewrite `package.json` scripts to `vp` commands, rewrite
 spike having already proven the bundled binary stays self-contained.
 
 **Phase 4 — cleanup**
-Bump `engines`/`volta` Node floor (§5), update
-`.github/copilot-instructions.md` and `CLAUDE.md` to describe the new
-toolchain instead of the stale ESLint/Prettier narrative, delete this
+Update `.github/copilot-instructions.md` and `CLAUDE.md` to describe the
+new toolchain instead of the stale ESLint/Prettier narrative, delete this
 plan doc's TODOs once landed or fold its "current state" section into
-project docs as history.
+project docs as history. (The Node 20 → 24 floor bump and `action.yml`'s
+`runs.using` fix, per §5, are recommended as their own immediate PR
+*ahead of* this phase, not bundled into it — see §5.)
 
 Each phase = one PR, green CI required before the next phase starts.
 `integration-test.yml` is the final gate every phase must keep passing
@@ -389,7 +440,7 @@ broken actual behavior.
 | Oxlint's default rules differ from Biome's custom thresholds (either direction — some things Biome flagged, Oxlint won't, and vice versa) | Accepted by design (§8.3) — the goal is Oxlint's own findings against this codebase, not Biome parity; Phase 2 triages whatever Oxlint actually reports rather than pre-tuning config to match the old bar |
 | Replacing runtime `prettier` with `oxfmt` silently changes generated `README.md`/YAML output for every consumer of this action | §8.0 verification (real-file diff, not just unit-test mocks) happens in the Phase 0 spike, before Phase 2 touches `src/prettier.ts`; if parity doesn't hold, keep `prettier` rather than ship a regression |
 | `vp` toolchain still "beta" — API/CLI surface can change under us | Pin `vite-plus` (and its bundled Oxlint/Oxfmt/tsdown versions) to exact versions in `package.json`, not ranges, until it reaches stable/1.0 |
-| Node floor bump to 20.19+ breaks some consumer pinned to older 20.x | Called out explicitly in the PR description / changelog as a `feat!`/breaking change per this repo's conventional-commits rules |
+| Node floor bump to 24 breaks some consumer still pinned to Node 20 | Node 20 is already EOL (2026-04-30) and GitHub is removing it from Actions runners entirely in fall 2026, so staying on 20 isn't a neutral fallback to protect — the bump is called out explicitly in the PR description / changelog as a `feat!`/breaking change per this repo's conventional-commits rules, but isn't optional to defer indefinitely |
 | `semantic-release` / `deploy.yml`'s `git add -f dist` step assumes today's `dist/` layout | Verify `dist/bin`, `dist/mjs`, `dist/types` paths match after `vp pack` (no `dist/cjs` — dropped per §8.1), update the force-add + `files` array in `package.json` if paths shift |
 | Dropping the `require`/`main` export is a breaking change for any unseen `require()` consumer of this package as a library (vs. as an Action/CLI) | Called out explicitly as `feat!`/`fix!` in the PR description and changelog per this repo's conventional-commits rules, same as the Node-floor bump |
 

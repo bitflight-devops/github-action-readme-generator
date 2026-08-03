@@ -119,7 +119,7 @@ Pre-commit runs: `lint-staged` (format/check staged files) → `npm run build` �
 
 ## CI Validation
 
-`test.yml` and `push_code_linting.yml` both pin `biomejs/setup-biome@v2` to `version: 2.5.3`, matching `package.json`'s `@biomejs/biome` devDependency — don't let these drift apart again; that mismatch is what this file's Stack/rule sections were doing before this pass.
+`test.yml` and `push_code_linting.yml` both pin `biomejs/setup-biome@v2` to `version: 2.5.1`, which does not match `package.json`'s `@biomejs/biome` devDependency (`2.5.3`). This is a real, known mismatch — deliberately left unreconciled, since Biome itself is being fully removed as part of the pending TypeScript 7 / Vite+ / Oxlint / Oxfmt conversion. Don't spend effort fixing version drift on a tool that's about to be deleted; this whole file gets replaced when that conversion lands.
 
 ## Common Issues and Solutions
 

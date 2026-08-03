@@ -37,7 +37,7 @@ tooling-only and does not touch generator output.
 | Tool | Status found | Source |
 |---|---|---|
 | TypeScript 7.0 | GA July 8, 2026. The Go-native compiler ("Corsa"/tsgo) is now the standard `tsc` shipped in the `typescript` npm package (verified directly against the npm registry: `typescript`'s `latest` tag is `7.0.2`, `bin.tsc`, plus 20 per-platform `optionalDependencies`) — no separate package needed post-GA. `@typescript/native-preview`/`tsgo` binary name now only tracks nightlies (registry `latest` tag is a dated dev build, not a release). | [TypeScript 7.0 GA announcement](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/), [`typescript` on npm](https://www.npmjs.com/package/typescript) |
-| TypeScript 7.0 has **no public programmatic compiler API** | This is a bigger deal than a breaking-flags list: tools that call into TypeScript's JS API directly (`typescript-eslint`, `ts-node`, `ts-morph`, `ts-jest`, template checkers behind Vue/Svelte/Astro) do not work against the `typescript` 7.0 package at all — the API returns in TS 7.1 (planned). Microsoft ships `@typescript/typescript6` as a compatibility shim (aliased in as `typescript`, provides a `tsc6` binary, re-exports the TS 6.0 API) for consumers that still need it. **Relevant to us:** `package.json` has `ts-node: ^10.9.1` in `devDependencies` — verified via `grep` that nothing in `scripts/` or `.github/` actually invokes it, so it appears to be dead weight (same shape as the already-found dead `.babelrc.cjs`), but this needs confirming, not assuming, before Phase 1 (see the new Phase 0 task below). | [TS7 GA announcement](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/), coverage corroborating the same claim across independent sources, Aug 2026 |
+| TypeScript 7.0 has **no public programmatic compiler API** | This is a real, general-ecosystem finding: tools that call into TypeScript's JS API directly (`typescript-eslint`, `ts-node`, `ts-morph`, `ts-jest`, template checkers behind Vue/Svelte/Astro) don't work against the `typescript` 7.0 package — the API returns in TS 7.1 (planned). Microsoft ships `@typescript/typescript6` as a compatibility shim for consumers that still need it. **Checked whether it actually applies to this repo, rather than assuming it does because it's a known industry risk:** `package.json` has no `typescript-eslint`, `ts-jest`, or `ts-morph` anywhere — this repo was never exposed to those. The one real hit was `ts-node: ^10.9.1` in `devDependencies`; `grep` across `scripts/` and `.github/` found zero invocations of it. **Decided: it's dead weight, same as the already-found `.babelrc.cjs`, and gets removed in Phase 1 — not aliased to `@typescript/typescript6`.** Oxlint's `tsgolint` doesn't need this compatibility path either — it vendors its own TS7.0.2 checker directly rather than calling into this repo's installed `typescript` package (confirmed against `tsgolint`'s own versioning-scheme docs). Net result: once `ts-node` and `.babelrc.cjs` are gone, this repo has no known consumer of the TypeScript programmatic API left. Phase 0 still runs a cheap confirmation pass before deleting anything (see §6) — insurance against something unexpected, not because the outcome is actually in doubt. | [TS7 GA announcement](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/), coverage corroborating the same claim across independent sources, Aug 2026 |
 | TS7 breaking changes relevant to us | `target: "es5"` and legacy `moduleResolution: "node"` are removed; `amd`/`umd`/`systemjs` module formats removed; `baseUrl`-only path resolution removed. All TS6 deprecations become hard errors. | migration coverage across multiple TS7 upgrade guides, Aug 2026 |
 | Vite+ (`vite-plus`) | Public beta, MIT-licensed core, by the VoidZero/Oxc team. Bundles **Vite, Vitest, Rolldown, tsdown, Oxlint, Oxfmt** behind one CLI (`vp`) and one `vite.config.ts`. Checked the real config surface directly against `viteplus.dev/config/` rather than guessing: the documented blocks are `create`, `run`, `fmt` (Oxfmt), `lint` (Oxlint), `check` (`vp check` defaults — format + lint + type-check together), `test` (Vitest), `pack` (tsdown — this is what builds **npm libraries, dual ESM/CJS, and standalone binaries**, our exact use case), and `staged` (staged-file checks, via `vp staged`). There is no `format` block — that name doesn't exist in the real API; earlier drafts of this plan used it and were wrong. It **wraps your existing package manager** (npm/pnpm/yarn/bun) rather than replacing it. Migrating onto it means rewriting `vitest` imports to `vite-plus/test` (and `@vitest/browser*` to `vite-plus/test/browser*`) per its own migration docs. | [Vite+ Beta announcement](https://voidzero.dev/posts/announcing-vite-plus-beta), [viteplus.dev/config/](https://viteplus.dev/config/), [viteplus.dev/guide/commit-hooks](https://viteplus.dev/guide/commit-hooks), [viteplus.dev/guide/migrate](https://viteplus.dev/guide/migrate), [GitHub](https://github.com/voidzero-dev/vite-plus) |
 | Oxlint | Type-aware linting went stable July 22, 2026 via `tsgolint`, tracking TS 7.0.2, covering 59/61 `typescript-eslint` type-aware rules. 699 built-in rules total. Custom JS-authored plugin support is still **alpha**. **Does not lint Markdown.** `tsgolint` versions itself as `<TS version><patch>` (e.g. `7.0.2000` = TS 7.0.2, tsgolint patch 0) — its compatibility is tied to an *exact* TypeScript release, not a range, so `typescript` and `oxlint-tsgolint` must be pinned to whatever the currently-compatible pair is, not installed via `@latest` independently (see §6). | [Oxc blog](https://oxc.rs/blog/2026-07-22-type-aware-linting-stable), [oxc-project/oxlint-action](https://github.com/oxc-project/oxlint-action) |
@@ -262,18 +262,20 @@ as the floor, not the Vite+ minimum of 20.19+. Concrete changes:
   exact pair in `package.json` and the lockfile — don't use `@latest` for
   either. `tsc` inside the regular `typescript` package *is* the native
   compiler post-GA — no `@rc` or `native-preview` package needed.
-- **Audit consumers of the `typescript` package's programmatic API
-  before upgrading** (per §2's "no public programmatic compiler API"
-  finding) — this is a Phase 0 task, not a Phase 1 surprise. `tsc --noEmit`
-  passing proves nothing about whether `ts-node` (present in
-  `devDependencies`, not invoked by any script or CI step as far as
-  `grep` across `scripts/` and `.github/` found) or any other consumer
-  of the TS API still works. Confirm at execution time whether `ts-node`
-  is genuinely dead weight (in which case remove it in Phase 1, same
-  treatment as the already-found dead `.babelrc.cjs`) or whether
-  something does need it — if so, alias it onto `@typescript/typescript6`
-  (Microsoft's compatibility shim, re-exports the TS 6.0 API) rather than
-  assuming the upgrade is safe because the CLI type-check passed.
+- **Confirm no consumer of the `typescript` package's programmatic API
+  survives before upgrading** (per §2's "no public programmatic compiler
+  API" finding) — this is a Phase 0 task, not a Phase 1 surprise.
+  `tsc --noEmit` passing proves nothing about whether something else
+  imports the TS API directly. §2 already checked: this repo has no
+  `typescript-eslint`, `ts-jest`, or `ts-morph`, and the one real
+  consumer found — `ts-node` in `devDependencies`, zero invocations
+  anywhere in `scripts/` or `.github/` — is **decided dead weight,
+  removed in Phase 1 alongside the already-found dead `.babelrc.cjs`**,
+  not aliased to `@typescript/typescript6`. Oxlint's `tsgolint` doesn't
+  need that compatibility path either, since it vendors its own checker
+  rather than calling into this repo's installed `typescript`. Phase 0's
+  job here is a final `grep` pass to confirm nothing new showed up since
+  §2's check, not to re-litigate the outcome.
 
 ## 7. Build (`vite.config.ts`'s `pack` block — tsdown, per §2's verified config surface)
 
@@ -431,9 +433,10 @@ Prove the risky parts in isolation on a scratch branch before touching CI:
 determine the current compatible `typescript`/`oxlint-tsgolint` pin pair
 per §6 and install that (not `@latest`), then run `tsc --noEmit` as-is to
 see the real diff of TS7 hard-error deprecations against this codebase;
-**audit consumers of the `typescript` programmatic API** per §6/§2 —
-confirm whether `ts-node` (or anything else) actually needs it, since
-`tsc --noEmit` passing doesn't prove that; hand-write a throwaway
+**re-confirm no consumer of the `typescript` programmatic API survives**
+per §6/§2 — a final `grep` pass, since `tsc --noEmit` passing doesn't
+prove that on its own, and `ts-node` is already decided as dead weight
+to remove, not something still being evaluated; hand-write a throwaway
 `vite.config.ts` `pack` block (tsdown, per §7 — not a plain-Vite
 `build.lib`) and confirm the bundled `dist/bin/index.js` still passes
 `integration-bundled-binary.test.ts` unmodified; run `oxfmt`'s Node API
@@ -445,11 +448,11 @@ This de-risks the plan before CI/config deletion.
 **Phase 1 — TypeScript 7 alone**
 Upgrade `typescript` to the pinned compatible version from Phase 0 (not
 `@latest` — see §6), fix the `tsconfig.json` per §6, resolve whatever
-hard-error deprecations Phase 0 surfaced, and act on Phase 0's API-consumer
-audit: remove `ts-node` from `devDependencies` if confirmed dead weight,
-or alias it onto `@typescript/typescript6` if something still needs the
-TS6 API. Build/lint/format toolchain unchanged. Smallest possible PR;
-isolates TS7 fallout from tooling fallout.
+hard-error deprecations Phase 0 surfaced, and remove `ts-node` from
+`devDependencies` — decided dead weight (§2/§6), same treatment as the
+already-found dead `.babelrc.cjs`, not aliased to `@typescript/typescript6`.
+Build/lint/format toolchain unchanged. Smallest possible PR; isolates
+TS7 fallout from tooling fallout.
 
 **Phase 2 — Oxlint + Oxfmt, with Vite+ installed for lint/format/staged
 only (build/pack/test blocks NOT touched yet)**
@@ -537,7 +540,7 @@ broken actual behavior.
 | Node floor bump to 24 breaks some consumer still pinned to Node 20 | Node 20 is already EOL (2026-04-30) and GitHub is removing it from Actions runners entirely in fall 2026, so staying on 20 isn't a neutral fallback to protect — the bump is called out explicitly in the PR description / changelog as a `feat!`/breaking change per this repo's conventional-commits rules, but isn't optional to defer indefinitely |
 | `semantic-release` / `deploy.yml`'s `git add -f dist` step assumes today's `dist/` layout | Verify `dist/bin`, `dist/mjs`, `dist/types` paths match after `vp pack` (no `dist/cjs` — dropped per §8.1), update the force-add + `files` array in `package.json` if paths shift |
 | Dropping the `require`/`main` export is a breaking change for any unseen `require()` consumer of this package as a library (vs. as an Action/CLI) | Called out explicitly as `feat!`/`fix!` in the PR description and changelog per this repo's conventional-commits rules, same as the Node-floor bump |
-| TS7 GA has no public programmatic compiler API — a devDependency or hidden tool that imports `typescript` directly (e.g. `ts-node`) can break silently even though `tsc --noEmit` passes | Phase 0's API-consumer audit (§6/§9) checks this before Phase 1 upgrades, not after; remove confirmed-dead consumers, alias genuinely-needed ones onto `@typescript/typescript6` |
+| TS7 GA has no public programmatic compiler API — a hidden tool importing `typescript` directly could break silently even though `tsc --noEmit` passes | Checked which of this repo's actual dependencies would be exposed (§2): none of `typescript-eslint`/`ts-jest`/`ts-morph` are present, and the one real hit (`ts-node`) is decided dead weight, removed in Phase 1 rather than upgraded-and-hoped. Oxlint's `tsgolint` isn't exposed either (vendors its own checker). Phase 0 re-confirms nothing new appeared before Phase 1 deletes it — low residual risk, not an open contingency |
 | `typescript` and `oxlint-tsgolint` installed independently (e.g. both `@latest`) drift out of the exact-version compatibility `tsgolint` requires, silently degrading or breaking type-aware linting | §6: pin both to the exact compatible pair at execution time (decoded from `oxlint-tsgolint`'s own version scheme), not installed via `@latest` separately |
 
 ## 11. Rollback

@@ -2,7 +2,7 @@
 
 ## Project: github-action-readme-generator
 
-**Stack**: TypeScript 5.7.3, Node.js 20.x, ESM with dual CJS/ESM output
+**Stack**: TypeScript 6.0.3, Node.js 24.x, ESM with dual CJS/ESM output
 **Linter**: Biome 2.x (replaces ESLint + Prettier)
 **Test Framework**: Vitest
 **Build**: esbuild

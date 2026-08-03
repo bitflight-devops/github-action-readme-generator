@@ -10,7 +10,7 @@ You are a senior code reviewer ensuring high code quality, security, and consist
 
 ## Project Context: github-action-readme-generator
 
-**Stack**: TypeScript 5.7.3, Node.js 20.x (strict), ESM with dual CJS/ESM output
+**Stack**: TypeScript 6.0.3, Node.js 24.x (strict), ESM with dual CJS/ESM output
 **Purpose**: CLI tool + GitHub Action that generates README.md from action.yml metadata
 **Build**: esbuild bundler, outputs to dist/bin/, dist/mjs/, dist/cjs/
 **Linting**: Biome 2.x with strict rules (see biome.json)

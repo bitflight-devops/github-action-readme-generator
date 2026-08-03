@@ -189,8 +189,13 @@ Under active decision, not assumed either way:
 - `.ghadocs.json`, `action.yml`, all of `src/`, `__tests__/` content
   (only import paths / test assertions touching `dist/` layout change).
 - `husky` for the git hook *mechanism* (`.husky/pre-commit`,
-  `.husky/commit-msg`, `.husky/pre-push`) — only *what* `pre-commit` shells
-  out to changes (`vp staged` instead of `lint-staged`).
+  `.husky/commit-msg`, `.husky/pre-push`) — genuinely unchanged, verified
+  by reading it: `.husky/pre-commit` is two lines, `. "$(dirname
+  "$0")/_/husky.sh"` then `npm run pre-commit`. It doesn't invoke
+  `lint-staged` itself. **Correction to an earlier pass of this plan**,
+  which said the hook file gets updated — it doesn't. What changes is
+  the `pre-commit` *npm script*'s body (`lint-staged` → `vp staged`), per
+  the full script audit below.
 - `commitlint` + conventional commits enforcement — untouched, orthogonal
   to this conversion.
 - `semantic-release` — untouched, but its `prepareCmd`/build step in
@@ -198,6 +203,45 @@ Under active decision, not assumed either way:
 - `vitest` as the test runner and its config semantics — Vite+ *bundles*
   Vitest rather than replacing it, so `__tests__/**` and
   `vitest.config.ts`'s `test` block move into `vite.config.ts` verbatim.
+
+### Full `package.json` scripts audit
+
+Every entry in the current `scripts` block, reviewed individually —
+not just the ones review comments happened to flag. Read directly from
+`package.json`, not from memory of earlier passes of this plan (which
+is how the `.husky/pre-commit` mistake above happened):
+
+| Script | Current | Disposition |
+|---|---|---|
+| `all` | `npm run build && npm run format && npm run lint && npm run test` | No direct edit — picks up whatever `build`/`format`/`lint`/`test` become automatically once those are rewritten below. Re-check for redundancy once `vp check` exists (it already does format + lint + type-check together; chaining separate `format`/`lint` steps afterward may be pointless) |
+| `prebuild` | `tsc --project tsconfig.json --noemit` | Keep through Phase 1/2. Revisit in Phase 3 — tsdown/`vp pack` doesn't type-check by default, so an explicit pre-build type-check likely still needs to exist somewhere, just possibly via `vp check` instead of a raw `tsc` call. Decide in Phase 3, don't assume either way now |
+| `build` | `rimraf dist out;node ./scripts/esbuild.mjs && chmod +x dist/bin/index.js` | Phase 3: `rimraf dist out && vp pack && chmod +x dist/bin/index.js` — `chmod` stays explicit per §7 item 5 (neither Rolldown nor tsdown sets the executable bit) |
+| `postbuild` | `tsc --emitDeclarationOnly ... --outFile ... && tsc -p tsconfig-mjs.json && ./scripts/set_package_type.sh` | Phase 3: **delete entirely** — `vp pack` does declaration generation, dual-format output, and the `dist/mjs/package.json` stub in one pass (§4's replaces-table already says this; this row makes the script-level deletion explicit) |
+| `build:docker`, `build:docker:default`, `build:docker:win32` | delegate to `npm run build` in a container | No change — they wrap whatever `build` becomes. Node image tag already fixed to `node:24-alpine` (#616) |
+| `clean` | `rimraf dist` | No change |
+| `commit` | `git-cz` | No change — commitizen, orthogonal |
+| `corepack` | `corepack enable` | No change |
+| `current-version` | `jq -r '.version' package.json` | No change |
+| `format` | `biome format --write ./src ./__tests__` | Phase 2: → `vp fmt` |
+| `format:check` | `biome format ./src ./__tests__` | Phase 2: → `vp fmt`'s check-mode equivalent (confirm exact flag via `vp fmt --help` at execution time) |
+| `format:prettier` | `prettier --write . --config .prettierrc.cjs --ignore-unknown` | Phase 2: **delete** — `.prettierrc.cjs` is deleted (§1/§4); this script breaks the moment that happens. (Previously only implied by §4's table, not stated as a script deletion — fixed here) |
+| `generate-docs` | `node dist/bin/index.js && git add ...` | No change — `dist/bin/index.js` path stays stable (§7) |
+| `postinstall` | `echo '✨ Successfully Installed'` | No change |
+| `prelint` | `npm run format && tsc --project tsconfig.json --noemit` | Phase 2: **delete** — redundant once `vp check` does format + lint + type-check together |
+| `lint` | `npm run lint:biome && npm run lint:markdown` | Phase 2: body must change to reference `lint:biome`'s new name (see next rows) — **a real cross-reference that earlier passes of this plan missed**: renaming `lint:biome` without updating `lint`'s body breaks `lint` |
+| `lint:fix` | `npm run lint:biome:fix && npm run lint:markdown:fix` | Same dependency — update in lockstep with `lint:biome:fix`'s rename |
+| `lint:biome` | `biome lint ./src/ ./__tests__/` | Phase 2: rename the script key to `lint:oxlint` (a script still named `lint:biome` after Biome is deleted is the same stale-naming problem this plan keeps finding elsewhere) and its body to `vp lint` |
+| `lint:biome:fix` | `biome lint --write ./src/ ./__tests__/` | Same: rename to `lint:oxlint:fix`, body → `vp lint --fix` |
+| `check` | `biome check ./src/ ./__tests__/` | Phase 2: → `vp check` |
+| `check:fix` | `biome check --write ./src/ ./__tests__/` | Phase 2: → `vp check`'s fix-mode equivalent (confirm flag via `vp check --help`) |
+| `markdownlint` | `markdownlint` (bare, no args or config) | **Found, unrelated to this conversion**: nothing invokes this script anywhere — grepped `package.json`, `.github/`, `.husky/`, only the definition itself exists. A different, unconfigured duplicate of `lint:markdown`. Flagging as discovered dead/redundant cruft; not blocking this plan, but worth a separate cleanup |
+| `lint:markdown`, `lint:markdown:fix` | markdownlint with real config/args | No change — markdownlint stays (§1/§4) |
+| `pre-commit` | `lint-staged && npm run build && npm run generate-docs` | Phase 2 (sequenced last, per above): `lint-staged` → `vp staged` |
+| `prepare` | husky-install guard | No change |
+| `semantic-release` | `semantic-release` | No change — not even what `deploy.yml` calls (that runs `npx semantic-release@latest` directly); this script is a manual/local convenience, unaffected |
+| `test` | `vitest` | Phase 3: **not verified** whether this becomes `vp test` or stays bare `vitest` — Vite+ re-exports Vitest but I haven't confirmed the CLI surface for running it. Check at execution time, don't assume either way |
+| `coverage` | `vitest run --coverage` | Same open verification as `test` |
+| `version:manual`, `postversion:manual` | manual release helpers using `::set-output name=X::Y` | **Found, unrelated to this conversion**: not invoked anywhere (grepped `.github/`, `.husky/`), and `::set-output` is deprecated GitHub Actions syntax. Flagging as discovered dead/stale cruft, not something this plan needs to fix |
 
 ## 5. Node/engine version — revised: Node 20 is EOL, target Node 24, not 20.19+
 
@@ -528,9 +572,13 @@ directly by review:
   keep the markdownlint step as-is.
 - **Only after `vp staged` is actually wired and confirmed working**:
   delete `.lintstagedrc` and the duplicate `lint-staged` block in
-  `package.json`, and point `.husky/pre-commit` at `vp staged`. Sequence
-  this last within the phase — don't delete the working `lint-staged`
-  setup before its replacement is proven, even within the same PR.
+  `package.json`, and change the `pre-commit` **npm script**'s body from
+  `lint-staged && npm run build && npm run generate-docs` to
+  `vp staged && npm run build && npm run generate-docs` — not
+  `.husky/pre-commit` itself, which only calls `npm run pre-commit` and
+  needs no edit (verified by reading it; see §4). Sequence this last
+  within the phase — don't delete the working `lint-staged` setup before
+  its replacement is proven, even within the same PR.
 
 Explicitly out of scope for Phase 2, staying untouched until Phase 3:
 `vitest.config.ts`, `vitest` imports in `__tests__/**` (the

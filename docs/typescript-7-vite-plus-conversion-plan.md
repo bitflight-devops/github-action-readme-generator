@@ -10,14 +10,21 @@ runtime behavior of the generator changes.
   **deleted** in the same change set that introduces its replacement. We do
   not keep ESLint-era or Biome-era config "just in case," and we do not run
   two toolchains side by side past the cut-over PR.
-- **One exception, and it's important:** `prettier` is a **runtime
-  dependency** of the generator itself (`src/prettier.ts` formats the
-  README/YAML the *tool* produces for end users — `pretty`/`prettier`
-  input in `action.yml`). That is a product feature, not a dev-tooling
-  choice, and is unrelated to what formats *our own* source. It stays in
-  `dependencies` untouched. Only Prettier-as-our-formatter (currently
-  partially wired through `.prettierrc.cjs`, `format:prettier`, and
-  `.lintstagedrc`) is removed.
+- **Biome and Prettier are both fully removed as the repo's active
+  linter/formatter.** No exception for either as *dev tooling*.
+- **`prettier` the runtime dependency is a separate question, not an
+  automatic exception.** `src/prettier.ts` calls `format(value, {...})`
+  from the `prettier` package to format the README/YAML the *tool*
+  produces for end users (`pretty`/`prettier` input in `action.yml`). That
+  usage is a product feature, not our code-formatting tooling, so it isn't
+  touched by the Biome/Prettier-as-formatter removal above by default —
+  but it doesn't get a free pass either. I checked whether Oxfmt can
+  replace it directly: it exposes a Node.js API,
+  `format(filename, code, options) => Promise<{ code }>`, which is the
+  same shape `src/prettier.ts` already calls. That makes replacement a
+  real, testable option instead of something to assume away. §8.0 below
+  lays out exactly what needs verifying before deciding to replace it
+  versus keep `prettier` as a scoped runtime exception.
 
 ## 2. Validated facts (checked 2026-08-03, not assumed)
 
@@ -28,6 +35,7 @@ runtime behavior of the generator changes.
 | Vite+ (`vite-plus`) | Public beta, MIT-licensed core, by the VoidZero/Oxc team. Bundles **Vite, Vitest, Rolldown, tsdown, Oxlint, Oxfmt** behind one CLI (`vp`) and one `vite.config.ts`. `vp check` = format + lint + type-check in one pass. `vp pack` builds **npm libraries (dual ESM/CJS) and standalone binaries** — this is our exact use case (CLI + library package). It **wraps your existing package manager** (npm/pnpm/yarn/bun) rather than replacing it. | [Vite+ Beta announcement](https://voidzero.dev/posts/announcing-vite-plus-beta), [viteplus.dev](https://viteplus.dev/), [GitHub](https://github.com/voidzero-dev/vite-plus) |
 | Oxlint | Type-aware linting went stable July 22, 2026 via `tsgolint`, tracking TS 7.0.2, covering 59/61 `typescript-eslint` type-aware rules. 699 built-in rules total. Custom JS-authored plugin support is still **alpha**. **Does not lint Markdown.** | [Oxc blog](https://oxc.rs/blog/2026-07-22-type-aware-linting-stable), [oxc-project/oxlint-action](https://github.com/oxc-project/oxlint-action) |
 | Oxfmt | Beta since Feb 2026, at v0.62 as of today. Passes 100% of Prettier's JS/TS conformance suite; ~30x faster than Prettier. Formats JS/TS/JSON/YAML/TOML/HTML/**Markdown**/CSS/MDX, etc. | [Oxfmt Beta](https://oxc.rs/blog/2026-02-24-oxfmt-beta) |
+| Oxfmt Node.js API | Exposes a programmatic API — `import { format } from "oxfmt"; const { code } = await format(filename, input, options)` — filename drives parser selection, options is a `FormatOptions` type. This is called out separately from the CLI because it's what `src/prettier.ts` would need to call `oxfmt` in-process instead of shelling out. **Not yet verified:** whether `FormatOptions` supports the exact knobs this repo's runtime code depends on (`semi`, `embeddedLanguageFormatting`, `proseWrap`) with matching output. | [Oxfmt Quickstart](https://oxc.rs/docs/guide/usage/formatter/quickstart.html), [npm](https://www.npmjs.com/package/oxfmt) |
 | Node requirement | Vite 7+/Vite+ requires **Node 20.19+ or 22.12+**. TypeScript 7 requires Node 20+. | Vite release notes, TS7 docs |
 
 **Consequence:** everything the user asked for (TS7, Vite+, oxlint, oxfmt)
@@ -123,7 +131,14 @@ Kept, unchanged:
 - `markdownlint-cli` + `.markdownlint.json` (+ `xt0rted/markdownlint-problem-matcher`
   in CI) — oxlint has no Markdown support, so prose/Markdown-structure
   linting stays on markdownlint. Oxfmt's Markdown formatting is optional
-  and additive (§8, open decision).
+  and additive (§8.2, open decision).
+
+Under active decision, not assumed either way:
+
+- The `prettier` **runtime** dependency (`src/prettier.ts`) — see §1 and
+  §8.0. Depending on the outcome, either it stays as a scoped exception,
+  or it's replaced by `oxfmt`'s Node API and `prettier` is dropped from
+  `dependencies` entirely.
 - `.ghadocs.json`, `action.yml`, all of `src/`, `__tests__/` content
   (only import paths / test assertions touching `dist/` layout change).
 - `husky` for the git hook *mechanism* (`.husky/pre-commit`,
@@ -197,6 +212,46 @@ Requirements this config must satisfy, carried over from
 These are genuine product/scope decisions, not implementation details —
 flagging them rather than silently picking one:
 
+0. **Replace the runtime `prettier` dependency with `oxfmt`'s Node API,
+   or keep `prettier` as a scoped exception?** `__tests__/prettier.test.ts`
+   pins the exact option surface `src/prettier.ts` depends on today:
+   `format(value, { semi: false, parser: 'yaml' | 'markdown',
+   embeddedLanguageFormatting: 'auto', filepath? })` for
+   `formatYaml`/`formatMarkdown`, and `format(value, { semi: false,
+   parser: 'markdown', proseWrap: 'always' })` for `wrapDescription`. To
+   replace this with `oxfmt`, each of the following needs to be checked
+   against `oxfmt`'s `FormatOptions` type and confirmed to produce
+   equivalent output, not just "no type error":
+   - Does `FormatOptions` have a `proseWrap` equivalent (Markdown prose
+     wrapping is used by `wrapDescription` to keep `action.yml` description
+     comments line-wrapped)?
+   - Does it have an `embeddedLanguageFormatting` equivalent, or does
+     `oxfmt` handle embedded-code-block formatting inside Markdown/YAML
+     by default with no toggle needed?
+   - `oxfmt.format()` takes a **filename** (`format(filename, code, options)`)
+     rather than an explicit `parser` string — need to confirm passing
+     `"x.yaml"` / `"x.md"` as the filename argument reliably selects the
+     same parser `parser: 'yaml'` / `parser: 'markdown'` did, including
+     when the real caller passes a `filepath` for `README.md` /
+     `action.yml`-derived paths.
+   - `semi: false` — confirm the option name/semantics match.
+   - Byte-for-byte (or at least structurally equivalent) output on a
+     real generated `README.md` and a real `action.yml`, not just the
+     unit-test mocks, since `prettier.test.ts` currently mocks `format`
+     entirely and never asserts real formatted output.
+   This verification is a **Phase 0 spike task** (§9), not something to
+   decide from documentation alone. If it holds: drop `prettier` from
+   `dependencies`, add `oxfmt` to `dependencies` (it moves from
+   dev-tooling to a runtime dependency the same way `prettier` is today),
+   rewrite `src/prettier.ts` against `oxfmt`'s API, update
+   `__tests__/prettier.test.ts`'s mocks and expectations, and repurpose
+   `__tests__/integration-bundled-binary.test.ts` (currently a regression
+   test specifically for `prettier` bundling correctly) to guard `oxfmt`
+   bundling instead. If parity doesn't hold on some option, keep
+   `prettier` in `dependencies` as an explicitly-documented, scoped
+   exception (update §1 and this section to say so) rather than force a
+   worse README/YAML output to complete the cut-over.
+
 1. **CJS entry point: fix for real, or drop it?** Today it's advertised in
    `package.json` but never actually built (§3). Vite+/tsdown can produce
    real dual ESM+CJS output at low marginal cost, so "fix it" is cheap —
@@ -246,7 +301,11 @@ Prove the risky parts in isolation on a scratch branch before touching CI:
 diff of TS7 hard-error deprecations against this codebase; hand-write a
 throwaway `vite.config.ts` `build.lib` block and confirm the bundled
 `dist/bin/index.js` still passes `integration-bundled-binary.test.ts`
-unmodified. This de-risks the plan before CI/config deletion.
+unmodified; run `oxfmt`'s Node API against a real generated `README.md`
+and `action.yml` and diff the output against today's `prettier` output to
+resolve §8.0 (runtime `prettier` replacement) before Phase 2 deletes
+anything Prettier-related. This de-risks the plan before CI/config
+deletion.
 
 **Phase 1 — TypeScript 7 alone**
 Upgrade `typescript` to `latest` (GA 7.0), fix the `tsconfig.json` per §6,
@@ -257,8 +316,12 @@ tooling fallout.
 **Phase 2 — Oxlint + Oxfmt (lint/format only, build unchanged)**
 Author the Oxlint/Oxfmt config blocks, do the Biome→Oxlint rule mapping
 (§8.3), delete `biome.json`, `.prettierrc.cjs`, `.babelrc.cjs`,
-`.lintstagedrc`, the duplicate `lint-staged` `package.json` block. Update
-`.husky/pre-commit` to call the new check command. Update
+`.lintstagedrc`, the duplicate `lint-staged` `package.json` block. Apply
+the §8.0 outcome from the Phase 0 spike: either rewrite `src/prettier.ts`
+onto `oxfmt`'s API and drop `prettier` from `dependencies`, or leave
+`src/prettier.ts` on `prettier` as a documented exception — this is the
+phase where that decision actually lands in code, not just in the spike.
+Update `.husky/pre-commit` to call the new check command. Update
 `push_code_linting.yml` (swap `biomejs/setup-biome` + `biome lint` +
 `mongolyy/reviewdog-action-biome` for `oxc-project/oxlint-action`,
 keep the markdownlint step as-is).
@@ -292,6 +355,7 @@ broken actual behavior.
 | TS7 hard-errors on patterns Biome/TS6 allowed | Phase 0 spike surfaces this before any deletion happens |
 | Rolldown bundling breaks the "fully self-contained binary" guarantee | `integration-bundled-binary.test.ts` already exists and is the exact regression gate; keep it, run it every phase |
 | Oxlint rule gaps vs. current Biome config silently loosen quality bar | Explicit rule-mapping task (§8.3) before deleting `biome.json`, not after |
+| Replacing runtime `prettier` with `oxfmt` silently changes generated `README.md`/YAML output for every consumer of this action | §8.0 verification (real-file diff, not just unit-test mocks) happens in the Phase 0 spike, before Phase 2 touches `src/prettier.ts`; if parity doesn't hold, keep `prettier` rather than ship a regression |
 | `vp` toolchain still "beta" — API/CLI surface can change under us | Pin `vite-plus` (and its bundled Oxlint/Oxfmt/tsdown versions) to exact versions in `package.json`, not ranges, until it reaches stable/1.0 |
 | Node floor bump to 20.19+ breaks some consumer pinned to older 20.x | Called out explicitly in the PR description / changelog as a `feat!`/breaking change per this repo's conventional-commits rules |
 | `semantic-release` / `deploy.yml`'s `git add -f dist` step assumes today's `dist/` layout | Verify `dist/bin`, `dist/mjs`, `dist/types` (and `dist/cjs` if kept) paths match after `vp pack`, update the force-add + `files` array in `package.json` if paths shift |

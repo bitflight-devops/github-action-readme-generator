@@ -106,20 +106,22 @@ moved to **Biome**, not ESLint):
 ## 4. Target architecture
 
 ```
-vite.config.ts          # single config: build (lib mode, dual ESM/CJS + bin),
+vite.config.ts          # single config: build (lib mode, ESM-only + bin),
                          # test (vitest block), lint (oxlint block),
                          # format (oxfmt block), staged (pre-commit block)
 tsconfig.json            # TS7, NodeNext, strict, no legacy flags
-package.json              # scripts delegate to `vp <cmd>`
+package.json              # scripts delegate to `vp <cmd>`; exports only
+                           # the `import` condition + `types` — no `require`
+                           # / `main`, per §8.1
 ```
 
 Replaces, 1:1:
 
 | Deleted | Replaced by |
 |---|---|
-| `scripts/esbuild.mjs` | `vite.config.ts` → `build.lib` (Rolldown) |
-| `tsconfig-mjs.json` | single `tsconfig.json`, tsdown handles dual-format emit |
-| `scripts/set_package_type.sh` | `vp pack` writes correct per-format `package.json` stubs |
+| `scripts/esbuild.mjs` | `vite.config.ts` → `build.lib` (Rolldown), ESM-only output |
+| `tsconfig-mjs.json` | single `tsconfig.json`, tsdown emits `dist/mjs/` + declarations |
+| `scripts/set_package_type.sh` | `vp pack` writes the correct `dist/mjs/package.json` stub |
 | `biome.json` | `vite.config.ts` → `lint` block (Oxlint) + `format` block (Oxfmt) |
 | `.prettierrc.cjs`, `format:prettier` script | Oxfmt config in `vite.config.ts` (code only — **not** the runtime `prettier` dependency, see §1) |
 | `.babelrc.cjs` | deleted outright (dead code, unrelated to this cut-over but found during the audit) |
@@ -199,9 +201,9 @@ Requirements this config must satisfy, carried over from
    `output.banner`.
 3. Node built-ins (`node:fs`, `node:path`, etc.) stay external — Rolldown
    supports this the same way esbuild's `external` array did.
-4. Library entry points for `dist/mjs/` (ESM) and — pending the decision in
-   §8 — `dist/cjs/` (CJS), plus a single, correctly-generated
-   `dist/types/index.d.ts`, all produced by `vp pack` / tsdown in one pass
+4. A single library entry point at `dist/mjs/` (ESM only — no `dist/cjs/`,
+   per the decision in §8.1), plus a single, correctly-generated
+   `dist/types/index.d.ts`, both produced by `vp pack` / tsdown in one pass
    instead of the current two-`tsc`-invocation dance.
 5. `chmod +x dist/bin/index.js` — keep as an explicit post-step (or a small
    `vp pack` hook) since neither Rolldown nor tsdown sets the executable
@@ -252,17 +254,39 @@ flagging them rather than silently picking one:
    exception (update §1 and this section to say so) rather than force a
    worse README/YAML output to complete the cut-over.
 
-1. **CJS entry point: fix for real, or drop it?** Today it's advertised in
-   `package.json` but never actually built (§3). Vite+/tsdown can produce
-   real dual ESM+CJS output at low marginal cost, so "fix it" is cheap —
-   but if no consumer actually needs `require()` (this is primarily
-   consumed as a GitHub Action / `npx` CLI), dropping the `require`
-   export and `main` field and going ESM-only is a legitimate
-   simplification and shrinks the cut-over's surface area. Recommend:
-   confirm via npm download/issue history whether any consumer requires
-   CJS before deciding; default to **fixing it for real** if unsure, since
-   it's a published public package and removing an advertised entry point
-   is a breaking change for someone we can't see.
+1. **CJS entry point: decided — drop it, ship ESM-only.** Verified two
+   things before locking this in: `action.yml`'s `runs:` block
+   (`using: "node20"`, `main: "./dist/bin/index.js"`) executes the bundled
+   `dist/bin/index.js` binary directly under the Node 20 Action runtime —
+   that path never goes through `require`/`main`/`exports.require` at
+   all, so the Action's execution is untouched either way. The CLI is the
+   same story: it's invoked as a script (`npx`/global bin), not
+   `require()`'d as a library. `package.json` already declares
+   `"type": "module"`. Combined with §3's finding that `dist/cjs/` isn't
+   actually built by anything today, "fix CJS for real" would be adding
+   new work to support a consumption mode nothing in this repo currently
+   uses or tests. Action: remove the `require` export condition and
+   `main` field from `package.json`, keep only the `import` condition and
+   `types`, and drop the `dist/cjs` output target from the Vite+/tsdown
+   build config in §7 entirely — one library output format (ESM,
+   `dist/mjs/`) plus the bundled `dist/bin/` CLI, not two. This is a
+   breaking change for any hypothetical `require()` consumer, so it still
+   ships as `feat!`/`fix!` per this repo's conventional-commits rules,
+   same as any other removed export — but it's not held open pending
+   further research the way it was before.
+
+   One correction to the reasoning as originally framed: TypeScript 7's
+   native compiler does **not** turn this package's own output into a
+   "universal binary." What ships natively is `tsc`/`tsgo` itself — the
+   *compiler* — as a platform-specific binary resolved via npm at install
+   time (e.g. a `native-preview-linux-arm64`-style package), used to
+   type-check and build faster. It says nothing about how `dist/bin/index.js`
+   gets run — that's still a Node-executed ESM script either way. If a
+   true standalone executable (no Node runtime required to run *this*
+   CLI) is ever wanted, that's Vite+'s separate `vp pack` "standalone app
+   binaries" capability (§2) — untested here, and not needed to make the
+   ESM-only decision above, which stands on its own from the `action.yml`
+   and CLI-invocation evidence.
 2. **Oxfmt vs markdownlint overlap on Markdown.** Oxfmt can *format*
    Markdown; markdownlint *lints* it (prose rules, heading structure,
    etc.) — they're not the same job and can coexist, but running both means
@@ -336,11 +360,12 @@ keep the markdownlint step as-is).
 **Phase 3 — Vite+ build (the big one)**
 Introduce `vite-plus`, consolidate `vitest.config.ts` into `vite.config.ts`,
 replace `scripts/esbuild.mjs` + `tsconfig-mjs.json` +
-`scripts/set_package_type.sh` with `build.lib` per §7, resolve the CJS
-decision (§8.1), delete the replaced files, rewrite `package.json`
-scripts to `vp` commands, rewrite `test.yml` and `deploy.yml` build steps.
-This phase is gated on Phase 0's spike having already proven the bundled
-binary stays self-contained.
+`scripts/set_package_type.sh` with `build.lib` per §7 (ESM-only library
+output, no `dist/cjs`, per the decided §8.1), remove the `require` export
+condition and `main` field from `package.json`, delete the replaced
+files, rewrite `package.json` scripts to `vp` commands, rewrite
+`test.yml` and `deploy.yml` build steps. This phase is gated on Phase 0's
+spike having already proven the bundled binary stays self-contained.
 
 **Phase 4 — cleanup**
 Bump `engines`/`volta` Node floor (§5), update
@@ -365,7 +390,8 @@ broken actual behavior.
 | Replacing runtime `prettier` with `oxfmt` silently changes generated `README.md`/YAML output for every consumer of this action | §8.0 verification (real-file diff, not just unit-test mocks) happens in the Phase 0 spike, before Phase 2 touches `src/prettier.ts`; if parity doesn't hold, keep `prettier` rather than ship a regression |
 | `vp` toolchain still "beta" — API/CLI surface can change under us | Pin `vite-plus` (and its bundled Oxlint/Oxfmt/tsdown versions) to exact versions in `package.json`, not ranges, until it reaches stable/1.0 |
 | Node floor bump to 20.19+ breaks some consumer pinned to older 20.x | Called out explicitly in the PR description / changelog as a `feat!`/breaking change per this repo's conventional-commits rules |
-| `semantic-release` / `deploy.yml`'s `git add -f dist` step assumes today's `dist/` layout | Verify `dist/bin`, `dist/mjs`, `dist/types` (and `dist/cjs` if kept) paths match after `vp pack`, update the force-add + `files` array in `package.json` if paths shift |
+| `semantic-release` / `deploy.yml`'s `git add -f dist` step assumes today's `dist/` layout | Verify `dist/bin`, `dist/mjs`, `dist/types` paths match after `vp pack` (no `dist/cjs` — dropped per §8.1), update the force-add + `files` array in `package.json` if paths shift |
+| Dropping the `require`/`main` export is a breaking change for any unseen `require()` consumer of this package as a library (vs. as an Action/CLI) | Called out explicitly as `feat!`/`fix!` in the PR description and changelog per this repo's conventional-commits rules, same as the Node-floor bump |
 
 ## 11. Rollback
 

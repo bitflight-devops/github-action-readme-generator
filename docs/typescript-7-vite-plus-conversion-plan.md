@@ -1,8 +1,14 @@
 # Conversion Plan: TypeScript 7 + Vite+ + Oxlint + Oxfmt
 
 Status: **Proposed — clean cut-over, not an incremental migration.**
-Scope: build, type-check, lint, format, test, and CI/CD toolchain only. No
-runtime behavior of the generator changes.
+Scope: build, type-check, lint, format, test, and CI/CD toolchain. One
+conditional exception, not covered by "no runtime behavior changes": §8.0
+evaluates replacing the `prettier` runtime dependency (which formats the
+README/YAML this tool generates for *end users*, not our own source) with
+`oxfmt`'s API. If that replacement happens, it is a real runtime-output
+change gated on a golden-file compatibility check against real generated
+output — not a tooling-only swap. Everything else in this plan is
+tooling-only and does not touch generator output.
 
 ## 1. Ground rules
 
@@ -30,10 +36,11 @@ runtime behavior of the generator changes.
 
 | Tool | Status found | Source |
 |---|---|---|
-| TypeScript 7.0 | GA July 8, 2026. The Go-native compiler ("Corsa"/tsgo) is now the standard `tsc` shipped in the `typescript` npm package — no separate package needed post-GA. `@typescript/native-preview`/`tsgo` binary name now only tracks nightlies. | [TypeScript 7.0 GA](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0-rc/), [npm](https://www.npmjs.com/package/@typescript/native-preview) |
+| TypeScript 7.0 | GA July 8, 2026. The Go-native compiler ("Corsa"/tsgo) is now the standard `tsc` shipped in the `typescript` npm package (verified directly against the npm registry: `typescript`'s `latest` tag is `7.0.2`, `bin.tsc`, plus 20 per-platform `optionalDependencies`) — no separate package needed post-GA. `@typescript/native-preview`/`tsgo` binary name now only tracks nightlies (registry `latest` tag is a dated dev build, not a release). | [TypeScript 7.0 GA announcement](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/), [`typescript` on npm](https://www.npmjs.com/package/typescript) |
+| TypeScript 7.0 has **no public programmatic compiler API** | This is a bigger deal than a breaking-flags list: tools that call into TypeScript's JS API directly (`typescript-eslint`, `ts-node`, `ts-morph`, `ts-jest`, template checkers behind Vue/Svelte/Astro) do not work against the `typescript` 7.0 package at all — the API returns in TS 7.1 (planned). Microsoft ships `@typescript/typescript6` as a compatibility shim (aliased in as `typescript`, provides a `tsc6` binary, re-exports the TS 6.0 API) for consumers that still need it. **Relevant to us:** `package.json` has `ts-node: ^10.9.1` in `devDependencies` — verified via `grep` that nothing in `scripts/` or `.github/` actually invokes it, so it appears to be dead weight (same shape as the already-found dead `.babelrc.cjs`), but this needs confirming, not assuming, before Phase 1 (see the new Phase 0 task below). | [TS7 GA announcement](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/), coverage corroborating the same claim across independent sources, Aug 2026 |
 | TS7 breaking changes relevant to us | `target: "es5"` and legacy `moduleResolution: "node"` are removed; `amd`/`umd`/`systemjs` module formats removed; `baseUrl`-only path resolution removed. All TS6 deprecations become hard errors. | migration coverage across multiple TS7 upgrade guides, Aug 2026 |
-| Vite+ (`vite-plus`) | Public beta, MIT-licensed core, by the VoidZero/Oxc team. Bundles **Vite, Vitest, Rolldown, tsdown, Oxlint, Oxfmt** behind one CLI (`vp`) and one `vite.config.ts`. `vp check` = format + lint + type-check in one pass. `vp pack` builds **npm libraries (dual ESM/CJS) and standalone binaries** — this is our exact use case (CLI + library package). It **wraps your existing package manager** (npm/pnpm/yarn/bun) rather than replacing it. | [Vite+ Beta announcement](https://voidzero.dev/posts/announcing-vite-plus-beta), [viteplus.dev](https://viteplus.dev/), [GitHub](https://github.com/voidzero-dev/vite-plus) |
-| Oxlint | Type-aware linting went stable July 22, 2026 via `tsgolint`, tracking TS 7.0.2, covering 59/61 `typescript-eslint` type-aware rules. 699 built-in rules total. Custom JS-authored plugin support is still **alpha**. **Does not lint Markdown.** | [Oxc blog](https://oxc.rs/blog/2026-07-22-type-aware-linting-stable), [oxc-project/oxlint-action](https://github.com/oxc-project/oxlint-action) |
+| Vite+ (`vite-plus`) | Public beta, MIT-licensed core, by the VoidZero/Oxc team. Bundles **Vite, Vitest, Rolldown, tsdown, Oxlint, Oxfmt** behind one CLI (`vp`) and one `vite.config.ts`. Checked the real config surface directly against `viteplus.dev/config/` rather than guessing: the documented blocks are `create`, `run`, `fmt` (Oxfmt), `lint` (Oxlint), `check` (`vp check` defaults — format + lint + type-check together), `test` (Vitest), `pack` (tsdown — this is what builds **npm libraries, dual ESM/CJS, and standalone binaries**, our exact use case), and `staged` (staged-file checks, via `vp staged`). There is no `format` block — that name doesn't exist in the real API; earlier drafts of this plan used it and were wrong. It **wraps your existing package manager** (npm/pnpm/yarn/bun) rather than replacing it. Migrating onto it means rewriting `vitest` imports to `vite-plus/test` (and `@vitest/browser*` to `vite-plus/test/browser*`) per its own migration docs. | [Vite+ Beta announcement](https://voidzero.dev/posts/announcing-vite-plus-beta), [viteplus.dev/config/](https://viteplus.dev/config/), [viteplus.dev/guide/commit-hooks](https://viteplus.dev/guide/commit-hooks), [viteplus.dev/guide/migrate](https://viteplus.dev/guide/migrate), [GitHub](https://github.com/voidzero-dev/vite-plus) |
+| Oxlint | Type-aware linting went stable July 22, 2026 via `tsgolint`, tracking TS 7.0.2, covering 59/61 `typescript-eslint` type-aware rules. 699 built-in rules total. Custom JS-authored plugin support is still **alpha**. **Does not lint Markdown.** `tsgolint` versions itself as `<TS version><patch>` (e.g. `7.0.2000` = TS 7.0.2, tsgolint patch 0) — its compatibility is tied to an *exact* TypeScript release, not a range, so `typescript` and `oxlint-tsgolint` must be pinned to whatever the currently-compatible pair is, not installed via `@latest` independently (see §6). | [Oxc blog](https://oxc.rs/blog/2026-07-22-type-aware-linting-stable), [oxc-project/oxlint-action](https://github.com/oxc-project/oxlint-action) |
 | Oxfmt | Beta since Feb 2026, at v0.62 as of today. Passes 100% of Prettier's JS/TS conformance suite; ~30x faster than Prettier. Formats JS/TS/JSON/YAML/TOML/HTML/**Markdown**/CSS/MDX, etc. | [Oxfmt Beta](https://oxc.rs/blog/2026-02-24-oxfmt-beta) |
 | Oxfmt Node.js API | Exposes a programmatic API — `import { format } from "oxfmt"; const { code } = await format(filename, input, options)` — filename drives parser selection, options is a `FormatOptions` type. This is called out separately from the CLI because it's what `src/prettier.ts` would need to call `oxfmt` in-process instead of shelling out. **Not yet verified:** whether `FormatOptions` supports the exact knobs this repo's runtime code depends on (`semi`, `embeddedLanguageFormatting`, `proseWrap`) with matching output. | [Oxfmt Quickstart](https://oxc.rs/docs/guide/usage/formatter/quickstart.html), [npm](https://www.npmjs.com/package/oxfmt) |
 | Node requirement | Vite 7+/Vite+ requires **Node 20.19+ or 22.12+**. TypeScript 7 requires Node 20+. | Vite release notes, TS7 docs |
@@ -60,7 +67,7 @@ moved to **Biome**, not ESLint):
   on ts, `prettier --write` on md/yaml/sh). Only one of these is ever
   actually read by `lint-staged`, depending on resolution order — this is a
   pre-existing bug, independent of this conversion, and gets resolved as a
-  side effect of the cut-over (single `vp check --staged` config replaces
+  side effect of the cut-over (single `vp staged` config replaces
   both).
 - **Build:** custom, hand-rolled two-step pipeline:
   `scripts/esbuild.mjs` bundles `src/index.ts` → `dist/bin/index.js` (ESM,
@@ -107,10 +114,12 @@ moved to **Biome**, not ESLint):
 
 ## 4. Target architecture
 
-```
-vite.config.ts          # single config: build (lib mode, ESM-only + bin),
-                         # test (vitest block), lint (oxlint block),
-                         # format (oxfmt block), staged (pre-commit block)
+```ts
+vite.config.ts          # single config: fmt (oxfmt block), lint (oxlint
+                         # block), check (vp check defaults), staged
+                         # (pre-commit block) — landed in Phase 2;
+                         # pack (tsdown, CLI+library build) and test
+                         # (vitest block) — landed in Phase 3
 tsconfig.json            # TS7, NodeNext, strict, no legacy flags
 package.json              # scripts delegate to `vp <cmd>`; exports only
                            # the `import` condition + `types` — no `require`
@@ -121,13 +130,13 @@ Replaces, 1:1:
 
 | Deleted | Replaced by |
 |---|---|
-| `scripts/esbuild.mjs` | `vite.config.ts` → `build.lib` (Rolldown), ESM-only output |
+| `scripts/esbuild.mjs` | `vite.config.ts` → `pack` block (tsdown), ESM-only output — see §7 |
 | `tsconfig-mjs.json` | single `tsconfig.json`, tsdown emits `dist/mjs/` + declarations |
 | `scripts/set_package_type.sh` | `vp pack` writes the correct `dist/mjs/package.json` stub |
-| `biome.json` | `vite.config.ts` → `lint` block (Oxlint) + `format` block (Oxfmt) |
-| `.prettierrc.cjs`, `format:prettier` script | Oxfmt config in `vite.config.ts` (code only — **not** the runtime `prettier` dependency, see §1) |
+| `biome.json` | `vite.config.ts` → `lint` block (Oxlint) + `fmt` block (Oxfmt) |
+| `.prettierrc.cjs`, `format:prettier` script | Oxfmt config in the `fmt` block (code only — **not** the runtime `prettier` dependency, see §1) |
 | `.babelrc.cjs` | deleted outright (dead code, unrelated to this cut-over but found during the audit) |
-| `.lintstagedrc` + the duplicate `lint-staged` block in `package.json` | `vite.config.ts` → `staged` block, driven by `vp check --staged` via Husky's `pre-commit` hook |
+| `.lintstagedrc` + the duplicate `lint-staged` block in `package.json` | `vite.config.ts` → `staged` block, driven by `vp staged` via Husky's `pre-commit` hook |
 | `.eslintrc.cjs` | N/A — didn't exist; nothing to delete |
 
 Kept, unchanged:
@@ -147,7 +156,7 @@ Under active decision, not assumed either way:
   (only import paths / test assertions touching `dist/` layout change).
 - `husky` for the git hook *mechanism* (`.husky/pre-commit`,
   `.husky/commit-msg`, `.husky/pre-push`) — only *what* `pre-commit` shells
-  out to changes (`vp check --staged` instead of `lint-staged`).
+  out to changes (`vp staged` instead of `lint-staged`).
 - `commitlint` + conventional commits enforcement — untouched, orthogonal
   to this conversion.
 - `semantic-release` — untouched, but its `prepareCmd`/build step in
@@ -157,6 +166,14 @@ Under active decision, not assumed either way:
   `vitest.config.ts`'s `test` block move into `vite.config.ts` verbatim.
 
 ## 5. Node/engine version — revised: Node 20 is EOL, target Node 24, not 20.19+
+
+**Status: done.** This section's recommendation was executed as its own
+PR ahead of the rest of this plan, exactly as suggested below — #614
+(Node floor bump) merged, with a follow-up (#616) for two things Codex's
+review caught after #614 merged (Docker build images still on
+`node:20-alpine`, lockfile `engines` unsynced). The rest of this section
+is kept as-is for the record of what was checked and why, not as an
+open task.
 
 Originally this section just covered Vite+'s minimum (Node 20.19+/22.12+).
 That undersold the problem. Checked the actual Node.js LTS schedule as of
@@ -232,11 +249,39 @@ as the floor, not the Vite+ minimum of 20.19+. Concrete changes:
   compiles once and emits both format outputs plus declarations from a
   single `tsconfig.json`, removing the double-`tsc`-pass and the
   `--outFile` declaration-bundling hack.
-- Install: `npm install -D typescript@latest` (post-GA, `tsc` inside the
-  regular `typescript` package *is* the native compiler — no `@rc` or
-  `native-preview` package needed).
+- **Install TypeScript and `oxlint-tsgolint` as a pinned, exact-version
+  pair — not `typescript@latest` on its own.** Per §2: `tsgolint`'s
+  compatibility is tied to a specific TypeScript patch (its own version
+  encodes which one, e.g. `7.0.2000` → TS `7.0.2`), so installing
+  `typescript@latest` independently risks drifting past whatever version
+  `oxlint-tsgolint` currently targets and silently breaking type-aware
+  linting. At execution time (not now, since "today's latest" will be
+  stale by then): check `npm view oxlint-tsgolint@7 version` to find the
+  current release, decode its embedded TypeScript version from the
+  version number, and pin both `typescript` and `oxlint-tsgolint` to that
+  exact pair in `package.json` and the lockfile — don't use `@latest` for
+  either. `tsc` inside the regular `typescript` package *is* the native
+  compiler post-GA — no `@rc` or `native-preview` package needed.
+- **Audit consumers of the `typescript` package's programmatic API
+  before upgrading** (per §2's "no public programmatic compiler API"
+  finding) — this is a Phase 0 task, not a Phase 1 surprise. `tsc --noEmit`
+  passing proves nothing about whether `ts-node` (present in
+  `devDependencies`, not invoked by any script or CI step as far as
+  `grep` across `scripts/` and `.github/` found) or any other consumer
+  of the TS API still works. Confirm at execution time whether `ts-node`
+  is genuinely dead weight (in which case remove it in Phase 1, same
+  treatment as the already-found dead `.babelrc.cjs`) or whether
+  something does need it — if so, alias it onto `@typescript/typescript6`
+  (Microsoft's compatibility shim, re-exports the TS 6.0 API) rather than
+  assuming the upgrade is safe because the CLI type-check passed.
 
-## 7. Build (`vite.config.ts`, `build.lib` via Rolldown / tsdown)
+## 7. Build (`vite.config.ts`'s `pack` block — tsdown, per §2's verified config surface)
+
+This is a **separate config concern from library "build" in the plain-Vite
+sense** — Vite's own `build`/browser-library mode isn't what applies here;
+Vite+'s documented `pack` block is specifically "for tsdown," which is
+what handles CLI/library npm packaging with declaration generation. Don't
+conflate the two when writing the actual config.
 
 Requirements this config must satisfy, carried over from
 `scripts/esbuild.mjs` and validated against the existing regression test
@@ -245,16 +290,24 @@ Requirements this config must satisfy, carried over from
 1. CLI entry (`src/index.ts`) bundled to a **self-contained** executable at
    `dist/bin/index.js` — `prettier` and all other `dependencies` must be
    **bundled in**, not left external, or the bundled-binary regression
-   test fails exactly the way it's designed to catch.
+   test fails exactly the way it's designed to catch. **Be explicit about
+   this in the tsdown/`pack` config** (e.g. `noExternal`/an equivalent
+   per-entry override that bundles `dependencies` for the CLI target) —
+   don't rely on default behavior, since tsdown's default posture (like
+   most npm-library bundlers) is to externalize `dependencies` for
+   library builds, which is the opposite of what the CLI entry needs.
+   Keep this override scoped to the CLI entry only; the library entry
+   point (`dist/mjs/`) should still externalize `dependencies` normally.
 2. Shebang / ESM interop banner (`#!/usr/bin/env node` + the
-   `__filename`/`__dirname`/`require` polyfill shim) preserved via Rolldown's
-   `output.banner`.
-3. Node built-ins (`node:fs`, `node:path`, etc.) stay external — Rolldown
-   supports this the same way esbuild's `external` array did.
+   `__filename`/`__dirname`/`require` polyfill shim) preserved via
+   Rolldown's `output.banner` (tsdown builds on Rolldown under the hood).
+3. Node built-ins (`node:fs`, `node:path`, etc.) stay external regardless
+   of the CLI-bundling override above — same as esbuild's `external`
+   array did.
 4. A single library entry point at `dist/mjs/` (ESM only — no `dist/cjs/`,
    per the decision in §8.1), plus a single, correctly-generated
-   `dist/types/index.d.ts`, both produced by `vp pack` / tsdown in one pass
-   instead of the current two-`tsc`-invocation dance.
+   `dist/types/index.d.ts`, both produced by `vp pack` in one pass instead
+   of the current two-`tsc`-invocation dance.
 5. `chmod +x dist/bin/index.js` — keep as an explicit post-step (or a small
    `vp pack` hook) since neither Rolldown nor tsdown sets the executable
    bit on its own.
@@ -375,45 +428,86 @@ cut-over" describes the *end state* (no dragged-along legacy config), not
 
 **Phase 0 — validation spike (no repo changes merged to main config yet)**
 Prove the risky parts in isolation on a scratch branch before touching CI:
-`npm i -D typescript@latest` and run `tsc --noEmit` as-is to see the real
-diff of TS7 hard-error deprecations against this codebase; hand-write a
-throwaway `vite.config.ts` `build.lib` block and confirm the bundled
-`dist/bin/index.js` still passes `integration-bundled-binary.test.ts`
-unmodified; run `oxfmt`'s Node API against a real generated `README.md`
-and `action.yml` and diff the output against today's `prettier` output to
-resolve §8.0 (runtime `prettier` replacement) before Phase 2 deletes
-anything Prettier-related. This de-risks the plan before CI/config
-deletion.
+determine the current compatible `typescript`/`oxlint-tsgolint` pin pair
+per §6 and install that (not `@latest`), then run `tsc --noEmit` as-is to
+see the real diff of TS7 hard-error deprecations against this codebase;
+**audit consumers of the `typescript` programmatic API** per §6/§2 —
+confirm whether `ts-node` (or anything else) actually needs it, since
+`tsc --noEmit` passing doesn't prove that; hand-write a throwaway
+`vite.config.ts` `pack` block (tsdown, per §7 — not a plain-Vite
+`build.lib`) and confirm the bundled `dist/bin/index.js` still passes
+`integration-bundled-binary.test.ts` unmodified; run `oxfmt`'s Node API
+against a real generated `README.md` and `action.yml` and diff the
+output against today's `prettier` output to resolve §8.0 (runtime
+`prettier` replacement) before Phase 2 deletes anything Prettier-related.
+This de-risks the plan before CI/config deletion.
 
 **Phase 1 — TypeScript 7 alone**
-Upgrade `typescript` to `latest` (GA 7.0), fix the `tsconfig.json` per §6,
-resolve whatever hard-error deprecations Phase 0 surfaced. Build/lint/test
-toolchain unchanged. Smallest possible PR; isolates TS7 fallout from
-tooling fallout.
+Upgrade `typescript` to the pinned compatible version from Phase 0 (not
+`@latest` — see §6), fix the `tsconfig.json` per §6, resolve whatever
+hard-error deprecations Phase 0 surfaced, and act on Phase 0's API-consumer
+audit: remove `ts-node` from `devDependencies` if confirmed dead weight,
+or alias it onto `@typescript/typescript6` if something still needs the
+TS6 API. Build/lint/format toolchain unchanged. Smallest possible PR;
+isolates TS7 fallout from tooling fallout.
 
-**Phase 2 — Oxlint + Oxfmt (lint/format only, build unchanged)**
-Author the Oxlint/Oxfmt config blocks using Oxlint's own default/
-recommended rules (no Biome rule mapping, per §8.3), delete `biome.json`,
-`.prettierrc.cjs`, `.babelrc.cjs`, `.lintstagedrc`, the duplicate
-`lint-staged` `package.json` block. Run Oxlint against `src/` and
-`__tests__/` and triage every finding it surfaces — fix genuine issues,
-don't pre-filter them to match what Biome used to allow. Apply
-the §8.0 outcome from the Phase 0 spike: either rewrite `src/prettier.ts`
-onto `oxfmt`'s API and drop `prettier` from `dependencies`, or leave
-`src/prettier.ts` on `prettier` as a documented exception — this is the
-phase where that decision actually lands in code, not just in the spike.
-Update `.husky/pre-commit` to call the new check command. Update
-`push_code_linting.yml` (swap `biomejs/setup-biome` + `biome lint` +
-`mongolyy/reviewdog-action-biome` for `oxc-project/oxlint-action`,
-keep the markdownlint step as-is).
+**Phase 2 — Oxlint + Oxfmt, with Vite+ installed for lint/format/staged
+only (build/pack/test blocks NOT touched yet)**
+Install `vite-plus` and the pinned `oxlint-tsgolint` (§6) as
+`devDependencies`. Author `vite.config.ts` with **only** the `fmt`,
+`lint`, `check`, and `staged` blocks (per §2/§4's verified config
+surface) — explicitly do not add the `pack` or `test` blocks in this
+phase; those are Phase 3's job, and adding them half-configured here
+would repeat the exact "referenced but not ready" mistake this
+restructuring is fixing. Use Oxlint's own default/recommended rules (no
+Biome rule mapping, per §8.3). Run Oxlint against `src/` and `__tests__/`
+and triage every finding it surfaces — fix genuine issues, don't
+pre-filter them to match what Biome used to allow. Apply the §8.0 outcome
+from the Phase 0 spike: either rewrite `src/prettier.ts` onto `oxfmt`'s
+API and drop `prettier` from `dependencies`, or leave `src/prettier.ts`
+on `prettier` as a documented exception — this is the phase where that
+decision actually lands in code, not just in the spike.
+
+This phase must close **every** Biome-invoking surface in the same PR,
+not just `push_code_linting.yml` — three were found still calling Biome
+directly by review:
+- `package.json` scripts: rewrite `format` → `vp fmt`, `format:check` →
+  the `vp fmt` check-mode equivalent, `lint:biome`/`lint:biome:fix` →
+  `vp lint`/`vp lint --fix`, `check`/`check:fix` → `vp check`/
+  `vp check --fix` (confirm exact flag names via `vp fmt --help`/
+  `vp lint --help` at execution time rather than assuming), and fold
+  `prelint` into `vp check` since that block already does format + lint
+  + type-check together. Delete `biome.json`, `.prettierrc.cjs`,
+  `.babelrc.cjs` once nothing references them.
+- `test.yml`'s `run-tests` job: it runs `biome check ./src/ ./__tests__/`
+  directly — replace with the Oxlint/`vp lint` equivalent in this same
+  phase, not deferred to Phase 3's build rewrite.
+- `push_code_linting.yml`: swap `biomejs/setup-biome` + `biome lint` +
+  `mongolyy/reviewdog-action-biome` for `oxc-project/oxlint-action`,
+  keep the markdownlint step as-is.
+- **Only after `vp staged` is actually wired and confirmed working**:
+  delete `.lintstagedrc` and the duplicate `lint-staged` block in
+  `package.json`, and point `.husky/pre-commit` at `vp staged`. Sequence
+  this last within the phase — don't delete the working `lint-staged`
+  setup before its replacement is proven, even within the same PR.
+
+Explicitly out of scope for Phase 2, staying untouched until Phase 3:
+`vitest.config.ts`, `vitest` imports in `__tests__/**` (the
+`vite-plus/test` import rewrite belongs to Phase 3, once the `test` block
+itself is consolidated — doing it piecemeal here adds churn without
+benefit), and the entire build/bundle pipeline.
 
 **Phase 3 — Vite+ build (the big one)**
-Introduce `vite-plus`, consolidate `vitest.config.ts` into `vite.config.ts`,
-replace `scripts/esbuild.mjs` + `tsconfig-mjs.json` +
-`scripts/set_package_type.sh` with `build.lib` per §7 (ESM-only library
-output, no `dist/cjs`, per the decided §8.1), remove the `require` export
-condition and `main` field from `package.json`, delete the replaced
-files, rewrite `package.json` scripts to `vp` commands, rewrite
+Add the `pack` block (tsdown, per §7) and `test` block (Vitest) to the
+already-present `vite.config.ts`, consolidate `vitest.config.ts` into it,
+and rewrite `__tests__/**`'s `vitest`/`@vitest/browser*` imports to
+`vite-plus/test`/`vite-plus/test/browser*` per Vite+'s migration docs.
+Replace `scripts/esbuild.mjs` + `tsconfig-mjs.json` +
+`scripts/set_package_type.sh` with the `pack` config (ESM-only library
+output, no `dist/cjs`, per the decided §8.1; explicit CLI-entry
+no-external override per §7), remove the `require` export condition and
+`main` field from `package.json`, delete the replaced files, rewrite the
+remaining `package.json` build scripts to `vp` commands, rewrite
 `test.yml` and `deploy.yml` build steps. This phase is gated on Phase 0's
 spike having already proven the bundled binary stays self-contained.
 
@@ -443,6 +537,8 @@ broken actual behavior.
 | Node floor bump to 24 breaks some consumer still pinned to Node 20 | Node 20 is already EOL (2026-04-30) and GitHub is removing it from Actions runners entirely in fall 2026, so staying on 20 isn't a neutral fallback to protect — the bump is called out explicitly in the PR description / changelog as a `feat!`/breaking change per this repo's conventional-commits rules, but isn't optional to defer indefinitely |
 | `semantic-release` / `deploy.yml`'s `git add -f dist` step assumes today's `dist/` layout | Verify `dist/bin`, `dist/mjs`, `dist/types` paths match after `vp pack` (no `dist/cjs` — dropped per §8.1), update the force-add + `files` array in `package.json` if paths shift |
 | Dropping the `require`/`main` export is a breaking change for any unseen `require()` consumer of this package as a library (vs. as an Action/CLI) | Called out explicitly as `feat!`/`fix!` in the PR description and changelog per this repo's conventional-commits rules, same as the Node-floor bump |
+| TS7 GA has no public programmatic compiler API — a devDependency or hidden tool that imports `typescript` directly (e.g. `ts-node`) can break silently even though `tsc --noEmit` passes | Phase 0's API-consumer audit (§6/§9) checks this before Phase 1 upgrades, not after; remove confirmed-dead consumers, alias genuinely-needed ones onto `@typescript/typescript6` |
+| `typescript` and `oxlint-tsgolint` installed independently (e.g. both `@latest`) drift out of the exact-version compatibility `tsgolint` requires, silently degrading or breaking type-aware linting | §6: pin both to the exact compatible pair at execution time (decoded from `oxlint-tsgolint`'s own version scheme), not installed via `@latest` separately |
 
 ## 11. Rollback
 

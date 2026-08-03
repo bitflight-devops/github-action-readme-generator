@@ -1,3 +1,10 @@
+## [1.10.10](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.9...v1.10.10) (2026-08-03)
+
+
+### Bug Fixes
+
+* move Docker build images to node:24-alpine, sync lockfile engines ([#616](https://github.com/bitflight-devops/github-action-readme-generator/issues/616)) ([d3082db](https://github.com/bitflight-devops/github-action-readme-generator/commit/d3082dbf033a303ce0381299cd956f4307e7476e))
+
 ## [1.10.9](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.8...v1.10.9) (2026-07-05)
 
 

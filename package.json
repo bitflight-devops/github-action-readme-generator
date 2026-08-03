@@ -188,7 +188,7 @@
     "vitest": "^4.1.2"
   },
   "engines": {
-    "node": ">=20.11.0 <26.0.0",
+    "node": ">=24.0.0 <30.0.0",
     "npm": ">=10.0.0"
   },
   "os": [
@@ -199,6 +199,6 @@
     "registry": "https://registry.npmjs.org/"
   },
   "volta": {
-    "node": "20.9.0"
+    "node": "24.19.0"
   }
 }

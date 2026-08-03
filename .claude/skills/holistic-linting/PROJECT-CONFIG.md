@@ -2,7 +2,7 @@
 
 ## Project: github-action-readme-generator
 
-**Stack**: TypeScript 5.7.3, Node.js 20.x, ESM with dual CJS/ESM output
+**Stack**: TypeScript + Node.js, ESM only. Don't hardcode version numbers here — read `package.json` (`engines`, `devDependencies`) for the current floor; this file has drifted from it twice already. `dist/cjs` is advertised in `package.json`'s `require` export but no build step actually produces it.
 **Linter**: Biome 2.x (replaces ESLint + Prettier)
 **Test Framework**: Vitest
 **Build**: esbuild
@@ -42,44 +42,13 @@ npm run lint:markdown
 npm run lint:markdown:fix
 ```
 
-## Biome Rule Categories
+## Biome Rules
 
-The project enforces strict linting with these rule categories:
+`biome.json` is the authoritative rule config — read it directly rather than trusting a rule list here; a hardcoded subset previously listed here was already missing several configured rules (`noBarrelFile`, `useNamingConvention`, `useFilenamingConvention`, `noReExportAll`, `noDelete`, among others) and had drifted from the real severities. Same for the `__tests__/**/*.ts` override block — read `biome.json`'s `overrides` section for the exact relaxed rules, don't re-derive it from memory.
 
-### Error Level (Blocks CI)
-- `correctness/*` - Catch bugs (unused imports, variables)
-- `security/*` - Prevent XSS, injection
-- `nursery/useExplicitType` - Require explicit types on exports
-- `suspicious/useAwait` - Async functions must use await
-- `suspicious/noEvolvingTypes` - Variables must have stable types
+If you need rule documentation Biome doesn't expose via CLI, check `https://biomejs.dev/linter/rules/{rule-name}`.
 
-### Warning Level (Should Fix)
-- `complexity/noForEach` - Prefer for...of loops
-- `complexity/useLiteralKeys` - Prefer obj.key over obj['key']
-- `style/noParameterAssign` - Don't reassign parameters
-- `style/useNodejsImportProtocol` - Use node: prefix
-- `suspicious/noConsole` - Avoid console in production
-- `suspicious/noExplicitAny` - Use unknown instead
-
-### Test File Overrides (__tests__/**/*.ts)
-Relaxed rules for test files:
-- `useAwait`: off (vi.mock uses async callbacks)
-- `useNamingConvention`: off (__filename/__dirname polyfills)
-- `noMisplacedAssertion`: off (assertions in mock callbacks)
-- `noConsole`: off (debug logging in tests)
-- `useExplicitType`: off (inference in tests is fine)
-
-## Biome Resolution Workflow
-
-When Biome reports an error:
-
-### 1. Research the Rule
-```bash
-# Biome doesn't have built-in rule docs CLI, check online:
-# https://biomejs.dev/linter/rules/{rule-name}
-```
-
-### 2. Common Error Patterns and Fixes
+## Common Error Patterns and Fixes
 
 **noExplicitAny → Use unknown**
 ```typescript
@@ -132,19 +101,14 @@ function process(value: string) {
 }
 ```
 
-### 3. Verify Resolution
-```bash
-npx biome check ./src/ ./__tests__/
-```
+Verify resolution with `npx biome check ./src/ ./__tests__/`.
 
 ## Integration with Git Hooks
 
-Pre-commit runs:
-1. `lint-staged` - Formats and checks staged files
-2. `npm run build` - Ensures build succeeds
-3. `npm run generate-docs` - Updates README from action.yml
+Pre-commit runs: `lint-staged` (format/check staged files) → `npm run build` → `npm run generate-docs`.
 
-lint-staged config (from package.json):
+**Known conflict, not yet resolved**: two different `lint-staged` configs exist simultaneously — `.lintstagedrc` (`prettier --write` on `.ts,.js,.json,.md`) and a different block in `package.json`'s `lint-staged` key (`biome check --write` on `.ts`, `prettier --write` on `.md,.yaml,.yml,.sh`, `biome format --write` on `.json`). Only one is actually read by `lint-staged` depending on its config-resolution order — don't assume the `package.json` block below is the one that runs without checking which file `lint-staged` actually picked up.
+
 ```json
 {
   "*.{md,yaml,yml,sh}": "prettier --write",
@@ -155,16 +119,7 @@ lint-staged config (from package.json):
 
 ## CI Validation
 
-The test workflow runs:
-```yaml
-- name: Setup Biome
-  uses: biomejs/setup-biome@v2
-  with:
-    version: latest
-
-- name: Biome check
-  run: biome check ./src/ ./__tests__/
-```
+`test.yml` and `push_code_linting.yml` both pin `biomejs/setup-biome@v2` to `version: 2.5.1`, which does not match `package.json`'s `@biomejs/biome` devDependency (`2.5.3`). This is a real, known mismatch — deliberately left unreconciled, since Biome itself is being fully removed as part of the pending TypeScript 7 / Vite+ / Oxlint / Oxfmt conversion. Don't spend effort fixing version drift on a tool that's about to be deleted; this whole file gets replaced when that conversion lands.
 
 ## Common Issues and Solutions
 

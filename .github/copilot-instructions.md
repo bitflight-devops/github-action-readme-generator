@@ -5,7 +5,7 @@
 **Purpose**: CLI tool and GitHub Action that generates/updates README.md files from action.yml metadata. Automatically extracts title, description, inputs, outputs, and usage examples from action.yml and updates corresponding sections in README.md using markdown comment delimiters.
 
 **Type**: TypeScript-based Node.js project
-**Target Runtime**: Node.js 20.x (STRICT requirement - engines enforces >=20.0.0 <21.0.0)
+**Target Runtime**: Node.js 24.x (STRICT requirement - engines enforces >=24.0.0 <30.0.0)
 **Package Manager**: npm >=10.0.0
 **Build Tool**: esbuild + TypeScript compiler
 **Test Framework**: vitest
@@ -47,7 +47,7 @@
 
 ## Critical: Node Version Requirement
 
-⚠️ **IMPORTANT**: This project REQUIRES Node 20.x. The engines field strictly enforces this. If you see `EBADENGINE` warnings during npm install, the environment is using an incompatible Node version. The project uses volta for version management - check `.node-version` (contains "20.9.0") and `package.json` volta field.
+⚠️ **IMPORTANT**: This project REQUIRES Node 24.x (Active LTS). The engines field strictly enforces this. If you see `EBADENGINE` warnings during npm install, the environment is using an incompatible Node version. Node 20 reached end-of-life on 2026-04-30 and is no longer supported. The project uses volta for version management - check `.node-version` (contains "24.19.0") and `package.json` volta field.
 
 ## Build & Validation Commands
 
@@ -244,7 +244,7 @@ Duration: Total ~40-60 seconds for full validation.
 
 1. **Test Workflow** (`.github/workflows/test.yml`):
    - Runs on: push, pull_request_target
-   - Steps: checkout → setup Node 20.x → npm install → npm test → npm run coverage → npm run build → npm run generate-docs
+   - Steps: checkout → setup Node 24.x → npm install → npm test → npm run coverage → npm run build → npm run generate-docs
    - Must pass for PR merge
 
 2. **Linting Workflow** (`.github/workflows/push_code_linting.yml`):
@@ -276,7 +276,7 @@ Duration: Total ~40-60 seconds for full validation.
 3. **Lint errors on test files**: Pre-existing `no-return-await` errors in 4 test files - can be ignored or fixed
 4. **README.md changes after commit**: Expected - pre-commit hook runs `generate-docs`
 5. **Pre-commit hook slow**: Normal - it runs full build + docs generation (~30-60s)
-6. **EBADENGINE warning**: Using wrong Node version - requires Node 20.x
+6. **EBADENGINE warning**: Using wrong Node version - requires Node 24.x
 
 ## Key Implementation Details
 
@@ -292,7 +292,7 @@ Duration: Total ~40-60 seconds for full validation.
 
 **Before making changes:**
 
-1. Ensure Node 20.x is active (check `node -v`)
+1. Ensure Node 24.x is active (check `node -v`)
 2. Run `npm install` if package.json changed
 3. Run `npm run build` after any source changes
 

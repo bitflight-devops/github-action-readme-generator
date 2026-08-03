@@ -4,7 +4,7 @@ description: Sets up Node.js environment
 inputs:
   version:
     description: "The version of Node.js to use"
-    default: "20.x"
+    default: "24.x"
     required: false
     type: string
 
@@ -44,7 +44,7 @@ runs:
 
         # check that we now have a node version, if not, use the default
         if ! grep -qoP '^v?\d+\.(x|\d+\.)?(\d+|x)?' <<<"${NODE_VERSION}"; then
-          NODE_VERSION="${{ inputs.version || '20.x' }}"
+          NODE_VERSION="${{ inputs.version || '24.x' }}"
           echo "::warning::Unable to determine Node.js version from project files, using default version ${NODE_VERSION}"
         fi
 

@@ -510,8 +510,17 @@ cut-over" describes the *end state* (no dragged-along legacy config), not
 Prove the risky parts in isolation on a scratch branch before touching CI:
 determine the current compatible `typescript`/`oxlint-tsgolint` pin pair
 per §6 and install that (not `@latest`), then run `tsc --noEmit` as-is to
-see the real diff of TS7 hard-error deprecations against this codebase;
-**re-confirm no consumer of the `typescript` programmatic API survives**
+see the real diff of TS7 hard-error deprecations against this codebase.
+**`tsc --noEmit` is not enough on its own** — it skips emission entirely,
+so it cannot catch failures specific to `postbuild`'s
+`tsc --emitDeclarationOnly --outFile dist/types/index.d.ts` invocation
+(§3 already flagged this as "an unusual/fragile use of that flag," and
+`tsconfig.json`'s current `"ignoreDeprecations": "6.0"` — removed per
+§6 — is a real candidate for exactly what's currently suppressing a
+warning on it). Actually run `postbuild`'s real declaration-emit command
+under the pinned TS7 in this same spike, not just `--noEmit`, so a
+Phase 1 build failure shows up here instead of after Phase 1 claims a
+green build. **Re-confirm no consumer of the `typescript` programmatic API survives**
 per §6/§2 — a final `grep` pass, since `tsc --noEmit` passing doesn't
 prove that on its own, and `ts-node` is already decided as dead weight
 to remove, not something still being evaluated; hand-write a throwaway
@@ -533,7 +542,11 @@ same treatment as the already-found dead `.babelrc.cjs`, not aliased to
 `@typescript/typescript6`. Delete `scripts/editorconfig.ts` and
 `scripts/formatter.ts` in the same PR — also dead (§3), and the reason
 there's nothing for `ts-node` to have been running in the first place.
-Build/lint/format toolchain unchanged. Smallest possible PR; isolates
+Build/lint/format *scripts* stay textually unchanged, but they now run
+under TS7 — that's exactly what Phase 0's real declaration-emit check
+(not just `tsc --noEmit`) validates before this phase claims a green
+`npm run build`, not something this phase re-verifies independently.
+Smallest possible PR; isolates
 TS7 fallout from tooling fallout.
 
 **Phase 2 — Oxlint + Oxfmt, with Vite+ installed for lint/format/staged

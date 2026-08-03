@@ -100,6 +100,40 @@ moved to **Biome**, not ESLint):
 - **Dead config found:** `.babelrc.cjs` (targets `node 16`, legacy decorator
   plugin) — nothing in `package.json` scripts or CI invokes Babel. It is
   unused and gets deleted, independent of the TS7/Vite+ decision.
+- **Dead source found:** `scripts/editorconfig.ts` and `scripts/formatter.ts`
+  — checked whether these are what `ts-node`/the `"ts-node": {"esm": true}`
+  block in `tsconfig.json` actually runs (the natural candidate, since
+  they're the only loose `.ts` files that would need direct execution).
+  They aren't invoked anywhere — zero references in `package.json` scripts,
+  `.github/`, or `.husky/`. `scripts/editorconfig.ts` imports `editorconfig`,
+  a package that isn't in `dependencies`, `devDependencies`, or even
+  `package-lock.json` — it would fail on its first line if ever run.
+  `scripts/formatter.ts` still has a stray `/* eslint-disable
+  promise/no-nesting */` directive, a leftover from before the ESLint→Biome
+  move. Neither error ever surfaces because `tsconfig.json`'s `exclude`
+  already has `scripts/**` — these files sit outside type-checking
+  entirely. Both are dead, same category as `.babelrc.cjs`, and get
+  deleted alongside it.
+- **What actually replaces `ts-node`, if anything ever needs to run a
+  `.ts` file directly again:** nothing needs to — Node 24 (this repo's
+  target floor, see §5) has *stable, default-enabled* native TypeScript
+  execution (type stripping went stable in Node v24.12.0): `node
+  script.ts` just runs, no `ts-node`/`tsc`/build step. That's the real
+  answer to "what replaces `ts-node`" — not another package, the runtime
+  itself now does it. (Type stripping doesn't type-check — `tsc --noEmit`
+  in CI still does that job, unchanged by this.)
+- **`typescript-eslint` and `ts-morph` need no replacement because they
+  were never here to begin with** — checked `package.json` directly:
+  neither is a dependency of this repo, in any form, today. The general
+  industry risk of TS7 breaking tools that depend on the old programmatic
+  compiler API (§2) doesn't apply to this repo via those two, because
+  they were never in the dependency tree for it to break. The tool that
+  *is* here doing type-aware linting today, Biome, isn't affected either
+  — Biome doesn't use the TypeScript compiler API. Going forward, Oxlint
+  (via `tsgolint`, which vendors its own TS7.0.2 checker rather than
+  calling into this repo's installed `typescript`) is the "native"
+  replacement for that category of tooling — already the plan's Phase 2,
+  not a new decision this raises.
 - **CI:** four workflows touch this toolchain —
   `test.yml` (matrix Node 20/24, `biome check`, `vitest`, `coverage`,
   `build`, `generate-docs`), `push_code_linting.yml` (`biome lint` +
@@ -447,10 +481,14 @@ This de-risks the plan before CI/config deletion.
 
 **Phase 1 — TypeScript 7 alone**
 Upgrade `typescript` to the pinned compatible version from Phase 0 (not
-`@latest` — see §6), fix the `tsconfig.json` per §6, resolve whatever
-hard-error deprecations Phase 0 surfaced, and remove `ts-node` from
-`devDependencies` — decided dead weight (§2/§6), same treatment as the
-already-found dead `.babelrc.cjs`, not aliased to `@typescript/typescript6`.
+`@latest` — see §6), fix the `tsconfig.json` per §6 (including dropping
+the now-pointless `"ts-node": {"esm": true}` block once `ts-node` itself
+is gone), resolve whatever hard-error deprecations Phase 0 surfaced, and
+remove `ts-node` from `devDependencies` — decided dead weight (§2/§6),
+same treatment as the already-found dead `.babelrc.cjs`, not aliased to
+`@typescript/typescript6`. Delete `scripts/editorconfig.ts` and
+`scripts/formatter.ts` in the same PR — also dead (§3), and the reason
+there's nothing for `ts-node` to have been running in the first place.
 Build/lint/format toolchain unchanged. Smallest possible PR; isolates
 TS7 fallout from tooling fallout.
 

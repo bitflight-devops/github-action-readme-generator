@@ -269,19 +269,23 @@ flagging them rather than silently picking one:
    two tools touching `.md` files. Recommend: let Oxfmt format Markdown
    (replacing Prettier's role there, which `.lintstagedrc` already did),
    keep markdownlint strictly for structural/prose linting, unchanged.
-3. **Biome custom rule parity.** `biome.json` has several
-   project-specific rules (`useNamingConvention` with per-symbol-kind
-   formats, `useFilenamingConvention`, `noExcessiveCognitiveComplexity`
-   @ 25, `noExcessiveLinesPerFunction` @ 150, `noBarrelFile`,
-   `noReExportAll`, `noDelete`, etc.) plus a per-directory override that
-   relaxes several rules under `__tests__/**`. Oxlint has 699 rules and
-   broad `typescript-eslint`-equivalent coverage, but a rule-by-rule
-   mapping hasn't been done yet — that's implementation work, not
-   research I should guess at. Recommend: do this mapping as the first
-   concrete task of the execution phase (§9, Phase 2), and accept that a
-   handful of Biome-specific rules (e.g. the exact cognitive-complexity
-   threshold) may have no Oxlint equivalent and need to be dropped or
-   left to code review.
+3. **No Biome→Oxlint rule mapping.** Decided: we do **not** try to
+   reproduce `biome.json`'s custom rule thresholds
+   (`useNamingConvention` per-symbol-kind formats,
+   `useFilenamingConvention`, `noExcessiveCognitiveComplexity` @ 25,
+   `noExcessiveLinesPerFunction` @ 150, `noBarrelFile`, `noReExportAll`,
+   `noDelete`, the `__tests__/**` rule relaxation override, etc.) in
+   Oxlint config. `biome.json` is **deleted**, not translated. Oxlint
+   is adopted with its own default/recommended rule set as-is. Phase 2's
+   job is: turn it on, run it against `src/` and `__tests__/`, and treat
+   whatever it reports as real findings to triage — fix the ones that are
+   genuine issues, suppress individual false positives inline (with a
+   reason comment) if any turn up, and otherwise accept Oxlint's opinion
+   of best practice rather than re-deriving Biome's old thresholds. If a
+   category of finding turns out to be noisy across the whole codebase
+   (not a one-off), that's a config-level call to make at that point,
+   from what Oxlint actually flags — not something to pre-decide now by
+   guessing at rule-name equivalence.
 4. **`vp migrate` vs hand-authored config.** Vite+ ships a `vp migrate`
    command that *preserves* existing config and *suggests* removing
    old tooling. That's an incremental-migration tool — it's the opposite
@@ -314,9 +318,12 @@ toolchain unchanged. Smallest possible PR; isolates TS7 fallout from
 tooling fallout.
 
 **Phase 2 — Oxlint + Oxfmt (lint/format only, build unchanged)**
-Author the Oxlint/Oxfmt config blocks, do the Biome→Oxlint rule mapping
-(§8.3), delete `biome.json`, `.prettierrc.cjs`, `.babelrc.cjs`,
-`.lintstagedrc`, the duplicate `lint-staged` `package.json` block. Apply
+Author the Oxlint/Oxfmt config blocks using Oxlint's own default/
+recommended rules (no Biome rule mapping, per §8.3), delete `biome.json`,
+`.prettierrc.cjs`, `.babelrc.cjs`, `.lintstagedrc`, the duplicate
+`lint-staged` `package.json` block. Run Oxlint against `src/` and
+`__tests__/` and triage every finding it surfaces — fix genuine issues,
+don't pre-filter them to match what Biome used to allow. Apply
 the §8.0 outcome from the Phase 0 spike: either rewrite `src/prettier.ts`
 onto `oxfmt`'s API and drop `prettier` from `dependencies`, or leave
 `src/prettier.ts` on `prettier` as a documented exception — this is the
@@ -354,7 +361,7 @@ broken actual behavior.
 |---|---|
 | TS7 hard-errors on patterns Biome/TS6 allowed | Phase 0 spike surfaces this before any deletion happens |
 | Rolldown bundling breaks the "fully self-contained binary" guarantee | `integration-bundled-binary.test.ts` already exists and is the exact regression gate; keep it, run it every phase |
-| Oxlint rule gaps vs. current Biome config silently loosen quality bar | Explicit rule-mapping task (§8.3) before deleting `biome.json`, not after |
+| Oxlint's default rules differ from Biome's custom thresholds (either direction — some things Biome flagged, Oxlint won't, and vice versa) | Accepted by design (§8.3) — the goal is Oxlint's own findings against this codebase, not Biome parity; Phase 2 triages whatever Oxlint actually reports rather than pre-tuning config to match the old bar |
 | Replacing runtime `prettier` with `oxfmt` silently changes generated `README.md`/YAML output for every consumer of this action | §8.0 verification (real-file diff, not just unit-test mocks) happens in the Phase 0 spike, before Phase 2 touches `src/prettier.ts`; if parity doesn't hold, keep `prettier` rather than ship a regression |
 | `vp` toolchain still "beta" — API/CLI surface can change under us | Pin `vite-plus` (and its bundled Oxlint/Oxfmt/tsdown versions) to exact versions in `package.json`, not ranges, until it reaches stable/1.0 |
 | Node floor bump to 20.19+ breaks some consumer pinned to older 20.x | Called out explicitly in the PR description / changelog as a `feat!`/breaking change per this repo's conventional-commits rules |

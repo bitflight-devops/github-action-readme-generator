@@ -2,7 +2,7 @@
 
 ## Project: github-action-readme-generator
 
-**Stack**: TypeScript 6.0.3, Node.js 24.x, ESM with dual CJS/ESM output
+**Stack**: TypeScript 6.0.3, Node.js 24.x, ESM (dist/cjs is advertised in package.json's `require` export but is not actually produced by any current build step)
 **Linter**: Biome 2.x (replaces ESLint + Prettier)
 **Test Framework**: Vitest
 **Build**: esbuild
@@ -160,7 +160,7 @@ The test workflow runs:
 - name: Setup Biome
   uses: biomejs/setup-biome@v2
   with:
-    version: latest
+    version: 2.5.1
 
 - name: Biome check
   run: biome check ./src/ ./__tests__/

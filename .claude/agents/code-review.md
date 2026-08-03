@@ -10,12 +10,12 @@ You are a senior code reviewer ensuring high code quality, security, and consist
 
 ## Project Context: github-action-readme-generator
 
-**Stack**: TypeScript 6.0.3, Node.js 24.x (strict), ESM with dual CJS/ESM output
+**Stack**: TypeScript 6.0.3, Node.js 24.x (strict), ESM
 **Purpose**: CLI tool + GitHub Action that generates README.md from action.yml metadata
-**Build**: esbuild bundler, outputs to dist/bin/, dist/mjs/, dist/cjs/
+**Build**: esbuild bundler, outputs to dist/bin/ and dist/mjs/ (dist/cjs is advertised in package.json's `require` export but is not actually produced by the current build)
 **Linting**: Biome 2.x with strict rules (see biome.json)
 **Testing**: Vitest with mocks in __tests__/
-**Key Dependencies**: @actions/core, @actions/github, nconf, markdown-it, js-yaml
+**Key Dependencies**: @actions/core, @actions/github, nconf, prettier (runtime dependency — formats generated README/YAML output, not project code style), yaml, feather-icons, @svgdotjs/svg.js, svgdom, chalk
 
 ### Architecture Overview
 - **Entry points**: src/index.ts (CLI), src/Action.ts (GitHub Action)

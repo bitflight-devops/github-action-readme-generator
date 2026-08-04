@@ -200,8 +200,15 @@ Under active decision, not assumed either way:
   the full script audit below.
 - `commitlint` + conventional commits enforcement — untouched, orthogonal
   to this conversion.
-- `semantic-release` — untouched, but its `prepareCmd`/build step in
-  `deploy.yml` now calls `vp pack` instead of `npm run build`.
+- `semantic-release` — untouched. `deploy.yml`'s build step **stays
+  `npm run build`**, not a direct `vp pack` call — correction from an
+  earlier pass of this plan, which had this backwards. `npm run build`
+  itself gets rewritten to wrap `vp pack` (per the script audit below),
+  including its `rimraf dist out` cleanup and `chmod` step. Calling
+  `vp pack` directly from `deploy.yml` would skip that cleanup, and since
+  release checkouts already contain a committed `dist/` tree, stale
+  files the new pack config no longer produces could survive into the
+  force-added release commit.
 - `vitest` as the test runner and its config semantics — Vite+ *bundles*
   Vitest rather than replacing it, so `__tests__/**` and
   `vitest.config.ts`'s `test` block move into `vite.config.ts` verbatim.
@@ -545,7 +552,15 @@ to remove, not something still being evaluated; hand-write a throwaway
 against a real generated `README.md` and `action.yml` and diff the
 output against today's `prettier` output to resolve §8.0 (runtime
 `prettier` replacement) before Phase 2 deletes anything Prettier-related.
-This de-risks the plan before CI/config deletion.
+**If that output-parity check passes, it only proves the formatted
+output matches — it does not prove `oxfmt` can actually ship inside the
+self-contained CLI bundle.** Build and run a throwaway bundled binary
+with `src/prettier.ts` swapped onto `oxfmt`'s API (same pack-block spike
+as above, but with the replacement wired in) and confirm it still passes
+`integration-bundled-binary.test.ts`, rather than approving the
+replacement on output parity alone and finding out it doesn't bundle
+once Phase 2 actually makes the swap. This de-risks the plan before
+CI/config deletion.
 
 **Phase 1 — TypeScript 7 alone**
 Upgrade `typescript` to the pinned compatible version from Phase 0 (not
@@ -607,6 +622,12 @@ directly by review:
   needs no edit (verified by reading it; see §4). Sequence this last
   within the phase — don't delete the working `lint-staged` setup before
   its replacement is proven, even within the same PR.
+- **Remove the replaced tools from `devDependencies`, not just their
+  config/invocations**: `@biomejs/biome` and `lint-staged` come out once
+  everything above lands. Leaving them installed-but-unused after
+  deleting every config file and script that used them isn't a clean
+  cut-over, it's dead weight in `package.json` and the lockfile — the
+  same standard already applied to `.babelrc.cjs`/`ts-node`.
 
 Explicitly out of scope for Phase 2, staying untouched until Phase 3:
 `vitest.config.ts`, `vitest` imports in `__tests__/**` (the
@@ -624,9 +645,15 @@ Replace `scripts/esbuild.mjs` + `tsconfig-mjs.json` +
 output, no `dist/cjs`, per the decided §8.1; explicit CLI-entry
 no-external override per §7), remove the `require` export condition and
 `main` field from `package.json`, delete the replaced files, rewrite the
-remaining `package.json` build scripts to `vp` commands, rewrite
-`test.yml` and `deploy.yml` build steps. This phase is gated on Phase 0's
-spike having already proven the bundled binary stays self-contained.
+remaining `package.json` build scripts to `vp` commands (`build`
+becomes `rimraf dist out && vp pack && chmod +x dist/bin/index.js`, per
+the script audit), rewrite `test.yml`'s build step accordingly. **Leave
+`deploy.yml` calling `npm run build`** — not a direct `vp pack` call
+(§4 already corrects this) — and remove the now-replaced
+`esbuild`/`esbuild-node-externals` `devDependencies`, same "clean
+cut-over deletes the tool, not just its config" standard applied to
+Biome in Phase 2 below. This phase is gated on Phase 0's spike having
+already proven the bundled binary stays self-contained.
 
 **Phase 4 — cleanup**
 Update `.github/copilot-instructions.md` and `CLAUDE.md` to describe the

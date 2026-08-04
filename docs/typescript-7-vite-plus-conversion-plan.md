@@ -121,7 +121,9 @@ moved to **Biome**, not ESLint):
   script.ts` just runs, no `ts-node`/`tsc`/build step. That's the real
   answer to "what replaces `ts-node`" — not another package, the runtime
   itself now does it. (Type stripping doesn't type-check — `tsc --noEmit`
-  in CI still does that job, unchanged by this.)
+  in CI still does that job, unchanged by this.) Source: [Node.js docs —
+Modules: TypeScript](https://nodejs.org/api/typescript.html) (primary,
+official).
 - **`typescript-eslint` and `ts-morph` need no replacement because they
   were never here to begin with** — checked `package.json` directly:
   neither is a dependency of this repo, in any form, today. The general
@@ -264,6 +266,12 @@ today (2026-08-03):
 | Node 24 | **Active LTS** | 2028-04-30 |
 | Node 26 | Current; becomes Active LTS | 2026-10-28 (becomes LTS) |
 
+Sources: [nodejs.org/dist/index.json](https://nodejs.org/dist/index.json)
+(fetched directly — each release entry's `lts` field is the primary
+signal: `false` for Node 26 as of this check, a codename string for 22/24),
+[nodejs/Release](https://github.com/nodejs/Release) (the official
+schedule this index reflects).
+
 `.github/copilot-instructions.md`'s "STRICT Node 20.x" rule and this
 repo's `engines.node` (`>=20.11.0 <26.0.0`)/`volta.node` (`20.9.0`)/
 `.node-version` (`20.x`) are all pinned to an already-EOL line. That's a
@@ -278,6 +286,8 @@ actions in 2026, and is removing Node 20 support from hosted runners
 entirely later in fall 2026 — after that, any action still declaring
 `using: "node20"` stops working outright, regardless of anything in this
 plan. This needs `using: "node24"` before that removal date, full stop.
+Source: [GitHub Changelog — Deprecation of Node 20 on GitHub Actions
+runners](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/).
 
 **Evidence already in this repo pointing the same direction, found by
 reading the workflow files, not assumed:** `test.yml`'s CI matrix already
@@ -517,7 +527,12 @@ so it cannot catch failures specific to `postbuild`'s
 (§3 already flagged this as "an unusual/fragile use of that flag," and
 `tsconfig.json`'s current `"ignoreDeprecations": "6.0"` — removed per
 §6 — is a real candidate for exactly what's currently suppressing a
-warning on it). Actually run `postbuild`'s real declaration-emit command
+warning on it). **Sourcing caveat, stated plainly rather than glossed
+over:** the `--outFile`-removal claim itself is backed by secondary
+sources (blog/community coverage), not a primary TypeScript changelog
+citation I've directly read — that's exactly *why* this Phase 0 step
+exists: an actual empirical run settles it regardless of how precisely
+documented the removal is. Actually run `postbuild`'s real declaration-emit command
 under the pinned TS7 in this same spike, not just `--noEmit`, so a
 Phase 1 build failure shows up here instead of after Phase 1 claims a
 green build. **Re-confirm no consumer of the `typescript` programmatic API survives**
@@ -648,3 +663,26 @@ Each phase lands as its own PR against a real base branch with CI green
 before merge, so rollback is `git revert` of that phase's merge commit —
 no phase depends on hand-edits outside its own PR, so reverting Phase 3
 doesn't require also reverting Phase 1/2.
+
+## 12. Sources
+
+Every external claim in this plan traces to one of these — consolidated
+here since inline citations were only ever consistently present in §2's
+table until this pass. Grouped by confidence, not by topic: primary
+sources I fetched or read directly, versus secondary coverage used
+where I didn't independently confirm against a primary source.
+
+**Primary (fetched/read directly during this plan's research):**
+- [TypeScript 7.0 GA announcement](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/) — official Microsoft devblog. Backs: TS7 GA date, native-compiler claim, no-programmatic-API finding, `@typescript/typescript6` compatibility shim.
+- [`typescript` package on npm](https://www.npmjs.com/package/typescript) / npm registry data for `typescript@7.0.2` and `@typescript/native-preview` — fetched directly (`registry.npmjs.org`). Backs: `bin.tsc`, per-platform `optionalDependencies`, the GA-vs-nightly distinction.
+- [Oxc blog — Type-Aware Linting Stable](https://oxc.rs/blog/2026-07-22-type-aware-linting-stable) — fetched directly. Backs: `tsgolint` stability date, rule-coverage numbers, the `<TS version><patch>` versioning scheme that drives the exact-pin requirement (§6).
+- [Oxfmt Beta announcement](https://oxc.rs/blog/2026-02-24-oxfmt-beta) and [Oxfmt Quickstart](https://oxc.rs/docs/guide/usage/formatter/quickstart.html) — fetched directly. Backs: Oxfmt's Prettier-conformance claim, its Node.js API shape.
+- [Vite+ Beta announcement](https://voidzero.dev/posts/announcing-vite-plus-beta), [viteplus.dev/config/](https://viteplus.dev/config/), [viteplus.dev/guide/commit-hooks](https://viteplus.dev/guide/commit-hooks), [viteplus.dev/guide/migrate](https://viteplus.dev/guide/migrate) — all fetched directly. Backs: the entire `fmt`/`lint`/`check`/`test`/`pack`/`staged` block list (§2/§4), `vp staged` (not `vp check --staged`), the `vite-plus/test` import rewrite.
+- [nodejs.org/dist/index.json](https://nodejs.org/dist/index.json) — fetched directly. Backs: the Node 20/22/24/26 LTS-status table in §5, cross-checked against each release's own `lts` field rather than a secondary summary.
+- [Node.js docs — Modules: TypeScript](https://nodejs.org/api/typescript.html) — official Node.js docs. Backs: native type-stripping as the real "replacement" for `ts-node` (§3).
+- [GitHub Changelog — Deprecation of Node 20 on GitHub Actions runners](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/) — official GitHub changelog. Backs: the hard deadline forcing `action.yml`'s `runs.using` off `node20` (§5).
+
+**Secondary (search-result coverage, not independently confirmed against a primary source):**
+- The `--outFile` compiler-option removal claim (§3, §9 Phase 0) — sourced from blog/community coverage (NestJS GitHub issue discussion, general TS6/7 migration blogs), not a TypeScript release-notes page I've read directly. Flagged inline where it's used, not just here — this is exactly why Phase 0 now runs the real declaration-emit command instead of trusting the claim.
+- General TS7 ecosystem-breakage coverage (`typescript-eslint`/`ts-jest`/`ts-morph`/framework template-checkers not working on TS7) — corroborated across multiple independent blog/news sources during research, consistent with the primary GA announcement's own statement that the programmatic API is gone until 7.1, but the specific list of affected tools is secondary-sourced.
+- Node 24 type-stripping's exact stabilization version (v24.12.0) — from secondary coverage (dev.to, ishu.dev) cross-referenced against the primary `nodejs.org/api/typescript.html` page, which confirms the capability but wasn't re-checked here for the exact version number the secondary sources cite.

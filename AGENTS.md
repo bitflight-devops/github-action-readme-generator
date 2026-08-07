@@ -35,8 +35,20 @@ four hold at once:
 - Handing it a goal returns a result with no mid-loop intervention required.
 - The stop condition is a fact (a status enum, an exit code), not a feeling.
 
-CI-status loops (push → check status → iterate on failure → stop on green)
-qualify outright. "Is this review comment actually addressed" does **not**
+Only the **status-check step** qualifies outright — polling a status enum
+after a push and stopping on green is a fact-based check with nothing to
+apply the four conditions against, it's just a read. **Iterating on
+failure is a different action bundled under the same name, and it doesn't
+get the same free pass**: choosing what to push next is a judgment call
+(the same one the checker principle above exists to decorrelate from the
+agent making it), and pushing repeatedly with no cap is exactly the
+unbounded loop the four conditions are meant to rule out. Treat push →
+check → iterate as a loop only with explicit bounds: a maximum number of
+iterations, fixes that are safe to retry (idempotent — re-running one
+doesn't compound on a half-applied previous attempt), and a point where
+an unresolved failure surfaces for a human or an independent pass rather
+than triggering another push on its own. "Is this review comment
+actually addressed" does **not**
 qualify on its own — it's a judgment call — but pairing it with the checker
 principle above makes it tractable without pretending it's a fact.
 

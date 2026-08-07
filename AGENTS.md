@@ -95,3 +95,12 @@ signal to bring the relevant piece of the Vite+ migration forward, rather
 than working around the gap. See
 `docs/typescript-7-vite-plus-conversion-plan.md` for the phased plan this
 repo is following toward that end state.
+
+## Don't read what a cheap agent can read for you
+
+Every tool call in your own turn re-processes your entire existing context — on a long session, that's expensive regardless of how small the individual output is. A fresh subagent (a cheap model) starts with none of that baggage, so it isn't just cheaper per call, it's cheaper by an order of magnitude for exactly the calls that are heaviest for you specifically: reading logs, search results, or large documents.
+
+- If a step is "read this large/raw thing and tell me what matters," delegate it. Give the agent the source (a log, a URL, a file, a search query) and ask it to return only the synthesized finding plus a pointer back to the source (a file path and line, a URL, a quoted excerpt) — enough to independently verify the claim without having ingested the raw material yourself.
+- This isn't a reason to explore less — it's a reason not to be the one doing the reading. Delegating the exploration doesn't delegate away scrutiny; the checker principle above still applies to what the agent reports back.
+- Before waiting on your own turn to sequence two pieces of work, ask whether the second piece could have been written into the first agent's own instructions, or dispatched immediately (e.g. via the GitHub API instead of a local checkout, or with worktree isolation) so it never needs to contend with the first agent's state. Sequencing steps through your own turn just to avoid a hypothetical conflict is itself a cost that a little more upfront planning avoids.
+- Don't schedule a wakeup to poll for a background agent's completion — it already notifies you when done. A scheduled poll on top of that is a redundant, wasted wakeup.

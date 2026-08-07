@@ -406,6 +406,7 @@ Requirements this config must satisfy, carried over from
      {
        entry: 'src/index.ts',
        platform: 'node',
+       outDir: 'dist/bin',
        deps: { alwaysBundle: ['prettier' /* ...other runtime deps... */] },
      }, // CLI
      { entry: 'src/index.ts', platform: 'node', outDir: 'dist/mjs' }, // library — default externalization
@@ -414,6 +415,13 @@ Requirements this config must satisfy, carried over from
    Don't rely on default behavior for the CLI entry — tsdown's default
    posture (like most npm-library bundlers) is to externalize
    `dependencies`, which is the opposite of what the CLI entry needs.
+   **`outDir: 'dist/bin'` on the CLI object is required, not optional** —
+   without it, both entries share `entry: 'src/index.ts'` and the CLI
+   output lands wherever tsdown's default output directory is, not at
+   `dist/bin/index.js` specifically. Item 5's `chmod +x
+dist/bin/index.js` below, `generate-docs`, and `action.yml`'s
+   `runs.main` all execute that exact path; an unset `outDir` means the
+   pack step doesn't create the file those three steps expect.
    Keep the `alwaysBundle` override scoped to the CLI entry object only.
 2. Shebang / ESM interop banner (`#!/usr/bin/env node` + the
    `__filename`/`__dirname`/`require` polyfill shim) preserved via
@@ -580,8 +588,26 @@ with `src/prettier.ts` swapped onto `oxfmt`'s API (same pack-block spike
 as above, but with the replacement wired in) and confirm it still passes
 `integration-bundled-binary.test.ts`, rather than approving the
 replacement on output parity alone and finding out it doesn't bundle
-once Phase 2 actually makes the swap. This de-risks the plan before
-CI/config deletion.
+once Phase 2 actually makes the swap.
+
+**That tsdown/pack-block spike alone still isn't sufficient, because of
+a bundler mismatch this plan itself creates**: the `oxfmt` swap in
+`src/prettier.ts` lands in **Phase 2** (per that phase's text above:
+"this is the phase where that decision actually lands in code"), but
+Phase 2 explicitly leaves "the entire build/bundle pipeline" untouched —
+`scripts/esbuild.mjs` is still what actually produces `dist/bin/index.js`
+until Phase 3 replaces it with the `pack` block. Proving the swapped code
+bundles cleanly under the throwaway tsdown/Rolldown spike says nothing
+about whether it bundles cleanly under the **esbuild** pipeline that is
+still in production use for the two phases in between. Run this same
+bundled-binary check a second way in Phase 0: build the oxfmt-swapped
+`src/prettier.ts` through the actual, current `scripts/esbuild.mjs`
+pipeline (not the throwaway tsdown config) and confirm
+`integration-bundled-binary.test.ts` still passes against _that_ binary.
+If it doesn't, the outcome is to defer the `oxfmt` swap to Phase 3 (once
+`pack` is the real build), not to force it into Phase 2 against a
+pipeline the spike never actually validated. This de-risks the plan
+before CI/config deletion.
 
 **Phase 1 — TypeScript 7 alone**
 Upgrade `typescript` to the pinned compatible version from Phase 0 (not
@@ -657,8 +683,37 @@ directly by review:
   is the same reason `prelint` folds into it a few bullets above. Land
   this in this same phase, not deferred to Phase 3's build rewrite.
 - `push_code_linting.yml`: swap `biomejs/setup-biome` + `biome lint` +
-  `mongolyy/reviewdog-action-biome` for `oxc-project/oxlint-action`,
-  keep the markdownlint step as-is.
+  `mongolyy/reviewdog-action-biome` for **an equivalent that actually
+  reads this repo's Oxlint configuration, not `oxc-project/oxlint-action`
+  as first written here.** Checked that action's own README directly
+  (`raw.githubusercontent.com/oxc-project/oxlint-action/main/README.md`):
+  its inputs are `config` (a `.oxlintrc.json` path), `allow`/`warn`/`deny`
+  category or rule lists, and `plugins`/`plugins-disable` — nothing in
+  that input surface reads `vite.config.ts`. This repo's `typeAware`/
+  `typeCheck` settings live **only** in `vite.config.ts`'s `lint` block
+  (per the requirement a few paragraphs above), so
+  `oxc-project/oxlint-action` would run a second, un-type-aware Oxlint
+  pass with a different rule set than `vp lint`/`vp check` use elsewhere
+  in CI — annotations from this job and failures from `test.yml`'s
+  `vp check` could disagree. Oxlint's own CLI does document a `-f`/
+  `--format` flag with a `github` value (confirmed by running
+  `oxlint --help` directly against this repo), which is the kind of
+  mechanism that would let a plain `vp lint` step post the same
+  annotations `oxc-project/oxlint-action` does today — **but whether
+  `vp lint` forwards a `--format`/`-f` flag through to the underlying
+  `oxlint` invocation isn't something I've confirmed against a primary
+  source**; `viteplus.dev/guide/lint` doesn't document it either way.
+  Resolve this at Phase 2 implementation time, not by guessing here: run
+  `vp lint --help` (once `vp` is installed per the bootstrap step above)
+  and check whether a `github`-format flag reaches Oxlint. If it does,
+  use a plain `vp lint --format github` step and drop the third-party
+  action entirely — one config surface, one rule set, matching `vp
+check` exactly. If it doesn't, keep `oxc-project/oxlint-action` but
+  give it this repo's actual `.oxlintrc.json` (if Phase 2 ends up
+  writing one — see §8.3) or explicit `allow`/`warn`/`deny`/`plugins`
+  inputs mirroring `vite.config.ts`'s `lint` block by hand, and accept
+  that its type-aware pass will diverge from `vp check`'s until someone
+  keeps the two in sync. Keep the markdownlint step as-is either way.
 - **Bootstrap `vp` itself in every workflow job that now calls it**: `vp`
   is a separate global CLI, not the `vite-plus` npm package these jobs'
   `npm install` already pulls in — a job that runs `npm ci` and then
@@ -831,6 +886,7 @@ where I didn't independently confirm against a primary source.
 - [viteplus.dev/guide/ci](https://viteplus.dev/guide/ci) and [github.com/voidzero-dev/setup-vp](https://github.com/voidzero-dev/setup-vp) (README, fetched directly) — back §9 Phase 2's `setup-vp` CI-bootstrap requirement and the exact-tag-pin correction (the action's own README states its `@v1` moving tag is frozen at `v1.15.0` and receives no further releases).
 - `git log`/`gh pr view` against this repo directly (not a claim about external tooling, but the same verify-before-writing discipline) — confirmed PR #616 (Docker image + lockfile `engines` fix) is merged to `main`, and that this plan branch's own working tree only reflected that fix after rebasing onto `main` — the resolution for the Docker-row finding below.
 - [biomejs.dev/reference/cli/#biome-check](https://biomejs.dev/reference/cli/#biome-check) — official Biome docs. Backs §9 Phase 2's correction that `biome check` covers formatting + linting + import sorting together, so its CI replacement must be `vp check`, not `vp lint` alone.
+- [`oxc-project/oxlint-action` README](https://raw.githubusercontent.com/oxc-project/oxlint-action/main/README.md) — fetched directly. Backs §9 Phase 2's finding that this action's input surface (`config`/`allow`/`warn`/`deny`/`plugins`) never reads `vite.config.ts`, so it can't pick up `typeAware`/`typeCheck`. `oxlint --help`, run directly against this repo, backs the `-f/--format github` claim used in the same paragraph; whether `vp lint` forwards that flag to `oxlint` is explicitly left unverified there — `viteplus.dev/guide/lint` doesn't document CLI-flag passthrough either way.
 
 **Secondary (search-result coverage, not independently confirmed against a primary source):**
 

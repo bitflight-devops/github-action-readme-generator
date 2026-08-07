@@ -327,7 +327,7 @@ as the floor, not the Vite+ minimum of 20.19+. Concrete changes:
   `"20.17.0"`), replace with `24.x` (already present) and, if broader
   coverage is wanted, `22.x` (current Maintenance LTS) — not `20.x` in
   any form.
-- `.github/copilot-instructions.md`, `CLAUDE.md`, `.claude/skills/holistic-linting/PROJECT-CONFIG.md`, and `.claude/agents/linting-root-cause-resolver.md`: the first two need "STRICT Node 20.x" replaced with the new floor (a factual correction, Node 20 is EOL, not a style preference, so it should happen regardless of how the rest of the tooling conversion is sequenced); the latter two need updates replacing the stale Biome/esbuild narrative with the new Vite+ toolchain — confirmed by reading both `.claude/` files directly: `PROJECT-CONFIG.md` declares `esbuild` as this project's build tool and lists `biome check`/`biome format` commands throughout; `linting-root-cause-resolver.md`'s own frontmatter description says "Use when Biome or TypeScript report issues" and its body walks through a Biome-specific resolution workflow. Both actively direct agents to run commands that no longer exist once Phases 2-3 land.
+- `.github/copilot-instructions.md` and `CLAUDE.md`: need "STRICT Node 20.x" replaced with the new floor (a factual correction, Node 20 is EOL, not a style preference, so it should happen regardless of how the rest of the tooling conversion is sequenced). The Biome/esbuild-specific `.claude/` agent files have the same stale-toolchain problem but are unrelated to the Node-version bump itself — tracked under §9 Phase 4's cleanup list instead.
 
 ## 6. `tsconfig.json` changes for TS7
 
@@ -890,14 +890,19 @@ Add the `pack` block (tsdown, per §7) and `test` block (Vitest) to the
 already-present `vite.config.ts`, consolidate `vitest.config.ts` into it,
 and rewrite **every direct `vitest` reference repo-wide, not just
 `__tests__/**`**. A repo-wide `grep` for `vitest` (not scoped to the test
-directory) turns up two more that an earlier pass of this plan missed:
-`__mocks__/node:fs.ts` imports `{ vi }` directly from `vitest`, and
+directory) turns up three more that an earlier pass of this plan missed:
+`__mocks__/node:fs.ts` imports `{ vi }` directly from `vitest`,
 `tsconfig.json`'s `compilerOptions.types` array includes
-`"vitest/globals"`. Both need the same treatment as the `__tests__/**`
-imports — `__mocks__/node:fs.ts`'s import rewritten to
-`vite-plus/test`, and `tsconfig.json`'s `types` entry updated to
-whatever Vite+'s migration docs specify as the `vite-plus/test`
-equivalent for ambient globals — in this same phase. If Vitest isn't
+`"vitest/globals"`, and `.vscode/launch.json`'s "Debug Current Test File"
+launch config hardcodes `"program":
+"${workspaceRoot}/node_modules/vitest/vitest.mjs"`. All three need the
+same treatment as the `__tests__/**` imports — `__mocks__/node:fs.ts`'s
+import rewritten to `vite-plus/test`, `tsconfig.json`'s `types` entry
+updated to whatever Vite+'s migration docs specify as the
+`vite-plus/test` equivalent for ambient globals, and
+`.vscode/launch.json`'s `program` path updated to wherever Vite+ installs
+its bundled Vitest binary (or replaced with a `vp test` invocation if
+Vite+ doesn't expose a direct binary path) — in this same phase. If Vitest isn't
 hoisted as a transitive dependency on a given install (npm doesn't
 guarantee hoisting the way pnpm/yarn might), a reference left pointing
 at bare `vitest` after the direct `devDependency` is removed below
@@ -938,9 +943,18 @@ binary stays self-contained.
 Update `.github/copilot-instructions.md` and `CLAUDE.md` to describe the
 new toolchain instead of the stale ESLint/Prettier narrative, delete this
 plan doc's TODOs once landed or fold its "current state" section into
-project docs as history. (The Node 20 → 24 floor bump and `action.yml`'s
-`runs.using` fix, per §5, are recommended as their own immediate PR
-_ahead of_ this phase, not bundled into it — see §5.)
+project docs as history. **Also update
+`.claude/skills/holistic-linting/PROJECT-CONFIG.md` and
+`.claude/agents/linting-root-cause-resolver.md`** — confirmed by reading
+both directly: `PROJECT-CONFIG.md` declares `esbuild` as this project's
+build tool and lists `biome check`/`biome format` commands throughout;
+`linting-root-cause-resolver.md`'s own frontmatter description says "Use
+when Biome or TypeScript report issues" and its body walks through a
+Biome-specific resolution workflow. Both actively direct agents to run
+commands that no longer exist once Phases 2-3 land. (The Node 20 → 24
+floor bump and `action.yml`'s `runs.using` fix, per §5, are recommended as
+their own immediate PR _ahead of_ this phase, not bundled into it — see
+§5.)
 
 Each phase = one PR, green CI required before the next phase starts.
 `integration-test.yml`'s **test logic and assertions** are the final gate

@@ -149,12 +149,28 @@ Rolldown's replacement for the deprecated `inlineDynamicImports`). Rebuild
 produced one 8.62MB `index.mjs`, matching esbuild's current single-file
 behavior.
 
-Copied that file to `dist/bin/index.js` and ran
+**Manually renamed** that `index.mjs` to `dist/bin/index.js` (the
+throwaway config used no `outExtensions` override) and ran
 `npx vitest run __tests__/integration-bundled-binary.test.ts`:
 **both tests pass, exit 0.** The tsdown-built binary satisfies the existing
 bundled-binary regression test unmodified, once `codeSplitting: false` is
 set. **This is a required addition to §7's `pack` config, not optional** —
 without it, Phase 3's build silently produces a broken multi-file binary.
+
+**Codex review caught that this manual rename hid a second, separate
+requirement**: the real Phase 3 build is `vp pack && chmod +x
+dist/bin/index.js` — a literal `.js` path that `action.yml`'s `runs.main`
+and `generate-docs` also depend on. tsdown's default output extension for
+this platform/format is `.mjs`, so without an explicit `outExtensions`
+override on the CLI entry, `vp pack` itself produces `dist/bin/index.mjs`,
+and the very next step (`chmod +x dist/bin/index.js`) fails against a
+file that doesn't exist — the passing test above only happened because
+the file was renamed by hand first, not because the config produces the
+right path on its own. **§7's `pack` config sample now includes
+`outExtensions: () => ({ js: '.js' })` on the CLI entry, alongside
+`outDir`, as a required (not optional) setting** — confirmed by this same
+requirement showing up independently in the `oxfmt`-swap test below,
+which needed the identical override for an unrelated reason.
 
 ## `oxfmt` Node API vs. `prettier` output diff (§8.0)
 

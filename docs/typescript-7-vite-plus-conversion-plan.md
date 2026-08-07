@@ -622,9 +622,22 @@ there's nothing for `ts-node` to have been running in the first place.
 Build/lint/format _scripts_ stay textually unchanged, but they now run
 under TS7 — that's exactly what Phase 0's real declaration-emit check
 (not just `tsc --noEmit`) validates before this phase claims a green
-`npm run build`, not something this phase re-verifies independently.
-Smallest possible PR; isolates
-TS7 fallout from tooling fallout.
+`npm run build`. **"Validates" isn't the same as "fixes," though, and
+this phase needs to do the fixing too, not just re-confirm Phase 0's
+finding and move on:** if Phase 0's spike found `postbuild`'s
+`tsc --emitDeclarationOnly --outFile dist/types/index.d.ts` genuinely
+rejected under the pinned TS7, Phase 1 must land a working interim
+replacement for that declaration-emit command in this same PR —
+whatever the empirical fix turns out to be (e.g. dropping `--outFile`
+and emitting per-file declarations, since `postbuild`'s deletion and
+replacement with `vp pack` per §7/§9's script audit is Phase 3's job,
+not Phase 1's, and `npm run build` cannot sit broken for two phases
+waiting on it). Don't decide the exact replacement command here before
+Phase 0 empirically confirms what's actually broken — but do commit to
+landing _some_ working command in Phase 1 if Phase 0 finds the current
+one fails, rather than leaving `postbuild` "textually unchanged" and
+implicitly broken until Phase 3. Smallest possible PR otherwise;
+isolates TS7 fallout from tooling fallout.
 
 **Phase 2 — Oxlint + Oxfmt, with Vite+ installed for lint/format/staged
 only (build/pack/test blocks NOT touched yet)**
@@ -683,37 +696,42 @@ directly by review:
   is the same reason `prelint` folds into it a few bullets above. Land
   this in this same phase, not deferred to Phase 3's build rewrite.
 - `push_code_linting.yml`: swap `biomejs/setup-biome` + `biome lint` +
-  `mongolyy/reviewdog-action-biome` for **an equivalent that actually
-  reads this repo's Oxlint configuration, not `oxc-project/oxlint-action`
-  as first written here.** Checked that action's own README directly
+  `mongolyy/reviewdog-action-biome` for **`vp lint --type-aware
+--type-check`, not `oxc-project/oxlint-action`.** Checked that action's
+  own README directly
   (`raw.githubusercontent.com/oxc-project/oxlint-action/main/README.md`):
   its inputs are `config` (a `.oxlintrc.json` path), `allow`/`warn`/`deny`
   category or rule lists, and `plugins`/`plugins-disable` — nothing in
-  that input surface reads `vite.config.ts`. This repo's `typeAware`/
-  `typeCheck` settings live **only** in `vite.config.ts`'s `lint` block
-  (per the requirement a few paragraphs above), so
-  `oxc-project/oxlint-action` would run a second, un-type-aware Oxlint
-  pass with a different rule set than `vp lint`/`vp check` use elsewhere
-  in CI — annotations from this job and failures from `test.yml`'s
-  `vp check` could disagree. Oxlint's own CLI does document a `-f`/
-  `--format` flag with a `github` value (confirmed by running
-  `oxlint --help` directly against this repo), which is the kind of
-  mechanism that would let a plain `vp lint` step post the same
-  annotations `oxc-project/oxlint-action` does today — **but whether
-  `vp lint` forwards a `--format`/`-f` flag through to the underlying
-  `oxlint` invocation isn't something I've confirmed against a primary
-  source**; `viteplus.dev/guide/lint` doesn't document it either way.
-  Resolve this at Phase 2 implementation time, not by guessing here: run
-  `vp lint --help` (once `vp` is installed per the bootstrap step above)
-  and check whether a `github`-format flag reaches Oxlint. If it does,
-  use a plain `vp lint --format github` step and drop the third-party
-  action entirely — one config surface, one rule set, matching `vp
-check` exactly. If it doesn't, keep `oxc-project/oxlint-action` but
-  give it this repo's actual `.oxlintrc.json` (if Phase 2 ends up
-  writing one — see §8.3) or explicit `allow`/`warn`/`deny`/`plugins`
-  inputs mirroring `vite.config.ts`'s `lint` block by hand, and accept
-  that its type-aware pass will diverge from `vp check`'s until someone
-  keeps the two in sync. Keep the markdownlint step as-is either way.
+  that input surface reads `vite.config.ts`, so it would have run a
+  second, un-type-aware Oxlint pass with a different rule set than
+  `vp lint`/`vp check` use elsewhere in CI. `vp lint --type-aware` is
+  itself a documented usage example on
+  [viteplus.dev/guide/lint](https://viteplus.dev/guide/lint) (`vp lint`,
+  `vp lint --fix`, `vp lint --type-aware`), confirming `vp lint` forwards
+  at least that flag straight to the underlying `oxlint` binary, whose
+  own `--help` (run directly against this repo) documents both
+  `--type-aware` and `--type-check` as real CLI flags equivalent to the
+  `options.typeAware`/`typeCheck` settings in `vite.config.ts`'s `lint`
+  block. That same page also states outright: "We do not recommend using
+  `oxlint.config.ts` or `.oxlintrc.json` with Vite+" — so the
+  `.oxlintrc.json`-mirroring fallback an earlier pass of this plan
+  proposed here was itself against Vite+'s own guidance, not just an
+  unconfirmed detail. Drop `oxc-project/oxlint-action` and
+  `mongolyy/reviewdog-action-biome` entirely; run `vp lint --type-aware
+--type-check` as a plain step, one config surface (`vite.config.ts`),
+  matching `vp check` exactly. **One flag genuinely remains
+  unconfirmed against a primary source**: whether `vp lint` accepts a
+  `--format`/`-f` value (`oxlint --help` documents a `github` format
+  intended for exactly this kind of inline-annotation use) — if it
+  doesn't forward to a GitHub-annotation-producing format, this step
+  loses the inline PR annotations `reviewdog` used to post, though it
+  keeps the type-aware pass/fail gate. Confirm via `vp lint --help` at
+  Phase 2 implementation time; if no annotation-producing format exists,
+  decide then whether losing inline annotations (keeping only the
+  pass/fail signal `test.yml`'s `vp check` already provides) is an
+  acceptable trade for one consistent rule set, rather than reintroducing
+  a second, differently-configured linter to get annotations back. Keep
+  the markdownlint step as-is either way.
 - **Bootstrap `vp` itself in every workflow job that now calls it**: `vp`
   is a separate global CLI, not the `vite-plus` npm package these jobs'
   `npm install` already pulls in — a job that runs `npm ci` and then
@@ -736,6 +754,34 @@ check` exactly. If it doesn't, keep `oxc-project/oxlint-action` but
   subsumes `actions/setup-node` and dependency caching for the jobs it
   covers — don't stack a redundant `setup-node` step alongside it in the
   same job.
+- **`setup-vp` only reaches GitHub Actions jobs — it does nothing for
+  the two non-workflow callers this phase's own `vp staged` rewrite
+  creates.** The `pre-commit` npm script (rewritten above to `vp staged
+&& npm run build && npm run generate-docs`) runs via `.husky/pre-commit`
+  on every **local** `git commit`, on a developer's own machine, not in
+  CI — `setup-vp` never runs there. Document (in this repo's
+  contributor-facing docs, e.g. `.github/copilot-instructions.md`'s
+  setup section) that `vp` must be installed locally, via Vite+'s own
+  install script — `curl -fsSL https://viteplus.dev/install.sh | bash`
+  on Linux/macOS, `irm https://viteplus.dev/install.ps1 | iex` on
+  Windows (both confirmed directly from `setup-vp`'s own README) — as a
+  one-time setup step alongside Node/npm, the same way `git`/`node` are
+  assumed present rather than auto-installed by a hook. A commit made
+  without `vp` on `PATH` fails the pre-commit hook with "command not
+  found," same failure mode as the CI jobs, just local instead of
+  remote.
+- **The Docker build path has the identical gap and needs its own fix in
+  Phase 3**, not just a mention here: `build:docker:default`/
+  `build:docker:win32` run `docker run ... node:24-alpine sh -c 'npm run
+build'` (confirmed by reading `package.json`) — a bare Node image with
+  no `vp` installed, and once Phase 3 makes `build` require `vp pack`,
+  this wrapper fails the same way. Phase 3 must update both scripts'
+  shell command to install `vp` inside the container before running the
+  build, e.g. `sh -c 'curl -fsSL https://viteplus.dev/install.sh | bash
+&& npm run build'` (exact invocation to confirm at Phase 3
+  implementation time — `node:24-alpine` is Alpine-based and may need
+  `curl` installed first via `apk add`, which isn't guaranteed present on
+  that base image and hasn't been checked here).
 - **Point the `vite`-adjacent dependency surface at Vite+'s core alias**,
   per [viteplus.dev/guide/migrate-rules](https://viteplus.dev/guide/migrate-rules)
   (the reference `vp migrate` itself follows — not run here per §8.4,
@@ -787,10 +833,23 @@ benefit), and the entire build/bundle pipeline.
 **Phase 3 — Vite+ build (the big one)**
 Add the `pack` block (tsdown, per §7) and `test` block (Vitest) to the
 already-present `vite.config.ts`, consolidate `vitest.config.ts` into it,
-and rewrite `__tests__/**`'s `vitest`/`@vitest/browser*` imports to
-`vite-plus/test`/`vite-plus/test/browser*` per Vite+'s migration docs.
-**Now that those imports are rewritten, complete the dependency
-reconciliation Phase 2 deliberately deferred**: remove `vitest` as a
+and rewrite **every direct `vitest` reference repo-wide, not just
+`__tests__/**`**. A repo-wide `grep` for `vitest` (not scoped to the test
+directory) turns up two more that an earlier pass of this plan missed:
+`__mocks__/node:fs.ts` imports `{ vi }` directly from `vitest`, and
+`tsconfig.json`'s `compilerOptions.types` array includes
+`"vitest/globals"`. Both need the same treatment as the `__tests__/**`
+imports — `__mocks__/node:fs.ts`'s import rewritten to
+`vite-plus/test`, and `tsconfig.json`'s `types` entry updated to
+whatever Vite+'s migration docs specify as the `vite-plus/test`
+equivalent for ambient globals — in this same phase. If Vitest isn't
+hoisted as a transitive dependency on a given install (npm doesn't
+guarantee hoisting the way pnpm/yarn might), a reference left pointing
+at bare `vitest` after the direct `devDependency` is removed below
+simply fails to resolve; "rewrite `__tests__/**`" was never the full
+scope, it was the scope that happened to get written down.
+**Now that every direct reference is actually rewritten, complete the
+dependency reconciliation Phase 2 deliberately deferred**: remove `vitest` as a
 direct `devDependency` (this repo's Node-only test setup is the "common
 node-mode case" `viteplus.dev/guide/migrate-rules` describes, where
 `vite-plus` provides it transitively), version-align `@vitest/coverage-v8`
@@ -886,7 +945,10 @@ where I didn't independently confirm against a primary source.
 - [viteplus.dev/guide/ci](https://viteplus.dev/guide/ci) and [github.com/voidzero-dev/setup-vp](https://github.com/voidzero-dev/setup-vp) (README, fetched directly) — back §9 Phase 2's `setup-vp` CI-bootstrap requirement and the exact-tag-pin correction (the action's own README states its `@v1` moving tag is frozen at `v1.15.0` and receives no further releases).
 - `git log`/`gh pr view` against this repo directly (not a claim about external tooling, but the same verify-before-writing discipline) — confirmed PR #616 (Docker image + lockfile `engines` fix) is merged to `main`, and that this plan branch's own working tree only reflected that fix after rebasing onto `main` — the resolution for the Docker-row finding below.
 - [biomejs.dev/reference/cli/#biome-check](https://biomejs.dev/reference/cli/#biome-check) — official Biome docs. Backs §9 Phase 2's correction that `biome check` covers formatting + linting + import sorting together, so its CI replacement must be `vp check`, not `vp lint` alone.
-- [`oxc-project/oxlint-action` README](https://raw.githubusercontent.com/oxc-project/oxlint-action/main/README.md) — fetched directly. Backs §9 Phase 2's finding that this action's input surface (`config`/`allow`/`warn`/`deny`/`plugins`) never reads `vite.config.ts`, so it can't pick up `typeAware`/`typeCheck`. `oxlint --help`, run directly against this repo, backs the `-f/--format github` claim used in the same paragraph; whether `vp lint` forwards that flag to `oxlint` is explicitly left unverified there — `viteplus.dev/guide/lint` doesn't document CLI-flag passthrough either way.
+- [`oxc-project/oxlint-action` README](https://raw.githubusercontent.com/oxc-project/oxlint-action/main/README.md) — fetched directly. Backs §9 Phase 2's finding that this action's input surface (`config`/`allow`/`warn`/`deny`/`plugins`) never reads `vite.config.ts`, so it can't pick up `typeAware`/`typeCheck`.
+- `oxlint --help` and `oxlint --init` (both run directly against this repo), plus the `configuration_schema.json` file the installed `oxlint` package ships (read directly) — back §9 Phase 2's `--type-aware`/`--type-check` CLI flags, and confirm these are the exact CLI/`.oxlintrc.json` equivalents of `vite.config.ts`'s `lint.options.typeAware`/`typeCheck`. [viteplus.dev/guide/lint](https://viteplus.dev/guide/lint) — fetched directly — backs `vp lint --type-aware` as a documented usage example (confirming `vp lint` forwards that flag to `oxlint`) and the explicit "we do not recommend `.oxlintrc.json` with Vite+" statement; whether `vp lint` also forwards a `--format`/`-f` flag specifically is not documented there and is left as an open implementation-time check.
+- `grep`/`Read` against this repo directly — confirmed `__mocks__/node:fs.ts` imports `vitest` and `tsconfig.json`'s `compilerOptions.types` includes `"vitest/globals"`, both outside `__tests__/**`; confirmed `package.json`'s `pre-commit` script runs via `.husky/pre-commit` on local commits (not CI) and `build:docker:default`/`build:docker:win32` run inside a bare `node:24-alpine` container. Backs §9 Phase 3's expanded vitest-rewrite scope and the local/Docker `vp`-bootstrap gap.
+- [`setup-vp` README](https://raw.githubusercontent.com/voidzero-dev/setup-vp/main/README.md) — fetched directly (same fetch as the CI-bootstrap citation above). Backs the `curl -fsSL https://viteplus.dev/install.sh | bash` / `irm https://viteplus.dev/install.ps1 | iex` local-install commands used in §9 Phase 2's local-caller fix — sourced from that README's own "Development" section, not verified as the general end-user installation path, and the `node:24-alpine`/`curl`-availability question for the Docker fix is explicitly left unverified (no Docker daemon available in this session to test empirically).
 
 **Secondary (search-result coverage, not independently confirmed against a primary source):**
 

@@ -327,7 +327,7 @@ as the floor, not the Vite+ minimum of 20.19+. Concrete changes:
   `"20.17.0"`), replace with `24.x` (already present) and, if broader
   coverage is wanted, `22.x` (current Maintenance LTS) — not `20.x` in
   any form.
-- `.github/copilot-instructions.md` and `CLAUDE.md`: need "STRICT Node 20.x" replaced with the new floor (a factual correction, Node 20 is EOL, not a style preference, so it should happen regardless of how the rest of the tooling conversion is sequenced). The Biome/esbuild-specific `.claude/` agent files have the same stale-toolchain problem but are unrelated to the Node-version bump itself — their Biome commands are tracked under §9 Phase 2 (removed in the same phase as `@biomejs/biome` itself), and `PROJECT-CONFIG.md`'s separate `esbuild` declaration under §9 Phase 4.
+- `.github/copilot-instructions.md` and `CLAUDE.md`: need "STRICT Node 20.x" replaced with the new floor (a factual correction, Node 20 is EOL, not a style preference, so it should happen regardless of how the rest of the tooling conversion is sequenced). The Biome/esbuild-referencing `.claude/` agent/skill files have the same stale-toolchain problem but are unrelated to the Node-version bump itself — their Biome commands are tracked under §9 Phase 2 (removed in the same phase as `@biomejs/biome` itself), and `PROJECT-CONFIG.md`'s separate `esbuild` declaration under §9 Phase 3 (removed in the same phase as `esbuild` itself).
 
 ## 6. `tsconfig.json` changes for TS7
 
@@ -878,17 +878,25 @@ build'` (confirmed by reading `package.json`) — a bare Node image with
   deleting every config file and script that used them isn't a clean
   cut-over, it's dead weight in `package.json` and the lockfile — the
   same standard already applied to `.babelrc.cjs`/`ts-node`.
-- **Rewrite every Biome-invoking instruction in
-  `.claude/skills/holistic-linting/PROJECT-CONFIG.md` and
-  `.claude/agents/linting-root-cause-resolver.md` in this same phase, not
-  Phase 4**: both files repeatedly tell agents to run `npx biome
-  check`/`npx biome format`/`npx biome lint` — confirmed by reading both
-  directly. Once `@biomejs/biome` is removed above, those commands
-  invoke a binary that's no longer installed; deferring the rewrite to
-  Phase 4 leaves every agent using these files mid-cut-over (Phases 2-3)
-  running a broken command. `PROJECT-CONFIG.md`'s separate `esbuild`
-  build-tool declaration is a different, unrelated stale reference — that
-  one stays tied to Phase 3's build migration below, not this phase.
+- **Rewrite every Biome-invoking instruction across every active
+  `.claude/` agent/skill file in this same phase, not Phase 4** — confirmed
+  by a repo-wide `grep -rli biome .claude/` (excluding worktree scratch
+  dirs and the generic `.claude/skills/agent-creator/references/
+  agent-examples.md` template, which references Biome only as an
+  illustrative example unrelated to this repo's own tooling, not a
+  real instruction): `.claude/skills/holistic-linting/PROJECT-CONFIG.md`,
+  `.claude/skills/holistic-linting/SKILL.md`, `.claude/agents/
+  linting-root-cause-resolver.md`, `.claude/agents/code-review.md`, and
+  `.claude/agents/post-linting-architecture-reviewer.md` all repeatedly
+  tell agents to run `npx biome check`/`biome format`/`biome lint`, read
+  `biome.json` as authoritative, or check Biome-specific rules
+  (`noExplicitAny`, `useExplicitType`, etc.) — five files, not two. Once
+  `@biomejs/biome` is removed above, those commands invoke a binary
+  that's no longer installed; deferring any of them to Phase 4 leaves
+  every agent using these files mid-cut-over (Phases 2-3) running a
+  broken command. `PROJECT-CONFIG.md`'s separate `esbuild` build-tool
+  declaration is a different, unrelated stale reference — that one is
+  tied to Phase 3's build migration below, not this phase (see Phase 3).
 
 Explicitly out of scope for Phase 2, staying untouched until Phase 3:
 `vitest.config.ts`, `vitest` imports in `__tests__/**` (the
@@ -936,7 +944,12 @@ no-external override per §7), remove the `require` export condition and
 `main` field from `package.json`, delete the replaced files, rewrite the
 remaining `package.json` build scripts to `vp` commands (`build`
 becomes `rimraf dist out && vp pack && chmod +x dist/bin/index.js`, per
-the script audit), rewrite `test.yml`'s build step accordingly. **Leave
+the script audit), rewrite `test.yml`'s build step accordingly. **Also
+update `.claude/skills/holistic-linting/PROJECT-CONFIG.md`'s `esbuild`
+build-tool declaration in this same phase, not Phase 4** — it's the tool
+this phase directly replaces, so leaving the declaration stale until
+Phase 4 would misdirect any agent reading it between this phase landing
+and Phase 4's PR merging. **Leave
 `deploy.yml` calling `npm run build`** — not a direct `vp pack` call
 (§4 already corrects this) — and remove the now-replaced
 `esbuild`/`esbuild-node-externals` `devDependencies`, same "clean
@@ -954,14 +967,12 @@ binary stays self-contained.
 Update `.github/copilot-instructions.md` and `CLAUDE.md` to describe the
 new toolchain instead of the stale ESLint/Prettier narrative, delete this
 plan doc's TODOs once landed or fold its "current state" section into
-project docs as history. **Also update
-`.claude/skills/holistic-linting/PROJECT-CONFIG.md`'s remaining `esbuild`
-build-tool declaration** to describe the Vite+/tsdown replacement — its
-Biome-specific commands were already rewritten in Phase 2 above, since
-`@biomejs/biome` stops being installed there, well before this phase
-runs. (The Node 20 → 24 floor bump and `action.yml`'s `runs.using` fix,
-per §5, are recommended as their own immediate PR _ahead of_ this phase,
-not bundled into it — see §5.)
+project docs as history. All five `.claude/` files' Biome references and
+`PROJECT-CONFIG.md`'s `esbuild` declaration were already rewritten in
+Phases 2 and 3 respectively (above) — nothing toolchain-specific remains
+for this phase to touch in `.claude/`. (The Node 20 → 24 floor bump and
+`action.yml`'s `runs.using` fix, per §5, are recommended as their own
+immediate PR _ahead of_ this phase, not bundled into it — see §5.)
 
 Each phase = one PR, green CI required before the next phase starts.
 `integration-test.yml`'s **test logic and assertions** are the final gate
@@ -1026,7 +1037,7 @@ where I didn't independently confirm against a primary source.
 - `grep`/`Read` against this repo directly — confirmed `__mocks__/node:fs.ts` imports `vitest` and `tsconfig.json`'s `compilerOptions.types` includes `"vitest/globals"`, both outside `__tests__/**`; and `.vscode/launch.json`'s "Debug Current Test File" launcher, which hardcodes `program: '${workspaceRoot}/node_modules/vitest/vitest.mjs'` — confirmed by reading the file directly. All three need the same treatment: rewritten to point at wherever `vite-plus` actually resolves post-migration (confirm the correct debug entry point at Phase 3 implementation time rather than assuming `node_modules/vitest/vitest.mjs` still resolves). Also confirmed `package.json`'s `pre-commit` script runs via `.husky/pre-commit` on local commits (not CI) and `build:docker:default`/`build:docker:win32` run inside a bare `node:24-alpine` container; confirmed `test.yml`'s `matrix.node-version` (`["24.0.0", "24.19.0", "26.x"]`) feeds `./.github/actions/setup-node` via `version: ${{ matrix.node-version }}`. Backs §9 Phase 3's expanded vitest-rewrite scope, the local/Docker `vp`-bootstrap gap, and the `setup-vp` matrix-parameterization fix.
 - **`vp` v0.2.8 installed and run directly in this session** (`curl -fsSL https://viteplus.dev/install.sh`, executed non-interactively via `VP_NODE_MANAGER=no bash`) — not documentation, an actual empirical run. `vp lint --help` confirmed `-f, --format <FORMAT>` including a `github` value; `vp lint --format github --type-aware src` against this repo's real `src/` produced genuine `::warning file=...::...` annotations with type-aware findings (`restrict-template-expressions`, `no-base-to-string`, `await-thenable`), fully resolving §9 Phase 2's previously-open annotation-format question. `vp test __tests__/helpers.test.ts` ran Vitest 4.1.10 and passed all 42 tests, confirming `test` → `vp test`. `vp test --coverage __tests__/helpers.test.ts` reproduced `Cannot find package '@vitest/coverage-v8'` (resolved against `vite-plus`'s bundled Vitest 4.1.10, not this repo's independently-pinned `^4.1.2`), direct empirical confirmation that §9 Phase 3's `@vitest/coverage-v8` version-alignment requirement is load-bearing, not precautionary.
 - [`setup-vp` README](https://raw.githubusercontent.com/voidzero-dev/setup-vp/main/README.md) — fetched directly (same fetch as the CI-bootstrap citation above). Backs the `curl -fsSL https://viteplus.dev/install.sh | bash` / `irm https://viteplus.dev/install.ps1 | iex` local-install commands used in §9 Phase 2's local-caller fix — sourced from that README's own "Development" section, not verified as the general end-user installation path, and the `node:24-alpine`/`curl`-availability question for the Docker fix is explicitly left unverified (no Docker daemon available in this session to test empirically).
-- `grep`/`Read` against this repo directly — confirmed `.vscode/launch.json`'s hardcoded `vitest.mjs` path (Phase 3) and `.claude/skills/holistic-linting/PROJECT-CONFIG.md` + `.claude/agents/linting-root-cause-resolver.md`'s direct Biome (Phase 2) and esbuild (Phase 4) references. Backs §9 Phase 2/3/4's expanded cleanup scope.
+- `grep`/`Read` against this repo directly — confirmed `.vscode/launch.json`'s hardcoded `vitest.mjs` path (Phase 3); `.claude/skills/holistic-linting/PROJECT-CONFIG.md`, `.claude/skills/holistic-linting/SKILL.md`, `.claude/agents/linting-root-cause-resolver.md`, `.claude/agents/code-review.md`, and `.claude/agents/post-linting-architecture-reviewer.md`'s direct Biome references (Phase 2); and `PROJECT-CONFIG.md`'s separate `esbuild` reference (Phase 3). Backs §9 Phase 2/3's expanded cleanup scope.
 
 **Secondary (search-result coverage, not independently confirmed against a primary source):**
 

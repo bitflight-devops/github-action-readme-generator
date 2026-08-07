@@ -2,13 +2,11 @@
 
 Status: **Proposed — clean cut-over, not an incremental migration.**
 Scope: build, type-check, lint, format, test, and CI/CD toolchain. One
-conditional exception, not covered by "no runtime behavior changes": §8.0
-evaluates replacing the `prettier` runtime dependency (which formats the
+exception to "no runtime behavior changes," and it's a non-change: §8.0
+evaluated replacing the `prettier` runtime dependency (which formats the
 README/YAML this tool generates for _end users_, not our own source) with
-`oxfmt`'s API. If that replacement happens, it is a real runtime-output
-change gated on a golden-file compatibility check against real generated
-output — not a tooling-only swap. Everything else in this plan is
-tooling-only and does not touch generator output.
+`oxfmt`'s API, and Phase 0's spike settled it — `prettier` stays. Nothing
+in this plan touches generator output.
 
 ## 1. Ground rules
 
@@ -425,6 +423,7 @@ Requirements this config must satisfy, carried over from
          platform: 'node',
          outDir: 'dist/bin',
          outExtensions: () => ({ js: '.js' }),
+         outputOptions: { codeSplitting: false },
          deps: { alwaysBundle: ['prettier' /* ...other runtime deps... */] },
        }, // CLI
        {
@@ -464,6 +463,18 @@ Requirements this config must satisfy, carried over from
    preferred here only because it changes one config line per entry
    instead of editing published package metadata and the Action's entry
    point — not because `.mjs` output would be broken or wrong.
+   **`outputOptions: { codeSplitting: false }` on the CLI entry is
+   required, not optional** — confirmed by Phase 0's spike: Rolldown
+   code-splits on `prettier`'s internal dynamic `import()`s for its
+   lazily-loaded language plugins, producing 14 separate chunk files
+   instead of one. `integration-bundled-binary.test.ts` copies only the
+   single entry file into an isolated tempdir with no `node_modules`, so
+   a multi-chunk build fails at runtime on missing relative chunk
+   imports the moment it's actually tested this way, even though the
+   `pack` step itself reports success. Not needed on the library entry —
+   default code-splitting is normal, expected behavior for a
+   library consumed via `node_modules` resolution, where sibling chunk
+   files are just... there.
    **One thing this plan hasn't independently confirmed**: Vite+'s own
    `pack`-block example on that page shows a single object
    (`pack: { dts: true, format: [...], sourcemap: true }`), not an array
@@ -503,45 +514,35 @@ Requirements this config must satisfy, carried over from
 These are genuine product/scope decisions, not implementation details —
 flagging them rather than silently picking one:
 
-0. **Replace the runtime `prettier` dependency with `oxfmt`'s Node API,
-   or keep `prettier` as a scoped exception?** `__tests__/prettier.test.ts`
-   pins the exact option surface `src/prettier.ts` depends on today:
-   `format(value, { semi: false, parser: 'yaml' | 'markdown',
-embeddedLanguageFormatting: 'auto', filepath? })` for
-   `formatYaml`/`formatMarkdown`, and `format(value, { semi: false,
-parser: 'markdown', proseWrap: 'always' })` for `wrapDescription`. To
-   replace this with `oxfmt`, each of the following needs to be checked
-   against `oxfmt`'s `FormatOptions` type and confirmed to produce
-   equivalent output, not just "no type error":
-   - Does `FormatOptions` have a `proseWrap` equivalent (Markdown prose
-     wrapping is used by `wrapDescription` to keep `action.yml` description
-     comments line-wrapped)?
-   - Does it have an `embeddedLanguageFormatting` equivalent, or does
-     `oxfmt` handle embedded-code-block formatting inside Markdown/YAML
-     by default with no toggle needed?
-   - `oxfmt.format()` takes a **filename** (`format(filename, code, options)`)
-     rather than an explicit `parser` string — need to confirm passing
-     `"x.yaml"` / `"x.md"` as the filename argument reliably selects the
-     same parser `parser: 'yaml'` / `parser: 'markdown'` did, including
-     when the real caller passes a `filepath` for `README.md` /
-     `action.yml`-derived paths.
-   - `semi: false` — confirm the option name/semantics match.
-   - Byte-for-byte (or at least structurally equivalent) output on a
-     real generated `README.md` and a real `action.yml`, not just the
-     unit-test mocks, since `prettier.test.ts` currently mocks `format`
-     entirely and never asserts real formatted output.
-     This verification is a **Phase 0 spike task** (§9), not something to
-     decide from documentation alone. If it holds: drop `prettier` from
-     `dependencies`, add `oxfmt` to `dependencies` (it moves from
-     dev-tooling to a runtime dependency the same way `prettier` is today),
-     rewrite `src/prettier.ts` against `oxfmt`'s API, update
-     `__tests__/prettier.test.ts`'s mocks and expectations, and repurpose
-     `__tests__/integration-bundled-binary.test.ts` (currently a regression
-     test specifically for `prettier` bundling correctly) to guard `oxfmt`
-     bundling instead. If parity doesn't hold on some option, keep
-     `prettier` in `dependencies` as an explicitly-documented, scoped
-     exception (update §1 and this section to say so) rather than force a
-     worse README/YAML output to complete the cut-over.
+0. **Replace the runtime `prettier` dependency with `oxfmt`'s Node API:
+   decided — no, keep `prettier` as a scoped, documented exception.**
+   Phase 0's spike ran the actual swap, not just a format-parity check:
+   `oxfmt`'s Node API (`format(filename, code, options)`) does produce
+   byte-identical output to `formatMarkdown`/`formatYaml` on a real
+   generated `README.md`/`action.yml`, and matching `wrapDescription`'s
+   `proseWrap: 'always'` output only needed one additional explicit
+   option (`printWidth: 80`, since `oxfmt`'s default of 100 differs from
+   `prettier`'s default of 80) — so the format-parity question this item
+   originally asked **would have resolved in `oxfmt`'s favor**. It
+   doesn't matter, because the swap fails on a more fundamental ground
+   that supersedes parity entirely: `oxfmt`'s Node API loads a
+   platform-specific native `.node` binding via `require()` at runtime,
+   resolved from a **separate** `@oxfmt/binding-<platform>`
+   optional-dependency package, not embedded in `oxfmt`'s own `dist/`.
+   No JS bundler — tested against both the current `esbuild` pipeline and
+   a throwaway `tsdown`/Rolldown pack config — can inline a native binary
+   that lives in a sibling package resolved at runtime; both produced a
+   binary that failed `integration-bundled-binary.test.ts` with
+   `Cannot find module './oxfmt.linux-x64-gnu.node'` (full detail:
+   `docs/phase-0-spike-findings.md`, "`oxfmt`-swapped bundled-binary test"
+   section). **Action: keep `prettier` in `dependencies` as the
+   documented exception (§1 already frames this conditionally — update
+   it to state this outcome directly), do not add `oxfmt` to
+   `dependencies`, and do not touch `src/prettier.ts` in Phase 2 or any
+   other phase.** Revisit only if a future `oxfmt` release ships a
+   pure-JS/WASM fallback that doesn't require a native binding at
+   runtime — until then this isn't a "check again later" item, it's
+   closed.
 
 1. **CJS entry point: decided — drop it, ship ESM-only.** Verified two
    things before locking this in: `action.yml`'s `runs:` block
@@ -681,25 +682,28 @@ same treatment as the already-found dead `.babelrc.cjs`, not aliased to
 `scripts/formatter.ts` in the same PR — also dead (§3), and the reason
 there's nothing for `ts-node` to have been running in the first place.
 Build/lint/format _scripts_ stay textually unchanged **except
-`postbuild`, conditionally** — see below — but they now run
-under TS7; that's exactly what Phase 0's real declaration-emit check
-(not just `tsc --noEmit`) validates before this phase claims a green
-`npm run build`. **"Validates" isn't the same as "fixes," though, and
-this phase needs to do the fixing too, not just re-confirm Phase 0's
-finding and move on:** if Phase 0's spike found `postbuild`'s
-`tsc --emitDeclarationOnly --outFile dist/types/index.d.ts` genuinely
-rejected under the pinned TS7, Phase 1 must land a working interim
-replacement for that declaration-emit command in this same PR —
-whatever the empirical fix turns out to be (e.g. dropping `--outFile`
-and emitting per-file declarations, since `postbuild`'s deletion and
-replacement with `vp pack` per §7/§9's script audit is Phase 3's job,
-not Phase 1's, and `npm run build` cannot sit broken for two phases
-waiting on it). Don't decide the exact replacement command here before
-Phase 0 empirically confirms what's actually broken — but do commit to
-landing _some_ working command in Phase 1 if Phase 0 finds the current
-one fails, rather than leaving `postbuild` "textually unchanged" and
-implicitly broken until Phase 3. Smallest possible PR otherwise;
-isolates TS7 fallout from tooling fallout.
+`postbuild`, which needs a real replacement, not just a re-confirmation
+of Phase 0's finding.** Phase 0's spike confirmed `postbuild`'s
+`tsc --emitDeclarationOnly --outFile dist/types/index.d.ts` hard-fails
+under TS7 (`TS5102`, `--outFile` removed) and empirically determined the
+interim replacement, not just that one is needed: add a dedicated
+`tsconfig.build.json` (`extends: "./tsconfig.json"`, `compilerOptions:
+{ rootDir: "src" }`, `include: ["src/**/*.ts", "src/**/*.mts"]`) — the
+`rootDir` override is required, not optional, or `tsc` hard-fails with
+`TS5011` on the restricted `include` — and change `postbuild` to `tsc
+--project tsconfig.build.json --emitDeclarationOnly --declaration
+--outDir dist/types`. This one config solves three problems at once:
+the `TS5102` failure, dev-only declarations (`__tests__/**`,
+`__mocks__/node:fs.ts`, `vitest.config.ts`) leaking into the published
+`dist/` via the main `tsconfig.json`'s test-inclusive `include`, and the
+entry-declaration path — `rootDir: "src"` flattens output so
+`index.d.ts` lands directly at `dist/types/index.d.ts`, exactly where
+`package.json`'s `"types"` field already points, with no `package.json`
+edit needed. Land this in the same PR as the TS7 upgrade — `postbuild`
+being deleted and replaced with `vp pack` is Phase 3's job, not Phase
+1's, and `npm run build` cannot sit broken for two phases waiting on it.
+Smallest possible PR otherwise; isolates TS7 fallout from tooling
+fallout.
 
 **Phase 2 — Oxlint + Oxfmt, with Vite+ installed for lint/format/staged
 only (build/pack/test blocks NOT touched yet)**
@@ -712,11 +716,11 @@ would repeat the exact "referenced but not ready" mistake this
 restructuring is fixing. Use Oxlint's own default/recommended rules (no
 Biome rule mapping, per §8.3). Run Oxlint against `src/` and `__tests__/`
 and triage every finding it surfaces — fix genuine issues, don't
-pre-filter them to match what Biome used to allow. Apply the §8.0 outcome
-from the Phase 0 spike: either rewrite `src/prettier.ts` onto `oxfmt`'s
-API and drop `prettier` from `dependencies`, or leave `src/prettier.ts`
-on `prettier` as a documented exception — this is the phase where that
-decision actually lands in code, not just in the spike.
+pre-filter them to match what Biome used to allow. **Leave
+`src/prettier.ts` and the `prettier` dependency untouched in this phase**
+— §8.0's decision, made from Phase 0's spike results, is to keep
+`prettier` as a documented runtime exception; there is no `oxfmt` swap
+to land here or in any other phase.
 
 **The `lint` block must set `options: { typeAware: true, typeCheck: true
 }` explicitly** — confirmed against

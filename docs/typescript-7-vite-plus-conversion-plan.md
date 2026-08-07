@@ -878,6 +878,17 @@ build'` (confirmed by reading `package.json`) — a bare Node image with
   deleting every config file and script that used them isn't a clean
   cut-over, it's dead weight in `package.json` and the lockfile — the
   same standard already applied to `.babelrc.cjs`/`ts-node`.
+- **Rewrite every Biome-invoking instruction in
+  `.claude/skills/holistic-linting/PROJECT-CONFIG.md` and
+  `.claude/agents/linting-root-cause-resolver.md` in this same phase, not
+  Phase 4**: both files repeatedly tell agents to run `npx biome
+  check`/`npx biome format`/`npx biome lint` — confirmed by reading both
+  directly. Once `@biomejs/biome` is removed above, those commands
+  invoke a binary that's no longer installed; deferring the rewrite to
+  Phase 4 leaves every agent using these files mid-cut-over (Phases 2-3)
+  running a broken command. `PROJECT-CONFIG.md`'s separate `esbuild`
+  build-tool declaration is a different, unrelated stale reference — that
+  one stays tied to Phase 3's build migration below, not this phase.
 
 Explicitly out of scope for Phase 2, staying untouched until Phase 3:
 `vitest.config.ts`, `vitest` imports in `__tests__/**` (the
@@ -944,17 +955,13 @@ Update `.github/copilot-instructions.md` and `CLAUDE.md` to describe the
 new toolchain instead of the stale ESLint/Prettier narrative, delete this
 plan doc's TODOs once landed or fold its "current state" section into
 project docs as history. **Also update
-`.claude/skills/holistic-linting/PROJECT-CONFIG.md` and
-`.claude/agents/linting-root-cause-resolver.md`** — confirmed by reading
-both directly: `PROJECT-CONFIG.md` declares `esbuild` as this project's
-build tool and lists `biome check`/`biome format` commands throughout;
-`linting-root-cause-resolver.md`'s own frontmatter description says "Use
-when Biome or TypeScript report issues" and its body walks through a
-Biome-specific resolution workflow. Both actively direct agents to run
-commands that no longer exist once Phases 2-3 land. (The Node 20 → 24
-floor bump and `action.yml`'s `runs.using` fix, per §5, are recommended as
-their own immediate PR _ahead of_ this phase, not bundled into it — see
-§5.)
+`.claude/skills/holistic-linting/PROJECT-CONFIG.md`'s remaining `esbuild`
+build-tool declaration** to describe the Vite+/tsdown replacement — its
+Biome-specific commands were already rewritten in Phase 2 above, since
+`@biomejs/biome` stops being installed there, well before this phase
+runs. (The Node 20 → 24 floor bump and `action.yml`'s `runs.using` fix,
+per §5, are recommended as their own immediate PR _ahead of_ this phase,
+not bundled into it — see §5.)
 
 Each phase = one PR, green CI required before the next phase starts.
 `integration-test.yml`'s **test logic and assertions** are the final gate

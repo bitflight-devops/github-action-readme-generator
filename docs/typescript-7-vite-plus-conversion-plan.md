@@ -424,12 +424,23 @@ Requirements this config must satisfy, carried over from
          entry: 'src/index.ts',
          platform: 'node',
          outDir: 'dist/bin',
+         outExtensions: () => ({ js: '.js' }),
          deps: { alwaysBundle: ['prettier' /* ...other runtime deps... */] },
        }, // CLI
        { entry: 'src/index.ts', platform: 'node', outDir: 'dist/mjs' }, // library — default externalization
      ],
    });
    ```
+   **`outExtensions` on the CLI entry is required, not optional, same as
+   `outDir`** — confirmed by Phase 0's spike: tsdown's default output
+   extension for this platform/format combination is `.mjs`, so without
+   this override, `vp pack` produces `dist/bin/index.mjs`, and the very
+   next step, `chmod +x dist/bin/index.js` (item 5 below), fails against
+   a file that doesn't exist — `generate-docs` and `action.yml`'s
+   `runs.main` also depend on the literal `.js` path. Phase 0's spike
+   only got a passing test by manually renaming tsdown's `.mjs` output
+   before running it; the actual `pack` config must produce the right
+   path itself.
    **One thing this plan hasn't independently confirmed**: Vite+'s own
    `pack`-block example on that page shows a single object
    (`pack: { dts: true, format: [...], sourcemap: true }`), not an array

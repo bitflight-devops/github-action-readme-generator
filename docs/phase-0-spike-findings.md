@@ -86,13 +86,37 @@ one from `__mocks__/node:fs.ts`, fourteen from `__tests__/**`, and
 `vitest.config.d.ts`. `package.json`'s `"files"` field publishes all of
 `dist/` unfiltered, so adopting `--outDir` exactly as tested would ship
 all 16 dev-only `.d.ts` files in the published package. **The interim fix
-needs a source-only `include`/`exclude` (either a dedicated
-`tsconfig.build.json` scoped to `src/**`, or excluding `__tests__`,
-`__mocks__`, and `vitest.config.ts` from the declaration-emit invocation
-specifically, without changing the main `tsconfig.json`'s test-inclusive
-`include` that `vitest`/editor tooling relies on) in addition to the
-`outDir`-path/`"types"`-field fix above** — not `--outDir` plus a
-`"types"` update alone.
+needs a source-only `include`/`exclude`** (a dedicated
+`tsconfig.build.json` scoped to `src/**`, without changing the main
+`tsconfig.json`'s test-inclusive `include` that `vitest`/editor tooling
+relies on) **in addition to** the `outDir`-path fix above.
+
+**Third finding (Codex review, confirmed empirically by actually running
+it): a source-only `include` needs an explicit `rootDir` too, or it hard-fails.**
+Tested a dedicated config (`extends` the base `tsconfig.json`, `include:
+["src/**/*.ts", "src/**/*.mts"]`, no `rootDir` override) with the same
+`--emitDeclarationOnly --declaration --outDir` invocation:
+
+```text
+error TS5011: The common source directory of 'tsconfig.build-test-norootdir.json' is './src'. The 'rootDir' setting must be explicitly set to this or another path to adjust your output's file layout.
+```
+
+Exit code 2 — confirmed. Re-ran with `compilerOptions.rootDir: "src"`
+added: **exit code 0**, and the emitted files land flattened directly at
+the `outDir` root (e.g. `Action.d.ts`, `config.d.ts`, `errors/is-error.d.ts`)
+with no `src/` prefix — meaning the entry declaration lands at exactly
+`dist/types/index.d.ts`, the path `package.json`'s `"types"` field already
+declares. **This supersedes the "update `"types"` to
+`dist/types/src/index.d.ts`" alternative floated in the first finding
+above**: a dedicated `tsconfig.build.json` with `include: ["src/**"]` and
+`rootDir: "src"` solves all three problems in one config — the `TS5102`
+`--outFile` removal, the dev-file leakage, and the entry-path mismatch —
+with zero `package.json` changes required. **Recommended Phase 1 interim
+fix, superseding the split recommendation above**: add
+`tsconfig.build.json` (`extends: "./tsconfig.json"`, `compilerOptions:
+{rootDir: "src"}`, `include: ["src/**/*.ts", "src/**/*.mts"]`), and change
+`postbuild` to `tsc --project tsconfig.build.json --emitDeclarationOnly
+--declaration --outDir dist/types`.
 
 ## Repo state note
 
@@ -105,15 +129,95 @@ this by doing it and needing `git checkout -- dist` to restore. Worth a
 one-line callout anywhere the plan tells a future implementer to
 `rm -rf dist` on a branch cut from a post-release `main`.
 
-## Remaining Phase 0 work (not yet run)
+## tsdown `pack`-block bundled-binary test
 
-- Hand-write a throwaway `vite.config.ts` `pack` block (tsdown) and confirm
-  the bundled `dist/bin/index.js` still passes
-  `integration-bundled-binary.test.ts`.
-- Run `oxfmt`'s Node API against a real generated `README.md`/`action.yml`
-  and diff against today's `prettier` output (§8.0).
-- Build a throwaway bundled binary with `src/prettier.ts` swapped onto
-  `oxfmt`'s API and confirm it still passes
-  `integration-bundled-binary.test.ts` — both via the throwaway tsdown pack
-  block and via the real, currently-in-use `scripts/esbuild.mjs` pipeline
-  (per the plan's §9 Phase 0 fix distinguishing the two).
+Wrote a throwaway `vite.config.ts` using `vite-plus`'s own `defineConfig`
+with a `pack` block (per §7), targeting the same CLI entry as the real
+build. **Confirms §7's open question**: `vite-plus`'s own
+`dist/define-config-*.d.ts` types `pack?: PackUserConfig | PackUserConfig[]`
+— the array form is real and typed, not just inferred from tsdown's own
+multi-config support.
+
+First build attempt produced **14 separate chunk files**, not one — Rolldown
+code-splits on Prettier's internal dynamic `import()`s for its lazily-loaded
+language plugins (babel/typescript/flow/postcss/html/markdown/yaml/graphql/
+angular/acorn/meriyah/glimmer parsers). `integration-bundled-binary.test.ts`
+copies only a single file into an isolated tempdir, so this would fail at
+runtime on missing relative chunk imports. **Fix**: add
+`outputOptions: { codeSplitting: false }` to the pack entry (`tsdown`/
+Rolldown's replacement for the deprecated `inlineDynamicImports`). Rebuild
+produced one 8.62MB `index.mjs`, matching esbuild's current single-file
+behavior.
+
+Copied that file to `dist/bin/index.js` and ran
+`npx vitest run __tests__/integration-bundled-binary.test.ts`:
+**both tests pass, exit 0.** The tsdown-built binary satisfies the existing
+bundled-binary regression test unmodified, once `codeSplitting: false` is
+set. **This is a required addition to §7's `pack` config, not optional** —
+without it, Phase 3's build silently produces a broken multi-file binary.
+
+## `oxfmt` Node API vs. `prettier` output diff (§8.0)
+
+`oxfmt` is a standalone npm package (`oxfmt@0.62.0`, also bundled as an
+optional binary of `vite-plus@0.2.8`) with a real Node API — no CLI
+fallback needed: `format(fileName, sourceText, options?):
+Promise<{code, errors}>`, parser selected from the filename extension. Its
+`FormatConfig` includes `semi`, `embeddedLanguageFormatting`, and
+`proseWrap` — the same options `src/prettier.ts` passes to Prettier.
+
+Ran the repo's actual compiled `formatMarkdown`/`formatYaml` (from
+`dist/mjs/prettier.js`) against a real, freshly-generated `README.md`/
+`action.yml` (via `npm run generate-docs`), and `oxfmt.format()` with
+equivalent options against the same content.
+
+**Result: byte-for-byte identical for both files** (`diff` empty, MD5
+checksums match, zero `oxfmt` errors). Neither call site sets `proseWrap`
+(both default to `"preserve"`), so no line-rewrapping occurs.
+
+**New finding: `wrapDescription`'s `proseWrap: 'always'` path diverges by
+default.** Testing a long description string through both formatters with
+`{semi: false, proseWrap: 'always'}` (as `wrapDescription` calls it, no
+explicit `printWidth`) produced different wraps — Prettier's default
+`printWidth` is 80, `oxfmt`'s is 100. Forcing `printWidth: 80` explicitly
+on the `oxfmt` call made the outputs byte-identical again, confirming the
+*only* divergence is the default width, not any other formatting rule.
+**An `oxfmt` swap must add `printWidth: 80` explicitly to the
+`wrapDescription` call site** to preserve current output.
+
+## `oxfmt`-swapped bundled-binary test — swap is not viable with either bundler
+
+Swapped `src/prettier.ts`'s three exports onto `oxfmt`'s API (same
+input/output contract) and tested the bundled binary two ways, per §9
+Phase 0's distinction between the current esbuild pipeline and Phase 3's
+future tsdown pipeline:
+
+- **Real `scripts/esbuild.mjs` pipeline: fails to even bundle.** `esbuild`
+  hard-errors on 7 unresolved dynamic `import()`s inside `oxfmt`'s bundle —
+  optional Prettier-compat plugins (`@prettier/plugin-oxc`, `-hermes`,
+  `-pug`, `prettier-plugin-astro`, `-marko`, `@zackad/prettier-plugin-twig`,
+  `@shopify/prettier-plugin-liquid`) it lazy-loads for niche languages, none
+  installed. Externalizing those 7 lets bundling succeed, but the test then
+  fails: `Cannot find module '@oxfmt/binding-linux-x64-gnu'`.
+- **Throwaway tsdown pack pipeline: bundles, but fails the same test.**
+  Rolldown treats the same 7 imports as warnings, not hard errors, so the
+  build itself succeeds (after also adding `outExtensions` for `.js` output
+  and `inlineDynamicImports: true`/`codeSplitting: false` for a single
+  file) — but the resulting binary fails
+  `integration-bundled-binary.test.ts` with the **identical**
+  `Cannot find module './oxfmt.linux-x64-gnu.node'` error.
+
+**Root cause, same for both bundlers**: `oxfmt`'s Node API loads a
+platform-specific native N-API `.node` binding at runtime via `require()`,
+resolved from a **separate** `@oxfmt/binding-<platform>` optional-dependency
+package — not embedded in `oxfmt`'s own `dist/`. No JS bundler (esbuild or
+Rolldown/tsdown) can inline a native binary that lives in a sibling
+package resolved at runtime; it's simply absent once only the bundled
+`dist/` is copied into the `node_modules`-less isolated test directory the
+integration test runs in.
+
+**Conclusion, overriding §8.0's open question**: this is not a bundler-
+config gap fixable with more `deps.alwaysBundle`/`external` tuning — it's
+structural. **Recommend keeping `prettier` as the documented
+`dependencies` exception (per §8.0) rather than pursuing the `oxfmt` swap**,
+unless `oxfmt` ships a pure-JS/WASM fallback in a future release that
+doesn't require a native binding at runtime.

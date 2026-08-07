@@ -394,34 +394,64 @@ Requirements this config must satisfy, carried over from
    — **not** the deprecated `external`/`noExternal` terms an earlier pass
    of this plan used, and **not** `deps.skipNodeModulesBundle` either,
    which that same page documents as deprecated in favor of
-   `deps.neverBundle: true`). Concretely, `defineConfig` accepts an
-   **array of per-entry configs**, so give the CLI entry its own object
-   with `deps.alwaysBundle` listing (or pattern-matching) the runtime
-   `dependencies` that must ship inside `dist/bin/index.js`, while the
-   library entry keeps tsdown's default (`dependencies`/
-   `peerDependencies`/`optionalDependencies` externalized, per the same
-   page) with no `deps` override at all:
+   `deps.neverBundle: true`). **This lives inside the `pack` block of the
+   one `vite.config.ts` Phase 2 already created — not a second,
+   standalone `defineConfig` imported from `tsdown` directly.** Checked
+   [viteplus.dev/config/pack](https://viteplus.dev/config/pack) directly:
+   `vp pack` "reads tsdown settings from the `pack` block in
+   `vite.config.ts`," using Vite+'s own `defineConfig` (imported from
+   `'vite-plus'`, the same import already used for the `fmt`/`lint`/
+   `check`/`staged` blocks) — an earlier pass of this plan's code sample
+   showed a bare top-level `defineConfig([...])`, which reads as
+   replacing that whole file rather than adding to it, discarding
+   everything Phase 2 already established. Concretely, tsdown itself
+   accepts an **array of per-entry configs** (confirmed via
+   [tsdown.dev/options/entry](https://tsdown.dev/options/entry) and this
+   session's own web research into tsdown's multi-config support), so
+   give the CLI entry its own object with `deps.alwaysBundle` listing (or
+   pattern-matching) the runtime `dependencies` that must ship inside
+   `dist/bin/index.js`, while the library entry keeps tsdown's default
+   (`dependencies`/`peerDependencies`/`optionalDependencies`
+   externalized, per the same page) with no `deps` override at all —
+   nested under `pack`, alongside the blocks already in the file:
    ```ts
-   export default defineConfig([
-     {
-       entry: 'src/index.ts',
-       platform: 'node',
-       outDir: 'dist/bin',
-       deps: { alwaysBundle: ['prettier' /* ...other runtime deps... */] },
-     }, // CLI
-     { entry: 'src/index.ts', platform: 'node', outDir: 'dist/mjs' }, // library — default externalization
-   ]);
+   import { defineConfig } from 'vite-plus';
+
+   export default defineConfig({
+     fmt: {/* ...from Phase 2... */},
+     lint: {/* ...from Phase 2, including options.typeAware/typeCheck... */},
+     check: {/* ...from Phase 2... */},
+     staged: {/* ...from Phase 2... */},
+     pack: [
+       {
+         entry: 'src/index.ts',
+         platform: 'node',
+         outDir: 'dist/bin',
+         deps: { alwaysBundle: ['prettier' /* ...other runtime deps... */] },
+       }, // CLI
+       { entry: 'src/index.ts', platform: 'node', outDir: 'dist/mjs' }, // library — default externalization
+     ],
+   });
    ```
-   Don't rely on default behavior for the CLI entry — tsdown's default
-   posture (like most npm-library bundlers) is to externalize
-   `dependencies`, which is the opposite of what the CLI entry needs.
-   **`outDir: 'dist/bin'` on the CLI object is required, not optional** —
-   without it, both entries share `entry: 'src/index.ts'` and the CLI
-   output lands wherever tsdown's default output directory is, not at
-   `dist/bin/index.js` specifically. Item 5's `chmod +x
-dist/bin/index.js` below, `generate-docs`, and `action.yml`'s
-   `runs.main` all execute that exact path; an unset `outDir` means the
-   pack step doesn't create the file those three steps expect.
+   **One thing this plan hasn't independently confirmed**: Vite+'s own
+   `pack`-block example on that page shows a single object
+   (`pack: { dts: true, format: [...], sourcemap: true }`), not an array
+   — the page says only "see tsdown's configuration for details," which
+   strongly implies the array form tsdown itself supports carries
+   through, but that's inference, not a demonstrated example. Confirm
+   `pack: [...]` (array) actually works via a real `vp pack` run at Phase
+   3 implementation time (Phase 0's spike, below, is the place this gets
+   settled) before relying on it. Don't rely on default behavior for the
+   CLI entry either way — tsdown's default posture (like most
+   npm-library bundlers) is to externalize `dependencies`, which is the
+   opposite of what the CLI entry needs. **`outDir: 'dist/bin'` on the
+   CLI object is required, not optional** — without it, both entries
+   share `entry: 'src/index.ts'` and the CLI output lands wherever
+   tsdown's default output directory is, not at `dist/bin/index.js`
+   specifically. Item 5's `chmod +x dist/bin/index.js` below,
+   `generate-docs`, and `action.yml`'s `runs.main` all execute that exact
+   path; an unset `outDir` means the pack step doesn't create the file
+   those three steps expect.
    Keep the `alwaysBundle` override scoped to the CLI entry object only.
 2. Shebang / ESM interop banner (`#!/usr/bin/env node` + the
    `__filename`/`__dirname`/`require` polyfill shim) preserved via

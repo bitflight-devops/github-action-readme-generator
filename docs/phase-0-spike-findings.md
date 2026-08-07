@@ -76,6 +76,24 @@ invocation (e.g. a `rootDir`/output-flattening option) to land the entry
 file at the currently-declared path instead. This is a concrete, missing
 step to fold into §9 Phase 1 / the `postbuild` script-audit row.
 
+**Second finding (Codex review on this doc, confirmed by re-running the
+command and counting output): the `--outDir` command as written is not a
+complete interim fix on its own.** `tsconfig.json`'s `"include"` is
+`["**/*.ts", "**/*.mts"]` with no exclusion for `__tests__`, `__mocks__`,
+or `vitest.config.ts`, so the same command that produces the 26 `src/`
+declarations above also emits 16 dev-only declarations alongside them:
+one from `__mocks__/node:fs.ts`, fourteen from `__tests__/**`, and
+`vitest.config.d.ts`. `package.json`'s `"files"` field publishes all of
+`dist/` unfiltered, so adopting `--outDir` exactly as tested would ship
+all 16 dev-only `.d.ts` files in the published package. **The interim fix
+needs a source-only `include`/`exclude` (either a dedicated
+`tsconfig.build.json` scoped to `src/**`, or excluding `__tests__`,
+`__mocks__`, and `vitest.config.ts` from the declaration-emit invocation
+specifically, without changing the main `tsconfig.json`'s test-inclusive
+`include` that `vitest`/editor tooling relies on) in addition to the
+`outDir`-path/`"types"`-field fix above** — not `--outDir` plus a
+`"types"` update alone.
+
 ## Repo state note
 
 `main`'s current HEAD (`ccf91c2`) has `dist/` **tracked** — it's the release

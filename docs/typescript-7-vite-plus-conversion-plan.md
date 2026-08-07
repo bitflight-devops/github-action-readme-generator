@@ -427,20 +427,43 @@ Requirements this config must satisfy, carried over from
          outExtensions: () => ({ js: '.js' }),
          deps: { alwaysBundle: ['prettier' /* ...other runtime deps... */] },
        }, // CLI
-       { entry: 'src/index.ts', platform: 'node', outDir: 'dist/mjs' }, // library — default externalization
+       {
+         entry: 'src/index.ts',
+         platform: 'node',
+         outDir: 'dist/mjs',
+         outExtensions: () => ({ js: '.js' }),
+       }, // library — default externalization, same extension override as the CLI entry
      ],
    });
    ```
-   **`outExtensions` on the CLI entry is required, not optional, same as
-   `outDir`** — confirmed by Phase 0's spike: tsdown's default output
-   extension for this platform/format combination is `.mjs`, so without
-   this override, `vp pack` produces `dist/bin/index.mjs`, and the very
-   next step, `chmod +x dist/bin/index.js` (item 5 below), fails against
-   a file that doesn't exist — `generate-docs` and `action.yml`'s
-   `runs.main` also depend on the literal `.js` path. Phase 0's spike
-   only got a passing test by manually renaming tsdown's `.mjs` output
-   before running it; the actual `pack` config must produce the right
-   path itself.
+   **Both entries need `outExtensions`, not just the CLI one** — Phase 0's
+   spike confirmed (by actually installing tsdown and building a trivial
+   config) that its default output extension for `platform: 'node'` is
+   `.mjs`, regardless of which entry. Without the override, `vp pack`
+   produces `dist/bin/index.mjs` *and* `dist/mjs/index.mjs`. The CLI side
+   breaks at the very next step, `chmod +x dist/bin/index.js` (item 5
+   below) — `generate-docs` and `action.yml`'s `runs.main` also depend on
+   that literal path. The library side breaks silently instead: nothing
+   in the build fails, but `package.json`'s `exports.import` and
+   `"module"` fields both already say `dist/mjs/index.js`, and Phase 3's
+   own text (below) only tells you to remove `require`/`main` — not to
+   touch `exports.import`/`"module"` — so ESM consumers of the *published
+   npm package* (not just this CLI) end up pointed at a file that
+   doesn't exist. Phase 0's spike only got a passing CLI test by manually
+   renaming tsdown's `.mjs` output before running it — the actual `pack`
+   config must produce the right paths itself, on both entries.
+
+   **This is a choice, not the only correct answer, and it's worth being
+   explicit about why**: `package.json` already declares `"type":
+   "module"` (verified), so under Node's own module-resolution rules
+   `.js` and `.mjs` execute identically in this package — neither
+   extension is more "correct" at runtime than the other. The alternative
+   fix is retargeting `package.json`'s `exports.import`/`"module"` (and
+   `action.yml`'s `runs.main`, for the CLI side) to `.mjs` instead, and
+   leaving tsdown's default alone. Forcing `.js` via `outExtensions` is
+   preferred here only because it changes one config line per entry
+   instead of editing published package metadata and the Action's entry
+   point — not because `.mjs` output would be broken or wrong.
    **One thing this plan hasn't independently confirmed**: Vite+'s own
    `pack`-block example on that page shows a single object
    (`pack: { dts: true, format: [...], sourcemap: true }`), not an array

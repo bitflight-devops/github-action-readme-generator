@@ -647,8 +647,15 @@ directly by review:
   - type-check together. Delete `biome.json`, `.prettierrc.cjs`,
     `.babelrc.cjs` once nothing references them.
 - `test.yml`'s `run-tests` job: it runs `biome check ./src/ ./__tests__/`
-  directly — replace with the Oxlint/`vp lint` equivalent in this same
-  phase, not deferred to Phase 3's build rewrite.
+  directly — **replace with `vp check`, not `vp lint` alone.** Biome's own
+  docs describe `check` as running the formatter, linter, and import
+  sorting together
+  ([biomejs.dev/reference/cli/#biome-check](https://biomejs.dev/reference/cli/#biome-check));
+  swapping it for a lint-only step would silently drop the formatting
+  gate CI has today. `vp check` is the right one-for-one replacement
+  since it already bundles format + lint + type-check (§2/§4), and this
+  is the same reason `prelint` folds into it a few bullets above. Land
+  this in this same phase, not deferred to Phase 3's build rewrite.
 - `push_code_linting.yml`: swap `biomejs/setup-biome` + `biome lint` +
   `mongolyy/reviewdog-action-biome` for `oxc-project/oxlint-action`,
   keep the markdownlint step as-is.
@@ -674,31 +681,32 @@ directly by review:
   subsumes `actions/setup-node` and dependency caching for the jobs it
   covers — don't stack a redundant `setup-node` step alongside it in the
   same job.
-- **Reconcile Vite+'s own dependency requirements in `package.json`**,
+- **Point the `vite`-adjacent dependency surface at Vite+'s core alias**,
   per [viteplus.dev/guide/migrate-rules](https://viteplus.dev/guide/migrate-rules)
   (the reference `vp migrate` itself follows — not run here per §8.4,
   but its documented end-state is still the correct target for a
-  hand-authored cut-over):
-  - Point the existing `vite`-adjacent dependency surface at Vite+'s core
-    alias, `@voidzero-dev/vite-plus-core`, pinned to the concrete version
-    of the `vite-plus` release actually installed (never a `latest`
-    dist-tag) — not a plain `vite` devDependency, since this repo has
-    none today and Vite+'s own docs are explicit that the alias tracks
-    the installed Vite+ release exactly.
-  - `vitest` and `@vitest/coverage-v8`: this repo's Node-only test setup
-    (no browser-mode Vitest usage in `__tests__/**`) is exactly the
-    "common node-mode case" the migrate-rules doc describes, where
-    `vitest` is removed as a direct `devDependency` because `vite-plus`
-    provides it transitively; `@vitest/coverage-v8` stays as a direct
-    dependency but gets version-aligned to whatever Vitest version
-    `vite-plus` bundles, not left on its own independent `^4.1.2` range.
-  - Regenerate `package-lock.json` after these changes (`npm install`,
-    same as #616 already did for the `engines` sync) and run `npm ls`
-    to confirm no duplicate/conflicting `vite`/`vitest` resolution
-    survives before moving on — a leftover second copy pulled in by a
-    stale `vitest` devDependency splitting the project across separate
-    Vite+ and Vitest instances is exactly the failure mode
-    migrate-rules' "Vite and Overrides" section warns about.
+  hand-authored cut-over): add `@voidzero-dev/vite-plus-core`, pinned to
+  the concrete version of the `vite-plus` release actually installed
+  (never a `latest` dist-tag) — not a plain `vite` devDependency, since
+  this repo has none today and Vite+'s own docs are explicit that the
+  alias tracks the installed Vite+ release exactly. This is safe in
+  Phase 2 because it's a general Vite+-installation step, not gated on
+  the `vitest`/`pack` work below.
+  - **`vitest` and `@vitest/coverage-v8` stay untouched in this phase —
+    do not remove `vitest` as a direct `devDependency` here.** An
+    earlier pass of this plan put that removal in Phase 2, which is
+    exactly backwards: `vitest.config.ts` and every `vitest` import in
+    `__tests__/**` are explicitly **out of scope for Phase 2** (the
+    paragraph right after this list says so) and don't get rewritten to
+    `vite-plus/test` until Phase 3. Per migrate-rules' own "When Vitest
+    Is Directly Required" section, `vitest` is kept as a package-local
+    direct dependency for exactly as long as source/config still
+    reference it directly — removing it while those references still
+    exist risks Phase 2's required tests resolving a transitive/hoisted
+    copy instead of the aligned one, or failing outright. The actual
+    removal (plus `@vitest/coverage-v8` version-alignment, `npm ls`
+    validation, and lockfile regen) belongs in Phase 3, alongside the
+    import rewrite — see that phase below.
 - **Only after `vp staged` is actually wired and confirmed working**:
   delete `.lintstagedrc` and the duplicate `lint-staged` block in
   `package.json`, and change the `pre-commit` **npm script**'s body from
@@ -726,6 +734,16 @@ Add the `pack` block (tsdown, per §7) and `test` block (Vitest) to the
 already-present `vite.config.ts`, consolidate `vitest.config.ts` into it,
 and rewrite `__tests__/**`'s `vitest`/`@vitest/browser*` imports to
 `vite-plus/test`/`vite-plus/test/browser*` per Vite+'s migration docs.
+**Now that those imports are rewritten, complete the dependency
+reconciliation Phase 2 deliberately deferred**: remove `vitest` as a
+direct `devDependency` (this repo's Node-only test setup is the "common
+node-mode case" `viteplus.dev/guide/migrate-rules` describes, where
+`vite-plus` provides it transitively), version-align `@vitest/coverage-v8`
+to whatever Vitest version `vite-plus` bundles rather than its own
+independent `^4.1.2` range, regenerate `package-lock.json`, and run
+`npm ls` to confirm no duplicate/conflicting `vite`/`vitest` resolution
+survives — a leftover second copy is exactly the failure mode
+migrate-rules' "Vite and Overrides" section warns about.
 Replace `scripts/esbuild.mjs` + `tsconfig-mjs.json` +
 `scripts/set_package_type.sh` with the `pack` config (ESM-only library
 output, no `dist/cjs`, per the decided §8.1; explicit CLI-entry
@@ -738,8 +756,14 @@ the script audit), rewrite `test.yml`'s build step accordingly. **Leave
 (§4 already corrects this) — and remove the now-replaced
 `esbuild`/`esbuild-node-externals` `devDependencies`, same "clean
 cut-over deletes the tool, not just its config" standard applied to
-Biome in Phase 2 below. This phase is gated on Phase 0's spike having
-already proven the bundled binary stays self-contained.
+Biome in Phase 2 below. **`integration-test.yml` also needs the
+`setup-vp` bootstrap step added here**, not left alone: it runs
+`npm ci && npm run build` (verified by reading the workflow file), and
+once `build` requires `vp pack` to be on `PATH`, this workflow fails
+with "command not found" exactly like the CI jobs Phase 2 already
+patches, unless it gets the same `voidzero-dev/setup-vp` step. This
+phase is gated on Phase 0's spike having already proven the bundled
+binary stays self-contained.
 
 **Phase 4 — cleanup**
 Update `.github/copilot-instructions.md` and `CLAUDE.md` to describe the
@@ -750,10 +774,16 @@ project docs as history. (The Node 20 → 24 floor bump and `action.yml`'s
 _ahead of_ this phase, not bundled into it — see §5.)
 
 Each phase = one PR, green CI required before the next phase starts.
-`integration-test.yml` is the final gate every phase must keep passing
-unmodified — it exercises the built action end-to-end against real
-external repos and is the best available signal that the cut-over hasn't
-broken actual behavior.
+`integration-test.yml`'s **test logic and assertions** are the final gate
+every phase must keep passing unmodified — it exercises the built action
+end-to-end against real external repos and is the best available signal
+that the cut-over hasn't broken actual behavior. Its **environment-setup
+step is not exempt from that same unmodified rule's spirit**, though: per
+Phase 3 above, once `npm run build` requires `vp` on `PATH`, this
+workflow needs the `setup-vp` bootstrap step too, same as every other
+job Phase 2/3 already patch — "unmodified" describes the test's
+behavior staying the gate, not a license to leave its CI environment
+undertooled once the command it runs changes underneath it.
 
 ## 10. Risk register
 
@@ -800,6 +830,7 @@ where I didn't independently confirm against a primary source.
 - [viteplus.dev/guide/migrate-rules](https://viteplus.dev/guide/migrate-rules) — fetched directly. Backs §9 Phase 2's `vite`-core-alias/`vitest`/`@vitest/coverage-v8` dependency-reconciliation steps (the "common node-mode case" removal rule, the pinned-to-installed-release alias, the `npm ls`-verification concern).
 - [viteplus.dev/guide/ci](https://viteplus.dev/guide/ci) and [github.com/voidzero-dev/setup-vp](https://github.com/voidzero-dev/setup-vp) (README, fetched directly) — back §9 Phase 2's `setup-vp` CI-bootstrap requirement and the exact-tag-pin correction (the action's own README states its `@v1` moving tag is frozen at `v1.15.0` and receives no further releases).
 - `git log`/`gh pr view` against this repo directly (not a claim about external tooling, but the same verify-before-writing discipline) — confirmed PR #616 (Docker image + lockfile `engines` fix) is merged to `main`, and that this plan branch's own working tree only reflected that fix after rebasing onto `main` — the resolution for the Docker-row finding below.
+- [biomejs.dev/reference/cli/#biome-check](https://biomejs.dev/reference/cli/#biome-check) — official Biome docs. Backs §9 Phase 2's correction that `biome check` covers formatting + linting + import sorting together, so its CI replacement must be `vp check`, not `vp lint` alone.
 
 **Secondary (search-result coverage, not independently confirmed against a primary source):**
 

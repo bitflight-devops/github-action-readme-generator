@@ -13,19 +13,19 @@ Please note we have a code of conduct, please follow it in all your interactions
 - Setup your environment:
 
 ```sh
-make setup
+npm install
 ```
 
 - Make your changes
 - Test your changes:
 
 ```sh
-make lint
+npm run lint
 
 # Auto fix lint errors
-make lint-fix
+npm run format && npm run lint:fix
 
-make test
+npm run test
 ```
 
 ## Pull Request Process

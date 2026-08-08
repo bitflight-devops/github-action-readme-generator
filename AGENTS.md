@@ -7,14 +7,17 @@ pointer, kept only because Claude Code looks for that path — GitHub
 Copilot's coding agent and Copilot CLI read this file directly by default;
 VS Code Copilot Chat reads it too, but only once its experimental
 `chat.useAgentsMdFile` setting is turned on (off by default as of this
-writing). No other wrapper file exists.
+writing). No other *wrapper* file exists — `.claude/CLAUDE.md` still does,
+separately, but holds only genuinely Claude-Code-specific content (banned
+subagent types and the like) that doesn't belong in a tool-agnostic doc; it
+isn't a pointer to here and isn't obsolete.
 
 ## Project Overview
 
 **Purpose**: CLI tool and GitHub Action that generates/updates README.md files from action.yml metadata. Automatically extracts title, description, inputs, outputs, and usage examples from action.yml and updates corresponding sections in README.md using markdown comment delimiters.
 
 **Type**: TypeScript-based Node.js project
-**Target Runtime**: Node.js 24.x (STRICT requirement - engines enforces >=24.0.0 <30.0.0)
+**Supported Runtime**: Node.js `>=24.0.0 <30.0.0` (`package.json`'s `engines` field enforces this; 24 and 26 are both in CI's test matrix, Node 24 is just the Volta-pinned dev baseline, not the ceiling)
 **Package Manager**: npm >=10.0.0
 **Build Tool**: esbuild + TypeScript compiler
 **Test Framework**: vitest
@@ -56,7 +59,7 @@ writing). No other wrapper file exists.
 
 ## Critical: Node Version Requirement
 
-⚠️ **IMPORTANT**: This project REQUIRES Node 24.x (Active LTS) — `package.json`'s `engines` field strictly enforces this. If you see `EBADENGINE` warnings during npm install, the environment is using an incompatible Node version. Node 20 reached end-of-life on 2026-04-30 and is no longer supported. The project uses volta for version management; check `.node-version` and `package.json`'s `volta` field directly for the exact pinned version rather than trusting a number restated here — it will drift out of sync with those files.
+⚠️ **IMPORTANT**: This project REQUIRES Node `>=24.0.0 <30.0.0` — `package.json`'s `engines` field strictly enforces this (24.x is the floor and CI's baseline dev pin, not the ceiling; CI's own test matrix includes 26.x). If you see `EBADENGINE` warnings during npm install, the environment is outside that range (most commonly: below it, e.g. Node 20 or 22). Node 20 reached end-of-life on 2026-04-30 and is no longer supported. The project uses volta for version management; check `.node-version` and `package.json`'s `volta` field directly for the exact pinned version rather than trusting a number restated here — it will drift out of sync with those files.
 
 ## Build & Validation Commands
 
@@ -71,7 +74,7 @@ writing). No other wrapper file exists.
    ```
 
    - Known warnings: may show peer dependency warnings for @types/node (safe to ignore)
-   - If on Node 22+: will show EBADENGINE warning (informational, but build still works)
+   - If below Node 24.0.0 or at/above Node 30.0.0: will show EBADENGINE warning (informational, but build still works) — Node 24-29 are all in range and won't trigger it
 
 2. **Build the project** (REQUIRED before testing changes):
 
@@ -130,7 +133,7 @@ npm run build           # Build project
 npm run test            # Run tests
 npm run coverage        # Generate coverage
 npm run format          # Format code
-npm run lint:markdown   # Check markdown
+npm run lint            # Biome lint + markdownlint (CI's actual lint gate - lint:markdown alone would miss the Biome check CI runs)
 npm run generate-docs   # Update README
 ```
 
@@ -202,8 +205,11 @@ is added or removed — use `Glob`/`ls` for the current, exact contents of any
 directory rather than trusting a static listing. What's worth stating because
 it's a convention, not visible from a directory listing alone:
 
-- `__tests__/` mirrors `src/`'s structure (e.g. `src/helpers.ts` →
-  `__tests__/helpers.test.ts`).
+- `__tests__/` follows `src/`'s naming for the files it does cover (e.g.
+  `src/helpers.ts` → `__tests__/helpers.test.ts`), but coverage isn't
+  exhaustive and nesting isn't always preserved (e.g. `src/markdowner/`
+  maps to a flat `__tests__/markdowner.test.ts`, not a nested directory) —
+  don't assume a 1:1 mirror when checking whether a given file has tests.
 - `dist/` is gitignored, but a past release's tracked snapshot may still be
   present — see "Dist Files Workflow" above.
 - `.github/workflows/`'s file names differ from their GitHub-displayed
@@ -228,7 +234,8 @@ non-obvious, not a full transcription that will drift out of sync with it.
      include a `biome check` gate before tests run, and a coverage-report
      step, in addition to install/test/coverage/build/generate-docs.
    - On `push` events only, a second job invokes `deploy.yml` as a reusable
-     workflow (see below) — `deploy.yml` isn't triggered independently.
+     workflow (see below) — that's one of `deploy.yml`'s two triggers, not
+     its only one.
 
 2. **`push_code_linting.yml`** (displays as "Code Linting Annotation"):
    - Triggers: `pull_request` and `push`, both to `main`/`next`/`beta`/`*.x`.
@@ -263,7 +270,7 @@ non-obvious, not a full transcription that will drift out of sync with it.
 2. **Tests fail after changes**: Run `npm run build` before testing
 3. **README.md changes after commit**: Expected - pre-commit hook runs `generate-docs`
 4. **Pre-commit hook slow**: Normal - it runs full build + docs generation
-5. **EBADENGINE warning**: Using wrong Node version - requires Node 24.x
+5. **EBADENGINE warning**: Node version outside `>=24.0.0 <30.0.0`
 6. **`generate-docs` producing an unexpected README diff (e.g. version badge falling back to a full version string instead of a major tag)**: fetch git tags first (`git fetch origin --tags`) — the usage-example generator resolves the latest tag, and a shallow/tagless checkout makes it fall back to `package.json`'s version.
 
 ## Key Implementation Details
@@ -271,7 +278,7 @@ non-obvious, not a full transcription that will drift out of sync with it.
 - **README markers**: Tool uses HTML comment delimiters like `<!-- start inputs --><!-- end inputs -->` to identify sections
 - **Dual purpose**: Works as both GitHub Action (using action.yml inputs) and CLI tool (using .ghadocs.json or CLI args)
 - **Branding**: Generates SVG icons from action.yml branding field using feather-icons
-- **Versioning**: Auto-updates usage examples with latest version from package.json
+- **Versioning**: Auto-updates usage examples with the latest git tag, falling back to `package.json`'s version when tags aren't available (see the `generate-docs`/git-tags pitfall above — the two must stay consistent)
 - **Configuration cascade**: CLI args → .ghadocs.json → action.yml defaults
 
 ## The standing goal for this repo's tooling migration

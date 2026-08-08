@@ -14,9 +14,7 @@ Instructions for AI agents working in this repository.
 
 ## Commit format
 
-Conventional Commits, enforced by commitlint (`@commitlint/config-conventional`, stock type list) + husky.
-Deviation from commitlint's defaults: header/body/footer length caps are all disabled (unlimited).
-Validate before pushing: `git log --format=%B -n 1 | npx --no -- commitlint`
+Conventional Commits — the `commit-msg` hook runs commitlint automatically (see Pre-commit hooks).
 
 ## Build & validation commands
 
@@ -57,13 +55,13 @@ src/
   index.ts                CLI entry point
   Action.ts                action.yml metadata parsing
   inputs.ts                 Inputs class: CLI args -> .ghadocs.json -> action.yml cascade
-  readme-generator.ts   generateDocs() - top-level orchestration entry point
+  readme-generator.ts   ReadmeGenerator class - generate()/updateSections()/outputSections()
   readme-editor.ts        reads/writes README.md's <!-- start X --> markers
-  save.ts                    writes generated output back to disk
-  helpers.ts                utilities, incl. git-tag version resolution (see pitfalls)
+  save.ts                    conditionally persists .ghadocs.json, not the README
+  helpers.ts                utilities: git-tag version resolution, repo detection, table formatting
   prettier.ts                formatYaml/formatMarkdown/wrapDescription
   svg-editor.mts          SVGEditor class - branding SVG generation
-  config.ts                  Versioning/Paths config interfaces
+  config.ts                  GHActionDocsConfig class - reads/saves .ghadocs.json
   constants.ts             Feather icon names + other constants
   util.ts                     shared TS type utilities (e.g. Nullable<T>)
   unicode-word-match.ts  ES5-compatible unicode word-match regex

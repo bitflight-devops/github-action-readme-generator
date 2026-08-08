@@ -639,37 +639,23 @@ prove that on its own, and `ts-node` is already decided as dead weight
 to remove, not something still being evaluated; hand-write a throwaway
 `vite.config.ts` `pack` block (tsdown, per §7 — not a plain-Vite
 `build.lib`) and confirm the bundled `dist/bin/index.js` still passes
-`integration-bundled-binary.test.ts` unmodified; run `oxfmt`'s Node API
-against a real generated `README.md` and `action.yml` and diff the
-output against today's `prettier` output to resolve §8.0 (runtime
-`prettier` replacement) before Phase 2 deletes anything Prettier-related.
-**If that output-parity check passes, it only proves the formatted
-output matches — it does not prove `oxfmt` can actually ship inside the
-self-contained CLI bundle.** Build and run a throwaway bundled binary
-with `src/prettier.ts` swapped onto `oxfmt`'s API (same pack-block spike
-as above, but with the replacement wired in) and confirm it still passes
-`integration-bundled-binary.test.ts`, rather than approving the
-replacement on output parity alone and finding out it doesn't bundle
-once Phase 2 actually makes the swap.
+`integration-bundled-binary.test.ts` unmodified.
 
-**That tsdown/pack-block spike alone still isn't sufficient, because of
-a bundler mismatch this plan itself creates**: the `oxfmt` swap in
-`src/prettier.ts` lands in **Phase 2** (per that phase's text above:
-"this is the phase where that decision actually lands in code"), but
-Phase 2 explicitly leaves "the entire build/bundle pipeline" untouched —
-`scripts/esbuild.mjs` is still what actually produces `dist/bin/index.js`
-until Phase 3 replaces it with the `pack` block. Proving the swapped code
-bundles cleanly under the throwaway tsdown/Rolldown spike says nothing
-about whether it bundles cleanly under the **esbuild** pipeline that is
-still in production use for the two phases in between. Run this same
-bundled-binary check a second way in Phase 0: build the oxfmt-swapped
-`src/prettier.ts` through the actual, current `scripts/esbuild.mjs`
-pipeline (not the throwaway tsdown config) and confirm
-`integration-bundled-binary.test.ts` still passes against _that_ binary.
-If it doesn't, the outcome is to defer the `oxfmt` swap to Phase 3 (once
-`pack` is the real build), not to force it into Phase 2 against a
-pipeline the spike never actually validated. This de-risks the plan
-before CI/config deletion.
+**Done — results in `docs/phase-0-spike-findings.md`, decision now closed
+per §8.0**: the tsdown pack-block spike above passed (once
+`codeSplitting: false` and `outExtensions` are set, per §7). The
+`oxfmt`-vs-`prettier` output-parity check also passed on its own terms
+(byte-identical, modulo one `printWidth` default difference) — but that
+result turned out not to matter, because the bundling question it was
+gated behind failed decisively: `oxfmt`'s Node API depends on a native
+`.node` binding resolved from a separate optional-dependency package at
+runtime, which **no JS bundler can inline**. This was tested both ways
+this section originally called for — the throwaway tsdown/Rolldown pack
+config, and the actual, current `scripts/esbuild.mjs` pipeline — and both
+produced a binary that fails `integration-bundled-binary.test.ts` with
+the identical `Cannot find module './oxfmt.linux-x64-gnu.node'` error.
+There is no bundler-mismatch risk left to de-risk: `prettier` stays, per
+§8.0, and Phase 2 does not touch `src/prettier.ts` at all.
 
 **Phase 1 — TypeScript 7 alone**
 Upgrade `typescript` to the pinned compatible version from Phase 0 (not
@@ -1031,7 +1017,7 @@ undertooled once the command it runs changes underneath it.
 | TS7 hard-errors on patterns Biome/TS6 allowed                                                                                                                                                        | Phase 0 spike surfaces this before any deletion happens                                                                                                                                                                                                                                                                                                                                                                               |
 | Rolldown bundling breaks the "fully self-contained binary" guarantee                                                                                                                                 | `integration-bundled-binary.test.ts` already exists and is the exact regression gate; keep it, run it every phase                                                                                                                                                                                                                                                                                                                     |
 | Oxlint's default rules differ from Biome's custom thresholds (either direction — some things Biome flagged, Oxlint won't, and vice versa)                                                            | Accepted by design (§8.3) — the goal is Oxlint's own findings against this codebase, not Biome parity; Phase 2 triages whatever Oxlint actually reports rather than pre-tuning config to match the old bar                                                                                                                                                                                                                            |
-| Replacing runtime `prettier` with `oxfmt` silently changes generated `README.md`/YAML output for every consumer of this action                                                                       | §8.0 verification (real-file diff, not just unit-test mocks) happens in the Phase 0 spike, before Phase 2 touches `src/prettier.ts`; if parity doesn't hold, keep `prettier` rather than ship a regression                                                                                                                                                                                                                            |
+| Replacing runtime `prettier` with `oxfmt` silently changes generated `README.md`/YAML output for every consumer of this action                                                                       | Closed, not a live risk: Phase 0's spike ran the real-file diff (byte-identical) and the bundled-binary check, and the swap fails on the latter regardless of output parity (native binding unbundlable, per §8.0). `prettier` stays; Phase 2 does not touch `src/prettier.ts`.                                                                                                                                                       |
 | `vp` toolchain still "beta" — API/CLI surface can change under us                                                                                                                                    | Pin `vite-plus` (and its bundled Oxlint/Oxfmt/tsdown versions) to exact versions in `package.json`, not ranges, until it reaches stable/1.0                                                                                                                                                                                                                                                                                           |
 | Node floor bump to 24 breaks some consumer still pinned to Node 20                                                                                                                                   | Node 20 is already EOL (2026-04-30) and GitHub is removing it from Actions runners entirely in fall 2026, so staying on 20 isn't a neutral fallback to protect — the bump is called out explicitly in the PR description / changelog as a `feat!`/breaking change per this repo's conventional-commits rules, but isn't optional to defer indefinitely                                                                                |
 | `semantic-release` / `deploy.yml`'s `git add -f dist` step assumes today's `dist/` layout                                                                                                            | Verify `dist/bin`, `dist/mjs`, `dist/types` paths match after `vp pack` (no `dist/cjs` — dropped per §8.1), update the force-add + `files` array in `package.json` if paths shift                                                                                                                                                                                                                                                     |

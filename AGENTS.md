@@ -139,9 +139,10 @@ current step list — this section states what's non-obvious, not a full copy.
 
 ## Working discipline
 
-- `checker-principle` skill: verify before trusting any fix, bot finding, or your own diff.
-- `pr-review-workflow` skill: handling PR review comments, judging draft-readiness.
-- `planning-multi-step-work` skill: planning ahead, judging when a loop is warranted.
+- `.claude/skills/checker-principle/SKILL.md`: verify before trusting any fix, bot finding, or your own diff.
+  - Claude Code auto-loads this as a skill; other agents can open the file directly.
+- `.claude/skills/pr-review-workflow/SKILL.md`: handling PR review comments, judging draft-readiness.
+- `.claude/skills/planning-multi-step-work/SKILL.md`: planning ahead, judging when a loop is warranted.
 - Delegate large reads (logs, search results, big docs) to a fresh subagent.
   - A cheap model with zero context to re-process is far cheaper per call.
   - The checker-principle still applies to what it reports back.

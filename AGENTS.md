@@ -29,11 +29,13 @@ npm run lint:markdown  # markdownlint
 npm run generate-docs  # regenerate README.md from action.yml
 ```
 
-`npm run lint`/`lint:fix` is not a clean read-only check: npm auto-runs its `prelint`
-script first, which does `biome format --write` (rewrites files) + a full `tsc --noEmit`
-type check, then runs `biome lint` + `markdownlint`. Narrower than CI's Biome coverage
-either way (no import-sorting). Use `npm run check`/`check:fix` for CI's actual gate
-with no side effects.
+`npm run lint` is not a clean read-only check: npm's `prelint` hook (exact-name match,
+so only `lint` gets it, not `lint:fix`) runs `biome format --write` (rewrites files) +
+a full `tsc --noEmit` check first, then `biome lint` + `markdownlint` run. `lint:fix`
+skips that hook and just runs `biome lint --write` + `markdownlint --fix` directly —
+still mutating, just not via `prelint`. Both are narrower than CI's Biome coverage
+either way (no import-sorting). `npm run check` matches CI's actual gate read-only;
+`check:fix` (`biome check --write`) mutates files too.
 
 ## Pre-commit hooks (husky)
 

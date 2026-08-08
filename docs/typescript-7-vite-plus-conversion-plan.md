@@ -450,11 +450,17 @@ Requirements this config must satisfy, carried over from
    ```
    **`deps.alwaysBundle` lists every current runtime `dependency`, not just
    `prettier`** — confirmed against `package.json`'s actual `dependencies`
-   (9 packages total). A vague `/* ...other runtime deps... */` comment
-   isn't a config; whichever of these `package.json` carries at Phase 3
-   implementation time is the list this array needs, kept in sync with
-   `package.json`'s `dependencies` (not `devDependencies`) at that point
-   — `@types/*` entries stay out, they're types-only.
+   field, which has **11** entries, not 9: `@types/feather-icons` and
+   `@types/svgdom` are (unusually) listed under `dependencies` rather
+   than `devDependencies` in this repo today, verified by reading
+   `package.json` directly. Both are types-only with no runtime code to
+   bundle, so the array above correctly excludes them, landing at 9 real
+   entries — but the *reason* is "these two are types-only despite their
+   location," not "package.json only has 9 dependencies." A vague
+   `/* ...other runtime deps... */` comment isn't a config; whichever
+   non-types-only packages `package.json`'s `dependencies` carries at
+   Phase 3 implementation time is the list this array needs, kept in
+   sync at that point.
    **Both entries need `outExtensions`, not just the CLI one** — Phase 0's
    spike confirmed (by actually installing tsdown and building a trivial
    config) that its default output extension for `platform: 'node'` is
@@ -495,15 +501,24 @@ Requirements this config must satisfy, carried over from
    default code-splitting is normal, expected behavior for a
    library consumed via `node_modules` resolution, where sibling chunk
    files are just... there.
-   **Confirmed, not just inferred**: Vite+'s own `pack`-block example on
+   **Partially confirmed — the array's type is real, its two-entry build
+   is not yet separately tested.** Vite+'s own `pack`-block example on
    that page shows a single object (`pack: { dts: true, format: [...],
    sourcemap: true }`), not an array, and only says "see tsdown's
-   configuration for details" — but Phase 0's spike actually ran a real
-   `vp pack` with the array form (via `vite-plus`'s own typed
-   `PackUserConfig | PackUserConfig[]` signature) and it built and passed
-   `integration-bundled-binary.test.ts` (`docs/phase-0-spike-findings.md`,
-   "tsdown `pack`-block bundled-binary test"). The array form is real and
-   works; this is no longer an open question. Don't rely on default
+   configuration for details." Phase 0's spike settled the type-level
+   half of this: `vite-plus`'s own `dist/define-config-*.d.ts` types
+   `pack?: PackUserConfig | PackUserConfig[]`, so the array form is real
+   and typed, not just inferred from tsdown's own multi-config support
+   (`docs/phase-0-spike-findings.md`, "tsdown `pack`-block bundled-binary
+   test"). **What the spike did not separately test**: that same section's
+   actual `vp pack` run targeted only the CLI entry (a single object, not
+   the two-entry array shown here) — its passing
+   `integration-bundled-binary.test.ts` result validates the CLI entry's
+   own settings (`outExtensions`, `codeSplitting`), not that a real
+   two-entry array builds both entries correctly in one invocation.
+   Confirm the full two-entry array actually builds cleanly via a real
+   `vp pack` run at Phase 3 implementation time before assuming the type
+   signature accepting it means it behaves correctly. Don't rely on default
    behavior for the CLI entry either way — tsdown's default posture (like most
    npm-library bundlers) is to externalize `dependencies`, which is the
    opposite of what the CLI entry needs. **`outDir: 'dist/bin'` on the

@@ -1,14 +1,8 @@
 # Claude AI Instructions
 
-For detailed coding guidelines and project standards, please read:
+All project details, coding guidelines, and process discipline for this
+repository live in `AGENTS.md` — the tool-agnostic canonical source, kept
+consistent across every agent harness (Claude Code, GitHub Copilot, Codex,
+and others):
 
-@.github/copilot-instructions.md
-
-This file contains comprehensive instructions for:
-
-- Commit message format requirements
-- Code style and linting rules
-- Testing expectations
-- Git workflow standards
-- Pre-commit hook behavior
-- And more...
+@AGENTS.md

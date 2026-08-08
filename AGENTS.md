@@ -1,6 +1,322 @@
 # AGENTS.md
 
-Instructions for AI agents (Claude, Codex, and others) working in this repository.
+Instructions for AI agents (Claude, Codex, GitHub Copilot, and others) working
+in this repository. This is the canonical, tool-agnostic source of project
+details and process discipline — `CLAUDE.md` and
+`.github/copilot-instructions.md` are thin pointers to this file, kept only
+because their respective tools look for those specific paths.
+
+## Project Overview
+
+**Purpose**: CLI tool and GitHub Action that generates/updates README.md files from action.yml metadata. Automatically extracts title, description, inputs, outputs, and usage examples from action.yml and updates corresponding sections in README.md using markdown comment delimiters.
+
+**Type**: TypeScript-based Node.js project
+**Target Runtime**: Node.js 24.x (STRICT requirement - engines enforces >=24.0.0 <30.0.0)
+**Package Manager**: npm >=10.0.0
+**Build Tool**: esbuild + TypeScript compiler
+**Test Framework**: vitest
+**Code Style**: Biome + Markdownlint (not ESLint — the repo migrated off ESLint; treat any lingering "ESLint" references elsewhere as stale)
+
+## ⚠️ CRITICAL: Commit Message Format
+
+**This repository uses Conventional Commits (enforced by commitlint + husky).**
+
+**EVERY commit MUST follow this format:**
+
+```text
+<type>: <description>
+
+[optional body]
+
+[optional footer]
+```
+
+**Common types:**
+
+- `feat:` - New feature
+- `fix:` - Bug fix or issue resolution (includes test fixes, integration tests)
+- `docs:` - Documentation ONLY changes (README, comments ONLY if that's the sole change)
+- `test:` - Test-only changes
+- `refactor:` - Code restructuring without feature changes
+- `chore:` - Build scripts, dependencies, tooling
+- `ci:` - CI/CD changes
+
+**Examples:**
+
+- `fix: resolve path resolution error in npx usage` ✅
+- `feat: add support for custom templates` ✅
+- `docs: update installation instructions` ✅
+- `Add new feature` ❌ (missing type)
+- `docs: fix integration test` ❌ (wrong type - should be `fix:` or `test:`)
+
+**Validation:** Run `git log --format=%B -n 1 | npx --no -- commitlint` to validate before pushing.
+
+## Critical: Node Version Requirement
+
+⚠️ **IMPORTANT**: This project REQUIRES Node 24.x (Active LTS). The engines field strictly enforces this. If you see `EBADENGINE` warnings during npm install, the environment is using an incompatible Node version. Node 20 reached end-of-life on 2026-04-30 and is no longer supported. The project uses volta for version management - check `.node-version` (contains "24.19.0") and `package.json` volta field.
+
+## Build & Validation Commands
+
+### Installation & Build Sequence
+
+**Always run commands in this exact order:**
+
+1. **Install dependencies** (ALWAYS run first after any git checkout/pull):
+
+   ```bash
+   npm install
+   ```
+
+   - Known warnings: may show peer dependency warnings for @types/node (safe to ignore)
+   - If on Node 22+: will show EBADENGINE warning (informational, but build still works)
+
+2. **Build the project** (REQUIRED before testing changes):
+
+   ```bash
+   npm run build
+   ```
+
+   - Runs in sequence: prebuild (tsc type-check) → build (esbuild) → postbuild (generate declarations + MJS build)
+   - Output: Creates `dist/` directory with:
+     - `dist/bin/index.js` - CLI executable
+     - `dist/mjs/` - ESM modules
+     - `dist/types/` - TypeScript declarations
+   - Clean build: `npm run clean` (removes dist/) before `npm run build`
+
+### Testing
+
+```bash
+npm run test          # Run tests in watch mode (vitest)
+npm run coverage      # Run tests with coverage report (outputs to ./out/)
+```
+
+- Test files: `__tests__/**/*.test.ts`
+- Coverage reports: Generated in `./out/coverage-summary.json` and `./out/coverage-final.json`
+
+### Linting & Formatting
+
+```bash
+# Run all linting (format + type-check + biome + markdownlint)
+npm run lint
+
+# Auto-format code
+npm run format          # Runs biome format on ./src ./__tests__
+
+# Fix linting issues
+npm run lint:fix        # Runs format + biome lint --fix + markdownlint --fix
+npm run lint:markdown:fix   # Fix markdown linting only
+```
+
+### Documentation Generation
+
+```bash
+npm run generate-docs
+```
+
+- Reads action.yml and updates README.md sections
+- Generates branding SVG at `.github/ghadocs/branding.svg`
+- Uses `.ghadocs.json` for configuration
+
+### Complete Validation Sequence
+
+**To validate your changes will pass CI, run these in order:**
+
+```bash
+npm install              # Install/update dependencies
+npm run build           # Build project
+npm run test            # Run tests
+npm run coverage        # Generate coverage
+npm run format          # Format code
+npm run lint:markdown   # Check markdown
+npm run generate-docs   # Update README
+```
+
+## Pre-commit Hooks
+
+**Husky hooks are configured and WILL run automatically on commits:**
+
+- **Pre-commit** (`.husky/pre-commit`): Runs `npm run pre-commit`
+  - Executes: `lint-staged && npm run build && npm run generate-docs`
+  - This means EVERY commit triggers a full build and docs regeneration
+  - Staged files are auto-formatted via biome
+  - **Known gotcha**: this hook has, at least once, silently dropped some
+    staged files from the resulting commit despite a zero exit code — after
+    committing, run `git show --stat HEAD` and confirm it actually contains
+    everything you staged. Don't just trust the exit code.
+
+- **Commit-msg** (`.husky/commit-msg`): Validates commit message format
+  - Uses commitlint with conventional commits format
+  - Example valid format: `feat: add new feature`, `fix: resolve bug`, `chore: update deps`
+
+- **Pre-push** (`.husky/pre-push`): Additional validation before push
+
+**Important**: If you make changes to action.yml, inputs.ts, or related files, the pre-commit hook will automatically update README.md. Include these updates in your commit.
+
+## ⚠️ CRITICAL: Dist Files Workflow
+
+**RULE: NEVER commit dist/ files manually. CI handles this automatically.**
+
+### How Dist Files Work
+
+1. **dist/ is gitignored** — but a past release's snapshot may still be
+   **tracked** in git history (force-added by a release workflow run). Check
+   `git ls-files dist/` before assuming it's untracked; if it returns files,
+   `git status` will show any rebuild as local modifications to commit-worthy
+   tracked files, not as new untracked ones.
+2. **Developer commits source changes** (src/\*.ts, package.json, tests, etc.)
+3. **Pre-commit hook runs** → rebuilds dist/ locally for validation
+4. **CI deploy workflow** (`.github/workflows/deploy.yml`) commits dist/ during releases:
+   ```bash
+   npm run build --if-present
+   git add -f dist          # Force-add bypasses .gitignore
+   npm run generate-docs
+   git commit -n -m 'build(release): bundle distribution files'
+   npx semantic-release@latest
+   ```
+5. **Released versions include dist/** - Users get the built files from release tags
+
+### What You Should Do
+
+✅ **ALWAYS do:**
+
+- Run `npm install` as the FIRST step (auto-runs `husky install` via prepare script)
+- Commit source code changes (src/, package.json, tests, etc.)
+- Let pre-commit hook rebuild dist/ (this validates your changes work)
+- If dist/ shows as modified after a local build, `git restore dist/` before
+  committing anything else — don't hand-commit build output
+- Push your commits normally
+
+❌ **NEVER do:**
+
+- `git add dist/` or `git add -f dist/`
+- `git commit` with dist/ files included
+- Bypass hooks with `HUSKY=0` unless investigating hook failures
+
+## Project Structure
+
+```text
+/
+├── src/                          # TypeScript source files
+│   ├── Action.ts                 # Main GitHub Action entry point
+│   ├── index.ts                  # CLI entry point
+│   ├── inputs.ts                 # Input parsing and configuration (key file)
+│   ├── helpers.ts                # Utility functions
+│   ├── readme-generator.ts       # Core README generation logic
+│   ├── readme-editor.ts          # README file manipulation
+│   ├── sections/                 # Individual section generators
+│   │   ├── update-inputs.ts      # Generates inputs table
+│   │   ├── update-outputs.ts     # Generates outputs table
+│   │   ├── update-usage.ts       # Generates usage examples
+│   │   ├── update-title.ts       # Updates title section
+│   │   └── ...                   # Other section updaters
+│   ├── markdowner/               # Markdown processing utilities
+│   ├── logtask/                  # Logging utilities
+│   └── errors/                   # Custom error types
+├── __tests__/                    # Vitest test files (mirrors src/ structure)
+├── dist/                         # Build output (gitignored; a past-release snapshot may still be tracked — see Dist Files Workflow above)
+├── scripts/                      # Build and utility scripts
+│   ├── esbuild.mjs              # esbuild configuration
+│   └── set_package_type.sh      # Post-build script
+├── .github/
+│   ├── workflows/               # CI/CD workflows
+│   │   ├── test.yml            # Main test/build/coverage workflow (display name: "Tag and Release Updated NPM Package")
+│   │   ├── push_code_linting.yml # Linting workflow (display name: "Code Linting Annotation")
+│   │   └── deploy.yml          # NPM release workflow (display name: "NPM Release Workflow")
+│   └── actions/setup-node/     # Composite action for Node setup
+├── action.yml                   # GitHub Action metadata (KEY FILE)
+├── package.json                 # Dependencies and scripts
+├── tsconfig.json                # TypeScript config for ESM
+├── tsconfig-mjs.json            # TypeScript config for MJS build
+├── vitest.config.ts             # Vitest test configuration
+├── biome.json                   # Biome lint/format configuration
+├── .markdownlint.json           # Markdown linting rules
+├── .ghadocs.json                # Tool configuration (used by generate-docs)
+└── .husky/                      # Git hooks
+```
+
+## CI/CD Validation Pipeline
+
+**Workflows run on every push/PR to main, next, beta.** Note: workflow file
+names and their GitHub-displayed `name:` differ — see the Project Structure
+table above.
+
+1. **`test.yml`**:
+   - Runs on: push, pull_request, pull_request_target
+   - Node version matrix: `["24.0.0", "24.19.0", "26.x"]`
+   - Steps: checkout → setup Node → npm install → npm test → npm run coverage → npm run build → npm run generate-docs
+   - Must pass for PR merge
+
+2. **`push_code_linting.yml`**:
+   - Runs: npm install → biome lint → npm run lint:markdown
+   - Reports inline PR comments via reviewdog
+
+3. **`deploy.yml`**:
+   - Only on push to main
+   - Runs: build → generate-docs → semantic-release
+   - Creates git commits and NPM releases
+
+## Configuration Files Reference
+
+| File                | Purpose                                             | When to Modify                                |
+| ------------------- | --------------------------------------------------- | --------------------------------------------- |
+| `action.yml`        | GitHub Action metadata - defines all inputs/outputs | When adding/changing action inputs or outputs |
+| `.ghadocs.json`     | Tool configuration for README generation            | To customize README generation behavior       |
+| `tsconfig.json`     | TypeScript compiler settings                        | When changing TypeScript compilation targets  |
+| `tsconfig.build.json` | Declaration-only build config, `src/`-scoped, feeds `postbuild` | When changing what ships in `dist/types/` |
+| `tsconfig-mjs.json` | TypeScript compiler settings for ESM                | For ESM-specific build configuration          |
+| `biome.json`        | Lint/format rules and plugins                       | When modifying linting or formatting rules    |
+| `vitest.config.ts`  | Test runner configuration                           | When modifying test setup                     |
+| `package.json`      | Dependencies, scripts, engines, volta               | When adding deps or changing build scripts    |
+
+## Common Pitfalls & Solutions
+
+1. **Build fails with "Cannot find module"**: Run `npm install` first
+2. **Tests fail after changes**: Run `npm run build` before testing
+3. **README.md changes after commit**: Expected - pre-commit hook runs `generate-docs`
+4. **Pre-commit hook slow**: Normal - it runs full build + docs generation
+5. **EBADENGINE warning**: Using wrong Node version - requires Node 24.x
+6. **`generate-docs` producing an unexpected README diff (e.g. version badge falling back to a full version string instead of a major tag)**: fetch git tags first (`git fetch origin --tags`) — the usage-example generator resolves the latest tag, and a shallow/tagless checkout makes it fall back to `package.json`'s version.
+
+## Key Implementation Details
+
+- **README markers**: Tool uses HTML comment delimiters like `<!-- start inputs --><!-- end inputs -->` to identify sections
+- **Dual purpose**: Works as both GitHub Action (using action.yml inputs) and CLI tool (using .ghadocs.json or CLI args)
+- **Branding**: Generates SVG icons from action.yml branding field using feather-icons
+- **Versioning**: Auto-updates usage examples with latest version from package.json
+- **Configuration cascade**: CLI args → .ghadocs.json → action.yml defaults
+
+## The standing goal for this repo's tooling migration
+
+The end state is Vite+ driving the **entire** project lifecycle — format,
+lint, build, test, package, and release — not a partial adoption running
+alongside legacy tools. If a task in service of some other goal turns out to
+need more of that system in place to actually complete, treat that as a
+signal to bring the relevant piece of the Vite+ migration forward, rather
+than working around the gap. See
+`docs/typescript-7-vite-plus-conversion-plan.md` for the phased plan this
+repo is following toward that end state.
+
+## Instructions for Coding Agents
+
+**Trust these instructions.** Only search the codebase if information here is incomplete or incorrect.
+
+**Before making changes:**
+
+1. Ensure Node 24.x is active (check `node -v`)
+2. Run `npm install` if package.json changed
+3. Run `npm run build` after any source changes
+
+**Before committing:**
+
+1. Run full validation sequence (see "Complete Validation Sequence" above)
+2. Review README.md changes if action.yml was modified
+3. Ensure commit message follows conventional commits format
+
+**When debugging:**
+
+- Check dist/bin/index.js exists after build
+- Verify `__tests__` directory mirrors src/ structure
+- Look for `[ERROR]`, `[WARN]` in generate-docs output
 
 ## Independent verification (the checker principle)
 
@@ -84,17 +400,6 @@ Before starting anything that will take more than a couple of turns, work out:
 5. Batch: verify multiple independent comments in parallel, fix them in one
    edit pass, and run a single checker pass over all of them together rather
    than one comment at a time.
-
-## The standing goal for this repo's tooling migration
-
-The end state is Vite+ driving the **entire** project lifecycle — format,
-lint, build, test, package, and release — not a partial adoption running
-alongside legacy tools. If a task in service of some other goal turns out to
-need more of that system in place to actually complete, treat that as a
-signal to bring the relevant piece of the Vite+ migration forward, rather
-than working around the gap. See
-`docs/typescript-7-vite-plus-conversion-plan.md` for the phased plan this
-repo is following toward that end state.
 
 ## Don't read what a cheap agent can read for you
 

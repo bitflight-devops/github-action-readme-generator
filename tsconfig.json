@@ -95,8 +95,7 @@
     // "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
     "esModuleInterop": true,
     "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "ignoreDeprecations": "6.0"
+    "moduleResolution": "NodeNext"
   },
   "include": ["**/*.ts", "**/*.mts"],
   "exclude": [
@@ -111,9 +110,5 @@
     "**/.trunk/**",
     "**/.github/**",
     "scripts/**"
-  ],
-  "ts-node": {
-    // Tell ts-node CLI to install the --loader automatically, explained below
-    "esm": true
-  }
+  ]
 }

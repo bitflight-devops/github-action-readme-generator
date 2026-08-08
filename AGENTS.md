@@ -14,16 +14,8 @@ Instructions for AI agents working in this repository.
 
 ## Commit format
 
-Conventional Commits, enforced by commitlint + husky: `<type>: <description>`.
-
-- `feat:` new feature
-- `fix:` bug/issue fix
-- `docs:` docs-only
-- `test:` test-only
-- `refactor:` restructure, no behavior change
-- `chore:` build/deps/tooling
-- `ci:` CI/CD changes
-
+Conventional Commits, enforced by commitlint (`@commitlint/config-conventional`, stock type list) + husky.
+Deviation from commitlint's defaults: header/body/footer length caps are all disabled (unlimited).
 Validate before pushing: `git log --format=%B -n 1 | npx --no -- commitlint`
 
 ## Build & validation commands
@@ -45,7 +37,6 @@ CI runs `biome check` — use `npm run check`/`check:fix` to match it exactly.
 ## Pre-commit hooks (husky)
 
 - **pre-commit**: `lint-staged && npm run build && npm run generate-docs`.
-  - Every commit triggers a full build + docs regen.
   - Gotcha: has silently dropped staged files despite exit 0.
   - Verify with `git show --stat HEAD` after committing.
 - **commit-msg**: runs commitlint.

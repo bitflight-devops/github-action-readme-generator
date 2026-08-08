@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.10...v1.11.0) (2026-08-08)
+
+
+### Features
+
+* **ts:** upgrade to TypeScript 7 (Phase 1 of TS7/Vite+ migration) ([#625](https://github.com/bitflight-devops/github-action-readme-generator/issues/625)) ([0755677](https://github.com/bitflight-devops/github-action-readme-generator/commit/0755677b31f501596982701e5690af11b0451dce))
+
 ## [1.10.10](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.9...v1.10.10) (2026-08-03)
 
 

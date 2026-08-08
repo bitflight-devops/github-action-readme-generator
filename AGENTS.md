@@ -4,8 +4,10 @@ Instructions for AI agents (Claude, Codex, GitHub Copilot, and others) working
 in this repository. This is the canonical, tool-agnostic source of project
 details and process discipline. `CLAUDE.md` is a one-line `@AGENTS.md`
 pointer, kept only because Claude Code looks for that path — GitHub
-Copilot's coding agent, VS Code Copilot Chat, Copilot CLI, and Codex all
-read this file directly, so no other wrapper exists.
+Copilot's coding agent and Copilot CLI read this file directly by default;
+VS Code Copilot Chat reads it too, but only once its experimental
+`chat.useAgentsMdFile` setting is turned on (off by default as of this
+writing). No other wrapper file exists.
 
 ## Project Overview
 

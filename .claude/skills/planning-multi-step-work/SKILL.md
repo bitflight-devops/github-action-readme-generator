@@ -18,6 +18,12 @@ Before starting, work out:
 - Whether a repeated mechanical step should become a reusable script.
 - Whether a step's output should reorder the plan, rather than forcing
   the original sequence to hold.
+- Before sequencing two pieces of work through your own turn just to
+  avoid a hypothetical conflict, check whether the second piece could
+  instead be written straight into the first agent's own instructions,
+  or dispatched immediately in isolation (e.g. a separate API call
+  instead of a shared local checkout, or worktree isolation) — so it
+  never needs to contend with the first agent's state at all.
 
 ## When a loop is warranted
 

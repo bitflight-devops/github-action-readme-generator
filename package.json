@@ -50,7 +50,7 @@
     "all": "npm run build && npm run format && npm run lint && npm run test",
     "prebuild": "tsc --project tsconfig.json --noemit",
     "build": "rimraf dist out;node ./scripts/esbuild.mjs && chmod +x dist/bin/index.js",
-    "postbuild": "tsc --project tsconfig.json --emitDeclarationOnly --declaration --outFile dist/types/index.d.ts && tsc -p tsconfig-mjs.json && ./scripts/set_package_type.sh",
+    "postbuild": "tsc --project tsconfig.build.json --emitDeclarationOnly --declaration --outDir dist/types && tsc -p tsconfig-mjs.json && ./scripts/set_package_type.sh",
     "build:docker": "run-script-os",
     "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:24-alpine sh -c 'npm run build'",
     "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:24-alpine sh -c \"npm run build\"",
@@ -182,9 +182,8 @@
     "rimraf": "^6.1.2",
     "run-script-os": "^1.1.6",
     "semantic-release": "^25.0.2",
-    "ts-node": "^10.9.1",
     "types-package-json": "^2.0.39",
-    "typescript": "^6.0.3",
+    "typescript": "7.0.2",
     "vitest": "^4.1.2"
   },
   "engines": {

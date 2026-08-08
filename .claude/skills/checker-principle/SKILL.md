@@ -1,4 +1,5 @@
 ---
+name: checker-principle
 description: Independent verification before trusting a fix, a bot finding, or your own diff. Always use this before marking a PR ready for review, before resolving or closing a review thread, before treating "this fix works" or "this diff is correct" as settled fact, and before acting on any unverified assumption about tool or environment behavior — including when you feel confident, since that confidence is exactly what this skill exists to check.
 user-invocable: true
 ---

@@ -1,4 +1,5 @@
 ---
+name: pr-review-workflow
 description: Managing an open PR through review to merge in this repo. Use this whenever a PR review comment or bot finding (CodeRabbit, Codex, etc.) arrives on a PR you opened or are watching, whenever you're deciding if a draft PR is ready to come out of draft, and whenever a review thread might be ready to resolve or close.
 user-invocable: true
 ---

@@ -23,14 +23,17 @@ npm install              # first step after any checkout/pull
 npm run build             # prebuild (tsc check) -> esbuild -> postbuild (declarations + MJS)
 npm run test               # vitest, __tests__/**/*.test.ts
 npm run coverage         # vitest --coverage -> ./out/
-npm run format            # biome format ./src ./__tests__
-npm run check              # biome check - CI's actual gate
+npm run format            # biome format --write ./src ./__tests__
+npm run check              # biome check - CI's actual gate, no side effects
 npm run lint:markdown  # markdownlint
 npm run generate-docs  # regenerate README.md from action.yml
 ```
 
-`npm run lint`/`lint:fix` = `biome lint` only (no import-sorting), narrower than CI.
-CI runs `biome check` — use `npm run check`/`check:fix` to match it exactly.
+`npm run lint`/`lint:fix` is not a clean read-only check: npm auto-runs its `prelint`
+script first, which does `biome format --write` (rewrites files) + a full `tsc --noEmit`
+type check, then runs `biome lint` + `markdownlint`. Narrower than CI's Biome coverage
+either way (no import-sorting). Use `npm run check`/`check:fix` for CI's actual gate
+with no side effects.
 
 ## Pre-commit hooks (husky)
 
@@ -140,7 +143,8 @@ current step list — this section states what's non-obvious, not a full copy.
 ## Working discipline
 
 - `.claude/skills/checker-principle/SKILL.md`: verify before trusting any fix, bot finding, or your own diff.
-  - Claude Code auto-loads this as a skill; other agents can open the file directly.
+  - Symlinked under `.agents/skills/` — auto-loads in any agent that reads that path
+    (Codex, OpenCode, Cursor, GitHub Copilot, Gemini CLI, and others per agentskills.io).
 - `.claude/skills/pr-review-workflow/SKILL.md`: handling PR review comments, judging draft-readiness.
 - `.claude/skills/planning-multi-step-work/SKILL.md`: planning ahead, judging when a loop is warranted.
 - Delegate large reads (logs, search results, big docs) to a fresh subagent.

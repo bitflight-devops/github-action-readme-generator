@@ -1,4 +1,5 @@
 ---
+name: planning-multi-step-work
 description: Planning before multi-step or repeated work. Use this before starting anything that will take more than a couple of turns, to lay out real dependencies and what can run in parallel before diving in, and whenever you're tempted to turn a repeated push-check-iterate pattern into an automated loop — check the four conditions here first, don't assume it qualifies.
 user-invocable: true
 ---

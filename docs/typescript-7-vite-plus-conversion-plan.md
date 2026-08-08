@@ -1024,7 +1024,11 @@ independent `^4.1.2` range, regenerate `package-lock.json`, and run
 survives — a leftover second copy is exactly the failure mode
 migrate-rules' "Vite and Overrides" section warns about.
 Replace `scripts/esbuild.mjs` + `tsconfig-mjs.json` +
-`scripts/set_package_type.sh` with the `pack` config (ESM-only library
+`scripts/set_package_type.sh` + **`tsconfig.build.json`** (Phase 1's
+interim declaration-emit config — this phase's `pack` config takes over
+declaration generation entirely, per item 4 below, so the interim file
+becomes dead weight the moment `postbuild` is deleted, not something to
+leave behind) with the `pack` config (ESM-only library
 output, no `dist/cjs`, per the decided §8.1; explicit CLI-entry
 no-external override per §7), remove the `require` export condition and
 `main` field from `package.json`, delete the replaced files, rewrite the

@@ -52,6 +52,5 @@
         ".ncurc.yml",
       ]
     },
-    "typescript.tsdk": "./node_modules/typescript/lib",
     "editor.inlineSuggest.showToolbar": "always"
   }

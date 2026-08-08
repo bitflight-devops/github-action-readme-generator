@@ -56,7 +56,7 @@ writing). No other wrapper file exists.
 
 ## Critical: Node Version Requirement
 
-⚠️ **IMPORTANT**: This project REQUIRES Node 24.x (Active LTS). The engines field strictly enforces this. If you see `EBADENGINE` warnings during npm install, the environment is using an incompatible Node version. Node 20 reached end-of-life on 2026-04-30 and is no longer supported. The project uses volta for version management - check `.node-version` (contains "24.19.0") and `package.json` volta field.
+⚠️ **IMPORTANT**: This project REQUIRES Node 24.x (Active LTS) — `package.json`'s `engines` field strictly enforces this. If you see `EBADENGINE` warnings during npm install, the environment is using an incompatible Node version. Node 20 reached end-of-life on 2026-04-30 and is no longer supported. The project uses volta for version management; check `.node-version` and `package.json`'s `volta` field directly for the exact pinned version rather than trusting a number restated here — it will drift out of sync with those files.
 
 ## Build & Validation Commands
 
@@ -106,7 +106,7 @@ npm run lint
 npm run format          # Runs biome format on ./src ./__tests__
 
 # Fix linting issues
-npm run lint:fix        # Runs format + biome lint --fix + markdownlint --fix
+npm run lint:fix        # Runs biome lint --fix + markdownlint --fix (does NOT reformat - run `npm run format` separately for that)
 npm run lint:markdown:fix   # Fix markdown linting only
 ```
 
@@ -151,7 +151,7 @@ npm run generate-docs   # Update README
   - Uses commitlint with conventional commits format
   - Example valid format: `feat: add new feature`, `fix: resolve bug`, `chore: update deps`
 
-- **Pre-push** (`.husky/pre-push`): Additional validation before push
+- **Pre-push** (`.husky/pre-push`): currently a no-op — its `npm run pre-push` line is commented out in the hook file. Don't rely on it catching anything before a push.
 
 **Important**: If you make changes to action.yml, inputs.ts, or related files, the pre-commit hook will automatically update README.md. Include these updates in your commit.
 
@@ -174,7 +174,7 @@ npm run generate-docs   # Update README
    git add -f dist          # Force-add bypasses .gitignore
    npm run generate-docs
    git commit -n -m 'build(release): bundle distribution files'
-   npx semantic-release@latest
+   npx --yes semantic-release@latest
    ```
 5. **Released versions include dist/** - Users get the built files from release tags
 
@@ -197,66 +197,52 @@ npm run generate-docs   # Update README
 
 ## Project Structure
 
-```text
-/
-├── src/                          # TypeScript source files
-│   ├── Action.ts                 # Main GitHub Action entry point
-│   ├── index.ts                  # CLI entry point
-│   ├── inputs.ts                 # Input parsing and configuration (key file)
-│   ├── helpers.ts                # Utility functions
-│   ├── readme-generator.ts       # Core README generation logic
-│   ├── readme-editor.ts          # README file manipulation
-│   ├── sections/                 # Individual section generators
-│   │   ├── update-inputs.ts      # Generates inputs table
-│   │   ├── update-outputs.ts     # Generates outputs table
-│   │   ├── update-usage.ts       # Generates usage examples
-│   │   ├── update-title.ts       # Updates title section
-│   │   └── ...                   # Other section updaters
-│   ├── markdowner/               # Markdown processing utilities
-│   ├── logtask/                  # Logging utilities
-│   └── errors/                   # Custom error types
-├── __tests__/                    # Vitest test files (mirrors src/ structure)
-├── dist/                         # Build output (gitignored; a past-release snapshot may still be tracked — see Dist Files Workflow above)
-├── scripts/                      # Build and utility scripts
-│   ├── esbuild.mjs              # esbuild configuration
-│   └── set_package_type.sh      # Post-build script
-├── .github/
-│   ├── workflows/               # CI/CD workflows
-│   │   ├── test.yml            # Main test/build/coverage workflow (display name: "Tag and Release Updated NPM Package")
-│   │   ├── push_code_linting.yml # Linting workflow (display name: "Code Linting Annotation")
-│   │   └── deploy.yml          # NPM release workflow (display name: "NPM Release Workflow")
-│   └── actions/setup-node/     # Composite action for Node setup
-├── action.yml                   # GitHub Action metadata (KEY FILE)
-├── package.json                 # Dependencies and scripts
-├── tsconfig.json                # TypeScript config for ESM
-├── tsconfig-mjs.json            # TypeScript config for MJS build
-├── vitest.config.ts             # Vitest test configuration
-├── biome.json                   # Biome lint/format configuration
-├── .markdownlint.json           # Markdown linting rules
-├── .ghadocs.json                # Tool configuration (used by generate-docs)
-└── .husky/                      # Git hooks
-```
+A hand-maintained file-by-file tree here would go stale the first time a file
+is added or removed — use `Glob`/`ls` for the current, exact contents of any
+directory rather than trusting a static listing. What's worth stating because
+it's a convention, not visible from a directory listing alone:
+
+- `__tests__/` mirrors `src/`'s structure (e.g. `src/helpers.ts` →
+  `__tests__/helpers.test.ts`).
+- `dist/` is gitignored, but a past release's tracked snapshot may still be
+  present — see "Dist Files Workflow" above.
+- `.github/workflows/`'s file names differ from their GitHub-displayed
+  `name:` field — see "CI/CD Validation Pipeline" below.
+- Top-level: `src/` (TypeScript source), `__tests__/` (Vitest tests),
+  `scripts/` (build/release utility scripts), `.github/workflows/` (CI),
+  `.husky/` (git hooks). Root config files are listed with their purpose in
+  "Configuration Files Reference" below, not repeated here.
 
 ## CI/CD Validation Pipeline
 
-**Workflows run on every push/PR to main, next, beta.** Note: workflow file
-names and their GitHub-displayed `name:` differ — see the Project Structure
-table above.
+Workflow file names differ from their GitHub-displayed `name:` field, noted
+below. Read the workflow file directly (`.github/workflows/*.yml`) if a task
+needs the exact, current step list — this section states what's
+non-obvious, not a full transcription that will drift out of sync with it.
 
-1. **`test.yml`**:
-   - Runs on: push, pull_request, pull_request_target
-   - Node version matrix: `["24.0.0", "24.19.0", "26.x"]`
-   - Steps: checkout → setup Node → npm install → npm test → npm run coverage → npm run build → npm run generate-docs
-   - Must pass for PR merge
+1. **`test.yml`** (displays as "Tag and Release Updated NPM Package"):
+   - Triggers: `pull_request_target`; `push` to `main`/`next`/`beta`/`*.x`;
+     `repository_dispatch` (type `semantic-release`). There is no plain
+     `pull_request` trigger.
+   - `run-tests` job matrix: Node `["24.0.0", "24.19.0", "26.x"]`. Steps
+     include a `biome check` gate before tests run, and a coverage-report
+     step, in addition to install/test/coverage/build/generate-docs.
+   - On `push` events only, a second job invokes `deploy.yml` as a reusable
+     workflow (see below) — `deploy.yml` isn't triggered independently.
 
-2. **`push_code_linting.yml`**:
-   - Runs: npm install → biome lint → npm run lint:markdown
-   - Reports inline PR comments via reviewdog
+2. **`push_code_linting.yml`** (displays as "Code Linting Annotation"):
+   - Triggers: `pull_request` and `push`, both to `main`/`next`/`beta`/`*.x`.
+   - `biome lint` runs *before* `npm install` in this workflow, not after —
+     the opposite order from `test.yml`'s `biome check` step. Reviewdog
+     posts inline PR annotations from the lint step's output.
 
-3. **`deploy.yml`**:
-   - Only on push to main
-   - Runs: build → generate-docs → semantic-release
-   - Creates git commits and NPM releases
+3. **`deploy.yml`** (displays as "NPM Release Workflow"):
+   - Not push-triggered directly. Triggers: `workflow_call` (invoked from
+     `test.yml`'s push-only job above) and `repository_dispatch` (type
+     `semantic-release`).
+   - Runs `npm ci`, a Node-engine compatibility check, an `npm audit
+     signatures` provenance check, then build → `git add -f dist` +
+     `generate-docs` + commit → `npx --yes semantic-release@latest`.
 
 ## Configuration Files Reference
 
@@ -301,25 +287,21 @@ repo is following toward that end state.
 
 ## Instructions for Coding Agents
 
-**Trust these instructions.** Only search the codebase if information here is incomplete or incorrect.
-
-**Before making changes:**
-
-1. Ensure Node 24.x is active (check `node -v`)
-2. Run `npm install` if package.json changed
-3. Run `npm run build` after any source changes
+**Trust these instructions.** Only search the codebase if information here is incomplete or incorrect. Node version, install, and build requirements are covered above ("Critical: Node Version Requirement", "Build & Validation Commands") — not repeated here.
 
 **Before committing:**
 
-1. Run full validation sequence (see "Complete Validation Sequence" above)
+1. Run the full validation sequence (see "Complete Validation Sequence" above)
 2. Review README.md changes if action.yml was modified
-3. Ensure commit message follows conventional commits format
+3. Ensure the commit message follows conventional commits format (see "Commit Message Format" above)
 
 **When debugging:**
 
 - Check dist/bin/index.js exists after build
-- Verify `__tests__` directory mirrors src/ structure
-- Look for `[ERROR]`, `[WARN]` in generate-docs output
+- Verify `__tests__` mirrors `src/`'s structure
+- `generate-docs` output wraps its step type in brackets when not inside a
+  log group (e.g. `[ERROR  ]`, `[WARN   ]`, padded to a fixed width) —
+  grep for these rather than assuming a fixed unpadded string.
 
 ## Independent verification (the checker principle)
 
@@ -404,6 +386,28 @@ Before starting anything that will take more than a couple of turns, work out:
    edit pass, and run a single checker pass over all of them together rather
    than one comment at a time.
 
+## PR draft-to-ready workflow
+
+Draft is the correct starting state for a PR (per the standing convention of
+opening PRs as draft), but it is not the resting state. Draft PRs get zero
+real review — CodeRabbit posts "Review skipped: Draft detected" and stops;
+human reviewers generally skip drafts too. Once you have applied your own
+review pass to a PR's changes (read the diff, checked for the kind of issues
+you'd flag in someone else's PR — a hygiene pass, not a substitute for the
+checker principle above), mark it ready for review in the same session, not
+"later." Concretely: call the "mark ready for review" / `draft: false`
+update on the PR as soon as your own review pass is done.
+
+## Session continuity
+
+If a task file, backlog item, or long-running piece of work in this repo has
+a place for open TODOs (e.g. a project-configuration file's own "TODOs"
+section), treat it as shared state across sessions, not scratch notes for
+one run: remove an entry once its work is actually done, and add one before
+ending a session if real work remains and context is running out — so the
+next session (yours or another agent's) picks up the actual state rather
+than re-deriving it.
+
 ## Don't read what a cheap agent can read for you
 
 Every tool call in your own turn re-processes your entire existing context — on a long session, that's expensive regardless of how small the individual output is. A fresh subagent (a cheap model) starts with none of that baggage, so it isn't just cheaper per call, it's cheaper by an order of magnitude for exactly the calls that are heaviest for you specifically: reading logs, search results, or large documents.
@@ -443,3 +447,11 @@ hypothesis, not a fact, until something has actually tested it.
   consequences are already out in the world (agents already dispatched on a
   wrong premise, a PR already marked ready on an unverified diff), not
   after.
+
+## TODOs
+
+The list this repo's "Session continuity" practice above writes to. If you
+complete one, remove it. If your session is ending with real work left, add
+one here first.
+
+- None

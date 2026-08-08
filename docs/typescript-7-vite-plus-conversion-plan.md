@@ -424,17 +424,37 @@ Requirements this config must satisfy, carried over from
          outDir: 'dist/bin',
          outExtensions: () => ({ js: '.js' }),
          outputOptions: { codeSplitting: false },
-         deps: { alwaysBundle: ['prettier' /* ...other runtime deps... */] },
+         deps: {
+           alwaysBundle: [
+             'prettier',
+             '@actions/core',
+             '@actions/github',
+             '@svgdotjs/svg.js',
+             'chalk',
+             'feather-icons',
+             'nconf',
+             'svgdom',
+             'yaml',
+           ],
+         },
        }, // CLI
        {
          entry: 'src/index.ts',
          platform: 'node',
          outDir: 'dist/mjs',
-         outExtensions: () => ({ js: '.js' }),
-       }, // library — default externalization, same extension override as the CLI entry
+         dts: true,
+         outExtensions: () => ({ js: '.js', dts: '.d.ts' }),
+       }, // library — default externalization, same .js override as the CLI entry, plus dts
      ],
    });
    ```
+   **`deps.alwaysBundle` lists every current runtime `dependency`, not just
+   `prettier`** — confirmed against `package.json`'s actual `dependencies`
+   (9 packages total). A vague `/* ...other runtime deps... */` comment
+   isn't a config; whichever of these `package.json` carries at Phase 3
+   implementation time is the list this array needs, kept in sync with
+   `package.json`'s `dependencies` (not `devDependencies`) at that point
+   — `@types/*` entries stay out, they're types-only.
    **Both entries need `outExtensions`, not just the CLI one** — Phase 0's
    spike confirmed (by actually installing tsdown and building a trivial
    config) that its default output extension for `platform: 'node'` is
@@ -475,16 +495,16 @@ Requirements this config must satisfy, carried over from
    default code-splitting is normal, expected behavior for a
    library consumed via `node_modules` resolution, where sibling chunk
    files are just... there.
-   **One thing this plan hasn't independently confirmed**: Vite+'s own
-   `pack`-block example on that page shows a single object
-   (`pack: { dts: true, format: [...], sourcemap: true }`), not an array
-   — the page says only "see tsdown's configuration for details," which
-   strongly implies the array form tsdown itself supports carries
-   through, but that's inference, not a demonstrated example. Confirm
-   `pack: [...]` (array) actually works via a real `vp pack` run at Phase
-   3 implementation time (Phase 0's spike, below, is the place this gets
-   settled) before relying on it. Don't rely on default behavior for the
-   CLI entry either way — tsdown's default posture (like most
+   **Confirmed, not just inferred**: Vite+'s own `pack`-block example on
+   that page shows a single object (`pack: { dts: true, format: [...],
+   sourcemap: true }`), not an array, and only says "see tsdown's
+   configuration for details" — but Phase 0's spike actually ran a real
+   `vp pack` with the array form (via `vite-plus`'s own typed
+   `PackUserConfig | PackUserConfig[]` signature) and it built and passed
+   `integration-bundled-binary.test.ts` (`docs/phase-0-spike-findings.md`,
+   "tsdown `pack`-block bundled-binary test"). The array form is real and
+   works; this is no longer an open question. Don't rely on default
+   behavior for the CLI entry either way — tsdown's default posture (like most
    npm-library bundlers) is to externalize `dependencies`, which is the
    opposite of what the CLI entry needs. **`outDir: 'dist/bin'` on the
    CLI object is required, not optional** — without it, both entries
@@ -502,9 +522,28 @@ Requirements this config must satisfy, carried over from
    of the CLI-bundling override above — same as esbuild's `external`
    array did.
 4. A single library entry point at `dist/mjs/` (ESM only — no `dist/cjs/`,
-   per the decision in §8.1), plus a single, correctly-generated
-   `dist/types/index.d.ts`, both produced by `vp pack` in one pass instead
-   of the current two-`tsc`-invocation dance.
+   per the decision in §8.1), plus a single declaration file, both
+   produced by `vp pack` in one pass instead of the current
+   two-`tsc`-invocation dance — but **not** at `dist/types/index.d.ts`.
+   Tested directly (`dts: true` on a throwaway library-entry config, no
+   `outExtensions` override): tsdown colocates the declaration with its
+   JS output and names it `index.d.mts`, not `index.d.ts` — e.g.
+   `dist/mjs/index.d.mts`, matching the `.mjs`-vs-`.js` extension problem
+   `outExtensions` already solves for the JS file. `OutExtensionObject`
+   (tsdown's own type, confirmed by reading
+   `node_modules/tsdown/dist/types-*.d.mts`) has a `dts` field alongside
+   `js`; adding `dts: '.d.ts'` to the library entry's existing
+   `outExtensions` override (alongside `js: '.js'`) and `dts: true` on
+   that same entry — confirmed by re-running the test — produces exactly
+   `dist/mjs/index.d.ts`. **This is a real, load-bearing change to
+   `package.json`, not just a `vp pack` config detail**: `"types"`
+   currently declares `dist/types/index.d.ts`; Phase 3 must update it to
+   `dist/mjs/index.d.ts` in the same PR that lands this pack config, or
+   the package's declared type entry point points at a file that no
+   longer exists — the same class of mistake Phase 1's interim fix (§9)
+   exists to avoid for the *other* declaration path. No separate
+   `dist/types/` output survives Phase 3; that directory was only ever
+   the two-`tsc`-invocation approach's path.
 5. `chmod +x dist/bin/index.js` — keep as an explicit post-step (or a small
    `vp pack` hook) since neither Rolldown nor tsdown sets the executable
    bit on its own.
@@ -944,8 +983,16 @@ import rewritten to `vite-plus/test`, `tsconfig.json`'s `types` entry
 updated to whatever Vite+'s migration docs specify as the
 `vite-plus/test` equivalent for ambient globals, and
 `.vscode/launch.json`'s `program` path updated to wherever Vite+ installs
-its bundled Vitest binary (or replaced with a `vp test` invocation if
-Vite+ doesn't expose a direct binary path) — in this same phase. If Vitest isn't
+its bundled Vitest binary, if it exposes one at a stable path. **`program`
+must name an entry-point file to execute, not a CLI command** — `vp test`
+is a command, not a valid `program` value, and VS Code's Node debugger
+would just try to execute a nonexistent file called `vp test`. If Vite+
+doesn't expose a direct binary path, the correct replacement is
+`runtimeExecutable: "npx"` with `runtimeArgs: ["vp", "test", "--", "${fileBasenameNoExtension}"]`
+(or whatever Vite+'s actual single-file-run flag turns out to be) and
+`program` removed from that config entirely — verify Vite+'s real CLI
+surface for running one test file at Phase 3 implementation time before
+committing to the exact flag. All three fixes land in this same phase. If Vitest isn't
 hoisted as a transitive dependency on a given install (npm doesn't
 guarantee hoisting the way pnpm/yarn might), a reference left pointing
 at bare `vitest` after the direct `devDependency` is removed below
@@ -970,10 +1017,18 @@ remaining `package.json` build scripts to `vp` commands (`build`
 becomes `rimraf dist out && vp pack && chmod +x dist/bin/index.js`, per
 the script audit), rewrite `test.yml`'s build step accordingly. **Also
 update `.claude/skills/holistic-linting/PROJECT-CONFIG.md`'s `esbuild`
-build-tool declaration in this same phase, not Phase 4** — it's the tool
-this phase directly replaces, so leaving the declaration stale until
-Phase 4 would misdirect any agent reading it between this phase landing
-and Phase 4's PR merging. **Leave
+build-tool declaration, and `.github/copilot-instructions.md`'s
+esbuild-specific content, in this same phase, not Phase 4** — confirmed
+by reading `copilot-instructions.md` directly: it declares "**Build
+Tool**: esbuild + TypeScript compiler," describes the
+`prebuild`/`build`/`postbuild` pipeline and `dist/cjs/` output this phase
+deletes, and lists `scripts/esbuild.mjs` in its project-structure tree.
+`esbuild` is the tool this phase directly replaces, so leaving either
+file's declaration stale until Phase 4 would misdirect any agent reading
+them between this phase landing and Phase 4's PR merging.
+`copilot-instructions.md`'s separate stale "ESLint + Prettier" lint-tool
+narrative is a different, unrelated staleness (Biome/Oxlint territory,
+not esbuild) and stays Phase 4's problem, per below. **Leave
 `deploy.yml` calling `npm run build`** — not a direct `vp pack` call
 (§4 already corrects this) — and remove the now-replaced
 `esbuild`/`esbuild-node-externals` `devDependencies`, same "clean

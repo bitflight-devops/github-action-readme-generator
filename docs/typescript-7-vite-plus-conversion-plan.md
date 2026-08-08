@@ -2,13 +2,11 @@
 
 Status: **Proposed — clean cut-over, not an incremental migration.**
 Scope: build, type-check, lint, format, test, and CI/CD toolchain. One
-conditional exception, not covered by "no runtime behavior changes": §8.0
-evaluates replacing the `prettier` runtime dependency (which formats the
+exception to "no runtime behavior changes," and it's a non-change: §8.0
+evaluated replacing the `prettier` runtime dependency (which formats the
 README/YAML this tool generates for _end users_, not our own source) with
-`oxfmt`'s API. If that replacement happens, it is a real runtime-output
-change gated on a golden-file compatibility check against real generated
-output — not a tooling-only swap. Everything else in this plan is
-tooling-only and does not touch generator output.
+`oxfmt`'s API, and Phase 0's spike settled it — `prettier` stays. Nothing
+in this plan touches generator output.
 
 ## 1. Ground rules
 
@@ -327,7 +325,7 @@ as the floor, not the Vite+ minimum of 20.19+. Concrete changes:
   `"20.17.0"`), replace with `24.x` (already present) and, if broader
   coverage is wanted, `22.x` (current Maintenance LTS) — not `20.x` in
   any form.
-- `.github/copilot-instructions.md`, `CLAUDE.md`, `.claude/skills/holistic-linting/PROJECT-CONFIG.md`, and `.claude/agents/linting-root-cause-resolver.md`: the first two need "STRICT Node 20.x" replaced with the new floor (a factual correction, Node 20 is EOL, not a style preference, so it should happen regardless of how the rest of the tooling conversion is sequenced); the latter two need updates replacing the stale Biome/esbuild narrative with the new Vite+ toolchain — confirmed by reading both `.claude/` files directly: `PROJECT-CONFIG.md` declares `esbuild` as this project's build tool and lists `biome check`/`biome format` commands throughout; `linting-root-cause-resolver.md`'s own frontmatter description says "Use when Biome or TypeScript report issues" and its body walks through a Biome-specific resolution workflow. Both actively direct agents to run commands that no longer exist once Phases 2-3 land.
+- `.github/copilot-instructions.md` and `CLAUDE.md`: need "STRICT Node 20.x" replaced with the new floor (a factual correction, Node 20 is EOL, not a style preference, so it should happen regardless of how the rest of the tooling conversion is sequenced). The Biome/esbuild-referencing `.claude/` agent/skill files have the same stale-toolchain problem but are unrelated to the Node-version bump itself — their Biome commands are tracked under §9 Phase 2 (removed in the same phase as `@biomejs/biome` itself), and `PROJECT-CONFIG.md`'s separate `esbuild` declaration under §9 Phase 3 (removed in the same phase as `esbuild` itself).
 
 ## 6. `tsconfig.json` changes for TS7
 
@@ -424,22 +422,104 @@ Requirements this config must satisfy, carried over from
          entry: 'src/index.ts',
          platform: 'node',
          outDir: 'dist/bin',
-         deps: { alwaysBundle: ['prettier' /* ...other runtime deps... */] },
+         outExtensions: () => ({ js: '.js' }),
+         outputOptions: { codeSplitting: false },
+         deps: {
+           alwaysBundle: [
+             'prettier',
+             '@actions/core',
+             '@actions/github',
+             '@svgdotjs/svg.js',
+             'chalk',
+             'feather-icons',
+             'nconf',
+             'svgdom',
+             'yaml',
+           ],
+         },
        }, // CLI
-       { entry: 'src/index.ts', platform: 'node', outDir: 'dist/mjs' }, // library — default externalization
+       {
+         entry: 'src/index.ts',
+         platform: 'node',
+         outDir: 'dist/mjs',
+         dts: true,
+         outExtensions: () => ({ js: '.js', dts: '.d.ts' }),
+       }, // library — default externalization, same .js override as the CLI entry, plus dts
      ],
    });
    ```
-   **One thing this plan hasn't independently confirmed**: Vite+'s own
-   `pack`-block example on that page shows a single object
-   (`pack: { dts: true, format: [...], sourcemap: true }`), not an array
-   — the page says only "see tsdown's configuration for details," which
-   strongly implies the array form tsdown itself supports carries
-   through, but that's inference, not a demonstrated example. Confirm
-   `pack: [...]` (array) actually works via a real `vp pack` run at Phase
-   3 implementation time (Phase 0's spike, below, is the place this gets
-   settled) before relying on it. Don't rely on default behavior for the
-   CLI entry either way — tsdown's default posture (like most
+   **`deps.alwaysBundle` lists every current runtime `dependency`, not just
+   `prettier`** — confirmed against `package.json`'s actual `dependencies`
+   field, which has **11** entries, not 9: `@types/feather-icons` and
+   `@types/svgdom` are (unusually) listed under `dependencies` rather
+   than `devDependencies` in this repo today, verified by reading
+   `package.json` directly. Both are types-only with no runtime code to
+   bundle, so the array above correctly excludes them, landing at 9 real
+   entries — but the *reason* is "these two are types-only despite their
+   location," not "package.json only has 9 dependencies." A vague
+   `/* ...other runtime deps... */` comment isn't a config; whichever
+   non-types-only packages `package.json`'s `dependencies` carries at
+   Phase 3 implementation time is the list this array needs, kept in
+   sync at that point.
+   **Both entries need `outExtensions`, not just the CLI one** — Phase 0's
+   spike confirmed (by actually installing tsdown and building a trivial
+   config) that its default output extension for `platform: 'node'` is
+   `.mjs`, regardless of which entry. Without the override, `vp pack`
+   produces `dist/bin/index.mjs` *and* `dist/mjs/index.mjs`. The CLI side
+   breaks at the very next step, `chmod +x dist/bin/index.js` (item 5
+   below) — `generate-docs` and `action.yml`'s `runs.main` also depend on
+   that literal path. The library side breaks silently instead: nothing
+   in the build fails, but `package.json`'s `exports.import` and
+   `"module"` fields both already say `dist/mjs/index.js`, and Phase 3's
+   own text (below) only tells you to remove `require`/`main` — not to
+   touch `exports.import`/`"module"` — so ESM consumers of the *published
+   npm package* (not just this CLI) end up pointed at a file that
+   doesn't exist. Phase 0's spike only got a passing CLI test by manually
+   renaming tsdown's `.mjs` output before running it — the actual `pack`
+   config must produce the right paths itself, on both entries.
+
+   **This is a choice, not the only correct answer, and it's worth being
+   explicit about why**: `package.json` already declares `"type":
+   "module"` (verified), so under Node's own module-resolution rules
+   `.js` and `.mjs` execute identically in this package — neither
+   extension is more "correct" at runtime than the other. The alternative
+   fix is retargeting `package.json`'s `exports.import`/`"module"` (and
+   `action.yml`'s `runs.main`, for the CLI side) to `.mjs` instead, and
+   leaving tsdown's default alone. Forcing `.js` via `outExtensions` is
+   preferred here only because it changes one config line per entry
+   instead of editing published package metadata and the Action's entry
+   point — not because `.mjs` output would be broken or wrong.
+   **`outputOptions: { codeSplitting: false }` on the CLI entry is
+   required, not optional** — confirmed by Phase 0's spike: Rolldown
+   code-splits on `prettier`'s internal dynamic `import()`s for its
+   lazily-loaded language plugins, producing 14 separate chunk files
+   instead of one. `integration-bundled-binary.test.ts` copies only the
+   single entry file into an isolated tempdir with no `node_modules`, so
+   a multi-chunk build fails at runtime on missing relative chunk
+   imports the moment it's actually tested this way, even though the
+   `pack` step itself reports success. Not needed on the library entry —
+   default code-splitting is normal, expected behavior for a
+   library consumed via `node_modules` resolution, where sibling chunk
+   files are just... there.
+   **Partially confirmed — the array's type is real, its two-entry build
+   is not yet separately tested.** Vite+'s own `pack`-block example on
+   that page shows a single object (`pack: { dts: true, format: [...],
+   sourcemap: true }`), not an array, and only says "see tsdown's
+   configuration for details." Phase 0's spike settled the type-level
+   half of this: `vite-plus`'s own `dist/define-config-*.d.ts` types
+   `pack?: PackUserConfig | PackUserConfig[]`, so the array form is real
+   and typed, not just inferred from tsdown's own multi-config support
+   (`docs/phase-0-spike-findings.md`, "tsdown `pack`-block bundled-binary
+   test"). **What the spike did not separately test**: that same section's
+   actual `vp pack` run targeted only the CLI entry (a single object, not
+   the two-entry array shown here) — its passing
+   `integration-bundled-binary.test.ts` result validates the CLI entry's
+   own settings (`outExtensions`, `codeSplitting`), not that a real
+   two-entry array builds both entries correctly in one invocation.
+   Confirm the full two-entry array actually builds cleanly via a real
+   `vp pack` run at Phase 3 implementation time before assuming the type
+   signature accepting it means it behaves correctly. Don't rely on default
+   behavior for the CLI entry either way — tsdown's default posture (like most
    npm-library bundlers) is to externalize `dependencies`, which is the
    opposite of what the CLI entry needs. **`outDir: 'dist/bin'` on the
    CLI object is required, not optional** — without it, both entries
@@ -457,9 +537,28 @@ Requirements this config must satisfy, carried over from
    of the CLI-bundling override above — same as esbuild's `external`
    array did.
 4. A single library entry point at `dist/mjs/` (ESM only — no `dist/cjs/`,
-   per the decision in §8.1), plus a single, correctly-generated
-   `dist/types/index.d.ts`, both produced by `vp pack` in one pass instead
-   of the current two-`tsc`-invocation dance.
+   per the decision in §8.1), plus a single declaration file, both
+   produced by `vp pack` in one pass instead of the current
+   two-`tsc`-invocation dance — but **not** at `dist/types/index.d.ts`.
+   Tested directly (`dts: true` on a throwaway library-entry config, no
+   `outExtensions` override): tsdown colocates the declaration with its
+   JS output and names it `index.d.mts`, not `index.d.ts` — e.g.
+   `dist/mjs/index.d.mts`, matching the `.mjs`-vs-`.js` extension problem
+   `outExtensions` already solves for the JS file. `OutExtensionObject`
+   (tsdown's own type, confirmed by reading
+   `node_modules/tsdown/dist/types-*.d.mts`) has a `dts` field alongside
+   `js`; adding `dts: '.d.ts'` to the library entry's existing
+   `outExtensions` override (alongside `js: '.js'`) and `dts: true` on
+   that same entry — confirmed by re-running the test — produces exactly
+   `dist/mjs/index.d.ts`. **This is a real, load-bearing change to
+   `package.json`, not just a `vp pack` config detail**: `"types"`
+   currently declares `dist/types/index.d.ts`; Phase 3 must update it to
+   `dist/mjs/index.d.ts` in the same PR that lands this pack config, or
+   the package's declared type entry point points at a file that no
+   longer exists — the same class of mistake Phase 1's interim fix (§9)
+   exists to avoid for the *other* declaration path. No separate
+   `dist/types/` output survives Phase 3; that directory was only ever
+   the two-`tsc`-invocation approach's path.
 5. `chmod +x dist/bin/index.js` — keep as an explicit post-step (or a small
    `vp pack` hook) since neither Rolldown nor tsdown sets the executable
    bit on its own.
@@ -469,45 +568,35 @@ Requirements this config must satisfy, carried over from
 These are genuine product/scope decisions, not implementation details —
 flagging them rather than silently picking one:
 
-0. **Replace the runtime `prettier` dependency with `oxfmt`'s Node API,
-   or keep `prettier` as a scoped exception?** `__tests__/prettier.test.ts`
-   pins the exact option surface `src/prettier.ts` depends on today:
-   `format(value, { semi: false, parser: 'yaml' | 'markdown',
-embeddedLanguageFormatting: 'auto', filepath? })` for
-   `formatYaml`/`formatMarkdown`, and `format(value, { semi: false,
-parser: 'markdown', proseWrap: 'always' })` for `wrapDescription`. To
-   replace this with `oxfmt`, each of the following needs to be checked
-   against `oxfmt`'s `FormatOptions` type and confirmed to produce
-   equivalent output, not just "no type error":
-   - Does `FormatOptions` have a `proseWrap` equivalent (Markdown prose
-     wrapping is used by `wrapDescription` to keep `action.yml` description
-     comments line-wrapped)?
-   - Does it have an `embeddedLanguageFormatting` equivalent, or does
-     `oxfmt` handle embedded-code-block formatting inside Markdown/YAML
-     by default with no toggle needed?
-   - `oxfmt.format()` takes a **filename** (`format(filename, code, options)`)
-     rather than an explicit `parser` string — need to confirm passing
-     `"x.yaml"` / `"x.md"` as the filename argument reliably selects the
-     same parser `parser: 'yaml'` / `parser: 'markdown'` did, including
-     when the real caller passes a `filepath` for `README.md` /
-     `action.yml`-derived paths.
-   - `semi: false` — confirm the option name/semantics match.
-   - Byte-for-byte (or at least structurally equivalent) output on a
-     real generated `README.md` and a real `action.yml`, not just the
-     unit-test mocks, since `prettier.test.ts` currently mocks `format`
-     entirely and never asserts real formatted output.
-     This verification is a **Phase 0 spike task** (§9), not something to
-     decide from documentation alone. If it holds: drop `prettier` from
-     `dependencies`, add `oxfmt` to `dependencies` (it moves from
-     dev-tooling to a runtime dependency the same way `prettier` is today),
-     rewrite `src/prettier.ts` against `oxfmt`'s API, update
-     `__tests__/prettier.test.ts`'s mocks and expectations, and repurpose
-     `__tests__/integration-bundled-binary.test.ts` (currently a regression
-     test specifically for `prettier` bundling correctly) to guard `oxfmt`
-     bundling instead. If parity doesn't hold on some option, keep
-     `prettier` in `dependencies` as an explicitly-documented, scoped
-     exception (update §1 and this section to say so) rather than force a
-     worse README/YAML output to complete the cut-over.
+0. **Replace the runtime `prettier` dependency with `oxfmt`'s Node API:
+   decided — no, keep `prettier` as a scoped, documented exception.**
+   Phase 0's spike ran the actual swap, not just a format-parity check:
+   `oxfmt`'s Node API (`format(filename, code, options)`) does produce
+   byte-identical output to `formatMarkdown`/`formatYaml` on a real
+   generated `README.md`/`action.yml`, and matching `wrapDescription`'s
+   `proseWrap: 'always'` output only needed one additional explicit
+   option (`printWidth: 80`, since `oxfmt`'s default of 100 differs from
+   `prettier`'s default of 80) — so the format-parity question this item
+   originally asked **would have resolved in `oxfmt`'s favor**. It
+   doesn't matter, because the swap fails on a more fundamental ground
+   that supersedes parity entirely: `oxfmt`'s Node API loads a
+   platform-specific native `.node` binding via `require()` at runtime,
+   resolved from a **separate** `@oxfmt/binding-<platform>`
+   optional-dependency package, not embedded in `oxfmt`'s own `dist/`.
+   No JS bundler — tested against both the current `esbuild` pipeline and
+   a throwaway `tsdown`/Rolldown pack config — can inline a native binary
+   that lives in a sibling package resolved at runtime; both produced a
+   binary that failed `integration-bundled-binary.test.ts` with
+   `Cannot find module './oxfmt.linux-x64-gnu.node'` (full detail:
+   `docs/phase-0-spike-findings.md`, "`oxfmt`-swapped bundled-binary test"
+   section). **Action: keep `prettier` in `dependencies` as the
+   documented exception (§1 already frames this conditionally — update
+   it to state this outcome directly), do not add `oxfmt` to
+   `dependencies`, and do not touch `src/prettier.ts` in Phase 2 or any
+   other phase.** Revisit only if a future `oxfmt` release ships a
+   pure-JS/WASM fallback that doesn't require a native binding at
+   runtime — until then this isn't a "check again later" item, it's
+   closed.
 
 1. **CJS entry point: decided — drop it, ship ESM-only.** Verified two
    things before locking this in: `action.yml`'s `runs:` block
@@ -604,37 +693,23 @@ prove that on its own, and `ts-node` is already decided as dead weight
 to remove, not something still being evaluated; hand-write a throwaway
 `vite.config.ts` `pack` block (tsdown, per §7 — not a plain-Vite
 `build.lib`) and confirm the bundled `dist/bin/index.js` still passes
-`integration-bundled-binary.test.ts` unmodified; run `oxfmt`'s Node API
-against a real generated `README.md` and `action.yml` and diff the
-output against today's `prettier` output to resolve §8.0 (runtime
-`prettier` replacement) before Phase 2 deletes anything Prettier-related.
-**If that output-parity check passes, it only proves the formatted
-output matches — it does not prove `oxfmt` can actually ship inside the
-self-contained CLI bundle.** Build and run a throwaway bundled binary
-with `src/prettier.ts` swapped onto `oxfmt`'s API (same pack-block spike
-as above, but with the replacement wired in) and confirm it still passes
-`integration-bundled-binary.test.ts`, rather than approving the
-replacement on output parity alone and finding out it doesn't bundle
-once Phase 2 actually makes the swap.
+`integration-bundled-binary.test.ts` unmodified.
 
-**That tsdown/pack-block spike alone still isn't sufficient, because of
-a bundler mismatch this plan itself creates**: the `oxfmt` swap in
-`src/prettier.ts` lands in **Phase 2** (per that phase's text above:
-"this is the phase where that decision actually lands in code"), but
-Phase 2 explicitly leaves "the entire build/bundle pipeline" untouched —
-`scripts/esbuild.mjs` is still what actually produces `dist/bin/index.js`
-until Phase 3 replaces it with the `pack` block. Proving the swapped code
-bundles cleanly under the throwaway tsdown/Rolldown spike says nothing
-about whether it bundles cleanly under the **esbuild** pipeline that is
-still in production use for the two phases in between. Run this same
-bundled-binary check a second way in Phase 0: build the oxfmt-swapped
-`src/prettier.ts` through the actual, current `scripts/esbuild.mjs`
-pipeline (not the throwaway tsdown config) and confirm
-`integration-bundled-binary.test.ts` still passes against _that_ binary.
-If it doesn't, the outcome is to defer the `oxfmt` swap to Phase 3 (once
-`pack` is the real build), not to force it into Phase 2 against a
-pipeline the spike never actually validated. This de-risks the plan
-before CI/config deletion.
+**Done — results in `docs/phase-0-spike-findings.md`, decision now closed
+per §8.0**: the tsdown pack-block spike above passed (once
+`codeSplitting: false` and `outExtensions` are set, per §7). The
+`oxfmt`-vs-`prettier` output-parity check also passed on its own terms
+(byte-identical, modulo one `printWidth` default difference) — but that
+result turned out not to matter, because the bundling question it was
+gated behind failed decisively: `oxfmt`'s Node API depends on a native
+`.node` binding resolved from a separate optional-dependency package at
+runtime, which **no JS bundler can inline**. This was tested both ways
+this section originally called for — the throwaway tsdown/Rolldown pack
+config, and the actual, current `scripts/esbuild.mjs` pipeline — and both
+produced a binary that fails `integration-bundled-binary.test.ts` with
+the identical `Cannot find module './oxfmt.linux-x64-gnu.node'` error.
+There is no bundler-mismatch risk left to de-risk: `prettier` stays, per
+§8.0, and Phase 2 does not touch `src/prettier.ts` at all.
 
 **Phase 1 — TypeScript 7 alone**
 Upgrade `typescript` to the pinned compatible version from Phase 0 (not
@@ -647,25 +722,28 @@ same treatment as the already-found dead `.babelrc.cjs`, not aliased to
 `scripts/formatter.ts` in the same PR — also dead (§3), and the reason
 there's nothing for `ts-node` to have been running in the first place.
 Build/lint/format _scripts_ stay textually unchanged **except
-`postbuild`, conditionally** — see below — but they now run
-under TS7; that's exactly what Phase 0's real declaration-emit check
-(not just `tsc --noEmit`) validates before this phase claims a green
-`npm run build`. **"Validates" isn't the same as "fixes," though, and
-this phase needs to do the fixing too, not just re-confirm Phase 0's
-finding and move on:** if Phase 0's spike found `postbuild`'s
-`tsc --emitDeclarationOnly --outFile dist/types/index.d.ts` genuinely
-rejected under the pinned TS7, Phase 1 must land a working interim
-replacement for that declaration-emit command in this same PR —
-whatever the empirical fix turns out to be (e.g. dropping `--outFile`
-and emitting per-file declarations, since `postbuild`'s deletion and
-replacement with `vp pack` per §7/§9's script audit is Phase 3's job,
-not Phase 1's, and `npm run build` cannot sit broken for two phases
-waiting on it). Don't decide the exact replacement command here before
-Phase 0 empirically confirms what's actually broken — but do commit to
-landing _some_ working command in Phase 1 if Phase 0 finds the current
-one fails, rather than leaving `postbuild` "textually unchanged" and
-implicitly broken until Phase 3. Smallest possible PR otherwise;
-isolates TS7 fallout from tooling fallout.
+`postbuild`, which needs a real replacement, not just a re-confirmation
+of Phase 0's finding.** Phase 0's spike confirmed `postbuild`'s
+`tsc --emitDeclarationOnly --outFile dist/types/index.d.ts` hard-fails
+under TS7 (`TS5102`, `--outFile` removed) and empirically determined the
+interim replacement, not just that one is needed: add a dedicated
+`tsconfig.build.json` (`extends: "./tsconfig.json"`, `compilerOptions:
+{ rootDir: "src" }`, `include: ["src/**/*.ts", "src/**/*.mts"]`) — the
+`rootDir` override is required, not optional, or `tsc` hard-fails with
+`TS5011` on the restricted `include` — and change `postbuild` to `tsc
+--project tsconfig.build.json --emitDeclarationOnly --declaration
+--outDir dist/types`. This one config solves three problems at once:
+the `TS5102` failure, dev-only declarations (`__tests__/**`,
+`__mocks__/node:fs.ts`, `vitest.config.ts`) leaking into the published
+`dist/` via the main `tsconfig.json`'s test-inclusive `include`, and the
+entry-declaration path — `rootDir: "src"` flattens output so
+`index.d.ts` lands directly at `dist/types/index.d.ts`, exactly where
+`package.json`'s `"types"` field already points, with no `package.json`
+edit needed. Land this in the same PR as the TS7 upgrade — `postbuild`
+being deleted and replaced with `vp pack` is Phase 3's job, not Phase
+1's, and `npm run build` cannot sit broken for two phases waiting on it.
+Smallest possible PR otherwise; isolates TS7 fallout from tooling
+fallout.
 
 **Phase 2 — Oxlint + Oxfmt, with Vite+ installed for lint/format/staged
 only (build/pack/test blocks NOT touched yet)**
@@ -678,11 +756,11 @@ would repeat the exact "referenced but not ready" mistake this
 restructuring is fixing. Use Oxlint's own default/recommended rules (no
 Biome rule mapping, per §8.3). Run Oxlint against `src/` and `__tests__/`
 and triage every finding it surfaces — fix genuine issues, don't
-pre-filter them to match what Biome used to allow. Apply the §8.0 outcome
-from the Phase 0 spike: either rewrite `src/prettier.ts` onto `oxfmt`'s
-API and drop `prettier` from `dependencies`, or leave `src/prettier.ts`
-on `prettier` as a documented exception — this is the phase where that
-decision actually lands in code, not just in the spike.
+pre-filter them to match what Biome used to allow. **Leave
+`src/prettier.ts` and the `prettier` dependency untouched in this phase**
+— §8.0's decision, made from Phase 0's spike results, is to keep
+`prettier` as a documented runtime exception; there is no `oxfmt` swap
+to land here or in any other phase.
 
 **The `lint` block must set `options: { typeAware: true, typeCheck: true
 }` explicitly** — confirmed against
@@ -878,6 +956,25 @@ build'` (confirmed by reading `package.json`) — a bare Node image with
   deleting every config file and script that used them isn't a clean
   cut-over, it's dead weight in `package.json` and the lockfile — the
   same standard already applied to `.babelrc.cjs`/`ts-node`.
+- **Rewrite every Biome-invoking instruction across every active
+  `.claude/` agent/skill file in this same phase, not Phase 4** — confirmed
+  by a repo-wide `grep -rli biome .claude/` (excluding worktree scratch
+  dirs and the generic `.claude/skills/agent-creator/references/
+  agent-examples.md` template, which references Biome only as an
+  illustrative example unrelated to this repo's own tooling, not a
+  real instruction): `.claude/skills/holistic-linting/PROJECT-CONFIG.md`,
+  `.claude/skills/holistic-linting/SKILL.md`, `.claude/agents/
+  linting-root-cause-resolver.md`, `.claude/agents/code-review.md`, and
+  `.claude/agents/post-linting-architecture-reviewer.md` all repeatedly
+  tell agents to run `npx biome check`/`biome format`/`biome lint`, read
+  `biome.json` as authoritative, or check Biome-specific rules
+  (`noExplicitAny`, `useExplicitType`, etc.) — five files, not two. Once
+  `@biomejs/biome` is removed above, those commands invoke a binary
+  that's no longer installed; deferring any of them to Phase 4 leaves
+  every agent using these files mid-cut-over (Phases 2-3) running a
+  broken command. `PROJECT-CONFIG.md`'s separate `esbuild` build-tool
+  declaration is a different, unrelated stale reference — that one is
+  tied to Phase 3's build migration below, not this phase (see Phase 3).
 
 Explicitly out of scope for Phase 2, staying untouched until Phase 3:
 `vitest.config.ts`, `vitest` imports in `__tests__/**` (the
@@ -890,14 +987,27 @@ Add the `pack` block (tsdown, per §7) and `test` block (Vitest) to the
 already-present `vite.config.ts`, consolidate `vitest.config.ts` into it,
 and rewrite **every direct `vitest` reference repo-wide, not just
 `__tests__/**`**. A repo-wide `grep` for `vitest` (not scoped to the test
-directory) turns up two more that an earlier pass of this plan missed:
-`__mocks__/node:fs.ts` imports `{ vi }` directly from `vitest`, and
+directory) turns up three more that an earlier pass of this plan missed:
+`__mocks__/node:fs.ts` imports `{ vi }` directly from `vitest`,
 `tsconfig.json`'s `compilerOptions.types` array includes
-`"vitest/globals"`. Both need the same treatment as the `__tests__/**`
-imports — `__mocks__/node:fs.ts`'s import rewritten to
-`vite-plus/test`, and `tsconfig.json`'s `types` entry updated to
-whatever Vite+'s migration docs specify as the `vite-plus/test`
-equivalent for ambient globals — in this same phase. If Vitest isn't
+`"vitest/globals"`, and `.vscode/launch.json`'s "Debug Current Test File"
+launch config hardcodes `"program":
+"${workspaceRoot}/node_modules/vitest/vitest.mjs"`. All three need the
+same treatment as the `__tests__/**` imports — `__mocks__/node:fs.ts`'s
+import rewritten to `vite-plus/test`, `tsconfig.json`'s `types` entry
+updated to whatever Vite+'s migration docs specify as the
+`vite-plus/test` equivalent for ambient globals, and
+`.vscode/launch.json`'s `program` path updated to wherever Vite+ installs
+its bundled Vitest binary, if it exposes one at a stable path. **`program`
+must name an entry-point file to execute, not a CLI command** — `vp test`
+is a command, not a valid `program` value, and VS Code's Node debugger
+would just try to execute a nonexistent file called `vp test`. If Vite+
+doesn't expose a direct binary path, the correct replacement is
+`runtimeExecutable: "npx"` with `runtimeArgs: ["vp", "test", "--", "${fileBasenameNoExtension}"]`
+(or whatever Vite+'s actual single-file-run flag turns out to be) and
+`program` removed from that config entirely — verify Vite+'s real CLI
+surface for running one test file at Phase 3 implementation time before
+committing to the exact flag. All three fixes land in this same phase. If Vitest isn't
 hoisted as a transitive dependency on a given install (npm doesn't
 guarantee hoisting the way pnpm/yarn might), a reference left pointing
 at bare `vitest` after the direct `devDependency` is removed below
@@ -914,13 +1024,30 @@ independent `^4.1.2` range, regenerate `package-lock.json`, and run
 survives — a leftover second copy is exactly the failure mode
 migrate-rules' "Vite and Overrides" section warns about.
 Replace `scripts/esbuild.mjs` + `tsconfig-mjs.json` +
-`scripts/set_package_type.sh` with the `pack` config (ESM-only library
+`scripts/set_package_type.sh` + **`tsconfig.build.json`** (Phase 1's
+interim declaration-emit config — this phase's `pack` config takes over
+declaration generation entirely, per item 4 below, so the interim file
+becomes dead weight the moment `postbuild` is deleted, not something to
+leave behind) with the `pack` config (ESM-only library
 output, no `dist/cjs`, per the decided §8.1; explicit CLI-entry
 no-external override per §7), remove the `require` export condition and
 `main` field from `package.json`, delete the replaced files, rewrite the
 remaining `package.json` build scripts to `vp` commands (`build`
 becomes `rimraf dist out && vp pack && chmod +x dist/bin/index.js`, per
-the script audit), rewrite `test.yml`'s build step accordingly. **Leave
+the script audit), rewrite `test.yml`'s build step accordingly. **Also
+update `.claude/skills/holistic-linting/PROJECT-CONFIG.md`'s `esbuild`
+build-tool declaration, and `.github/copilot-instructions.md`'s
+esbuild-specific content, in this same phase, not Phase 4** — confirmed
+by reading `copilot-instructions.md` directly: it declares "**Build
+Tool**: esbuild + TypeScript compiler," describes the
+`prebuild`/`build`/`postbuild` pipeline and `dist/cjs/` output this phase
+deletes, and lists `scripts/esbuild.mjs` in its project-structure tree.
+`esbuild` is the tool this phase directly replaces, so leaving either
+file's declaration stale until Phase 4 would misdirect any agent reading
+them between this phase landing and Phase 4's PR merging.
+`copilot-instructions.md`'s separate stale "ESLint + Prettier" lint-tool
+narrative is a different, unrelated staleness (Biome/Oxlint territory,
+not esbuild) and stays Phase 4's problem, per below. **Leave
 `deploy.yml` calling `npm run build`** — not a direct `vp pack` call
 (§4 already corrects this) — and remove the now-replaced
 `esbuild`/`esbuild-node-externals` `devDependencies`, same "clean
@@ -938,9 +1065,12 @@ binary stays self-contained.
 Update `.github/copilot-instructions.md` and `CLAUDE.md` to describe the
 new toolchain instead of the stale ESLint/Prettier narrative, delete this
 plan doc's TODOs once landed or fold its "current state" section into
-project docs as history. (The Node 20 → 24 floor bump and `action.yml`'s
-`runs.using` fix, per §5, are recommended as their own immediate PR
-_ahead of_ this phase, not bundled into it — see §5.)
+project docs as history. All five `.claude/` files' Biome references and
+`PROJECT-CONFIG.md`'s `esbuild` declaration were already rewritten in
+Phases 2 and 3 respectively (above) — nothing toolchain-specific remains
+for this phase to touch in `.claude/`. (The Node 20 → 24 floor bump and
+`action.yml`'s `runs.using` fix, per §5, are recommended as their own
+immediate PR _ahead of_ this phase, not bundled into it — see §5.)
 
 Each phase = one PR, green CI required before the next phase starts.
 `integration-test.yml`'s **test logic and assertions** are the final gate
@@ -961,7 +1091,7 @@ undertooled once the command it runs changes underneath it.
 | TS7 hard-errors on patterns Biome/TS6 allowed                                                                                                                                                        | Phase 0 spike surfaces this before any deletion happens                                                                                                                                                                                                                                                                                                                                                                               |
 | Rolldown bundling breaks the "fully self-contained binary" guarantee                                                                                                                                 | `integration-bundled-binary.test.ts` already exists and is the exact regression gate; keep it, run it every phase                                                                                                                                                                                                                                                                                                                     |
 | Oxlint's default rules differ from Biome's custom thresholds (either direction — some things Biome flagged, Oxlint won't, and vice versa)                                                            | Accepted by design (§8.3) — the goal is Oxlint's own findings against this codebase, not Biome parity; Phase 2 triages whatever Oxlint actually reports rather than pre-tuning config to match the old bar                                                                                                                                                                                                                            |
-| Replacing runtime `prettier` with `oxfmt` silently changes generated `README.md`/YAML output for every consumer of this action                                                                       | §8.0 verification (real-file diff, not just unit-test mocks) happens in the Phase 0 spike, before Phase 2 touches `src/prettier.ts`; if parity doesn't hold, keep `prettier` rather than ship a regression                                                                                                                                                                                                                            |
+| Replacing runtime `prettier` with `oxfmt` silently changes generated `README.md`/YAML output for every consumer of this action                                                                       | Closed, not a live risk: Phase 0's spike ran the real-file diff (byte-identical) and the bundled-binary check, and the swap fails on the latter regardless of output parity (native binding unbundlable, per §8.0). `prettier` stays; Phase 2 does not touch `src/prettier.ts`.                                                                                                                                                       |
 | `vp` toolchain still "beta" — API/CLI surface can change under us                                                                                                                                    | Pin `vite-plus` (and its bundled Oxlint/Oxfmt/tsdown versions) to exact versions in `package.json`, not ranges, until it reaches stable/1.0                                                                                                                                                                                                                                                                                           |
 | Node floor bump to 24 breaks some consumer still pinned to Node 20                                                                                                                                   | Node 20 is already EOL (2026-04-30) and GitHub is removing it from Actions runners entirely in fall 2026, so staying on 20 isn't a neutral fallback to protect — the bump is called out explicitly in the PR description / changelog as a `feat!`/breaking change per this repo's conventional-commits rules, but isn't optional to defer indefinitely                                                                                |
 | `semantic-release` / `deploy.yml`'s `git add -f dist` step assumes today's `dist/` layout                                                                                                            | Verify `dist/bin`, `dist/mjs`, `dist/types` paths match after `vp pack` (no `dist/cjs` — dropped per §8.1), update the force-add + `files` array in `package.json` if paths shift                                                                                                                                                                                                                                                     |
@@ -1005,7 +1135,7 @@ where I didn't independently confirm against a primary source.
 - `grep`/`Read` against this repo directly — confirmed `__mocks__/node:fs.ts` imports `vitest` and `tsconfig.json`'s `compilerOptions.types` includes `"vitest/globals"`, both outside `__tests__/**`; and `.vscode/launch.json`'s "Debug Current Test File" launcher, which hardcodes `program: '${workspaceRoot}/node_modules/vitest/vitest.mjs'` — confirmed by reading the file directly. All three need the same treatment: rewritten to point at wherever `vite-plus` actually resolves post-migration (confirm the correct debug entry point at Phase 3 implementation time rather than assuming `node_modules/vitest/vitest.mjs` still resolves). Also confirmed `package.json`'s `pre-commit` script runs via `.husky/pre-commit` on local commits (not CI) and `build:docker:default`/`build:docker:win32` run inside a bare `node:24-alpine` container; confirmed `test.yml`'s `matrix.node-version` (`["24.0.0", "24.19.0", "26.x"]`) feeds `./.github/actions/setup-node` via `version: ${{ matrix.node-version }}`. Backs §9 Phase 3's expanded vitest-rewrite scope, the local/Docker `vp`-bootstrap gap, and the `setup-vp` matrix-parameterization fix.
 - **`vp` v0.2.8 installed and run directly in this session** (`curl -fsSL https://viteplus.dev/install.sh`, executed non-interactively via `VP_NODE_MANAGER=no bash`) — not documentation, an actual empirical run. `vp lint --help` confirmed `-f, --format <FORMAT>` including a `github` value; `vp lint --format github --type-aware src` against this repo's real `src/` produced genuine `::warning file=...::...` annotations with type-aware findings (`restrict-template-expressions`, `no-base-to-string`, `await-thenable`), fully resolving §9 Phase 2's previously-open annotation-format question. `vp test __tests__/helpers.test.ts` ran Vitest 4.1.10 and passed all 42 tests, confirming `test` → `vp test`. `vp test --coverage __tests__/helpers.test.ts` reproduced `Cannot find package '@vitest/coverage-v8'` (resolved against `vite-plus`'s bundled Vitest 4.1.10, not this repo's independently-pinned `^4.1.2`), direct empirical confirmation that §9 Phase 3's `@vitest/coverage-v8` version-alignment requirement is load-bearing, not precautionary.
 - [`setup-vp` README](https://raw.githubusercontent.com/voidzero-dev/setup-vp/main/README.md) — fetched directly (same fetch as the CI-bootstrap citation above). Backs the `curl -fsSL https://viteplus.dev/install.sh | bash` / `irm https://viteplus.dev/install.ps1 | iex` local-install commands used in §9 Phase 2's local-caller fix — sourced from that README's own "Development" section, not verified as the general end-user installation path, and the `node:24-alpine`/`curl`-availability question for the Docker fix is explicitly left unverified (no Docker daemon available in this session to test empirically).
-- `grep`/`Read` against this repo directly — confirmed `.vscode/launch.json`'s hardcoded `vitest.mjs` path and `.claude/skills/holistic-linting/PROJECT-CONFIG.md` + `.claude/agents/linting-root-cause-resolver.md`'s direct Biome/esbuild references. Backs §9 Phase 3/4's expanded cleanup scope.
+- `grep`/`Read` against this repo directly — confirmed `.vscode/launch.json`'s hardcoded `vitest.mjs` path (Phase 3); `.claude/skills/holistic-linting/PROJECT-CONFIG.md`, `.claude/skills/holistic-linting/SKILL.md`, `.claude/agents/linting-root-cause-resolver.md`, `.claude/agents/code-review.md`, and `.claude/agents/post-linting-architecture-reviewer.md`'s direct Biome references (Phase 2); and `PROJECT-CONFIG.md`'s separate `esbuild` reference (Phase 3). Backs §9 Phase 2/3's expanded cleanup scope.
 
 **Secondary (search-result coverage, not independently confirmed against a primary source):**
 

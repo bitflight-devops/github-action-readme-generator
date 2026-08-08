@@ -104,3 +104,34 @@ Every tool call in your own turn re-processes your entire existing context — o
 - This isn't a reason to explore less — it's a reason not to be the one doing the reading. Delegating the exploration doesn't delegate away scrutiny; the checker principle above still applies to what the agent reports back.
 - Before waiting on your own turn to sequence two pieces of work, ask whether the second piece could have been written into the first agent's own instructions, or dispatched immediately (e.g. via the GitHub API instead of a local checkout, or with worktree isolation) so it never needs to contend with the first agent's state. Sequencing steps through your own turn just to avoid a hypothetical conflict is itself a cost that a little more upfront planning avoids.
 - Don't schedule a wakeup to poll for a background agent's completion — it already notifies you when done. A scheduled poll on top of that is a redundant, wasted wakeup.
+
+## State the hypothesis before acting, not after being corrected
+
+An assumption you haven't tested is still an assumption, no matter how
+confident it feels. If an action's correctness depends on something you
+believe but haven't verified — a tool's default behavior, "this fix
+addresses the comment," "this diff has no other issues" — that belief is a
+hypothesis, not a fact, until something has actually tested it.
+
+- Before acting on the assumption, name it as **Ha** (what you're about to
+  rely on) versus **H0** (the way it could actually be), and test which is
+  true with the cheapest available check — a single direct command, a read
+  of the tool's own contract, one background agent — before committing
+  further actions to the outcome. Verify with the first unit before batching
+  the rest: dispatching three parallel agents on an unverified assumption
+  about how they're each provisioned is finding out three times what one
+  check would have told you once.
+- This applies to self-assessment, not just tool mechanics. "This diff is
+  correct" is a hypothesis about your own work, not a fact you get to assert
+  by having written it — it gets the exact same checker-principle treatment
+  as a bot's review comment: a fresh agent tests it, you don't declare it.
+  Reading your own diff and calling it reviewed is not a substitute for
+  independent review, even when a repo convention (e.g. "apply your own
+  review pass before marking a PR ready") asks for a self-read first — that
+  self-read is a hygiene pass, not the validation step.
+- The failure mode this section exists to name: acting first and treating an
+  external correction — a bot comment, a user question — as the test.
+  Stating Ha/H0 before acting means the test happens before the action's
+  consequences are already out in the world (agents already dispatched on a
+  wrong premise, a PR already marked ready on an unverified diff), not
+  after.

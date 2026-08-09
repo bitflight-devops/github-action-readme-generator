@@ -7,12 +7,12 @@ Instructions for AI agents working in this repository.
 - CLI + GitHub Action. Syncs README.md from action.yml (title, description, inputs, outputs, usage, badges).
 - TypeScript, Node `>=24.0.0 <30.0.0` (`package.json` `engines`).
 - Build: esbuild. Test: vitest. Lint/format: Biome + markdownlint.
-- Not ESLint — migrated off it; ignore any stale "ESLint" mentions.
-- Volta pins the dev version — check `.node-version`, don't trust a number restated here.
+- Not ESLint (migrated off); ignore stale "ESLint" mentions.
+- Volta pins the dev version — check `.node-version`.
 
 ## Commit format
 
-Conventional Commits — the `commit-msg` hook runs commitlint automatically (see Pre-commit hooks).
+Conventional Commits — the `commit-msg` hook runs commitlint (see Pre-commit hooks).
 
 ## Build & validation commands
 
@@ -28,12 +28,11 @@ npm run generate-docs  # regenerate README.md from action.yml
 ```
 
 `npm run lint` is not a clean read-only check: npm's `prelint` hook (exact-name match,
-so only `lint` gets it, not `lint:fix`) runs `biome format --write` (rewrites files) +
-a full `tsc --noEmit` check first, then `biome lint` + `markdownlint` run. `lint:fix`
-skips that hook and just runs `biome lint --write` + `markdownlint --fix` directly —
-still mutating, just not via `prelint`. Both are narrower than CI's Biome coverage
-either way (no import-sorting). `npm run check` matches CI's actual gate read-only;
-`check:fix` (`biome check --write`) mutates files too.
+so only `lint` gets it, not `lint:fix`) runs `biome format --write` + a full `tsc
+--noEmit` check first, then `biome lint` + `markdownlint` run. `lint:fix` skips that
+hook and runs `biome lint --write` + `markdownlint --fix` directly, not via `prelint`.
+Both are narrower than CI's Biome coverage either way (no import-sorting). `npm run
+check` matches CI's actual gate read-only; `check:fix` runs `biome check --write`.
 
 ## Pre-commit hooks (husky)
 
@@ -41,7 +40,7 @@ either way (no import-sorting). `npm run check` matches CI's actual gate read-on
   - Gotcha: has silently dropped staged files despite exit 0.
   - Verify with `git show --stat HEAD` after committing.
 - **commit-msg**: runs commitlint.
-- **pre-push**: currently a no-op — its command is commented out in the hook file.
+- **pre-push**: a no-op (commented out).
 
 ## dist/ files
 
@@ -68,7 +67,7 @@ src/
   constants.ts             Feather icon names + other constants
   util.ts                     shared TS type utilities (e.g. Nullable<T>)
   unicode-word-match.ts  ES5-compatible unicode word-match regex
-  working-directory.ts   working directory path resolution
+  working-directory.ts   path resolution
   sections/                  one updater per README section, see index.ts
   markdowner/               markdown processing utilities
   logtask/                    LogTask logger, see bracket-padding pitfall
@@ -80,16 +79,16 @@ scripts/               esbuild.mjs, release.sh, set_package_type.sh, latest_vali
 docs/                    the TS7/Vite+ migration plan + its phase-0 findings
 ```
 
-- `__tests__/` loosely follows `src/`'s file naming, not exhaustively or always nested.
+- `__tests__/` loosely follows `src/`'s file naming, not always nested.
 - Example: `helpers.ts` → `helpers.test.ts`, but `src/markdowner/` → flat `markdowner.test.ts`.
-- `src/errors/*` has no tests at all — search for a file's test, don't assume a path exists.
+- `src/errors/*` has no tests — search for a file's test, don't assume a path exists.
 
-Root config files: see "Config files" table below, not repeated here.
+Root config files: see "Config files" table below.
 
 ## CI (`.github/workflows/`)
 
 Display names differ from file names. Read the file directly for the exact
-current step list — this section states what's non-obvious, not a full copy.
+current step list.
 
 - **`test.yml`** ("Tag and Release Updated NPM Package")
   - Triggers: `pull_request_target` + `push` (main/next/beta/\*.x) + `repository_dispatch`.
@@ -138,17 +137,14 @@ current step list — this section states what's non-obvious, not a full copy.
 - Plan: `docs/typescript-7-vite-plus-conversion-plan.md` (live, multi-phase).
 - Done: TS7 alone. Not done: Oxlint/Oxfmt, Vite+ build.
 - A task needing a piece of that system is a signal to advance the plan, not work around the gap.
-- Don't treat the current esbuild/Biome setup as the intended end state.
 
 ## Working discipline
 
 - `.claude/skills/checker-principle/SKILL.md`: verify before trusting any fix, bot finding, or your own diff.
-  - Symlinked under `.agents/skills/` — auto-loads in any agent that reads that path
-    (Codex, OpenCode, Cursor, GitHub Copilot, Gemini CLI, and others per agentskills.io).
+  - Symlinked under `.agents/skills/` — auto-loads in any agent that reads that path (per agentskills.io).
 - `.claude/skills/pr-review-workflow/SKILL.md`: handling PR review comments, judging draft-readiness.
 - `.claude/skills/planning-multi-step-work/SKILL.md`: planning ahead, judging when a loop is warranted.
-- Delegate large reads (logs, search results, big docs) to a fresh subagent.
-  - A cheap model with zero context to re-process is far cheaper per call.
+- Delegate large reads (logs, search results, big docs) to a fresh, cheap-model subagent — cheaper per call.
   - The checker-principle still applies to what it reports back.
 - This file's TODOs (below) are shared cross-session state, not scratch notes.
   - Remove an entry once done; add one before ending a session with work left.

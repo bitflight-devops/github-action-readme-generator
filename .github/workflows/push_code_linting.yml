@@ -17,8 +17,8 @@ concurrency:
   group: ci-linting-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  biome_annotation:
-    name: runner / biome
+  oxlint_annotation:
+    name: runner / oxlint
     if: (!contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci'))
     runs-on: ubuntu-latest
     permissions:
@@ -34,14 +34,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          version: 2.5.1
-
-      - name: Run Biome lint
-        run: biome lint ./src/ ./__tests__/
-
       - name: Install compatible Nodejs version
         id: setup-node
         uses: ./.github/actions/setup-node
@@ -49,13 +41,14 @@ jobs:
       - name: Install Deps
         run: npm install
 
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1.17.0
+        with:
+          node-manager: false
+
+      - name: Run Oxlint
+        run: vp lint --format github --type-aware --type-check ./src/ ./__tests__/
+
       - uses: xt0rted/markdownlint-problem-matcher@v3.0.0
       - run: npm run lint:markdown
         continue-on-error: true
-
-      - name: Biome reviewdog
-        uses: mongolyy/reviewdog-action-biome@v2
-        with:
-          reporter: github-pr-review
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          fail_level: error

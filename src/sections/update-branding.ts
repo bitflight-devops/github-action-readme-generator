@@ -1,6 +1,5 @@
 import type { FeatherIconNames } from 'feather-icons';
 
-import type { BrandColors } from '../constants.js';
 import { GITHUB_ACTIONS_OMITTED_ICONS, isValidIcon, type ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
@@ -31,11 +30,7 @@ export interface IBranding {
  * @param icon - The icon name from the feather-icons list
  * @param bgcolor - The background color of the circle behind the icon
  */
-export function generateSvgImage(
-  svgPath: string,
-  icon: Partial<FeatherIconNames>,
-  bgcolor: Partial<BrandColors>,
-): void {
+export function generateSvgImage(svgPath: string, icon: string, bgcolor: string): void {
   const svgEditor = new SVGEditor();
   svgEditor.generateSvgImage(svgPath, icon, bgcolor);
 }
@@ -52,7 +47,7 @@ export function generateSvgImage(
  * @returns The corresponding feather icon key array
  * @throws Error if the branding icon is undefined, not a valid icon name, or part of the omitted icons list
  */
-export function getValidIconName(icon?: Partial<FeatherIconNames>): FeatherIconNames {
+export function getValidIconName(icon?: string): FeatherIconNames {
   if (!icon) {
     throw new Error(`No valid branding icon name found: action.yml branding is undefined`);
   }

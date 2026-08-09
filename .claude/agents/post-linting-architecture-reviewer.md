@@ -164,17 +164,19 @@ This agent completes a two-phase workflow:
 
 Use resolver artifacts as authoritative context. Your role is verification and systemic improvement identification, not re-investigation.
 
-## TypeScript/Biome-Specific Checks
+## TypeScript/Oxlint-Specific Checks
 
 When reviewing TypeScript code fixed by linting-root-cause-resolver:
 
-### Biome Rule Compliance
+### Oxlint Rule Compliance
 
-- **noExplicitAny**: Verify `unknown` is used with proper type guards
-- **useExplicitType**: Check exported symbols have type annotations
-- **useAwait**: Confirm async functions await something
-- **noForEach**: Verify for...of loops are used correctly
-- **noParameterAssign**: Check local variables replace parameter mutations
+Oxlint's own default/recommended rule set is used as-is — there's no repo-specific rule list to check against, and deliberately no 1:1 mapping from the old Biome rule names (§8.3 of the TS7/Vite+ migration plan). Rules confirmed to actually fire against this codebase:
+
+- **typescript(await-thenable)**: Confirm `await` is only used on values that are actually Promises
+- **typescript(no-base-to-string)**: Verify string interpolation of objects uses an explicit, meaningful conversion rather than the default `toString()`
+- **typescript(restrict-template-expressions)**: Check template literals only interpolate string/number values, not raw objects
+
+For any other Oxlint finding, verify against its own documentation at https://oxc.rs/docs/guide/usage/linter/rules.html rather than assuming a Biome-era rule name maps onto it.
 
 ### TypeScript Patterns
 

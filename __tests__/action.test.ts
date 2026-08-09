@@ -117,7 +117,7 @@ describe('Action', () => {
       vi.mocked(fs.statSync).mockImplementation(
         (actionPath: fs.PathLike): fs.Stats | fs.BigIntStats | undefined => {
           const actionDir = path.dirname(path.resolve(actionPath as string));
-          throw new Error(`${actionPath} does not exist in ${actionDir}`);
+          throw new Error(`${String(actionPath)} does not exist in ${actionDir}`);
         },
       );
       vi.mocked(mockLogTask.fail).mockImplementation((msg) => expect(msg).toBe(errMsgFailedToLoad));

@@ -70,7 +70,7 @@ export async function wrapDescription(
       proseWrap: 'always',
     });
   } catch (error) {
-    log.error(`${error}`);
+    log.error(`${String(error)}`);
   }
 
   content.push(...formattedString.split('\n').map((line) => prefix + line.replace(prefix, '')));

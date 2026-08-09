@@ -33,31 +33,35 @@ export default async function updateSection(
   }
   switch (section) {
     case 'branding': {
-      return await updateBranding(section, inputs);
+      return updateBranding(section, inputs);
     }
     case 'badges': {
-      return await updateBadges(section, inputs);
+      return updateBadges(section, inputs);
     }
     case 'usage': {
+      // updateUsage is the only section updater that is genuinely async.
       return await updateUsage(section, inputs);
     }
     case 'title': {
-      return await updateTitle(section, inputs);
+      return updateTitle(section, inputs);
     }
     case 'description': {
-      return await updateDescription(section, inputs);
+      return updateDescription(section, inputs);
     }
     case 'inputs': {
-      return await updateInputs(section, inputs);
+      return updateInputs(section, inputs);
     }
     case 'outputs': {
-      return await updateOutputs(section, inputs);
+      return updateOutputs(section, inputs);
     }
     case 'contents': {
-      return await updateContents(section, inputs);
+      return updateContents(section, inputs);
     }
     default: {
-      log.debug(`unknown section found <!-- start ${section} -->. No updates were made.`);
+      // `section` is typed as the exhaustive ReadmeSection union, but at runtime it can
+      // carry an unrecognized value from user-supplied config (.ghadocs.json `sections`
+      // is cast to ReadmeSection[] without validation) — String() surfaces that real value.
+      log.debug(`unknown section found <!-- start ${String(section)} -->. No updates were made.`);
       return {};
     }
   }

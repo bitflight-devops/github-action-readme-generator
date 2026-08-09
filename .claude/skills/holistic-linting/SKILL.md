@@ -1,5 +1,5 @@
 ---
-description: Comprehensive linting and formatting verification workflows for TypeScript/Biome projects. Provides automatic format-lint-resolve pipelines for orchestrators and sub-agents. Use when running linters, fixing Biome/TypeScript errors, ensuring code quality before completion, or resolving linting issues systematically.
+description: Comprehensive linting and formatting verification workflows for TypeScript/Oxlint (Vite+) projects. Provides automatic format-lint-resolve pipelines for orchestrators and sub-agents. Use when running linters, fixing Oxlint/TypeScript errors, ensuring code quality before completion, or resolving linting issues systematically.
 ---
 
 # Holistic Linting Skill
@@ -12,13 +12,13 @@ Prevent Claude from:
 
 - Completing tasks without formatting and linting modified files
 - Claiming code is "production quality" based on pattern-matching rather than verification
-- Assuming only tsc exists when projects may have multiple linting tools (Biome, markdownlint, etc.)
-- Suppressing linting errors with `// biome-ignore` or `// @ts-ignore` comments without understanding root causes
+- Assuming only tsc exists when projects may have multiple linting tools (Oxlint, markdownlint, etc.)
+- Suppressing linting errors with `// oxlint-disable-next-line` or `// @ts-ignore` comments without understanding root causes
 
 Ensure Claude:
 
 - Automatically formats and lints all modified files before task completion
-- Discovers project linters by scanning configuration files (biome.json, tsconfig.json, package.json)
+- Discovers project linters by scanning configuration files (vite.config.ts, tsconfig.json, package.json)
 - Resolves linting issues systematically using root-cause analysis
 - Orchestrates concurrent linting agents when multiple files have issues
 
@@ -77,8 +77,8 @@ Task(
 
 **What NOT to do before delegating**:
 
-- ❌ Do NOT run `biome format` before delegating
-- ❌ Do NOT run `biome check` before delegating
+- ❌ Do NOT run `vp fmt` before delegating
+- ❌ Do NOT run `vp check` before delegating
 - ❌ Do NOT run `tsc` before delegating
 - ❌ Do NOT gather linting output for the agent
 - ❌ Do NOT read error messages to provide to the agent
@@ -93,8 +93,8 @@ Task(
 **Reason**: The agent follows systematic root-cause analysis workflows. It autonomously:
 
 - Discovers project linters by scanning configuration files
-- Runs formatters on modified files (biome format)
-- Executes linters to identify issues (biome check, tsc)
+- Runs formatters on modified files (vp fmt)
+- Executes linters to identify issues (vp check, which bundles format + lint + type-check)
 - Researches rule documentation
 - Traces type flows and architectural context
 - Implements elegant fixes following TypeScript best practices
@@ -198,7 +198,7 @@ Continue workflow until architectural review reports clean results.
 
 ```text
 # Don't do this:
-Bash("biome check src/inputs.ts")
+Bash("vp check src/inputs.ts")
 # Read the output...
 # Then delegate with the output
 Task(agent="linting-root-cause-resolver", prompt="Fix these errors: [pasted errors]")
@@ -215,7 +215,7 @@ Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any 
 
 ```text
 # Don't do this:
-Bash("biome format --write src/inputs.ts src/helpers.ts")
+Bash("vp fmt --write src/inputs.ts src/helpers.ts")
 # Then delegate linting
 ```
 
@@ -231,7 +231,7 @@ Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any 
 ```text
 # Don't do this:
 # Agent completes
-Bash("biome check src/inputs.ts")  # Verifying agent's work
+Bash("vp check src/inputs.ts")  # Verifying agent's work
 ```
 
 **✅ CORRECT** - Trust agent's verification, read reports instead:
@@ -275,7 +275,7 @@ Linter detection is handled automatically by scanning project configuration file
 | Config File                    | Tools Detected                                       |
 | ------------------------------ | ---------------------------------------------------- |
 | `.husky/` directory            | Husky git hooks (takes priority)                     |
-| `biome.json`                   | Biome (lint + format for TypeScript/JavaScript)      |
+| `vite.config.ts`               | Oxlint (lint, type-aware) + Oxfmt (format) via Vite+'s `vp` CLI — `fmt`/`lint`/`check`/`staged` blocks |
 | `tsconfig.json`                | TypeScript compiler                                  |
 | `package.json`, `.prettierrc*` | Prettier                                             |
 | `.markdownlint.json/.yaml`     | markdownlint                                         |
@@ -284,7 +284,7 @@ Linter detection is handled automatically by scanning project configuration file
 **Detection Priority** (highest to lowest):
 
 1. Husky (if found, check what hooks run)
-2. Biome (if biome.json exists)
+2. Oxlint/Vite+ (if vite.config.ts exists)
 3. TypeScript (if tsconfig.json exists)
 4. Other language-specific tools
 
@@ -308,20 +308,20 @@ cat .husky/pre-commit
 
 Use `--all-files` equivalent ONLY when explicitly requested by the user for repository-wide cleanup.
 
-**For TypeScript/JavaScript files (Biome)**:
+**For TypeScript/JavaScript files (Oxlint + Oxfmt via Vite+)**:
 
 ```bash
-# Format and lint with auto-fix (preferred - single command)
-npx biome check --write path/to/file.ts
+# Format and lint with auto-fix, type-aware (preferred - single command)
+vp check --fix path/to/file.ts
 
 # Check only (CI mode, no fixes)
-npx biome check path/to/file.ts
+vp check path/to/file.ts
 
 # Format only
-npx biome format --write path/to/file.ts
+vp fmt --write path/to/file.ts
 
-# Lint only (no format)
-npx biome lint path/to/file.ts
+# Lint only (type-aware, no format)
+vp lint --type-aware --type-check path/to/file.ts
 ```
 
 **For TypeScript type checking**:
@@ -353,7 +353,7 @@ Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any 
 Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in src/helpers.ts")
 ```
 
-Do NOT run `biome check` or `tsc` before delegating. The agent gathers its own linting data.
+Do NOT run `vp check` or `tsc` before delegating. The agent gathers its own linting data.
 
 **For Sub-Agents**: Follow the linter-specific resolution workflow documented below based on the linting tool reporting the issue.
 
@@ -361,27 +361,26 @@ Do NOT run `biome check` or `tsc` before delegating. The agent gathers its own l
 
 This section provides systematic resolution procedures for each major TypeScript/JavaScript linting tool. Sub-agents executing the linting-root-cause-resolver process MUST follow the appropriate workflow based on the linter reporting issues.
 
-### Biome Resolution Workflow
+### Oxlint Resolution Workflow
 
-**When to use**: Linting errors with Biome rule codes (lint/suspicious/*, lint/correctness/*, lint/style/*, lint/complexity/*, lint/security/*, lint/nursery/*, lint/a11y/*)
+**When to use**: Linting errors with Oxlint rule codes, namespaced `plugin(rule-name)` (e.g. `typescript(await-thenable)`, `eslint(no-unused-vars)`, `unicorn(...)`), grouped into seven categories: correctness, suspicious, pedantic, perf, style, restriction, nursery.
 
 **Resolution Process**:
 
 1. **Research the Rule**
 
-   Look up the rule at Biome's documentation:
+   Look up the rule at Oxlint's rule reference:
 
    ```text
-   https://biomejs.dev/linter/rules/{rule-name}
+   https://oxc.rs/docs/guide/usage/linter/rules.html
    ```
 
-   Examples:
+   This project uses Oxlint's own default/recommended rule set as-is — there is no repo-specific rule config to point to, and deliberately no 1:1 mapping from the old Biome rule names (per the TS7/Vite+ migration plan, `docs/typescript-7-vite-plus-conversion-plan.md` §8.3). Rules confirmed to actually fire against this codebase (via a real `vp lint --format github --type-aware --type-check src` run, see that plan's §9 Phase 2):
 
    ```text
-   https://biomejs.dev/linter/rules/no-explicit-any     # noExplicitAny
-   https://biomejs.dev/linter/rules/use-await           # useAwait
-   https://biomejs.dev/linter/rules/no-for-each         # noForEach
-   https://biomejs.dev/linter/rules/use-explicit-type   # useExplicitType
+   typescript(await-thenable)
+   typescript(no-base-to-string)
+   typescript(restrict-template-expressions)
    ```
 
    This documentation provides:
@@ -394,7 +393,7 @@ This section provides systematic resolution procedures for each major TypeScript
 
 2. **Read Rule Documentation Output**
 
-   The Biome rule documentation contains critical information:
+   The Oxlint rule documentation contains critical information:
 
    - **Principle**: Why this pattern is problematic
    - **Bad Pattern**: What code triggers the rule
@@ -442,165 +441,73 @@ This section provides systematic resolution procedures for each major TypeScript
 
 6. **Verify Resolution**
 
-   Rerun Biome to confirm the fix:
+   Rerun Oxlint to confirm the fix:
 
    ```bash
-   npx biome check /path/to/file.ts
+   vp check /path/to/file.ts
    ```
 
-**Common Biome Fixes by Rule**:
+**Common Oxlint Fixes (verified findings from this repo)**: Oxlint's rule set differs from Biome's and this project doesn't hand-map one to the other (§8.3 of the migration plan) — the three below are rules actually confirmed to fire against this codebase, not a full or authoritative list.
 
-#### noExplicitAny (lint/suspicious/noExplicitAny)
+#### typescript(await-thenable)
 
 ```typescript
-// ❌ Before: Using any defeats TypeScript's type safety
-function validate(obj: any): obj is ActionType {
-  return 'name' in obj;
+// ❌ Before: awaiting a value that isn't a Promise
+async function getValue(): Promise<string> {
+  return await plainString; // plainString is already a string, not a Promise
 }
 
-// ✅ After: Use unknown and add proper type guards
-function validate(obj: unknown): obj is ActionType {
-  if (typeof obj !== 'object' || obj === null) {
-    return false;
-  }
-  const record = obj as Record<string, unknown>;
-  return 'name' in record && typeof record.name === 'string';
+// ✅ After: only await actual Promises
+async function getValue(): Promise<string> {
+  return plainString;
 }
 ```
 
-#### useExplicitType (lint/nursery/useExplicitType)
-
-**This project enforces useExplicitType at error level.** All exported functions and variables must have explicit type annotations.
+#### typescript(no-base-to-string)
 
 ```typescript
-// ❌ Before: Exported values without explicit types
-export const config = new Configuration();
-export function getData() {
-  return fetch('/api/data');
+// ❌ Before: relying on the default Object.prototype.toString()
+function describe(value: SomeClass): string {
+  return `Value: ${value}`; // implicit toString() may not be meaningful
 }
 
-// ✅ After: Add explicit type annotations to exports
-export const config: Configuration = new Configuration();
-export function getData(): Promise<Response> {
-  return fetch('/api/data');
+// ✅ After: convert explicitly
+function describe(value: SomeClass): string {
+  return `Value: ${value.toDisplayString()}`;
 }
 ```
 
-#### useAwait (lint/suspicious/useAwait)
-
-**This project enforces useAwait at error level.** Async functions must contain await expressions.
+#### typescript(restrict-template-expressions)
 
 ```typescript
-// ❌ Before: Async function without await
-async function fetchData(): Promise<Response> {
-  return fetch('/api/data');  // No await, why is this async?
-}
+// ❌ Before: interpolating a non-primitive in a template literal
+const message = `Result: ${someObject}`;
 
-// ✅ After Option 1: Add await if async behavior needed
-async function fetchData(): Promise<Response> {
-  return await fetch('/api/data');
-}
-
-// ✅ After Option 2: Remove async if not needed
-function fetchData(): Promise<Response> {
-  return fetch('/api/data');
-}
+// ✅ After: convert explicitly first
+const message = `Result: ${JSON.stringify(someObject)}`;
 ```
 
-#### noParameterAssign (lint/style/noParameterAssign)
-
-**This project enforces noParameterAssign at warn level.** Do not reassign function parameters.
-
-```typescript
-// ❌ Before: Reassigning parameter obscures original value
-function process(value: string): string {
-  value = value.trim();
-  value = value.toLowerCase();
-  return value;
-}
-
-// ✅ After: Use local variable for transformations
-function process(value: string): string {
-  const trimmed = value.trim();
-  const normalized = trimmed.toLowerCase();
-  return normalized;
-}
-```
-
-#### noForEach (lint/complexity/noForEach)
-
-```typescript
-// ❌ Before: forEach is harder to break/return from
-items.forEach((item) => {
-  processItem(item);
-});
-
-// ✅ After: for...of is more flexible and readable
-for (const item of items) {
-  processItem(item);
-}
-
-// ❌ Before: forEach with index parameter
-items.forEach((item, index) => {
-  console.log(`Item ${index}: ${item}`);
-});
-
-// ✅ After: for...of with entries() for index access
-for (const [index, item] of items.entries()) {
-  console.log(`Item ${index}: ${item}`);
-}
-```
-
-#### noEvolvingTypes (lint/suspicious/noEvolvingTypes)
-
-**This project enforces noEvolvingTypes at error level.** Variables must have explicit types from declaration.
-
-```typescript
-// ❌ Before: Type evolves based on assignments
-let value = null;
-if (condition) {
-  value = 'string';
-}
-// value has type string | null but started as null
-
-// ✅ After: Declare type explicitly from the start
-let value: string | null = null;
-if (condition) {
-  value = 'string';
-}
-```
+For any other Oxlint finding, look it up individually at the rules reference above rather than assuming a Biome-era rule name maps onto it — no such mapping exists by design.
 
 **Example Workflow Execution**:
 
 ```text
-Issue: Biome reports "lint/suspicious/noExplicitAny: Unexpected any. Specify a different type." in Action.ts:42
+Issue: Oxlint reports "typescript(await-thenable): Unexpected `await` of a non-Promise value" in src/example.ts:42
 
-1. Research: https://biomejs.dev/linter/rules/no-explicit-any
-   → Output: Using any defeats TypeScript's type safety purpose
-   → Fix: Use unknown and add type guards for runtime validation
+1. Research: https://oxc.rs/docs/guide/usage/linter/rules.html (typescript(await-thenable))
+   → Output: Awaiting a non-Promise value is a no-op that misleads readers about async behavior
 
-2. Read code: Read("src/Action.ts")
-   → Line 42: static validate(obj: any): obj is ActionType
-   → Function performs runtime type checking on parsed YAML
+2. Read code: Read("src/example.ts")
+   → Line 42: return await getCachedValue();
+   → getCachedValue() returns a plain string, not a Promise
 
-3. Check context: Grep "validate" in project
-   → Called from inputs.ts with parsed action.yml content
-   → Needs to validate arbitrary input from external file
+3. Check context: Grep "getCachedValue" in project
+   → Always returns synchronously; no async work happens inside it
 
-4. Implement: Change parameter type to unknown, add type guards
-   static validate(obj: unknown): obj is ActionType {
-     if (typeof obj !== 'object' || obj === null) {
-       return false;
-     }
-     const record = obj as Record<string, unknown>;
-     return (
-       'name' in record &&
-       'runs' in record &&
-       typeof record.name === 'string'
-     );
-   }
+4. Implement: Remove the unnecessary `await`
+   return getCachedValue();
 
-5. Verify: npx biome check src/Action.ts → Clean
+5. Verify: vp lint --type-aware --type-check src/example.ts → Clean
 ```
 
 ### TypeScript Compiler Resolution Workflow
@@ -873,30 +780,25 @@ This agent verifies linting resolution quality and identifies systemic improveme
 
 Location: [`PROJECT-CONFIG.md`](PROJECT-CONFIG.md)
 
-Project-specific Biome configuration, rule overrides, and resolution patterns.
+Project-specific Oxlint/Vite+ notes, linter detection override, and resolution patterns.
 
 ### Rules Knowledge Base
 
-#### Biome Rules
+#### Oxlint Rules
 
-Location: https://biomejs.dev/linter/rules/
+Location: https://oxc.rs/docs/guide/usage/linter/rules.html
 
-Comprehensive linting rules organized by category:
+~847 rules (114 enabled by default), namespaced `plugin(rule-name)` (`typescript(...)`, `eslint(...)`, `unicorn(...)`, `import(...)`, `jsx-a11y(...)`, `promise(...)`, etc.) and grouped into seven categories:
 
-- **lint/suspicious/** - Detect likely bugs and suspicious patterns
-  - noExplicitAny (warn), noEvolvingTypes (error), useAwait (error), noConsole (warn)
-- **lint/correctness/** - Detect incorrect or useless code
-  - noUnusedVariables, noUnusedImports, useExhaustiveDependencies, etc.
-- **lint/style/** - Enforce consistent code style
-  - useNodejsImportProtocol, noParameterAssign, useBlockStatements, etc.
-- **lint/complexity/** - Detect overly complex code
-  - noForEach, useLiteralKeys, noExcessiveCognitiveComplexity, etc.
-- **lint/security/** - Detect security vulnerabilities
-  - noDangerouslySetInnerHtml, noGlobalEval, etc.
-- **lint/nursery/** - New rules being tested
-  - useExplicitType (error in this project)
-- **lint/a11y/** - Accessibility rules
-  - useAltText, useValidAriaValues, etc.
+- **correctness** - rules preventing actual bugs (most enabled by default)
+- **suspicious** - rules flagging questionable patterns
+- **pedantic** - rules enforcing stricter standards
+- **perf** - rules optimizing code efficiency
+- **style** - rules enforcing code style consistency
+- **restriction** - rules limiting certain patterns
+- **nursery** - experimental/newer rules
+
+This project uses Oxlint's default/recommended set as-is via `vite.config.ts`'s `lint` block (`options: { typeAware: true, typeCheck: true }`) — there's no hand-maintained repo-specific rule list to keep in sync, unlike the old `biome.json`.
 
 Each rule documents:
 
@@ -947,24 +849,15 @@ See [`.claude/commands/lint.md`](.claude/commands/lint.md) for the full command 
 
 This project uses Husky for git hooks. The pre-commit hook runs:
 
-1. `lint-staged` - Formats and checks staged files
+1. `vp staged` - Formats and checks staged files, per `vite.config.ts`'s `staged` block
 2. `npm run build` - Ensures build succeeds
 3. `npm run generate-docs` - Updates README from action.yml
 
-lint-staged configuration (from package.json):
-
-```json
-{
-  "*.{md,yaml,yml,sh}": "prettier --write",
-  "{src,__tests__}/**/*.ts": "biome check --write",
-  "*.json": "biome format --write"
-}
-```
+`vite.config.ts`'s `staged` block is the single, authoritative config for pre-commit file processing — read it directly for the exact per-glob commands rather than trusting a copy here; there's no separate `.lintstagedrc` or `package.json` `lint-staged` block to reconcile against it.
 
 This ensures:
 - TypeScript files are formatted and linted before commit
-- Markdown files are formatted with Prettier
-- JSON files are formatted with Biome
+- Other staged file types are handled per whatever `vite.config.ts`'s `staged` block configures for them
 
 **holistic-linting skill** (Workflow guidance):
 
@@ -991,10 +884,10 @@ Orchestrator:
 2. [Implementation complete, now applying holistic-linting skill]
 3. [Delegates to linting agent WITHOUT running linters]
 4. Task(agent="linting-root-cause-resolver", prompt="Format, lint, and resolve any issues in auth.ts")
-5. [Agent formats with biome format, runs biome check + tsc]
-6. [Agent finds 2 Biome errors (noExplicitAny, useAwait), 1 TypeScript type issue]
+5. [Agent formats with vp fmt, runs vp check (format + lint + type-check)]
+6. [Agent finds 2 Oxlint errors (typescript(await-thenable), typescript(no-base-to-string)), 1 TypeScript type issue]
 7. [Agent resolves all 3 issues at root cause]
-8. [Agent verifies: biome check + tsc - clean]
+8. [Agent verifies: vp check - clean]
 9. [Agent produces resolution report in .claude/reports/]
 10. [Orchestrator reads report confirming clean resolution]
 11. Task complete ✓
@@ -1008,38 +901,34 @@ Orchestrator delegates: "Create database connection pool module"
 Sub-agent:
 1. [Writes db_pool.ts with connection logic]
 2. [Before completing, applies holistic-linting skill]
-3. Formatting: npx biome format --write db_pool.ts
-4. Linting: npx biome check db_pool.ts && npx tsc --noEmit
-5. [Finds 1 Biome error: noExplicitAny on parameter]
-6. [Investigates: parameter should be ConnectionConfig type]
-7. [Fixes: Changes `any` to `unknown`, adds type guard]
-8. [Verifies: npx biome check db_pool.ts - clean]
+3. Formatting: vp fmt --write db_pool.ts
+4. Linting: vp check db_pool.ts (bundles lint + type-check via tsgolint)
+5. [Finds 1 Oxlint error: typescript(await-thenable) on a return statement]
+6. [Investigates: the awaited call is synchronous, not a Promise]
+7. [Fixes: removes the unnecessary `await`]
+8. [Verifies: vp check db_pool.ts - clean]
 9. Returns to orchestrator with completed, lint-free module ✓
 ```
 
-### Example 3: Resolving multiple Biome violations
+### Example 3: Resolving multiple Oxlint violations
 
 ```text
-Biome reports 4 issues in validator.ts:
-- lint/suspicious/noExplicitAny at line 15
-- lint/suspicious/useAwait at line 23
-- lint/style/noParameterAssign at line 31
-- lint/nursery/useExplicitType at line 5
+Oxlint reports 3 issues in validator.ts:
+- typescript(await-thenable) at line 15
+- typescript(no-base-to-string) at line 23
+- typescript(restrict-template-expressions) at line 31
 
 Sub-agent resolution:
-1. Line 5 (useExplicitType): Add return type to exported function
-   export function validate(obj: unknown): boolean { ... }
+1. Line 15 (await-thenable): `return await getValue()` where getValue() is synchronous
+   Change to: return getValue();
 
-2. Line 15 (noExplicitAny): Change `data: any` to `data: unknown`
-   Add type guard: if (typeof data !== 'object' || data === null) return false;
+2. Line 23 (no-base-to-string): `\`Item: ${item}\`` relies on default toString()
+   Change to: `\`Item: ${item.toDisplayString()}\``
 
-3. Line 23 (useAwait): Function is async but doesn't await
-   Either add await or remove async keyword based on intent
+3. Line 31 (restrict-template-expressions): `\`Data: ${payload}\`` interpolates a non-primitive
+   Change to: `\`Data: ${JSON.stringify(payload)}\``
 
-4. Line 31 (noParameterAssign): `value = value.trim()`
-   Change to: const trimmed = value.trim(); return trimmed;
-
-5. Verify all fixes: npx biome check validator.ts → Clean
+4. Verify all fixes: vp check validator.ts → Clean
 ```
 
 ## Best Practices
@@ -1048,8 +937,8 @@ Sub-agent resolution:
 2. **Let detection find your linters** - The ConfigurationDetector scans project config files automatically. Don't assume which linters are available.
 3. **Format before linting (Sub-Agents only)** - Formatters auto-fix trivial issues (end-of-file, whitespace)
 4. **Run linters concurrently (Sub-Agents only)** - Use parallel execution for multiple files or multiple linters
-5. **Use the rules documentation** - Reference official rule documentation when investigating (biomejs.dev, typescript.tv)
-6. **Never suppress without understanding** - Don't add `// biome-ignore` or `// @ts-ignore` without root cause analysis
+5. **Use the rules documentation** - Reference official rule documentation when investigating (oxc.rs, typescript.tv)
+6. **Never suppress without understanding** - Don't add `// oxlint-disable-next-line` or `// @ts-ignore` without root cause analysis
 7. **Orchestrators delegate, sub-agents execute** - Orchestrators launch agents and read reports. Sub-agents run formatters, linters, and resolve issues.
 8. **Verify after fixes (Sub-Agents only)** - Always re-run linters to confirm issues are resolved
 9. **Trust agent verification (Orchestrators)** - Read resolution reports instead of re-running linters to verify
@@ -1057,19 +946,19 @@ Sub-agent resolution:
 ## Troubleshooting
 
 **Problem**: "I don't know which linters this project uses"
-**Solution**: Linters are detected automatically by scanning config files (biome.json, tsconfig.json, package.json, etc.). Check the Linter Detection section for supported tools. This project uses Biome for TypeScript and markdownlint for markdown.
+**Solution**: Linters are detected automatically by scanning config files (vite.config.ts, tsconfig.json, package.json, etc.). Check the Linter Detection section for supported tools. This project uses Oxlint (via Vite+'s `vp` CLI) for TypeScript and markdownlint for markdown.
 
 **Problem**: "Linting errors but I don't understand the rule"
-**Solution**: Look up the rule at https://biomejs.dev/linter/rules/{rule-name} for Biome rules, or https://typescript.tv/errors/ for TypeScript errors.
+**Solution**: Look up the rule at https://oxc.rs/docs/guide/usage/linter/rules.html for Oxlint rules, or https://typescript.tv/errors/ for TypeScript errors.
 
 **Problem**: "Multiple files with linting errors"
 **Solution**: If orchestrator, launch concurrent linting-root-cause-resolver agents (one per file). If sub-agent, resolve each file sequentially.
 
 **Problem**: "Linter not found (command not available)"
-**Solution**: Check that linters are installed. Use `npx biome` to run Biome from node_modules.
+**Solution**: `vp` is a separate global CLI, not something `npx` resolves from `node_modules` — the `prepare` npm script installs it automatically on `npm install` if missing. If it's still missing, run Vite+'s install script directly (`https://viteplus.dev/install.sh`).
 
 **Problem**: "False positive linting error"
-**Solution**: Investigate using the rule's documentation. If truly a false positive, configure the rule in biome.json rather than using ignore comments. Only use `// biome-ignore` with explicit justification.
+**Solution**: Investigate using the rule's documentation. If truly a false positive, silence just that line with `// oxlint-disable-next-line <rule-name>` (see https://oxc.rs/docs/guide/usage/linter/ignore-comments.html) and an explanatory comment — don't disable broadly, and don't reach for a repo-wide config override since none exists here by design.
 
 **Problem**: "Type error I don't understand"
 **Solution**: Research the TS error code, trace the type flow from variable declaration through usage, understand what types are expected vs actual.

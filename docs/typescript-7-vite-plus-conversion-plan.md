@@ -1005,6 +1005,33 @@ Explicitly out of scope for Phase 2, staying untouched until Phase 3:
 itself is consolidated — doing it piecemeal here adds churn without
 benefit), and the entire build/bundle pipeline.
 
+**Done — pending PR merge.** `vite.config.ts` authored with `fmt`/`lint`/
+`staged` blocks only (`lint.options: { typeAware: true, typeCheck: true }`);
+`fmt` also pins `singleQuote`/`semi`/`printWidth: 100`/`trailingComma: "all"`
+to match this repo's pre-existing Biome-era style — omitting this caused
+`vp fmt --write` to reformat already-conforming files wholesale (single→
+double quotes) on first run, caught and fixed before landing, not left as a
+follow-up. All 54 real Oxlint findings against `src/`+`__tests__/` were
+triaged individually, not pre-filtered to match Biome's old allowances:
+28 in `src/` got root-cause fixes (explicit stringification instead of
+raw template-literal interpolation of `unknown`/objects, removed
+type-incorrect `await`s, a real floating-promise fix in `save.ts`, and a
+genuine `Partial<T>`-on-a-string-union type bug in `constants.ts` that
+`tsgolint` catches and plain `tsc` doesn't); 26 in `__tests__/**` — all one
+vitest mock-reference idiom, confirmed site-by-site, zero exceptions — are
+suppressed via a single scoped `lint.overrides` entry with the full
+per-pattern justification inline, not a rule-name guess. `package.json`
+scripts rewritten to `vp fmt`/`vp lint`/`vp check`/`vp staged`;
+`.lintstagedrc`, `biome.json`, `.prettierrc.cjs`, `.babelrc.cjs` deleted;
+`@biomejs/biome`/`lint-staged` removed from `devDependencies`; `prepare`
+bootstraps `vp` locally if missing. `test.yml` and `push_code_linting.yml`
+both bootstrap `voidzero-dev/setup-vp@v1.17.0` (confirmed current tag via
+`git ls-remote`, not trusted from this doc's earlier example) with
+`node-manager: false` since both jobs already manage Node via
+`./.github/actions/setup-node`. All five `.claude/` Biome-instruction files
+rewritten to Oxlint/Vite+ equivalents in this same phase, per below.
+`prettier`/`src/prettier.ts` untouched, per §8.0.
+
 **Phase 3 — Vite+ build (the big one)**
 Add the `pack` block (tsdown, per §7) and `test` block (Vitest) to the
 already-present `vite.config.ts`, consolidate `vitest.config.ts` into it,

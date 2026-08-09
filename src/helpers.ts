@@ -368,17 +368,56 @@ export function rowHeader(value: string): string {
 }
 
 /**
+ * Picks the most specific tag out of several tags pointing at the same commit.
+ *
+ * A release typically carries both an exact tag (`v1.11.0`) and a floating
+ * major tag (`v1`) on the same commit, and `git describe --tags --abbrev=0`'s
+ * tie-break between tags at zero distance isn't guaranteed to prefer the
+ * exact one. Sort by dot-separated segment count, then by length, so
+ * `v1.11.0` outranks `v1`.
+ */
+function mostSpecificTag(tags: string[]): string {
+  const specificity = (tag: string) => tag.replace(/^v/, '').split('.').length;
+  return [...tags].sort((a, b) => specificity(b) - specificity(a) || b.length - a.length)[0]!;
+}
+
+/**
  * Gets the version from git tags.
  */
 function getVersionFromGitTag(actionDir: string, log: LogTask): string | undefined {
   try {
-    const gitVersion = execSync(
+    // `git describe` finds the nearest tag by commit-graph distance, which
+    // `git tag --points-at` alone can't do (it only ever matches exact
+    // commits) - HEAD is usually several commits past the last release, not
+    // on the tagged commit itself.
+    const nearestTag = execSync(
       'git describe --tags --abbrev=0 2>/dev/null || git tag -l "v*" --sort=-v:refname | head -1',
       {
         cwd: actionDir,
         encoding: 'utf8',
       },
     ).trim();
+
+    let gitVersion = nearestTag;
+    if (nearestTag) {
+      // The tag `git describe` picked may not be the most specific one:
+      // a release commit typically carries both an exact tag (v1.11.0) and
+      // a floating major tag (v1) pointing at the same commit, and
+      // `git describe`'s tie-break at zero distance isn't guaranteed to
+      // prefer the exact one. Re-resolve every tag on that same commit and
+      // pick the most specific.
+      const tagsOnSameCommit = execSync(`git tag --points-at "${nearestTag}"`, {
+        cwd: actionDir,
+        encoding: 'utf8',
+      })
+        .trim()
+        .split('\n')
+        .filter(Boolean);
+      if (tagsOnSameCommit.length > 0) {
+        gitVersion = mostSpecificTag(tagsOnSameCommit);
+      }
+    }
+
     if (gitVersion) {
       // Remove 'v' prefix if present for consistency, we'll add it back with the configured prefix
       const version = gitVersion.replace(/^v/, '');

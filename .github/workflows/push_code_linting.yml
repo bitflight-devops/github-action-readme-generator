@@ -45,6 +45,12 @@ jobs:
         uses: voidzero-dev/setup-vp@v1.17.0
         with:
           node-manager: false
+          # npm install already installed deps above; vp install's default
+          # (run-install: true) writes a devEngines.packageManager pin into
+          # package.json that then breaks every later plain `npm run ...`
+          # step (e.g. `npm run lint:markdown` below) against the runner's
+          # actual npm version.
+          run-install: false
 
       - name: Run Oxlint
         run: vp lint --format github --type-aware --type-check ./src/ ./__tests__/

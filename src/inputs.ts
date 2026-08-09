@@ -9,7 +9,7 @@ import * as path from 'node:path';
 
 import * as core from '@actions/core';
 import { context as githubContext } from '@actions/github';
-import nconf from 'nconf';
+import nconf, { Provider } from 'nconf';
 import YAML from 'yaml';
 
 // Get Context type and constructor from the exported context instance
@@ -22,7 +22,6 @@ import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
 
-const { Provider }: typeof nconf = nconf;
 type IOptions = nconf.IOptions;
 
 /**

@@ -29,12 +29,11 @@
   "author": "Jamie Nelson <jamie@bitflight.io>",
   "type": "module",
   "exports": {
-    "import": "./dist/mjs/index.js",
-    "require": "./dist/cjs/index.js"
+    "types": "./dist/mjs/index.d.ts",
+    "import": "./dist/mjs/index.js"
   },
-  "main": "dist/cjs/index.js",
   "module": "dist/mjs/index.js",
-  "types": "dist/types/index.d.ts",
+  "types": "dist/mjs/index.d.ts",
   "bin": {
     "github-action-readme-generator": "dist/bin/index.js"
   },
@@ -49,11 +48,10 @@
   "scripts": {
     "all": "npm run build && npm run format && npm run lint && npm run test",
     "prebuild": "tsc --project tsconfig.json --noemit",
-    "build": "rimraf dist out;node ./scripts/esbuild.mjs && chmod +x dist/bin/index.js",
-    "postbuild": "tsc --project tsconfig.build.json --emitDeclarationOnly --declaration --outDir dist/types && tsc -p tsconfig-mjs.json && ./scripts/set_package_type.sh",
+    "build": "rimraf dist out && vp pack && chmod +x dist/bin/index.js",
     "build:docker": "run-script-os",
-    "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:24-alpine sh -c 'npm run build'",
-    "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:24-alpine sh -c \"npm run build\"",
+    "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:24-alpine sh -c 'apk add --no-cache curl && curl -fsSL https://viteplus.dev/install.sh | VP_NODE_MANAGER=no bash && export PATH=\"$HOME/.vite-plus/bin:$PATH\" && npm run build'",
+    "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:24-alpine sh -c \"apk add --no-cache curl && curl -fsSL https://viteplus.dev/install.sh | VP_NODE_MANAGER=no bash && export PATH=\\\"$HOME/.vite-plus/bin:$PATH\\\" && npm run build\"",
     "clean": "rimraf dist",
     "commit": "git-cz",
     "corepack": "corepack enable",
@@ -70,10 +68,10 @@
     "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
     "lint:markdown:fix": "npm run lint:markdown -- --fix",
     "pre-commit": "vp staged && npm run build && npm run generate-docs && npm run lint:markdown",
-    "prepare": "[ -n ${GITHUB_ACTIONS:-} ] || { husky install; command -v vp >/dev/null 2>&1 || curl -fsSL https://viteplus.dev/install.sh | VP_NODE_MANAGER=no bash; }",
+    "prepare": "[ -n \"${GITHUB_ACTIONS:-}\" ] || { husky install; command -v vp >/dev/null 2>&1 || curl -fsSL https://viteplus.dev/install.sh | VP_NODE_MANAGER=no bash; }",
     "semantic-release": "semantic-release",
-    "test": "vitest",
-    "coverage": "vitest run --coverage",
+    "test": "vp test",
+    "coverage": "vp test --coverage",
     "version:manual": "echo 'Run versioning commands';echo \"::set-output name=tag::v${npm_package_version}\"",
     "postversion:manual": "git push --tags origin && git push origin"
   },
@@ -158,14 +156,12 @@
     "@tsconfig/node20": "^20.1.2",
     "@types/nconf": "^0.10.5",
     "@types/node": "^26.1.1",
-    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/coverage-v8": "4.1.10",
     "@voidzero-dev/vite-plus-core": "0.2.8",
     "commitizen": "^4.3.1",
     "conventional-commits": "^1.6.0",
     "cz-conventional-changelog": "^3.3.0",
     "dotenv": "^17.2.4",
-    "esbuild": "^0.28.0",
-    "esbuild-node-externals": "^1.22.0",
     "husky": "^9.1.7",
     "is-ci": "^4.1.0",
     "markdownlint-cli": "^0.49.0",
@@ -175,12 +171,18 @@
     "semantic-release": "^25.0.2",
     "types-package-json": "^2.0.39",
     "typescript": "7.0.2",
-    "vite-plus": "0.2.8",
-    "vitest": "^4.1.2"
+    "vite-plus": "0.2.8"
   },
   "engines": {
     "node": ">=24.19.0 <30.0.0",
     "npm": ">=10.0.0"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "version": ">=10.0.0",
+      "onFail": "download"
+    }
   },
   "os": [
     "!win32"

@@ -1,8 +1,9 @@
+import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { context as githubContext } from '@actions/github';
-import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vite-plus/test';
 
 import {
   basename,
@@ -440,6 +441,74 @@ describe('helpers', () => {
 
         const result = getCurrentVersionString(inputs);
         expect(result).toBe('v2.0.0');
+      });
+
+      it('should prefer the more specific tag when multiple tags point at the same commit', () => {
+        // Regression test: `git describe --tags --abbrev=0`'s tie-break
+        // between tags at zero distance from HEAD isn't guaranteed to
+        // prefer the exact release tag (v1.11.0) over a floating major tag
+        // (v1) also pointing at that commit - a real, reproducible layout
+        // for any repo tagging releases the way this one does.
+        const tempDir = execSync('mktemp -d', { encoding: 'utf8' }).trim();
+        try {
+          execSync('git init -q', { cwd: tempDir });
+          execSync('git config user.email test@example.com', { cwd: tempDir });
+          execSync('git config user.name test', { cwd: tempDir });
+          execSync('git commit -q -m init --allow-empty', { cwd: tempDir });
+          execSync('git tag v1.11.0', { cwd: tempDir });
+          execSync('git tag v1', { cwd: tempDir });
+
+          const inputs = {
+            config: {
+              get: (key: string) =>
+                ({
+                  'versioning:enabled': true,
+                  'versioning:source': 'git-tag',
+                  'versioning:prefix': 'v',
+                })[key],
+            },
+            action: { path: path.join(tempDir, 'action.yml') },
+          } as unknown as Inputs;
+
+          const result = getCurrentVersionString(inputs);
+          expect(result).toBe('v1.11.0');
+        } finally {
+          execSync(`rm -rf ${tempDir}`);
+        }
+      });
+
+      it('should not let an unrelated co-located tag with more dots outrank a real version tag', () => {
+        // Regression test: the most-specific-tag heuristic above counts
+        // dot-separated segments, so an unrelated tag with more dots than
+        // any real version tag (e.g. a release-notes marker) must not win
+        // just because it has more segments.
+        const tempDir = execSync('mktemp -d', { encoding: 'utf8' }).trim();
+        try {
+          execSync('git init -q', { cwd: tempDir });
+          execSync('git config user.email test@example.com', { cwd: tempDir });
+          execSync('git config user.name test', { cwd: tempDir });
+          execSync('git commit -q -m init --allow-empty', { cwd: tempDir });
+          execSync('git tag v1.11.0', { cwd: tempDir });
+          execSync('git tag v1', { cwd: tempDir });
+          execSync('git tag z.release.2026.08', { cwd: tempDir });
+
+          const inputs = {
+            config: {
+              get: (key: string) =>
+                ({
+                  'versioning:enabled': true,
+                  'versioning:source': 'git-tag',
+                  'versioning:prefix': 'v',
+                })[key],
+            },
+            action: { path: path.join(tempDir, 'action.yml') },
+          } as unknown as Inputs;
+
+          const result = getCurrentVersionString(inputs);
+          expect(result).toBe('v1.11.0');
+        } finally {
+          execSync(`rm -rf ${tempDir}`);
+        }
       });
     });
   });

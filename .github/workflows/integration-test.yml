@@ -52,11 +52,24 @@ jobs:
           cache: "npm"
           cache-dependency-path: action-under-test/package-lock.json
 
-      - name: Install dependencies and build action
+      - name: Install dependencies
         working-directory: action-under-test
-        run: |
-          npm ci
-          npm run build
+        run: npm ci
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1.17.0
+        with:
+          node-manager: false
+          working-directory: action-under-test
+          # npm ci already installed deps above; vp install's default
+          # (run-install: true) writes a devEngines.packageManager pin into
+          # package.json that then breaks every later plain `npm run ...`
+          # step against the runner's actual npm version.
+          run-install: false
+
+      - name: Build action
+        working-directory: action-under-test
+        run: npm run build
 
       - name: Checkout target repository (${{ matrix.repo }})
         uses: actions/checkout@v7.0.1

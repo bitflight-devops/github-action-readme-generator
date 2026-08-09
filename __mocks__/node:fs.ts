@@ -1,6 +1,6 @@
 import type { BigIntStats, PathLike, PathOrFileDescriptor, Stats, StatSyncOptions } from 'node:fs';
 
-import { vi } from 'vitest';
+import { type Mock, vi } from 'vite-plus/test';
 
 import {
   actionTestString,
@@ -11,7 +11,9 @@ import {
 
 export type { BigIntStats, PathLike, PathOrFileDescriptor, Stats, StatSyncOptions } from 'node:fs';
 
-export const statSync = vi.fn(
+export const statSync: Mock<
+  (path: PathLike, options?: StatSyncOptions | undefined) => Stats | BigIntStats | undefined
+> = vi.fn(
   (path: PathLike, options?: StatSyncOptions | undefined): Stats | BigIntStats | undefined => {
     if (typeof path === 'string' && options === undefined) {
       return {
@@ -24,19 +26,23 @@ export const statSync = vi.fn(
   },
 );
 
-export const existsSync = vi.fn((filename: PathLike): boolean => typeof filename === 'string');
-export const readFileSync = vi.fn((filename: PathOrFileDescriptor): string | Buffer => {
-  if (typeof filename === 'string' && filename.endsWith('payload.json')) {
-    return payloadTestString;
-  }
-  if (typeof filename === 'string' && filename.endsWith('.ghadocs.json')) {
-    return ghadocsTestString;
-  }
-  if (typeof filename === 'string' && filename.endsWith('config')) {
-    return gitConfigTestString;
-  }
-  if (typeof filename === 'string' && filename.endsWith('yml')) {
-    return actionTestString;
-  }
-  return '';
-});
+export const existsSync: Mock<(filename: PathLike) => boolean> = vi.fn(
+  (filename: PathLike): boolean => typeof filename === 'string',
+);
+export const readFileSync: Mock<(filename: PathOrFileDescriptor) => string | Buffer> = vi.fn(
+  (filename: PathOrFileDescriptor): string | Buffer => {
+    if (typeof filename === 'string' && filename.endsWith('payload.json')) {
+      return payloadTestString;
+    }
+    if (typeof filename === 'string' && filename.endsWith('.ghadocs.json')) {
+      return ghadocsTestString;
+    }
+    if (typeof filename === 'string' && filename.endsWith('config')) {
+      return gitConfigTestString;
+    }
+    if (typeof filename === 'string' && filename.endsWith('yml')) {
+      return actionTestString;
+    }
+    return '';
+  },
+);

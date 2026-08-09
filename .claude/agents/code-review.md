@@ -16,7 +16,7 @@ Stack, dependencies, and lint rules drift — don't rely on a hardcoded snapshot
 - `action.yml` / `.ghadocs.json` — config cascade defaults
 
 **Known non-obvious facts** (things you wouldn't get from reading the code alone):
-- `package.json` advertises a `require`/`main` CJS export, but no current build step produces `dist/cjs/` — the build only emits `dist/bin/` (bundled CLI) and `dist/mjs/`. Don't flag "breaks the CJS build" as a real risk; there isn't one to break.
+- ESM-only, deliberately: `package.json` has no `require`/`main` export, only `import`/`types` — the build emits `dist/bin/` (bundled CLI) and `dist/mjs/` (library), no `dist/cjs/`. Don't flag a missing CJS entry point as a bug; it was removed on purpose.
 - YAML parsing (`Action.ts`, `inputs.ts`) uses the `yaml` package's `YAML.parse()`, not `js-yaml`. It doesn't have `js-yaml`'s `load()`/`safeLoad()` split — don't ask for a safe-schema equivalent that doesn't exist in this API.
 - `prettier` is a **runtime** dependency (`src/prettier.ts` formats the README/YAML the tool generates for end users), unrelated to how this repo's own source is formatted.
 - This is a single-shot CLI/Action process, not a long-running server. `helpers.ts`, `readme-editor.ts`, `Action.ts`, `inputs.ts`, and `svg-editor.mts` all use synchronous fs/exec calls (`existsSync`, `readFileSync`, `mkdirSync`, `statSync`, `execSync`) throughout — that's the correct pattern for a tool that runs once and exits, not a blocking-I/O defect to flag. A generic Node "no sync I/O" rule (e.g. oxlint's/`eslint-plugin-n`'s `no-sync`) would false-positive on all of it; don't apply that standard here.

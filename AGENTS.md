@@ -6,8 +6,7 @@ Instructions for AI agents working in this repository.
 
 - CLI + GitHub Action. Syncs README.md from action.yml (title, description, inputs, outputs, usage, badges).
 - TypeScript, Node `>=24.19.0 <30.0.0` (`package.json` `engines`).
-- Build: esbuild. Test: vitest. Lint/format: Oxlint + Oxfmt via Vite+'s `vp` CLI, plus markdownlint.
-- Not ESLint or Biome (both migrated off); ignore stale "ESLint"/"Biome" mentions elsewhere.
+- Build: `vp pack` (tsdown, via Vite+). Test: `vp test` (Vitest, via Vite+). Lint/format: Oxlint + Oxfmt via Vite+'s `vp` CLI, plus markdownlint.
 - Volta pins the dev version — check `.node-version`.
 
 ## Commit format
@@ -18,9 +17,9 @@ Conventional Commits — the `commit-msg` hook runs commitlint (see Pre-commit h
 
 ```bash
 npm install              # first step after any checkout/pull
-npm run build             # prebuild (tsc check) -> esbuild -> postbuild (declarations + MJS)
-npm run test               # vitest, __tests__/**/*.test.ts
-npm run coverage         # vitest --coverage -> ./out/
+npm run build             # prebuild (tsc check) -> vp pack (tsdown: dist/bin + dist/mjs)
+npm run test               # vp test (Vitest), __tests__/**/*.test.ts
+npm run coverage         # vp test --coverage -> ./out/
 npm run format            # vp fmt --write ./src ./__tests__
 npm run check              # vp check ./src/ ./__tests__/ - CI's actual gate, no side effects
 npm run lint:markdown  # markdownlint
@@ -36,7 +35,7 @@ behind `npm run lint`.
 
 ## Pre-commit hooks (husky)
 
-- **pre-commit**: `lint-staged && npm run build && npm run generate-docs`.
+- **pre-commit**: `vp staged && npm run build && npm run generate-docs && npm run lint:markdown`.
   - Gotcha: has silently dropped staged files despite exit 0.
   - Verify with `git show --stat HEAD` after committing.
 - **commit-msg**: runs commitlint.
@@ -46,7 +45,7 @@ behind `npm run lint`.
 
 - Gitignored, but a past release's snapshot may still be **tracked**.
 - Check with `git ls-files dist/`.
-- If tracked, a local rebuild shows as a *modification*, not an untracked file.
+- If tracked, a local rebuild shows as a _modification_, not an untracked file.
 - If dist/ shows modified, `git restore dist/` — don't hand-commit it.
 - Never `git add -f dist/` yourself — `deploy.yml` does that, releases only.
 
@@ -74,7 +73,7 @@ src/
   errors/                     custom error types
 __tests__/          vitest specs - loose match to src/, not 1:1 (see below)
 __mocks__/          node:fs.ts - the only mock
-scripts/               esbuild.mjs, release.sh, set_package_type.sh, latest_valid_node_version.sh
+scripts/               release.sh, latest_valid_node_version.sh
 .github/workflows/  CI - file names differ from GitHub-displayed name: (see below)
 docs/                    the TS7/Vite+ migration plan + its phase-0 findings
 ```
@@ -93,7 +92,7 @@ current step list.
 - **`test.yml`** ("Tag and Release Updated NPM Package")
   - Triggers: `pull_request_target` + `push` (main/next/beta/\*.x) + `repository_dispatch`.
   - No plain `pull_request` trigger.
-  - `pull_request_target` evaluates the workflow *definition* from the base branch, not the PR head —
+  - `pull_request_target` evaluates the workflow _definition_ from the base branch, not the PR head —
     a PR changing `test.yml` itself (or removing a tool it still requires) can't show green pre-merge.
   - Bootstraps `vp` via `voidzero-dev/setup-vp` (pinned tag), then runs `vp check` before tests.
     Node versions tested: a dynamic matrix resolved from `.node-version` (see `node-version-matrix` job).
@@ -104,20 +103,16 @@ current step list.
     annotations natively — no reviewdog involved.
 - **`deploy.yml`** ("NPM Release Workflow")
   - Not push-triggered directly: `workflow_call` (from `test.yml`) + `repository_dispatch`.
-  - Runs `npm ci` → engine/signature checks → build → commit dist/ → `semantic-release`.
+  - Runs `npm ci` → engine/signature checks → bootstraps `vp` → build → commit dist/ → `semantic-release`.
 
 ## Config files
 
-| File | Purpose |
-| --- | --- |
-| `action.yml` | Action metadata — all inputs/outputs |
-| `.ghadocs.json` | generate-docs config |
-| `tsconfig.json` | TS compiler settings |
-| `tsconfig.build.json` | `src/`-scoped declaration build, feeds `postbuild` |
-| `tsconfig-mjs.json` | ESM build config |
-| `vite.config.ts` | Oxlint/Oxfmt rules + pre-commit staged-file config, via Vite+'s `vp` CLI |
-| `vitest.config.ts` | Test runner config |
-| `package.json` | Deps, scripts, engines, volta |
+| File             | Purpose                                                                                                          |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `action.yml`     | Action metadata — all inputs/outputs                                                                             |
+| `.ghadocs.json`  | generate-docs config                                                                                             |
+| `vite.config.ts` | Oxlint/Oxfmt rules, pre-commit staged-file config, `pack` (tsdown build), `test` (Vitest) — via Vite+'s `vp` CLI |
+| `package.json`   | Deps, scripts, engines, volta                                                                                    |
 
 ## Pitfalls
 
@@ -137,9 +132,10 @@ current step list.
 
 ## Tooling migration in progress
 
-- Standing goal: Vite+ eventually drives format/lint/build/test/package/release.
 - Plan: `docs/typescript-7-vite-plus-conversion-plan.md` (live, multi-phase).
-- Done: TS7, Oxlint/Oxfmt (Biome retired). Not done: Vite+-driven build/test/package/release.
+- Done: TS7, and format/lint/staged/build/test all run through Vite+'s `vp` CLI.
+- Remaining: a Phase 4 cleanup pass (see the plan doc). `semantic-release`/publishing
+  intentionally stay outside Vite+ — a scoped decision, not a gap.
 - A task needing a piece of that system is a signal to advance the plan, not work around the gap.
 
 ## Working discipline

@@ -1,5 +1,5 @@
 import { format } from 'prettier';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test';
 
 import { formatMarkdown, formatYaml, wrapDescription } from '../src/prettier.js';
 

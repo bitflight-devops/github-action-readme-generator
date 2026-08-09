@@ -99,8 +99,9 @@ current step list.
     Node versions tested: a dynamic matrix resolved from `.node-version` (see `node-version-matrix` job).
   - On `push` only, also invokes `deploy.yml`.
 - **`push_code_linting.yml`** ("Code Linting Annotation")
-  - Bootstraps `vp` via `voidzero-dev/setup-vp` *before* `npm install` here — opposite of `test.yml`.
-  - Reviewdog posts inline PR annotations from it.
+  - Same bootstrap order as `test.yml`: `npm install` then `voidzero-dev/setup-vp`.
+  - `vp lint --format github` and a markdownlint problem-matcher post inline PR
+    annotations natively — no reviewdog involved.
 - **`deploy.yml`** ("NPM Release Workflow")
   - Not push-triggered directly: `workflow_call` (from `test.yml`) + `repository_dispatch`.
   - Runs `npm ci` → engine/signature checks → build → commit dist/ → `semantic-release`.

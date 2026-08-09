@@ -1,6 +1,9 @@
 # Conversion Plan: TypeScript 7 + Vite+ + Oxlint + Oxfmt
 
-Status: **Proposed — clean cut-over, not an incremental migration.**
+Status: **In progress — clean cut-over, not an incremental migration.**
+Phase 0 (validation spike) and Phase 1 (TypeScript 7 alone) are merged
+(#622, #625). **Next up: Phase 2 (Oxlint + Oxfmt + Vite+ for
+lint/format/staged) — start at §9's "Phase 2" heading.**
 Scope: build, type-check, lint, format, test, and CI/CD toolchain. One
 exception to "no runtime behavior changes," and it's a non-change: §8.0
 evaluated replacing the `prettier` runtime dependency (which formats the
@@ -259,6 +262,21 @@ review caught after #614 merged (Docker build images still on
 `node:20-alpine`, lockfile `engines` unsynced). The rest of this section
 is kept as-is for the record of what was checked and why, not as an
 open task.
+
+**2026-08-09 addendum (#627):** `engines.node`'s floor was narrowed
+further, from `>=24.0.0` to `>=24.19.0` — CI's 3-way test matrix
+(`24.0.0`/`24.19.0`/`26.x`) had no negative test proving `24.0.0`
+actually worked as a boundary, so it was dropped, and the declared
+floor was brought in line with what's actually verified: the current
+Active LTS release (confirmed via `nodejs.org/dist/index.json`; this
+also matches `.node-version`/`volta.node`). `test.yml`'s matrix now
+derives that pinned-version leg from `.node-version` at runtime
+(a `node-version-matrix` job + `fromJSON()`) instead of a separate
+hardcoded literal, so there's one source of truth for it. `26.x`
+remains a literal — which major to test beyond the pin is a policy
+choice, not something derivable from a file. Unrelated to Phase 2/3;
+noted here only so this section's `>=24.0.0` numbers below aren't
+mistaken for the current value.
 
 Originally this section just covered Vite+'s minimum (Node 20.19+/22.12+).
 That undersold the problem. Checked the actual Node.js LTS schedule as of
@@ -744,6 +762,11 @@ being deleted and replaced with `vp pack` is Phase 3's job, not Phase
 1's, and `npm run build` cannot sit broken for two phases waiting on it.
 Smallest possible PR otherwise; isolates TS7 fallout from tooling
 fallout.
+
+**Done — merged as #625.** Verified directly against the repo, not just
+the merged diff: `typescript` is pinned to `7.0.2`, `ts-node` is gone
+from `devDependencies`, `scripts/editorconfig.ts`/`scripts/formatter.ts`
+no longer exist, and `tsconfig.build.json` matches this section's spec.
 
 **Phase 2 — Oxlint + Oxfmt, with Vite+ installed for lint/format/staged
 only (build/pack/test blocks NOT touched yet)**

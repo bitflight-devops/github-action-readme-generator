@@ -178,6 +178,8 @@ Oxlint's own default/recommended rule set is used as-is — there's no repo-spec
 
 For any other Oxlint finding, verify against its own documentation at https://oxc.rs/docs/guide/usage/linter/rules.html rather than assuming a Biome-era rule name maps onto it.
 
+One repo-specific override exists in `vite.config.ts`: `typescript/unbound-method` is disabled for `__tests__/**` (investigated site-by-site, 26 sites, one vitest-mock idiom, zero exceptions). Don't flag this override itself as unjustified — the investigation is documented inline where the override lives.
+
 ### TypeScript Patterns
 
 - **Type narrowing**: Verify guards are thorough (null, undefined, type checks)

@@ -31,10 +31,10 @@ vp check --fix ./src/ ./__tests__/
 vp check ./src/ ./__tests__/
 
 # Format only
-vp fmt --write ./src/
+vp fmt --write ./src/ ./__tests__/
 
 # Lint only (type-aware)
-vp lint --type-aware --type-check ./src/
+vp lint --type-aware --type-check ./src/ ./__tests__/
 ```
 
 **Markdown Files**:
@@ -93,6 +93,11 @@ npm run lint:markdown:fix
    typescript(no-base-to-string)
    typescript(restrict-template-expressions)
    ```
+
+   One repo-specific override also exists in `vite.config.ts`: `typescript/unbound-method`
+   is disabled for `__tests__/**` (investigated site-by-site, 26 sites, one vitest-mock
+   idiom, zero exceptions — see that override's inline comment). Don't re-flag this as
+   an unjustified suppression; the investigation already happened.
 
    This documentation provides:
    - What the rule prevents (design principle)

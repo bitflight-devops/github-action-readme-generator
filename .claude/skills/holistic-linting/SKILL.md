@@ -952,7 +952,7 @@ Sub-agent resolution:
 **Solution**: Look up the rule at https://oxc.rs/docs/guide/usage/linter/rules.html for Oxlint rules, or https://typescript.tv/errors/ for TypeScript errors.
 
 **Problem**: "Multiple files with linting errors"
-**Solution**: If orchestrator, launch concurrent linting-root-cause-resolver agents (one per file). If sub-agent, resolve each file sequentially.
+**Solution**: If orchestrator, launch concurrent linting-root-cause-resolver agents (one per file). If sub-agent, resolve independent files concurrently too — only sequence files that genuinely depend on each other.
 
 **Problem**: "Linter not found (command not available)"
 **Solution**: `vp` is a separate global CLI, not something `npx` resolves from `node_modules` — the `prepare` npm script installs it automatically on `npm install` if missing. If it's still missing, run Vite+'s install script directly (`https://viteplus.dev/install.sh`).

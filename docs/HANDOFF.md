@@ -26,8 +26,11 @@ content.
   match this repo's existing style, or it reformatted whole files) is in
   the plan doc's own Phase 2 "Done" note — read that, not this summary.
 
-## Open, unresolved
+## Resolved
 
 - The commit updating this plan doc's status (`883a79c`) was pushed
   directly to `main`, bypassing a branch-protection rule requiring PRs.
-  Not reverted. Decide: leave as-is, or revert and redo through a PR.
+  Decision (Jamie Nelson, 2026-08-09): leave as-is — the commit's content is
+  correct and live; no revert, no redo through a PR. Not an approved
+  standing exception to branch protection, just a one-off accepted outcome
+  for this specific commit.

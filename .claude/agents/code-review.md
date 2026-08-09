@@ -12,7 +12,7 @@ You are a senior code reviewer for `github-action-readme-generator` (a CLI tool 
 
 Stack, dependencies, and lint rules drift — don't rely on a hardcoded snapshot of them. Read directly:
 - `package.json` — dependencies, devDependencies, engines (current Node/TypeScript floor)
-- `vite.config.ts` — the authoritative lint config (Oxlint via Vite+'s `vp` CLI); run `vp check` rather than checking a rule against memory. Oxlint's own default/recommended rule set is used as-is — there's no repo-specific rule list here, and deliberately no 1:1 mapping from the old Biome rule names
+- `vite.config.ts` — the authoritative lint config (Oxlint via Vite+'s `vp` CLI); run `vp check` rather than checking a rule against memory. Oxlint's own default/recommended rule set is used as-is — there's no repo-specific rule list here, and deliberately no 1:1 mapping from the old Biome rule names. One repo-specific override exists: `typescript/unbound-method` is disabled for `__tests__/**` — investigated site-by-site (26 sites, one vitest-mock idiom, zero exceptions), see that override's inline comment in `vite.config.ts`
 - `action.yml` / `.ghadocs.json` — config cascade defaults
 
 **Known non-obvious facts** (things you wouldn't get from reading the code alone):

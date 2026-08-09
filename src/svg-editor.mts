@@ -65,7 +65,7 @@ export default class SVGEditor {
    * @param {string | undefined} svgPath - Path to write the generated SVG file to.
    * @param {string} icon - Name of the icon to use (validated against FeatherIconNames below).
    * @param {string} bgcolor - Background color for the image (validated against BrandColors below).
-   * @returns {Promise<void>} A promise that resolves when the image is generated.
+   * @returns {void}
    */
   generateSvgImage(
     svgPath: string | undefined,

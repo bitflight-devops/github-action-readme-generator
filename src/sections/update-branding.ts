@@ -1,6 +1,13 @@
 import type { FeatherIconNames } from 'feather-icons';
 
-import { GITHUB_ACTIONS_OMITTED_ICONS, isValidIcon, type ReadmeSection } from '../constants.js';
+import {
+  type BrandColors,
+  GITHUB_ACTIONS_BRANDING_COLORS,
+  GITHUB_ACTIONS_OMITTED_ICONS,
+  isValidColor,
+  isValidIcon,
+  type ReadmeSection,
+} from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 import SVGEditor from '../svg-editor.mjs';
@@ -68,6 +75,27 @@ export function getValidIconName(icon?: string): FeatherIconNames {
 }
 
 /**
+ * This function returns a valid branding color based on the provided value.
+ * If the color is undefined or not one of the supported branding colors, an error is thrown.
+ * @param color - The branding color from action.yml
+ * @returns The corresponding validated brand color
+ * @throws Error if the color is undefined or not a valid branding color
+ */
+export function getValidBrandColor(color?: string): BrandColors {
+  if (!color) {
+    throw new Error(`No valid branding color found: action.yml branding is undefined`);
+  }
+
+  if (isValidColor(color)) {
+    return color;
+  }
+
+  throw new Error(
+    `No valid branding color found: ${color} is not one of: ${GITHUB_ACTIONS_BRANDING_COLORS.join(', ')}`,
+  );
+}
+
+/**
  * This function generates an HTML image markup with branding information.
  * It takes inputs and an optional width parameter.
  * If the branding_svg_path is provided, it generates an action.yml branding image for the specified icon and color.
@@ -87,15 +115,16 @@ export function generateImgMarkup(inputs: Inputs, width: string = '15%'): string
   // Get the branding information from the inputs
   const { icon, color } = inputs.action.branding;
   const iconName = getValidIconName(icon);
+  const brandColor = getValidBrandColor(color);
   const svgPath = inputs.config.get('branding_svg_path') as Maybe<string>;
-  const result = `<img src="${svgPath}" width="${width}" align="center" alt="branding<icon:${iconName} color:${color}>" />`;
+  const result = `<img src="${svgPath}" width="${width}" align="center" alt="branding<icon:${iconName} color:${brandColor}>" />`;
 
   if (svgPath) {
     log.info(`Generating action.yml branding image for ${iconName}`);
     const svg = inputs.config.get('image_generated') as Maybe<string>;
-    const hash = `${iconName}${color}`;
+    const hash = `${iconName}${brandColor}`;
     if (svg && hash.localeCompare(svg) !== 0) {
-      generateSvgImage(svgPath, iconName, color);
+      generateSvgImage(svgPath, iconName, brandColor);
       inputs.config.set('image_generated', hash);
     }
     return result;

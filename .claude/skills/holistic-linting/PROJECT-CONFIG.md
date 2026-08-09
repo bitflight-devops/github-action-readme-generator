@@ -29,10 +29,10 @@ vp check --fix ./src/ ./__tests__/
 vp check ./src/ ./__tests__/
 
 # Format only
-vp fmt --write ./src/
+vp fmt --write ./src/ ./__tests__/
 
 # Lint only (type-aware)
-vp lint --type-aware --type-check ./src/
+vp lint --type-aware --type-check ./src/ ./__tests__/
 ```
 
 ### Markdown Files
@@ -47,6 +47,8 @@ npm run lint:markdown:fix
 Oxlint's own default/recommended rule set is used as-is — this project has no hand-maintained rule config to keep in sync (unlike the old `biome.json`), and there is deliberately no 1:1 Biome→Oxlint rule mapping (see the migration plan's §8.3). The only lint-config surface this project customizes is `vite.config.ts`'s `lint` block (`options: { typeAware: true, typeCheck: true }`), which routes type checking through `tsgolint`.
 
 For rule documentation, see `https://oxc.rs/docs/guide/usage/linter/rules.html` — ~847 rules across seven categories (correctness, suspicious, pedantic, perf, style, restriction, nursery), namespaced `plugin(rule-name)`.
+
+One repo-specific override exists: `typescript/unbound-method` is disabled for `__tests__/**` — investigated site-by-site (26 sites, one vitest-mock idiom, zero exceptions), see that override's inline comment in `vite.config.ts`.
 
 ## Common Error Patterns and Fixes
 

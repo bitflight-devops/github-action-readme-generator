@@ -154,4 +154,9 @@ current step list.
 
 ## TODOs
 
-- None
+- Expand `vp fmt`/`vp lint`/`vp check` (and `vite.config.ts`'s `staged` map) to also
+  cover `vite.config.ts`, `package.json`, and Markdown/YAML at the repo root —
+  currently only `./src` and `./__tests__/` are validated. Requires deciding how a
+  config file that defines the lint rules should itself be linted/type-checked.
+  Raised by CodeRabbit on PR #628 (package.json:62, package.json:68), deferred there
+  as a design decision, not a functional bug.

@@ -1,137 +1,154 @@
 # AGENTS.md
 
-Instructions for AI agents (Claude, Codex, and others) working in this repository.
+Instructions for AI agents working in this repository.
 
-## Independent verification (the checker principle)
+## Project facts
 
-An agent that writes a fix is the worst judge of whether the fix is correct — the
-same reasoning that produced a mistake is the reasoning used to check for it.
-When verifying whether a change actually resolves a review comment, bug report,
-or finding:
+- CLI + GitHub Action. Syncs README.md from action.yml (title, description, inputs, outputs, usage, badges).
+- TypeScript, Node `>=24.0.0 <30.0.0` (`package.json` `engines`).
+- Build: esbuild. Test: vitest. Lint/format: Biome + markdownlint.
+- Not ESLint (migrated off); ignore stale "ESLint" mentions.
+- Volta pins the dev version — check `.node-version`.
 
-- Never let the agent that wrote the fix also decide it's resolved (e.g. don't
-  self-approve a change and then also close/resolve the review thread for it).
-- Spawn a fresh-context agent for the check. Give it only the original
-  comment/finding and the diff — never the reasoning that produced the fix. A
-  checker that shares context with the worker isn't checking anything, it's
-  agreeing with itself in a different window.
-- Default to an adversarial framing: ask the checker to find a reason the fix
-  does **not** resolve the issue, not to confirm that it does. Don't reward it
-  for being agreeable.
-- Subagents are you, just with clean, targeted context — spinning one up for
-  this isn't outsourcing to someone else, it's using an isolated instance of
-  yourself that hasn't seen, and isn't biased by, the work under review.
-- Only mark something resolved (e.g. `resolve_thread`) after an independent,
-  fresh-context pass says so — not on your own say-so, no matter how confident.
+## Commit format
 
-## Loop vs. one-off (when to automate a workflow)
+Conventional Commits — the `commit-msg` hook runs commitlint (see Pre-commit hooks).
 
-A workflow earns a loop (plan → execute → check → iterate → stop) only when all
-four hold at once:
+## Build & validation commands
 
-- It recurs regularly, not once.
-- It can grade itself — a condition that passes or fails without a human, or
-  the same agent's own judgment, in the loop.
-- Handing it a goal returns a result with no mid-loop intervention required.
-- The stop condition is a fact (a status enum, an exit code), not a feeling.
+```bash
+npm install              # first step after any checkout/pull
+npm run build             # prebuild (tsc check) -> esbuild -> postbuild (declarations + MJS)
+npm run test               # vitest, __tests__/**/*.test.ts
+npm run coverage         # vitest --coverage -> ./out/
+npm run format            # biome format --write ./src ./__tests__
+npm run check              # biome check - CI's actual gate, no side effects
+npm run lint:markdown  # markdownlint
+npm run generate-docs  # regenerate README.md from action.yml
+```
 
-Only the **status-check step** qualifies outright — polling a status enum
-after a push and stopping on green is a fact-based check with nothing to
-apply the four conditions against, it's just a read. **Iterating on
-failure is a different action bundled under the same name, and it doesn't
-get the same free pass**: choosing what to push next is a judgment call
-(the same one the checker principle above exists to decorrelate from the
-agent making it), and pushing repeatedly with no cap is exactly the
-unbounded loop the four conditions are meant to rule out. Treat push →
-check → iterate as a loop only with explicit bounds: a maximum number of
-iterations, fixes that are safe to retry (idempotent — re-running one
-doesn't compound on a half-applied previous attempt), and a point where
-an unresolved failure surfaces for a human or an independent pass rather
-than triggering another push on its own. "Is this review comment
-actually addressed" does **not**
-qualify on its own — it's a judgment call — but pairing it with the checker
-principle above makes it tractable without pretending it's a fact.
+`npm run lint` is not a clean read-only check: npm's `prelint` hook (exact-name match,
+so only `lint` gets it, not `lint:fix`) runs `biome format --write` + a full `tsc
+--noEmit` check first, then `biome lint` + `markdownlint` run. `lint:fix` skips that
+hook and runs `biome lint --write` + `markdownlint --fix` directly, not via `prelint`.
+Both are narrower than CI's Biome coverage either way (no import-sorting). `npm run
+check` matches CI's actual gate read-only; `check:fix` runs `biome check --write`.
 
-## Before multi-step work: plan the graph, not just the next step
+## Pre-commit hooks (husky)
 
-Before starting anything that will take more than a couple of turns, work out:
+- **pre-commit**: `lint-staged && npm run build && npm run generate-docs`.
+  - Gotcha: has silently dropped staged files despite exit 0.
+  - Verify with `git show --stat HEAD` after committing.
+- **commit-msg**: runs commitlint.
+- **pre-push**: a no-op (commented out).
 
-- What are the actual next steps toward the goal, not just the next one?
-- Which of those steps have a real dependency on each other's output, and
-  which are just typed in sequence (the "fake edge" test — draw an arrow
-  between each consecutive pair, keep it only if data actually flows across
-  it)? Independent steps should run concurrently — batched tool calls in one
-  turn, or parallel background subagents — not queued one after another for
-  no reason.
-- Can a repeated mechanical step become a reusable script instead of being
-  re-derived by hand each time it comes up?
-- Does a step's own output change what later steps should be? Reorder the
-  plan around that, rather than forcing the original sequence to hold.
+## dist/ files
 
-## Handling incoming PR review comments (the recurring instance of all this)
+- Gitignored, but a past release's snapshot may still be **tracked**.
+- Check with `git ls-files dist/`.
+- If tracked, a local rebuild shows as a *modification*, not an untracked file.
+- If dist/ shows modified, `git restore dist/` — don't hand-commit it.
+- Never `git add -f dist/` yourself — `deploy.yml` does that, releases only.
 
-1. Verify each comment against primary sources and the actual current
-   file/repo state — don't accept or dismiss a bot finding on its wording
-   alone.
-2. Fix genuine gaps. When a detail can't be confirmed from documentation, run
-   the real tool to get a real answer rather than leaving it as a guess (e.g.
-   install the CLI and run `--help` instead of assuming what flags it takes).
-3. Before resolving or closing a thread, hand the diff and the original
-   comment — nothing else — to a fresh-context agent and get an explicit
-   satisfied/not-satisfied verdict per the checker principle above.
-4. Only resolve threads the checker actually confirms. Leave the rest open and
-   iterate.
-5. Batch: verify multiple independent comments in parallel, fix them in one
-   edit pass, and run a single checker pass over all of them together rather
-   than one comment at a time.
+## Where to look
 
-## The standing goal for this repo's tooling migration
+```text
+src/
+  index.ts                CLI entry point
+  Action.ts                action.yml metadata parsing
+  inputs.ts                 Inputs class: CLI args -> .ghadocs.json -> action.yml cascade
+  readme-generator.ts   ReadmeGenerator class - generate()/updateSections()/outputSections()
+  readme-editor.ts        reads/writes README.md's <!-- start X --> markers
+  save.ts                    conditionally persists .ghadocs.json, not the README
+  helpers.ts                utilities: git-tag version resolution, repo detection, table formatting
+  prettier.ts                formatYaml/formatMarkdown/wrapDescription
+  svg-editor.mts          SVGEditor class - branding SVG generation
+  config.ts                  GHActionDocsConfig class - reads/saves .ghadocs.json
+  constants.ts             Feather icon names + other constants
+  util.ts                     shared TS type utilities (e.g. Nullable<T>)
+  unicode-word-match.ts  ES5-compatible unicode word-match regex
+  working-directory.ts   path resolution
+  sections/                  one updater per README section, see index.ts
+  markdowner/               markdown processing utilities
+  logtask/                    LogTask logger, see bracket-padding pitfall
+  errors/                     custom error types
+__tests__/          vitest specs - loose match to src/, not 1:1 (see below)
+__mocks__/          node:fs.ts - the only mock
+scripts/               esbuild.mjs, release.sh, set_package_type.sh, latest_valid_node_version.sh
+.github/workflows/  CI - file names differ from GitHub-displayed name: (see below)
+docs/                    the TS7/Vite+ migration plan + its phase-0 findings
+```
 
-The end state is Vite+ driving the **entire** project lifecycle — format,
-lint, build, test, package, and release — not a partial adoption running
-alongside legacy tools. If a task in service of some other goal turns out to
-need more of that system in place to actually complete, treat that as a
-signal to bring the relevant piece of the Vite+ migration forward, rather
-than working around the gap. See
-`docs/typescript-7-vite-plus-conversion-plan.md` for the phased plan this
-repo is following toward that end state.
+- `__tests__/` loosely follows `src/`'s file naming, not always nested.
+- Example: `helpers.ts` → `helpers.test.ts`, but `src/markdowner/` → flat `markdowner.test.ts`.
+- `src/errors/*` has no tests — search for a file's test, don't assume a path exists.
 
-## Don't read what a cheap agent can read for you
+Root config files: see "Config files" table below.
 
-Every tool call in your own turn re-processes your entire existing context — on a long session, that's expensive regardless of how small the individual output is. A fresh subagent (a cheap model) starts with none of that baggage, so it isn't just cheaper per call, it's cheaper by an order of magnitude for exactly the calls that are heaviest for you specifically: reading logs, search results, or large documents.
+## CI (`.github/workflows/`)
 
-- If a step is "read this large/raw thing and tell me what matters," delegate it. Give the agent the source (a log, a URL, a file, a search query) and ask it to return only the synthesized finding plus a pointer back to the source (a file path and line, a URL, a quoted excerpt) — enough to independently verify the claim without having ingested the raw material yourself.
-- This isn't a reason to explore less — it's a reason not to be the one doing the reading. Delegating the exploration doesn't delegate away scrutiny; the checker principle above still applies to what the agent reports back.
-- Before waiting on your own turn to sequence two pieces of work, ask whether the second piece could have been written into the first agent's own instructions, or dispatched immediately (e.g. via the GitHub API instead of a local checkout, or with worktree isolation) so it never needs to contend with the first agent's state. Sequencing steps through your own turn just to avoid a hypothetical conflict is itself a cost that a little more upfront planning avoids.
-- Don't schedule a wakeup to poll for a background agent's completion — it already notifies you when done. A scheduled poll on top of that is a redundant, wasted wakeup.
+Display names differ from file names. Read the file directly for the exact
+current step list.
 
-## State the hypothesis before acting, not after being corrected
+- **`test.yml`** ("Tag and Release Updated NPM Package")
+  - Triggers: `pull_request_target` + `push` (main/next/beta/\*.x) + `repository_dispatch`.
+  - No plain `pull_request` trigger.
+  - Runs `biome check` before tests. Node versions tested: see `matrix.node-version` in the file.
+  - On `push` only, also invokes `deploy.yml`.
+- **`push_code_linting.yml`** ("Code Linting Annotation")
+  - `biome lint` runs *before* `npm install` here — opposite of `test.yml`.
+  - Reviewdog posts inline PR annotations from it.
+- **`deploy.yml`** ("NPM Release Workflow")
+  - Not push-triggered directly: `workflow_call` (from `test.yml`) + `repository_dispatch`.
+  - Runs `npm ci` → engine/signature checks → build → commit dist/ → `semantic-release`.
 
-An assumption you haven't tested is still an assumption, no matter how
-confident it feels. If an action's correctness depends on something you
-believe but haven't verified — a tool's default behavior, "this fix
-addresses the comment," "this diff has no other issues" — that belief is a
-hypothesis, not a fact, until something has actually tested it.
+## Config files
 
-- Before acting on the assumption, name it as **Ha** (what you're about to
-  rely on) versus **H0** (the way it could actually be), and test which is
-  true with the cheapest available check — a single direct command, a read
-  of the tool's own contract, one background agent — before committing
-  further actions to the outcome. Verify with the first unit before batching
-  the rest: dispatching three parallel agents on an unverified assumption
-  about how they're each provisioned is finding out three times what one
-  check would have told you once.
-- This applies to self-assessment, not just tool mechanics. "This diff is
-  correct" is a hypothesis about your own work, not a fact you get to assert
-  by having written it — it gets the exact same checker-principle treatment
-  as a bot's review comment: a fresh agent tests it, you don't declare it.
-  Reading your own diff and calling it reviewed is not a substitute for
-  independent review, even when a repo convention (e.g. "apply your own
-  review pass before marking a PR ready") asks for a self-read first — that
-  self-read is a hygiene pass, not the validation step.
-- The failure mode this section exists to name: acting first and treating an
-  external correction — a bot comment, a user question — as the test.
-  Stating Ha/H0 before acting means the test happens before the action's
-  consequences are already out in the world (agents already dispatched on a
-  wrong premise, a PR already marked ready on an unverified diff), not
-  after.
+| File | Purpose |
+| --- | --- |
+| `action.yml` | Action metadata — all inputs/outputs |
+| `.ghadocs.json` | generate-docs config |
+| `tsconfig.json` | TS compiler settings |
+| `tsconfig.build.json` | `src/`-scoped declaration build, feeds `postbuild` |
+| `tsconfig-mjs.json` | ESM build config |
+| `biome.json` | Lint/format rules |
+| `vitest.config.ts` | Test runner config |
+| `package.json` | Deps, scripts, engines, volta |
+
+## Pitfalls
+
+1. "Cannot find module" → `npm install` first.
+2. Tests fail after a change → `npm run build` first.
+3. README.md changed after your commit → expected, pre-commit runs generate-docs.
+4. `generate-docs` output brackets step types outside a log group (e.g. `[ERROR  ]`).
+   - Padded to a shared width — grep the type, not a fixed-width string.
+5. `generate-docs` picks the wrong version → `git fetch origin --tags` first.
+   - A shallow/tagless checkout falls back to `package.json` instead of the latest tag.
+
+## Key details
+
+- README markers: `<!-- start inputs -->...<!-- end inputs -->`.
+- Dual-purpose: GitHub Action (action.yml inputs) and CLI (`.ghadocs.json`/args).
+- Versioning: latest git tag, falls back to `package.json` — must match pitfall 5.
+
+## Tooling migration in progress
+
+- Standing goal: Vite+ eventually drives format/lint/build/test/package/release.
+- Plan: `docs/typescript-7-vite-plus-conversion-plan.md` (live, multi-phase).
+- Done: TS7 alone. Not done: Oxlint/Oxfmt, Vite+ build.
+- A task needing a piece of that system is a signal to advance the plan, not work around the gap.
+
+## Working discipline
+
+- `.claude/skills/checker-principle/SKILL.md`: verify before trusting any fix, bot finding, or your own diff.
+  - Symlinked under `.agents/skills/` — auto-loads in any agent that reads that path (per agentskills.io).
+- `.claude/skills/pr-review-workflow/SKILL.md`: handling PR review comments, judging draft-readiness.
+- `.claude/skills/planning-multi-step-work/SKILL.md`: planning ahead, judging when a loop is warranted.
+- Delegate large reads (logs, search results, big docs) to a fresh, cheap-model subagent — cheaper per call.
+  - The checker-principle still applies to what it reports back.
+- This file's TODOs (below) are shared cross-session state, not scratch notes.
+  - Remove an entry once done; add one before ending a session with work left.
+
+## TODOs
+
+- None

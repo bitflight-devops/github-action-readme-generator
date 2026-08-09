@@ -9,8 +9,7 @@ Instructions for AI agents working in this repository.
 - Node 24 is the CI/dev-pin floor, not the ceiling — 26.x is also tested.
 - Build: esbuild. Test: vitest. Lint/format: Biome + markdownlint.
 - Not ESLint — migrated off it; ignore any stale "ESLint" mentions.
-- `EBADENGINE` on install = Node version outside the range above.
-- Node 20 is EOL. Volta pins the dev version — check `.node-version`, don't trust a number restated here.
+- Volta pins the dev version — check `.node-version`, don't trust a number restated here.
 
 ## Commit format
 

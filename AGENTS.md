@@ -160,3 +160,8 @@ current step list.
   config file that defines the lint rules should itself be linted/type-checked.
   Raised by CodeRabbit on PR #628 (package.json:62, package.json:68), deferred there
   as a design decision, not a functional bug.
+- `prepare`'s local (non-CI) `curl | bash` fallback for installing `vp` has no
+  integrity check — `viteplus.dev/install.sh` doesn't publish a checksum/signature
+  to pin against. CI is already fail-closed (this fallback never runs there); the
+  local dev-machine path is the remaining gap. Raised by CodeRabbit on PR #628
+  (package.json:73).

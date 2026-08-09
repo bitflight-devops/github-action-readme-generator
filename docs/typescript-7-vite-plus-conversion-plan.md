@@ -1024,11 +1024,14 @@ per-pattern justification inline, not a rule-name guess. `package.json`
 scripts rewritten to `vp fmt`/`vp lint`/`vp check`/`vp staged`;
 `.lintstagedrc`, `.prettierrc.cjs`, `.babelrc.cjs` deleted;
 `@biomejs/biome`/`lint-staged` removed from `devDependencies`. `biome.json`
-itself is **kept**, not deleted, until a follow-up PR updates `main`'s
-`test.yml`/`push_code_linting.yml` to stop running `biome check` —
-`pull_request_target` evaluates those workflows from `main`, not this
-branch, so a PR deleting `biome.json` can't show green pre-merge while
-`main` still requires it (see PR #628). One glob gap in `biome.json`'s
+itself is **kept**, not deleted — its removal moved to Phase 4 (below),
+which now owns the CI validation-job transition off `biome check` entirely.
+`pull_request_target` evaluates `test.yml`/`push_code_linting.yml` from
+`main`, not this branch, so a PR deleting `biome.json` can't show green
+pre-merge while `main`'s copy of those workflows still runs `biome check`
+(see PR #628) — that only stops once this Phase 2 PR merges and replaces
+`main`'s workflow files, which is why the deletion has to wait for its own
+PR rather than land in this one. One glob gap in `biome.json`'s
 `**/*.ts` override was fixed (added `**/*.mts`/`**/*.cts`, matching the
 repo's one `.mts` file) rather than left as a latent bug. `prepare`
 bootstraps `vp` locally if missing. `test.yml` and `push_code_linting.yml`
@@ -1119,7 +1122,13 @@ phase is gated on Phase 0's spike having already proven the bundled
 binary stays self-contained.
 
 **Phase 4 — cleanup**
-Update `.github/copilot-instructions.md` and `CLAUDE.md` to describe the
+Delete `biome.json` and confirm `main`'s `test.yml`/`push_code_linting.yml`
+no longer reference `biome check`/`biome lint` anywhere (they stop once
+Phase 2 merges and replaces `main`'s copy of those files, but this phase
+is what actually removes the config file itself and re-verifies CI green
+without it — the CI validation-job transition off Biome isn't complete
+until this file is gone, not just unreferenced). Update
+`.github/copilot-instructions.md` and `CLAUDE.md` to describe the
 new toolchain instead of the stale ESLint/Prettier narrative, delete this
 plan doc's TODOs once landed or fold its "current state" section into
 project docs as history. All five `.claude/` files' Biome references and

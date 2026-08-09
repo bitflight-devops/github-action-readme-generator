@@ -7,7 +7,6 @@ Instructions for AI agents working in this repository.
 - CLI + GitHub Action. Syncs README.md from action.yml (title, description, inputs, outputs, usage, badges).
 - TypeScript, Node `>=24.19.0 <30.0.0` (`package.json` `engines`).
 - Build: `vp pack` (tsdown, via Vite+). Test: `vp test` (Vitest, via Vite+). Lint/format: Oxlint + Oxfmt via Vite+'s `vp` CLI, plus markdownlint.
-- Not ESLint, Biome, or esbuild (all migrated off); ignore stale "ESLint"/"Biome"/"esbuild" mentions elsewhere.
 - Volta pins the dev version — check `.node-version`.
 
 ## Commit format
@@ -46,7 +45,7 @@ behind `npm run lint`.
 
 - Gitignored, but a past release's snapshot may still be **tracked**.
 - Check with `git ls-files dist/`.
-- If tracked, a local rebuild shows as a *modification*, not an untracked file.
+- If tracked, a local rebuild shows as a _modification_, not an untracked file.
 - If dist/ shows modified, `git restore dist/` — don't hand-commit it.
 - Never `git add -f dist/` yourself — `deploy.yml` does that, releases only.
 
@@ -93,7 +92,7 @@ current step list.
 - **`test.yml`** ("Tag and Release Updated NPM Package")
   - Triggers: `pull_request_target` + `push` (main/next/beta/\*.x) + `repository_dispatch`.
   - No plain `pull_request` trigger.
-  - `pull_request_target` evaluates the workflow *definition* from the base branch, not the PR head —
+  - `pull_request_target` evaluates the workflow _definition_ from the base branch, not the PR head —
     a PR changing `test.yml` itself (or removing a tool it still requires) can't show green pre-merge.
   - Bootstraps `vp` via `voidzero-dev/setup-vp` (pinned tag), then runs `vp check` before tests.
     Node versions tested: a dynamic matrix resolved from `.node-version` (see `node-version-matrix` job).
@@ -108,13 +107,12 @@ current step list.
 
 ## Config files
 
-| File | Purpose |
-| --- | --- |
-| `action.yml` | Action metadata — all inputs/outputs |
-| `.ghadocs.json` | generate-docs config |
-| `tsconfig.json` | TS compiler settings |
+| File             | Purpose                                                                                                          |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `action.yml`     | Action metadata — all inputs/outputs                                                                             |
+| `.ghadocs.json`  | generate-docs config                                                                                             |
 | `vite.config.ts` | Oxlint/Oxfmt rules, pre-commit staged-file config, `pack` (tsdown build), `test` (Vitest) — via Vite+'s `vp` CLI |
-| `package.json` | Deps, scripts, engines, volta |
+| `package.json`   | Deps, scripts, engines, volta                                                                                    |
 
 ## Pitfalls
 
@@ -134,9 +132,10 @@ current step list.
 
 ## Tooling migration in progress
 
-- Standing goal: Vite+ eventually drives format/lint/build/test/package/release.
 - Plan: `docs/typescript-7-vite-plus-conversion-plan.md` (live, multi-phase).
-- Done: TS7, Oxlint/Oxfmt (Biome retired). Not done: Vite+-driven build/test/package/release.
+- Done: TS7, and format/lint/staged/build/test all run through Vite+'s `vp` CLI.
+- Remaining: a Phase 4 cleanup pass (see the plan doc). `semantic-release`/publishing
+  intentionally stay outside Vite+ — a scoped decision, not a gap.
 - A task needing a piece of that system is a signal to advance the plan, not work around the gap.
 
 ## Working discipline

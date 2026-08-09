@@ -68,7 +68,7 @@
     "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
     "lint:markdown:fix": "npm run lint:markdown -- --fix",
     "pre-commit": "vp staged && npm run build && npm run generate-docs && npm run lint:markdown",
-    "prepare": "[ -n ${GITHUB_ACTIONS:-} ] || { husky install; command -v vp >/dev/null 2>&1 || curl -fsSL https://viteplus.dev/install.sh | VP_NODE_MANAGER=no bash; }",
+    "prepare": "[ -n \"${GITHUB_ACTIONS:-}\" ] || { husky install; command -v vp >/dev/null 2>&1 || curl -fsSL https://viteplus.dev/install.sh | VP_NODE_MANAGER=no bash; }",
     "semantic-release": "semantic-release",
     "test": "vp test",
     "coverage": "vp test --coverage",

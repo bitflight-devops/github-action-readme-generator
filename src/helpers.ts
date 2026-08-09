@@ -368,18 +368,28 @@ export function rowHeader(value: string): string {
   return `<b><code>${text}</code></b>`;
 }
 
+// Matches version-shaped tags only (optional 'v' + dot-separated numeric
+// segments, e.g. `v1`, `v1.11`, `v1.11.0`) - a commit can carry unrelated
+// tags (release-notes markers, CI markers, etc.) alongside the real version
+// tags, and those must never win the specificity comparison below.
+const versionTagPattern = /^v?\d+(?:\.\d+)*$/;
+
 /**
  * Picks the most specific tag out of several tags pointing at the same commit.
  *
  * A release typically carries both an exact tag (`v1.11.0`) and a floating
  * major tag (`v1`) on the same commit, and `git describe --tags --abbrev=0`'s
  * tie-break between tags at zero distance isn't guaranteed to prefer the
- * exact one. Sort by dot-separated segment count, then by length, so
+ * exact one. Restrict to version-shaped tags first (an unrelated co-located
+ * tag with more dots, e.g. `z.release.2026.08`, must never outrank a real
+ * version tag), then sort by dot-separated segment count, then by length, so
  * `v1.11.0` outranks `v1`.
  */
 function mostSpecificTag(tags: string[]): string {
+  const versionTags = tags.filter((tag) => versionTagPattern.test(tag));
+  const candidates = versionTags.length > 0 ? versionTags : tags;
   const specificity = (tag: string) => tag.replace(/^v/, '').split('.').length;
-  return [...tags].sort((a, b) => specificity(b) - specificity(a) || b.length - a.length)[0]!;
+  return [...candidates].sort((a, b) => specificity(b) - specificity(a) || b.length - a.length)[0]!;
 }
 
 /**

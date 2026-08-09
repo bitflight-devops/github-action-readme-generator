@@ -6,7 +6,6 @@ Instructions for AI agents working in this repository.
 
 - CLI + GitHub Action. Syncs README.md from action.yml (title, description, inputs, outputs, usage, badges).
 - TypeScript, Node `>=24.0.0 <30.0.0` (`package.json` `engines`).
-- Node 24 is the CI/dev-pin floor, not the ceiling — 26.x is also tested.
 - Build: esbuild. Test: vitest. Lint/format: Biome + markdownlint.
 - Not ESLint — migrated off it; ignore any stale "ESLint" mentions.
 - Volta pins the dev version — check `.node-version`, don't trust a number restated here.

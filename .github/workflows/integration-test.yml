@@ -61,6 +61,11 @@ jobs:
         with:
           node-manager: false
           working-directory: action-under-test
+          # npm ci already installed deps above; vp install's default
+          # (run-install: true) writes a devEngines.packageManager pin into
+          # package.json that then breaks every later plain `npm run ...`
+          # step against the runner's actual npm version.
+          run-install: false
 
       - name: Build action
         working-directory: action-under-test

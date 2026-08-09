@@ -25,13 +25,30 @@ permissions:
   contents: write
 
 jobs:
+  node-version-matrix:
+    name: Resolve Node version matrix
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+      - id: set-matrix
+        run: |
+          pinned="$(cat .node-version)"
+          echo "matrix=[\"${pinned}\", \"26.x\"]" >> "$GITHUB_OUTPUT"
+
   run-tests:
+    needs: node-version-matrix
     name: Run unit tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        node-version: ["24.0.0", "24.19.0", "26.x"]
+        node-version: ${{ fromJSON(needs.node-version-matrix.outputs.matrix) }}
     env:
       SKIP_PREFLIGHT_CHECK: true
     steps:

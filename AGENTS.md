@@ -96,7 +96,7 @@ current step list — this section states what's non-obvious, not a full copy.
 - **`test.yml`** ("Tag and Release Updated NPM Package")
   - Triggers: `pull_request_target` + `push` (main/next/beta/\*.x) + `repository_dispatch`.
   - No plain `pull_request` trigger.
-  - Runs `biome check` before tests. Node matrix: `24.0.0`/`24.19.0`/`26.x`.
+  - Runs `biome check` before tests. Node versions tested: see `matrix.node-version` in the file.
   - On `push` only, also invokes `deploy.yml`.
 - **`push_code_linting.yml`** ("Code Linting Annotation")
   - `biome lint` runs *before* `npm install` here — opposite of `test.yml`.

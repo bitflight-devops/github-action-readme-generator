@@ -150,19 +150,5 @@ current step list.
 - `.claude/skills/planning-multi-step-work/SKILL.md`: planning ahead, judging when a loop is warranted.
 - Delegate large reads (logs, search results, big docs) to a fresh, cheap-model subagent — cheaper per call.
   - The checker-principle still applies to what it reports back.
-- This file's TODOs (below) are shared cross-session state, not scratch notes.
-  - Remove an entry once done; add one before ending a session with work left.
-
-## TODOs
-
-- Expand `vp fmt`/`vp lint`/`vp check` (and `vite.config.ts`'s `staged` map) to also
-  cover `vite.config.ts`, `package.json`, and Markdown/YAML at the repo root —
-  currently only `./src` and `./__tests__/` are validated. Requires deciding how a
-  config file that defines the lint rules should itself be linted/type-checked.
-  Raised by CodeRabbit on PR #628 (package.json:62, package.json:68), deferred there
-  as a design decision, not a functional bug.
-- `prepare`'s local (non-CI) `curl | bash` fallback for installing `vp` has no
-  integrity check — `viteplus.dev/install.sh` doesn't publish a checksum/signature
-  to pin against. CI is already fail-closed (this fallback never runs there); the
-  local dev-machine path is the remaining gap. Raised by CodeRabbit on PR #628
-  (package.json:73).
+- Deferred work goes in GitHub Issues, not this file — this file is facts and
+  conventions every agent needs, not a task backlog.

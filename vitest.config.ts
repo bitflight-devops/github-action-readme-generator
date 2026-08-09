@@ -9,6 +9,7 @@ export default defineConfig({
     setupFiles: ['dotenv/config'],
     environment: 'node',
     root: './',
+    include: ['__tests__/**/*.test.ts'],
     deps: {
       interopDefault: true,
     },

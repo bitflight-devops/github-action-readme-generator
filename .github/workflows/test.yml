@@ -68,15 +68,15 @@ jobs:
           echo "$HOME/.local/bin" >> "${GITHUB_PATH}"
           echo "HOME=$HOME" >> "${GITHUB_ENV}"
 
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          version: 2.5.1
-
       - run: npm install
 
-      - name: Biome check
-        run: biome check ./src/ ./__tests__/
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1.17.0
+        with:
+          node-manager: false
+
+      - name: vp check
+        run: vp check ./src/ ./__tests__/
 
       - run: npm run test
       - run: npm run coverage

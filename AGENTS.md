@@ -6,8 +6,8 @@ Instructions for AI agents working in this repository.
 
 - CLI + GitHub Action. Syncs README.md from action.yml (title, description, inputs, outputs, usage, badges).
 - TypeScript, Node `>=24.19.0 <30.0.0` (`package.json` `engines`).
-- Build: esbuild. Test: vitest. Lint/format: Biome + markdownlint.
-- Not ESLint (migrated off); ignore stale "ESLint" mentions.
+- Build: esbuild. Test: vitest. Lint/format: Oxlint + Oxfmt via Vite+'s `vp` CLI, plus markdownlint.
+- Not ESLint or Biome (both migrated off); ignore stale "ESLint"/"Biome" mentions elsewhere.
 - Volta pins the dev version — check `.node-version`.
 
 ## Commit format
@@ -21,18 +21,18 @@ npm install              # first step after any checkout/pull
 npm run build             # prebuild (tsc check) -> esbuild -> postbuild (declarations + MJS)
 npm run test               # vitest, __tests__/**/*.test.ts
 npm run coverage         # vitest --coverage -> ./out/
-npm run format            # biome format --write ./src ./__tests__
-npm run check              # biome check - CI's actual gate, no side effects
+npm run format            # vp fmt --write ./src ./__tests__
+npm run check              # vp check ./src/ ./__tests__/ - CI's actual gate, no side effects
 npm run lint:markdown  # markdownlint
 npm run generate-docs  # regenerate README.md from action.yml
 ```
 
-`npm run lint` is not a clean read-only check: npm's `prelint` hook (exact-name match,
-so only `lint` gets it, not `lint:fix`) runs `biome format --write` + a full `tsc
---noEmit` check first, then `biome lint` + `markdownlint` run. `lint:fix` skips that
-hook and runs `biome lint --write` + `markdownlint --fix` directly, not via `prelint`.
-Both are narrower than CI's Biome coverage either way (no import-sorting). `npm run
-check` matches CI's actual gate read-only; `check:fix` runs `biome check --write`.
+`npm run lint` runs `vp lint --type-aware --type-check ./src/ ./__tests__/` (Oxlint +
+`tsgolint` type-checking, no format side effects) then `npm run lint:markdown`.
+`lint:fix` runs the `--fix` variant plus `lint:markdown:fix`. `check`/`check:fix` run
+`vp check`, which bundles format + lint + type-check in one pass — this is CI's actual
+gate. No `prelint` hook exists anymore; there's no separate format/tsc pass hiding
+behind `npm run lint`.
 
 ## Pre-commit hooks (husky)
 
@@ -93,11 +93,15 @@ current step list.
 - **`test.yml`** ("Tag and Release Updated NPM Package")
   - Triggers: `pull_request_target` + `push` (main/next/beta/\*.x) + `repository_dispatch`.
   - No plain `pull_request` trigger.
-  - Runs `biome check` before tests. Node versions tested: see `matrix.node-version` in the file.
+  - `pull_request_target` evaluates the workflow *definition* from the base branch, not the PR head —
+    a PR changing `test.yml` itself (or removing a tool it still requires) can't show green pre-merge.
+  - Bootstraps `vp` via `voidzero-dev/setup-vp` (pinned tag), then runs `vp check` before tests.
+    Node versions tested: a dynamic matrix resolved from `.node-version` (see `node-version-matrix` job).
   - On `push` only, also invokes `deploy.yml`.
 - **`push_code_linting.yml`** ("Code Linting Annotation")
-  - `biome lint` runs *before* `npm install` here — opposite of `test.yml`.
-  - Reviewdog posts inline PR annotations from it.
+  - Same bootstrap order as `test.yml`: `npm install` then `voidzero-dev/setup-vp`.
+  - `vp lint --format github` and a markdownlint problem-matcher post inline PR
+    annotations natively — no reviewdog involved.
 - **`deploy.yml`** ("NPM Release Workflow")
   - Not push-triggered directly: `workflow_call` (from `test.yml`) + `repository_dispatch`.
   - Runs `npm ci` → engine/signature checks → build → commit dist/ → `semantic-release`.
@@ -111,7 +115,7 @@ current step list.
 | `tsconfig.json` | TS compiler settings |
 | `tsconfig.build.json` | `src/`-scoped declaration build, feeds `postbuild` |
 | `tsconfig-mjs.json` | ESM build config |
-| `biome.json` | Lint/format rules |
+| `vite.config.ts` | Oxlint/Oxfmt rules + pre-commit staged-file config, via Vite+'s `vp` CLI |
 | `vitest.config.ts` | Test runner config |
 | `package.json` | Deps, scripts, engines, volta |
 
@@ -135,7 +139,7 @@ current step list.
 
 - Standing goal: Vite+ eventually drives format/lint/build/test/package/release.
 - Plan: `docs/typescript-7-vite-plus-conversion-plan.md` (live, multi-phase).
-- Done: TS7 alone. Not done: Oxlint/Oxfmt, Vite+ build.
+- Done: TS7, Oxlint/Oxfmt (Biome retired). Not done: Vite+-driven build/test/package/release.
 - A task needing a piece of that system is a signal to advance the plan, not work around the gap.
 
 ## Working discipline
@@ -146,9 +150,5 @@ current step list.
 - `.claude/skills/planning-multi-step-work/SKILL.md`: planning ahead, judging when a loop is warranted.
 - Delegate large reads (logs, search results, big docs) to a fresh, cheap-model subagent — cheaper per call.
   - The checker-principle still applies to what it reports back.
-- This file's TODOs (below) are shared cross-session state, not scratch notes.
-  - Remove an entry once done; add one before ending a session with work left.
-
-## TODOs
-
-- None
+- Deferred work goes in GitHub Issues, not this file — this file is facts and
+  conventions every agent needs, not a task backlog.

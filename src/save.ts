@@ -13,14 +13,14 @@ import type LogTask from './logtask/index.js';
  * This script rebuilds the usage section in the README.md to be consistent with the action.yml
  * @param {Inputs} inputs - the inputs class
  */
-export default function save(inputs: Inputs, log: LogTask): void {
+export default async function save(inputs: Inputs, log: LogTask): Promise<void> {
   const docsConfig = new GHActionDocsConfig();
   docsConfig.loadInputs(inputs);
   if (inputs.config.get().save === true) {
     try {
-      docsConfig.save(inputs.configPath);
+      await docsConfig.save(inputs.configPath);
     } catch (error) {
-      log.error(`${error}`);
+      log.error(`${String(error)}`);
     }
   }
 }

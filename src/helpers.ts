@@ -153,7 +153,7 @@ export function readFile(filename: string): string {
   try {
     return readFileSync(filename, 'utf8');
   } catch (error) {
-    throw new Error(`Cannot read file ${filename}: ${error}`);
+    throw new Error(`Cannot read file ${filename}: ${String(error)}`);
   }
 }
 
@@ -222,7 +222,7 @@ export function repositoryFinder(
         log.debug(`No remote URL found in ${gitConfigPath}`);
       }
     } catch (error) {
-      log.debug(`Couldn't read .git/config from baseDir ${baseDir}: ${error}`);
+      log.debug(`Couldn't read .git/config from baseDir ${baseDir}: ${String(error)}`);
       // Fall through to other methods
     }
   }
@@ -277,7 +277,7 @@ export function repositoryFinder(
     }
   } catch (error) {
     // can't find it
-    log.error(`Couldn't retrieve owner or repo in .git/config file: ${error}`);
+    log.error(`Couldn't retrieve owner or repo in .git/config file: ${String(error)}`);
   }
   throw new Error('No owner or repo found');
 }
@@ -486,7 +486,6 @@ export function getCurrentVersionString(inputs: Inputs): string {
         case 'package-json':
           detectedVersion = getVersionFromPackageJson(actionDir, log);
           break;
-        case 'git-tag':
         default:
           // For git-tag (default), use the legacy fallback behavior
           detectedVersion = getVersionFromGitTag(actionDir, log);

@@ -183,7 +183,7 @@ export default class Action implements ActionYaml {
     try {
       actionYaml = this.loadActionFrom(actionPath);
     } catch (error) {
-      throw new Error(`Failed to load ${actionPath}. ${error}`);
+      throw new Error(`Failed to load ${actionPath}. ${String(error)}`);
     }
     this.log.debug(`Action YAML: ${JSON.stringify(actionYaml)}`);
 
@@ -248,7 +248,7 @@ export default class Action implements ActionYaml {
     try {
       return YAML.stringify(this);
     } catch (error) {
-      this.log.error(`Failed to stringify Action. ${error}`);
+      this.log.error(`Failed to stringify Action. ${String(error)}`);
       // this is just for debugging, continue on error
       return '';
     }

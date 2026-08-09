@@ -63,14 +63,14 @@ export default class SVGEditor {
   /**
    * Generates a branded SVG image.
    * @param {string | undefined} svgPath - Path to write the generated SVG file to.
-   * @param {Partial<FeatherIconNames>} icon - Name of the icon to use.
-   * @param {Partial<BrandColors>} bgcolor - Background color for the image.
-   * @returns {Promise<void>} A promise that resolves when the image is generated.
+   * @param {string} icon - Name of the icon to use (validated against FeatherIconNames below).
+   * @param {string} bgcolor - Background color for the image (validated against BrandColors below).
+   * @returns {void}
    */
   generateSvgImage(
     svgPath: string | undefined,
-    icon: Partial<FeatherIconNames> = DEFAULT_BRAND_ICON,
-    bgcolor: Partial<BrandColors> = DEFAULT_BRAND_COLOR
+    icon: string = DEFAULT_BRAND_ICON,
+    bgcolor: string = DEFAULT_BRAND_COLOR,
   ): void {
     if (!svgPath || svgPath.length === 0) {
       this.log.debug('No svgPath provided');
@@ -78,12 +78,12 @@ export default class SVGEditor {
     }
 
     if (!isValidIcon(icon)) {
-      this.log.error(`Valid Branding Icon Names: ${GITHUB_ACTIONS_BRANDING_ICONS}`);
+      this.log.error(`Valid Branding Icon Names: ${[...GITHUB_ACTIONS_BRANDING_ICONS].join(', ')}`);
       this.log.fail(`Invalid icon name: ${icon}`);
       return;
     }
     if (!isValidColor(bgcolor)) {
-      this.log.error(`Valid Branding Colors: ${GITHUB_ACTIONS_BRANDING_COLORS}`);
+      this.log.error(`Valid Branding Colors: ${GITHUB_ACTIONS_BRANDING_COLORS.join(', ')}`);
       this.log.fail('Invalid branding color');
       return;
     }
@@ -122,7 +122,7 @@ export default class SVGEditor {
   generateSVGContent(
     icon: FeatherIconNames,
     color: BrandColors,
-    outerViewBox: number = 100
+    outerViewBox: number = 100,
   ): string {
     const { canvas, log } = this;
     // Validate canvas
@@ -179,7 +179,7 @@ export default class SVGEditor {
 
     // return the xml file content
     return ['<?xml version="1.0" encoding="UTF-8" standalone="no"?>', canvas.svg(), '\n'].join(
-      '\n'
+      '\n',
     );
   }
 }

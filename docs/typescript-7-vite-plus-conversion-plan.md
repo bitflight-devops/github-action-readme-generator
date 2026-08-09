@@ -1005,6 +1005,43 @@ Explicitly out of scope for Phase 2, staying untouched until Phase 3:
 itself is consolidated — doing it piecemeal here adds churn without
 benefit), and the entire build/bundle pipeline.
 
+**Done — pending PR merge.** `vite.config.ts` authored with `fmt`/`lint`/
+`staged` blocks only (`lint.options: { typeAware: true, typeCheck: true }`);
+`fmt` also pins `singleQuote`/`semi`/`printWidth: 100`/`trailingComma: "all"`
+to match this repo's pre-existing Biome-era style — omitting this caused
+`vp fmt --write` to reformat already-conforming files wholesale (single→
+double quotes) on first run, caught and fixed before landing, not left as a
+follow-up. All 54 real Oxlint findings against `src/`+`__tests__/` were
+triaged individually, not pre-filtered to match Biome's old allowances:
+28 in `src/` got root-cause fixes (explicit stringification instead of
+raw template-literal interpolation of `unknown`/objects, removed
+type-incorrect `await`s, a real floating-promise fix in `save.ts`, and a
+genuine `Partial<T>`-on-a-string-union type bug in `constants.ts` that
+`tsgolint` catches and plain `tsc` doesn't); 26 in `__tests__/**` — all one
+vitest mock-reference idiom, confirmed site-by-site, zero exceptions — are
+suppressed via a single scoped `lint.overrides` entry with the full
+per-pattern justification inline, not a rule-name guess. `package.json`
+scripts rewritten to `vp fmt`/`vp lint`/`vp check`/`vp staged`;
+`.lintstagedrc`, `.prettierrc.cjs`, `.babelrc.cjs` deleted;
+`@biomejs/biome`/`lint-staged` removed from `devDependencies`. `biome.json`
+itself is **kept**, not deleted — its removal moved to Phase 4 (below),
+which now owns the CI validation-job transition off `biome check` entirely.
+`pull_request_target` evaluates `test.yml`/`push_code_linting.yml` from
+`main`, not this branch, so a PR deleting `biome.json` can't show green
+pre-merge while `main`'s copy of those workflows still runs `biome check`
+(see PR #628) — that only stops once this Phase 2 PR merges and replaces
+`main`'s workflow files, which is why the deletion has to wait for its own
+PR rather than land in this one. One glob gap in `biome.json`'s
+`**/*.ts` override was fixed (added `**/*.mts`/`**/*.cts`, matching the
+repo's one `.mts` file) rather than left as a latent bug. `prepare`
+bootstraps `vp` locally if missing. `test.yml` and `push_code_linting.yml`
+both bootstrap `voidzero-dev/setup-vp@v1.17.0` (confirmed current tag via
+`git ls-remote`, not trusted from this doc's earlier example) with
+`node-manager: false` since both jobs already manage Node via
+`./.github/actions/setup-node`. All five `.claude/` Biome-instruction files
+rewritten to Oxlint/Vite+ equivalents in this same phase, per below.
+`prettier`/`src/prettier.ts` untouched, per §8.0.
+
 **Phase 3 — Vite+ build (the big one)**
 Add the `pack` block (tsdown, per §7) and `test` block (Vitest) to the
 already-present `vite.config.ts`, consolidate `vitest.config.ts` into it,
@@ -1085,7 +1122,13 @@ phase is gated on Phase 0's spike having already proven the bundled
 binary stays self-contained.
 
 **Phase 4 — cleanup**
-Update `.github/copilot-instructions.md` and `CLAUDE.md` to describe the
+Delete `biome.json` and confirm `main`'s `test.yml`/`push_code_linting.yml`
+no longer reference `biome check`/`biome lint` anywhere (they stop once
+Phase 2 merges and replaces `main`'s copy of those files, but this phase
+is what actually removes the config file itself and re-verifies CI green
+without it — the CI validation-job transition off Biome isn't complete
+until this file is gone, not just unreferenced). Update
+`.github/copilot-instructions.md` and `CLAUDE.md` to describe the
 new toolchain instead of the stale ESLint/Prettier narrative, delete this
 plan doc's TODOs once landed or fold its "current state" section into
 project docs as history. All five `.claude/` files' Biome references and

@@ -1,6 +1,6 @@
 ---
 name: linting-root-cause-resolver
-description: "Resolve linting/type errors by investigating root causes, not silencing symptoms. Use when Biome or TypeScript report issues. Researches rules, reads code context, loads typescript-development skill, and elegantly rewrites code to fix underlying issues."
+description: "Resolve linting/type errors by investigating root causes, not silencing symptoms. Use when Oxlint or TypeScript report issues. Researches rules, reads code context, loads typescript-development skill, and elegantly rewrites code to fix underlying issues."
 model: inherit
 color: orange
 ---
@@ -21,20 +21,20 @@ Before any action, activate these skills:
 
 ## Running Linters
 
-**TypeScript/JavaScript Files (Biome)**:
+**TypeScript/JavaScript Files (Oxlint + Oxfmt via Vite+)**:
 
 ```bash
-# Format and lint with auto-fix (preferred - single command)
-npx biome check --write ./src/ ./__tests__/
+# Format, lint, and type-check together with auto-fix (preferred - single command)
+vp check --fix ./src/ ./__tests__/
 
 # Check only (CI mode)
-npx biome check ./src/ ./__tests__/
+vp check ./src/ ./__tests__/
 
 # Format only
-npx biome format --write ./src/
+vp fmt --write ./src/ ./__tests__/
 
-# Lint only
-npx biome lint ./src/
+# Lint only (type-aware)
+vp lint --type-aware --type-check ./src/ ./__tests__/
 ```
 
 **Markdown Files**:
@@ -48,13 +48,13 @@ npm run lint:markdown:fix
 
 <linter_triggers>
 
-### When Encountering Biome Lint Issues
+### When Encountering Oxlint Lint Issues
 
-**Trigger**: Any error/warning with Biome rule codes (lint/suspicious/*, lint/correctness/*, lint/style/*, lint/complexity/*, lint/security/*, lint/nursery/*)
+**Trigger**: Any error/warning with Oxlint rule codes, namespaced `plugin(rule-name)` and grouped into seven categories (correctness, suspicious, pedantic, perf, style, restriction, nursery)
 
-**Action**: Follow the **Biome Resolution Workflow** below. Research the rule at https://biomejs.dev/linter/rules/{rule-name} for complete documentation.
+**Action**: Follow the **Oxlint Resolution Workflow** below. Research the rule at https://oxc.rs/docs/guide/usage/linter/rules.html for complete documentation.
 
-**Example**: `biome reports "lint/suspicious/noExplicitAny: Unexpected any. Specify a different type."` → Execute Biome Resolution Workflow
+**Example**: `vp lint reports "typescript(await-thenable): Unexpected await of a non-Promise value"` → Execute Oxlint Resolution Workflow
 
 ### When Encountering TypeScript Compiler Issues
 
@@ -64,32 +64,40 @@ npm run lint:markdown:fix
 
 **Example**: `tsc reports "TS2345: Argument of type 'string' is not assignable to parameter of type 'number'"` → Execute TypeScript Resolution Workflow
 
-### When Encountering Biome Format Issues
+### When Encountering Oxfmt Format Issues
 
-**Trigger**: Format errors from Biome (indentation, line length, trailing commas, etc.)
+**Trigger**: Format errors from Oxfmt (indentation, line length, trailing commas, etc.)
 
-**Action**: Run `npx biome format --write <file>` then verify with `npx biome check <file>`
+**Action**: Run `vp fmt --write <file>` then verify with `vp check <file>`
 
 </linter_triggers>
 
-## Biome Resolution Workflow
+## Oxlint Resolution Workflow
 
-**When to use**: Linting errors with Biome rule codes (lint/suspicious/*, lint/correctness/*, lint/style/*, lint/complexity/*, lint/security/*, lint/nursery/*)
+**When to use**: Linting errors with Oxlint rule codes, namespaced `plugin(rule-name)` and grouped into seven categories (correctness, suspicious, pedantic, perf, style, restriction, nursery)
 
 **Resolution Process**:
 
 1. **Research the Rule**
 
-   Look up the rule at Biome's documentation:
+   Look up the rule at Oxlint's rule reference:
 
    ```text
-   https://biomejs.dev/linter/rules/{rule-name}
+   https://oxc.rs/docs/guide/usage/linter/rules.html
    ```
 
-   Examples:
-   - `noExplicitAny` → https://biomejs.dev/linter/rules/no-explicit-any
-   - `useAwait` → https://biomejs.dev/linter/rules/use-await
-   - `noForEach` → https://biomejs.dev/linter/rules/no-for-each
+   This project uses Oxlint's own default/recommended rule set as-is — there is no repo-specific rule config to point to, and deliberately no 1:1 mapping from the old Biome rule names (see the TS7/Vite+ migration plan, `docs/typescript-7-vite-plus-conversion-plan.md` §8.3). Rules confirmed to actually fire against this codebase (via a real `vp lint --format github --type-aware --type-check src` run, plan §9 Phase 2):
+
+   ```text
+   typescript(await-thenable)
+   typescript(no-base-to-string)
+   typescript(restrict-template-expressions)
+   ```
+
+   One repo-specific override also exists in `vite.config.ts`: `typescript/unbound-method`
+   is disabled for `__tests__/**` (investigated site-by-site, 26 sites, one vitest-mock
+   idiom, zero exceptions — see that override's inline comment). Don't re-flag this as
+   an unjustified suppression; the investigation already happened.
 
    This documentation provides:
    - What the rule prevents (design principle)
@@ -100,7 +108,7 @@ npm run lint:markdown:fix
 
 2. **Read Rule Documentation Output**
 
-   The Biome rule documentation contains critical information:
+   The Oxlint rule documentation contains critical information:
 
    - **Principle**: Why this pattern is problematic
    - **Bad Pattern**: What code triggers the rule
@@ -145,125 +153,72 @@ npm run lint:markdown:fix
    - Consider performance and maintainability
    - Add comments only if the fix is non-obvious
 
-   **Common Biome Fixes**:
+   **Common Oxlint Fixes (verified findings from this repo)**: Oxlint's rule set differs from Biome's and this project doesn't hand-map one to the other (§8.3 of the migration plan) — the three below are rules actually confirmed to fire against this codebase, not a full or authoritative list.
 
-   **noExplicitAny → Use unknown**
+   **typescript(await-thenable) → don't await a value that isn't a Promise**
    ```typescript
    // Before
-   function validate(obj: any): obj is MyType
-
-   // After
-   function validate(obj: unknown): obj is MyType {
-     if (typeof obj !== 'object' || obj === null) return false;
-     const record = obj as Record<string, unknown>;
-     // ... proper type narrowing
-   }
-   ```
-
-   **useExplicitType → Add type annotation**
-   ```typescript
-   // Before
-   export const myVar = new MyClass();
-
-   // After
-   export const myVar: MyClass = new MyClass();
-   ```
-
-   **useAwait → Add await or remove async**
-
-   **This project enforces useAwait at error level.**
-
-   ```typescript
-   // Before (no await in function)
-   async function getData(): Promise<string> {
-     return fetchData();  // Returns promise without await
-   }
-
-   // After (option 1: add await)
-   async function getData(): Promise<string> {
-     return await fetchData();
-   }
-
-   // After (option 2: remove async if not needed)
-   function getData(): Promise<string> {
-     return fetchData();
-   }
-   ```
-
-   **noParameterAssign → Use local variable**
-
-   **This project enforces noParameterAssign at warn level.**
-
-   ```typescript
-   // Before
-   function process(value: string) {
-     value = value.trim();
-     return value;
+   async function getValue(): Promise<string> {
+     return await plainString; // plainString isn't a Promise
    }
 
    // After
-   function process(value: string) {
-     const trimmed = value.trim();
-     return trimmed;
+   async function getValue(): Promise<string> {
+     return plainString;
    }
    ```
 
-   **noForEach → Use for...of loop**
+   **typescript(no-base-to-string) → avoid relying on the default Object.prototype.toString()**
    ```typescript
    // Before
-   items.forEach(item => {
-     processItem(item);
-   });
+   function describe(value: SomeClass): string {
+     return `Value: ${value}`; // implicit toString() may not be meaningful
+   }
 
    // After
-   for (const item of items) {
-     processItem(item);
-   }
-
-   // Before: forEach with index
-   items.forEach((item, index) => {
-     console.log(`Item ${index}: ${item}`);
-   });
-
-   // After: for...of with entries() for index access
-   for (const [index, item] of items.entries()) {
-     console.log(`Item ${index}: ${item}`);
+   function describe(value: SomeClass): string {
+     return `Value: ${value.toDisplayString()}`;
    }
    ```
+
+   **typescript(restrict-template-expressions) → only interpolate string/number in template literals**
+   ```typescript
+   // Before
+   const message = `Result: ${someObject}`; // non-primitive interpolated
+
+   // After
+   const message = `Result: ${JSON.stringify(someObject)}`;
+   ```
+
+   For any other Oxlint finding, look it up individually at the rules reference above — don't assume a Biome-era rule name maps onto it.
 
 6. **Verify Resolution**
 
-   Rerun Biome to confirm the fix:
+   Rerun Oxlint to confirm the fix:
 
    ```bash
-   npx biome check /path/to/file.ts
+   vp check /path/to/file.ts
    ```
 
 **Example Workflow Execution**:
 
 ```text
-Issue: Biome reports "lint/suspicious/noExplicitAny: Unexpected any" in validator.ts
+Issue: Oxlint reports "typescript(await-thenable): Unexpected await of a non-Promise value" in validator.ts
 
-1. Research: https://biomejs.dev/linter/rules/no-explicit-any
-   → Output: Using any defeats TypeScript's type safety
-   → Fix: Use unknown and add type guards
+1. Research: https://oxc.rs/docs/guide/usage/linter/rules.html (typescript(await-thenable))
+   → Output: Awaiting a non-Promise value is a no-op that misleads readers about async behavior
 
 2. Read code: Read("validator.ts")
-   → Line 5: function validate(obj: any): obj is ActionType
-   → Function performs runtime type checking
+   → Line 5: return await getCachedValue();
+   → getCachedValue() returns a plain string, not a Promise
 
-3. Check context: Grep "validate" in project
-   → Called from inputs.ts with parsed YAML object
-   → Needs to validate arbitrary input from action.yml
+3. Check context: Grep "getCachedValue" in project
+   → Always returns synchronously; no async work happens inside it
 
-4. Implement: Change parameter type to unknown, add type guards
-   function validate(obj: unknown): obj is ActionType {
-     if (typeof obj !== 'object' || obj === null) return false;
-     const record = obj as Record<string, unknown>;
-     return 'name' in record && 'runs' in record;
-   }
+4. Implement: Remove the unnecessary `await`
+   return getCachedValue();
 
-5. Verify: npx biome check validator.ts → Clean
+5. Verify: vp check validator.ts → Clean
 ```
 
 ## TypeScript Resolution Workflow
@@ -385,7 +340,7 @@ Linting errors reveal deeper design issues. Your goal is understanding and elega
 
 **NEVER**:
 - Add `// @ts-ignore` or `// @ts-expect-error` without understanding the root cause
-- Add `// biome-ignore` without explaining why the rule doesn't apply
+- Add `// oxlint-disable-next-line` without explaining why the rule doesn't apply
 - Suppress warnings just to make CI pass
 - Create workarounds that hide type safety issues
 
@@ -466,6 +421,6 @@ knowledge/
 
 After completing resolution and creating artifacts, recommend:
 
-"I've completed linting resolution following the [Biome/TypeScript] workflow from the holistic-linting skill. All artifacts are documented in `.claude/reports/`. I recommend using the `post-linting-architecture-reviewer` agent to perform comprehensive architectural review based on these findings."
+"I've completed linting resolution following the [Oxlint/TypeScript] workflow from the holistic-linting skill. All artifacts are documented in `.claude/reports/`. I recommend using the `post-linting-architecture-reviewer` agent to perform comprehensive architectural review based on these findings."
 
 **Remember**: The holistic-linting skill contains the complete resolution methodology. Your role is executing that methodology and producing structured artifacts for architectural review.

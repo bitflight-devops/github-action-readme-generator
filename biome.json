@@ -222,7 +222,7 @@
       "formatter": { "lineWidth": 320 }
     },
     {
-      "includes": ["**/*.ts", "**/*.tsx"],
+      "includes": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
       "javascript": { "formatter": { "trailingCommas": "all", "semicolons": "always" } },
       "formatter": { "indentStyle": "space", "indentWidth": 2 }
     },

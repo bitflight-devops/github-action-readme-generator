@@ -340,7 +340,7 @@ export function setConfigValueFromActionFileDefault(
     log.error(
       `${inputName} from ${
         actionInstance.path
-      } does not match a known input. Known inputs are: ${Object.keys(ConfigKeysInputsMap)}`,
+      } does not match a known input. Known inputs are: ${Object.keys(ConfigKeysInputsMap).join(', ')}`,
     );
     return;
   }
@@ -389,7 +389,9 @@ export function collectAllDefaultValuesFromAction(
     // When running as a CLI tool (e.g., via npx or yarn dlx), the tool's own action.yml
     // may not be present in the node_modules. This is expected behavior, as the tool
     // should still work to generate documentation for other actions.
-    log.debug(`Could not load defaults from this tool's action.yml at ${thisActionPath}: ${error}`);
+    log.debug(
+      `Could not load defaults from this tool's action.yml at ${thisActionPath}: ${String(error)}`,
+    );
     log.debug('Continuing without default values from action.yml');
     return {} as IOptions;
   }
@@ -459,7 +461,7 @@ export function loadDefaultConfig(
   log.debug(`Action directory for repository detection: ${actionDir ?? 'not specified'}`);
 
   const repositoryDetail = repositoryFinder(`${ownerInput}/${repoInput}`, context, actionDir);
-  log.debug(`repositoryDetail: ${repositoryDetail}`);
+  log.debug(`repositoryDetail: ${JSON.stringify(repositoryDetail)}`);
   // Apply the default values from the action.yml file
   return config.defaults({
     ...defaultValues,
@@ -638,7 +640,7 @@ export default class Inputs {
       try {
         return YAML.stringify(this.config.get());
       } catch (error) {
-        this.log.error(`${error}`);
+        this.log.error(`${String(error)}`);
         // continue
       }
     }

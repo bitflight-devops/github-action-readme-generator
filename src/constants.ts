@@ -147,27 +147,35 @@ export type BrandColors = (typeof GITHUB_ACTIONS_BRANDING_COLORS)[number];
 
 /**
  * Checks if the given icon is valid for GitHub Actions branding.
- * @param {Partial<FeatherIconNames>} icon - The icon to validate.
+ * The value comes from an unvalidated action.yml, so it is an arbitrary
+ * string until this guard narrows it — `Partial<FeatherIconNames>` was a
+ * misuse of `Partial` on a string-literal union (it doesn't express
+ * "optional"/"unvalidated" the way it does for object types).
+ * @param {string} icon - The icon to validate.
  * @returns A boolean indicating if the icon is valid.
  */
-export function isValidIcon(icon: Partial<FeatherIconNames>): icon is FeatherIconNames {
+export function isValidIcon(icon: string): icon is FeatherIconNames {
   return GITHUB_ACTIONS_BRANDING_ICONS.has(icon);
 }
 
 /**
  * Checks if the given color is valid for GitHub Actions branding.
- * @param {Partial<BrandColors>} color - The color to validate.
+ * The value comes from an unvalidated action.yml, so it is an arbitrary
+ * string until this guard narrows it — see {@link isValidIcon}.
+ * @param {string} color - The color to validate.
  * @returns A boolean indicating if the color is valid.
  */
-export function isValidColor(color: Partial<BrandColors>): color is BrandColors {
-  return GITHUB_ACTIONS_BRANDING_COLORS.includes(color);
+export function isValidColor(color: string): color is BrandColors {
+  return GITHUB_ACTIONS_BRANDING_COLORS.includes(color as BrandColors);
 }
 
 /**
  * Represents the branding information for the action.
+ * Values are read from a user-supplied, unvalidated action.yml, so they are
+ * plain strings until validated with {@link isValidIcon} / {@link isValidColor}.
  */
 export interface Branding {
   /** Color for the action branding */
-  color: Partial<BrandColors>;
-  icon: Partial<FeatherIconNames>;
+  color: string;
+  icon: string;
 }

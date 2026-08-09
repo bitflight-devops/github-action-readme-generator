@@ -90,7 +90,6 @@ describe('ReadmeGenerator', () => {
     });
 
     it('should not output sections if not running in GitHub Actions', () => {
-      // biome-ignore lint/performance/noDelete: Need actual deletion for env var test
       delete process.env.GITHUB_ACTIONS;
       const sections: Record<string, string> = { key: 'value' };
 

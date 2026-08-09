@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 import { accessSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
@@ -174,7 +174,8 @@ export function repoObjFromRepoName(
 // Pattern to match GitHub remote URLs in .git/config
 // Handles both HTTPS (github.com/) and SSH (github.com:) formats
 // Captures the repo name with or without .git suffix - suffix is stripped in code
-export const remoteGitUrlPattern = /url\s*=\s*.*github\.com[/:](?<owner>[^/\s]+)\/(?<repo>[^\s]+)/;
+export const remoteGitUrlPattern: RegExp =
+  /url\s*=\s*.*github\.com[/:](?<owner>[^/\s]+)\/(?<repo>[^\s]+)/;
 /**
  * Finds the repository information from the input, context, environment variables, or git configuration.
  * @param inputRepo - The input repository string.
@@ -405,8 +406,10 @@ function getVersionFromGitTag(actionDir: string, log: LogTask): string | undefin
       // a floating major tag (v1) pointing at the same commit, and
       // `git describe`'s tie-break at zero distance isn't guaranteed to
       // prefer the exact one. Re-resolve every tag on that same commit and
-      // pick the most specific.
-      const tagsOnSameCommit = execSync(`git tag --points-at "${nearestTag}"`, {
+      // pick the most specific. execFileSync (not execSync with a
+      // string-interpolated command) so a tag name containing shell
+      // metacharacters can't be interpreted by a shell.
+      const tagsOnSameCommit = execFileSync('git', ['tag', '--points-at', nearestTag], {
         cwd: actionDir,
         encoding: 'utf8',
       })

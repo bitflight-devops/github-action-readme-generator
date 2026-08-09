@@ -3,7 +3,7 @@ import { defineConfig } from "vite-plus";
 // Phase 3 of docs/typescript-7-vite-plus-conversion-plan.md added the `pack`
 // and `test` blocks below to the `fmt`/`lint`/`check`/`staged` blocks Phase 2
 // already established.
-export default defineConfig({
+const config: ReturnType<typeof defineConfig> = defineConfig({
   lint: {
     // Type-aware/type-check both required explicitly (not default-on) so
     // `vp check` keeps the type-check coverage `prelint`'s raw `tsc --noEmit`
@@ -98,6 +98,13 @@ await(async()=>{let{dirname:e}=await import("path"),{fileURLToPath:i}=await impo
           "svgdom",
           "yaml",
         ],
+        // alwaysBundle above only lists the top-level packages; tsdown also
+        // pulls in their transitive node_modules dependencies (@octokit/*,
+        // undici, etc.) to keep the binary self-contained, which is the
+        // whole point (see the entry's own comment above) - not something to
+        // whitelist package-by-package via onlyBundle, which would just
+        // break on the next transitive-dependency bump.
+        onlyBundle: false,
       },
     },
     {
@@ -134,3 +141,5 @@ await(async()=>{let{dirname:e}=await import("path"),{fileURLToPath:i}=await impo
     },
   },
 });
+
+export default config;

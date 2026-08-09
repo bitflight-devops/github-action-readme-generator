@@ -5,7 +5,7 @@ Instructions for AI agents working in this repository.
 ## Project facts
 
 - CLI + GitHub Action. Syncs README.md from action.yml (title, description, inputs, outputs, usage, badges).
-- TypeScript, Node `>=24.0.0 <30.0.0` (`package.json` `engines`).
+- TypeScript, Node `>=24.19.0 <30.0.0` (`package.json` `engines`).
 - Build: esbuild. Test: vitest. Lint/format: Biome + markdownlint.
 - Not ESLint (migrated off); ignore stale "ESLint" mentions.
 - Volta pins the dev version — check `.node-version`.

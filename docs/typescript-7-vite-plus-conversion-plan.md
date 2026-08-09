@@ -1022,8 +1022,15 @@ vitest mock-reference idiom, confirmed site-by-site, zero exceptions — are
 suppressed via a single scoped `lint.overrides` entry with the full
 per-pattern justification inline, not a rule-name guess. `package.json`
 scripts rewritten to `vp fmt`/`vp lint`/`vp check`/`vp staged`;
-`.lintstagedrc`, `biome.json`, `.prettierrc.cjs`, `.babelrc.cjs` deleted;
-`@biomejs/biome`/`lint-staged` removed from `devDependencies`; `prepare`
+`.lintstagedrc`, `.prettierrc.cjs`, `.babelrc.cjs` deleted;
+`@biomejs/biome`/`lint-staged` removed from `devDependencies`. `biome.json`
+itself is **kept**, not deleted, until a follow-up PR updates `main`'s
+`test.yml`/`push_code_linting.yml` to stop running `biome check` —
+`pull_request_target` evaluates those workflows from `main`, not this
+branch, so a PR deleting `biome.json` can't show green pre-merge while
+`main` still requires it (see PR #628). One glob gap in `biome.json`'s
+`**/*.ts` override was fixed (added `**/*.mts`/`**/*.cts`, matching the
+repo's one `.mts` file) rather than left as a latent bug. `prepare`
 bootstraps `vp` locally if missing. `test.yml` and `push_code_linting.yml`
 both bootstrap `voidzero-dev/setup-vp@v1.17.0` (confirmed current tag via
 `git ls-remote`, not trusted from this doc's earlier example) with

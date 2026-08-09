@@ -486,7 +486,6 @@ export function getCurrentVersionString(inputs: Inputs): string {
         case 'package-json':
           detectedVersion = getVersionFromPackageJson(actionDir, log);
           break;
-        case 'git-tag':
         default:
           // For git-tag (default), use the legacy fallback behavior
           detectedVersion = getVersionFromGitTag(actionDir, log);

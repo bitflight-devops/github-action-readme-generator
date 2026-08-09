@@ -2,10 +2,10 @@
 
 ## Project: github-action-readme-generator
 
-**Stack**: TypeScript + Node.js, ESM only. Don't hardcode version numbers here — read `package.json` (`engines`, `devDependencies`) for the current floor; this file has drifted from it twice already. `dist/cjs` is advertised in `package.json`'s `require` export but no build step actually produces it.
+**Stack**: TypeScript + Node.js, ESM only. Don't hardcode version numbers here — read `package.json` (`engines`, `devDependencies`) for the current floor; this file has drifted from it twice already. ESM-only: no `dist/cjs`, no `require`/`main` export — `package.json` only declares the `import` condition + `types`.
 **Linter**: Oxlint, type-aware (`lint.options: { typeAware: true, typeCheck: true }` in `vite.config.ts`), run via Vite+'s `vp` CLI — replaces Biome
-**Test Framework**: Vitest
-**Build**: esbuild
+**Test Framework**: Vitest, run via Vite+'s `vp test` — config lives in `vite.config.ts`'s `test` block (no standalone `vitest.config.ts`)
+**Build**: tsdown, run via Vite+'s `vp pack` — config lives in `vite.config.ts`'s `pack` block (no `scripts/esbuild.mjs`)
 
 ## Linter Detection Override
 

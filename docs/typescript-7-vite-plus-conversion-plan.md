@@ -1,9 +1,11 @@
 # Conversion Plan: TypeScript 7 + Vite+ + Oxlint + Oxfmt
 
 Status: **In progress — clean cut-over, not an incremental migration.**
-Phase 0 (validation spike) and Phase 1 (TypeScript 7 alone) are merged
-(#622, #625). **Next up: Phase 2 (Oxlint + Oxfmt + Vite+ for
-lint/format/staged) — start at §9's "Phase 2" heading.**
+Phase 0 (validation spike), Phase 1 (TypeScript 7 alone), and Phase 2
+(Oxlint + Oxfmt + Vite+ for lint/format/staged) are merged (#622, #625, #628).
+Phase 3 (Vite+ build — `pack`/`test` blocks, tsdown, `vp test`) is done,
+pending PR merge. **Next up: Phase 4 (cleanup) — start at §9's "Phase 4"
+heading.**
 Scope: build, type-check, lint, format, test, and CI/CD toolchain. One
 exception to "no runtime behavior changes," and it's a non-change: §8.0
 evaluated replacing the `prettier` runtime dependency (which formats the
@@ -1120,6 +1122,60 @@ with "command not found" exactly like the CI jobs Phase 2 already
 patches, unless it gets the same `voidzero-dev/setup-vp` step. This
 phase is gated on Phase 0's spike having already proven the bundled
 binary stays self-contained.
+
+**Done — pending PR merge.** `vite.config.ts` gained `pack` (two tsdown
+entries: a self-contained CLI at `dist/bin/index.js` with `deps.alwaysBundle`
+listing all 9 real runtime `dependencies`, `outputOptions: { codeSplitting:
+false }`, and the shebang/ESM-interop banner; an ESM library at
+`dist/mjs/index.js` + `dist/mjs/index.d.ts`, both via `outExtensions`) and
+`test` (the full `vitest.config.ts` body, now deleted as a standalone file).
+One addition beyond §7's spec, found empirically: `dts: false` had to be set
+explicitly on the CLI entry — tsdown auto-enables declaration output
+repo-wide once `package.json`'s `types` field is set (needed for the library
+entry), so without it `vp pack` also emitted a stray, unused
+`dist/bin/index.d.ts`. All 14 direct `vitest` importers (13 in `__tests__/**`
+plus `__mocks__/node:fs.ts`) now import from `vite-plus/test`;
+`tsconfig.json`'s `types` array points at `vite-plus/test/globals` (confirmed
+to exist and re-export `vitest/globals` verbatim); `.vscode/launch.json`'s
+"Debug Current Test File" launcher uses `runtimeExecutable: "npx"` +
+`runtimeArgs: ["vp", "test", "run", "${relativeFile}"]` since `vp test` is a
+CLI command, not a `program` entry point. `vitest` removed as a direct
+`devDependency` (vite-plus provides it transitively — the "common node-mode
+case" per migrate-rules); `@vitest/coverage-v8` pinned to the exact version
+vite-plus bundles (`4.1.10`, confirmed via `npm ls`, no duplicate/conflicting
+resolution). `scripts/esbuild.mjs`, `tsconfig-mjs.json`,
+`scripts/set_package_type.sh`, and `tsconfig.build.json` (Phase 1's interim
+declaration config) all deleted; `esbuild`/`esbuild-node-externals` removed
+from `devDependencies`. `package.json`: `build` → `rimraf dist out && vp pack
+&& chmod +x dist/bin/index.js`; `postbuild` deleted entirely; `test`/
+`coverage` → `vp test`/`vp test --coverage`; `require` export condition and
+`main` field removed, leaving only `import` + `types` in `exports` (plus a
+top-level `types` field for resolvers that don't read `exports`), both now
+pointing at `dist/mjs/index.d.ts`; `module` field untouched
+(`dist/mjs/index.js`, still correct). `prebuild` (`tsc --noEmit`) kept
+as-is — decided to keep a standalone type-check gate independent of `vp
+check`, since `deploy.yml` invokes `npm run build` directly without a
+preceding `vp check` step. `deploy.yml` and `integration-test.yml` both
+gained a `voidzero-dev/setup-vp@v1.17.0` bootstrap step (with
+`node-manager: false`) ahead of their build steps, matching the pattern
+Phase 2 already established in `test.yml`/`push_code_linting.yml`;
+`integration-test.yml`'s step also passes `working-directory:
+action-under-test` (confirmed as a real `setup-vp` input via its README).
+`build:docker:default`/`build:docker:win32` now install `vp` inside the
+`node:24-alpine` container (`apk add curl` first, since it's not guaranteed
+present on that base image) before running `npm run build`. Verified
+directly, not assumed: `npm run build` (prebuild + build), `npm run test`
+(156 tests across 13 files, including `integration-bundled-binary.test.ts`
+against the real tsdown-built binary), `npm run coverage`, `npm run check`,
+and `npm run lint` all pass clean on Node 24.19.0 with `vp` v0.2.8. `dist/`
+itself is untouched in this PR's diff — it's gitignored-but-tracked (a past
+release snapshot), and every local rebuild during validation was
+`git restore`d afterward per the repo's own dist/ handling rule; the new
+`dist/cjs`-free, `dist/types`-free layout only lands for real at the next
+release, via `deploy.yml`'s existing `git add -f dist`. `AGENTS.md`,
+`.claude/skills/holistic-linting/PROJECT-CONFIG.md`, and
+`.claude/agents/code-review.md` updated to describe the tsdown/`vp
+pack`/`vp test` toolchain instead of stale esbuild/CJS-export references.
 
 **Phase 4 — cleanup**
 Delete `biome.json` and confirm `main`'s `test.yml`/`push_code_linting.yml`

@@ -6,8 +6,8 @@ Instructions for AI agents working in this repository.
 
 - CLI + GitHub Action. Syncs README.md from action.yml (title, description, inputs, outputs, usage, badges).
 - TypeScript, Node `>=24.19.0 <30.0.0` (`package.json` `engines`).
-- Build: esbuild. Test: vitest. Lint/format: Oxlint + Oxfmt via Vite+'s `vp` CLI, plus markdownlint.
-- Not ESLint or Biome (both migrated off); ignore stale "ESLint"/"Biome" mentions elsewhere.
+- Build: `vp pack` (tsdown, via Vite+). Test: `vp test` (Vitest, via Vite+). Lint/format: Oxlint + Oxfmt via Vite+'s `vp` CLI, plus markdownlint.
+- Not ESLint, Biome, or esbuild (all migrated off); ignore stale "ESLint"/"Biome"/"esbuild" mentions elsewhere.
 - Volta pins the dev version — check `.node-version`.
 
 ## Commit format
@@ -18,9 +18,9 @@ Conventional Commits — the `commit-msg` hook runs commitlint (see Pre-commit h
 
 ```bash
 npm install              # first step after any checkout/pull
-npm run build             # prebuild (tsc check) -> esbuild -> postbuild (declarations + MJS)
-npm run test               # vitest, __tests__/**/*.test.ts
-npm run coverage         # vitest --coverage -> ./out/
+npm run build             # prebuild (tsc check) -> vp pack (tsdown: dist/bin + dist/mjs)
+npm run test               # vp test (Vitest), __tests__/**/*.test.ts
+npm run coverage         # vp test --coverage -> ./out/
 npm run format            # vp fmt --write ./src ./__tests__
 npm run check              # vp check ./src/ ./__tests__/ - CI's actual gate, no side effects
 npm run lint:markdown  # markdownlint
@@ -36,7 +36,7 @@ behind `npm run lint`.
 
 ## Pre-commit hooks (husky)
 
-- **pre-commit**: `lint-staged && npm run build && npm run generate-docs`.
+- **pre-commit**: `vp staged && npm run build && npm run generate-docs && npm run lint:markdown`.
   - Gotcha: has silently dropped staged files despite exit 0.
   - Verify with `git show --stat HEAD` after committing.
 - **commit-msg**: runs commitlint.
@@ -74,7 +74,7 @@ src/
   errors/                     custom error types
 __tests__/          vitest specs - loose match to src/, not 1:1 (see below)
 __mocks__/          node:fs.ts - the only mock
-scripts/               esbuild.mjs, release.sh, set_package_type.sh, latest_valid_node_version.sh
+scripts/               release.sh, latest_valid_node_version.sh
 .github/workflows/  CI - file names differ from GitHub-displayed name: (see below)
 docs/                    the TS7/Vite+ migration plan + its phase-0 findings
 ```
@@ -104,7 +104,7 @@ current step list.
     annotations natively — no reviewdog involved.
 - **`deploy.yml`** ("NPM Release Workflow")
   - Not push-triggered directly: `workflow_call` (from `test.yml`) + `repository_dispatch`.
-  - Runs `npm ci` → engine/signature checks → build → commit dist/ → `semantic-release`.
+  - Runs `npm ci` → engine/signature checks → bootstraps `vp` → build → commit dist/ → `semantic-release`.
 
 ## Config files
 
@@ -113,10 +113,7 @@ current step list.
 | `action.yml` | Action metadata — all inputs/outputs |
 | `.ghadocs.json` | generate-docs config |
 | `tsconfig.json` | TS compiler settings |
-| `tsconfig.build.json` | `src/`-scoped declaration build, feeds `postbuild` |
-| `tsconfig-mjs.json` | ESM build config |
-| `vite.config.ts` | Oxlint/Oxfmt rules + pre-commit staged-file config, via Vite+'s `vp` CLI |
-| `vitest.config.ts` | Test runner config |
+| `vite.config.ts` | Oxlint/Oxfmt rules, pre-commit staged-file config, `pack` (tsdown build), `test` (Vitest) — via Vite+'s `vp` CLI |
 | `package.json` | Deps, scripts, engines, volta |
 
 ## Pitfalls

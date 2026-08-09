@@ -1,5 +1,5 @@
 import { type FeatherIconNames, icons } from 'feather-icons';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 
 import {
   ALIGNMENT_MARKUP,

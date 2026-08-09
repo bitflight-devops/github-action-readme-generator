@@ -1,6 +1,6 @@
 import type { BigIntStats, PathLike, PathOrFileDescriptor, Stats, StatSyncOptions } from 'node:fs';
 
-import { vi } from 'vitest';
+import { vi } from 'vite-plus/test';
 
 import {
   actionTestString,

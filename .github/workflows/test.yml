@@ -28,6 +28,8 @@ jobs:
   node-version-matrix:
     name: Resolve Node version matrix
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:

@@ -523,24 +523,30 @@ Requirements this config must satisfy, carried over from
    default code-splitting is normal, expected behavior for a
    library consumed via `node_modules` resolution, where sibling chunk
    files are just... there.
-   **Partially confirmed — the array's type is real, its two-entry build
-   is not yet separately tested.** Vite+'s own `pack`-block example on
-   that page shows a single object (`pack: { dts: true, format: [...],
+   **Confirmed at Phase 3 — the array's type is real, and its two-entry
+   build is now tested, not just typed.** Vite+'s own `pack`-block example
+   on that page shows a single object (`pack: { dts: true, format: [...],
 sourcemap: true }`), not an array, and only says "see tsdown's
    configuration for details." Phase 0's spike settled the type-level
    half of this: `vite-plus`'s own `dist/define-config-*.d.ts` types
    `pack?: PackUserConfig | PackUserConfig[]`, so the array form is real
    and typed, not just inferred from tsdown's own multi-config support
    (`docs/phase-0-spike-findings.md`, "tsdown `pack`-block bundled-binary
-   test"). **What the spike did not separately test**: that same section's
-   actual `vp pack` run targeted only the CLI entry (a single object, not
-   the two-entry array shown here) — its passing
-   `integration-bundled-binary.test.ts` result validates the CLI entry's
+   test"). **What the spike alone did not separately test**: that same
+   section's actual `vp pack` run targeted only the CLI entry (a single
+   object, not the two-entry array shown here) — its passing
+   `integration-bundled-binary.test.ts` result validated the CLI entry's
    own settings (`outExtensions`, `codeSplitting`), not that a real
    two-entry array builds both entries correctly in one invocation.
-   Confirm the full two-entry array actually builds cleanly via a real
-   `vp pack` run at Phase 3 implementation time before assuming the type
-   signature accepting it means it behaves correctly. Don't rely on default
+   **Phase 3 closed that gap**: `vite.config.ts`'s actual `pack` block is
+   the two-entry array described here, `package.json`'s `build` script
+   runs `vp pack` against it directly (not a single-entry config), and
+   Phase 3's own "Done" writeup (below) reports `npm run build` producing
+   both `dist/bin/index.js` (CLI) and `dist/mjs/index.js`+`index.d.ts`
+   (library) from that one `vp pack` invocation, with the full `npm run
+build`/`test`/`coverage`/`check`/`lint` suite passing clean on Node
+   24.19.0. Re-confirmed directly during Phase 4: a local `npm run build`
+   run produced both outputs from the same single `vp pack` call. Don't rely on default
    behavior for the CLI entry either way — tsdown's default posture (like most
    npm-library bundlers) is to externalize `dependencies`, which is the
    opposite of what the CLI entry needs. **`outDir: 'dist/bin'` on the
@@ -1197,7 +1203,7 @@ for this phase to touch in `.claude/`. (The Node 20 → 24 floor bump and
 `action.yml`'s `runs.using` fix, per §5, are recommended as their own
 immediate PR _ahead of_ this phase, not bundled into it — see §5.)
 
-**Done.** `biome.json` deleted — verified nothing else references it:
+**Done.** `biome.json` deleted — verified no live references remain:
 `grep`ed `package.json`, `.gitignore`, and every workflow in
 `.github/workflows/` for `biome`, zero hits (`test.yml`/
 `push_code_linting.yml` were already rewritten off `biome check`/

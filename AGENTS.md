@@ -130,13 +130,14 @@ current step list.
 - Dual-purpose: GitHub Action (action.yml inputs) and CLI (`.ghadocs.json`/args).
 - Versioning: latest git tag, falls back to `package.json` — must match pitfall 5.
 
-## Tooling migration in progress
+## Tooling migration (complete)
 
-- Plan: `docs/typescript-7-vite-plus-conversion-plan.md` (live, multi-phase).
-- Done: TS7, and format/lint/staged/build/test all run through Vite+'s `vp` CLI.
-- Remaining: a Phase 4 cleanup pass (see the plan doc). `semantic-release`/publishing
-  intentionally stay outside Vite+ — a scoped decision, not a gap.
-- A task needing a piece of that system is a signal to advance the plan, not work around the gap.
+- Plan: `docs/typescript-7-vite-plus-conversion-plan.md` — all four phases
+  (0-3) plus Phase 4 cleanup are merged. Kept as historical record of what
+  the cut-over replaced and why; no further phases are planned.
+- TS7, and format/lint/staged/build/test all run through Vite+'s `vp` CLI.
+  `semantic-release`/publishing intentionally stay outside Vite+ — a scoped
+  decision, not a gap.
 
 ## Working discipline
 

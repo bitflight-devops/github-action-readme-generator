@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.11.0...v1.12.0) (2026-08-09)
+
+
+### Features
+
+* **lint:** migrate to Oxlint/Vite+, retire Biome (Phase 2 of TS7/Vite+ plan) ([#628](https://github.com/bitflight-devops/github-action-readme-generator/issues/628)) ([a1d3f04](https://github.com/bitflight-devops/github-action-readme-generator/commit/a1d3f04129a91b396741faf8941bcd21bfaffb69))
+
 # [1.11.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.10...v1.11.0) (2026-08-08)
 
 

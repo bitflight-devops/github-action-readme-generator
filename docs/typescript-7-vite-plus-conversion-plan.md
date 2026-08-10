@@ -1,11 +1,11 @@
 # Conversion Plan: TypeScript 7 + Vite+ + Oxlint + Oxfmt
 
-Status: **In progress — clean cut-over, not an incremental migration.**
-Phase 0 (validation spike), Phase 1 (TypeScript 7 alone), and Phase 2
-(Oxlint + Oxfmt + Vite+ for lint/format/staged) are merged (#622, #625, #628).
-Phase 3 (Vite+ build — `pack`/`test` blocks, tsdown, `vp test`) is done,
-pending PR merge. **Next up: Phase 4 (cleanup) — start at §9's "Phase 4"
-heading.**
+Status: **Done — all four phases merged.**
+Phase 0 (validation spike), Phase 1 (TypeScript 7 alone), Phase 2
+(Oxlint + Oxfmt + Vite+ for lint/format/staged), and Phase 3 (Vite+ build —
+`pack`/`test` blocks, tsdown, `vp test`) are merged (#622, #625, #628, #632).
+Phase 4 (cleanup — delete `biome.json`, retire this plan doc) is in the
+final PR closing out this plan.
 Scope: build, type-check, lint, format, test, and CI/CD toolchain. One
 exception to "no runtime behavior changes," and it's a non-change: §8.0
 evaluated replacing the `prettier` runtime dependency (which formats the
@@ -429,6 +429,7 @@ Requirements this config must satisfy, carried over from
    (`dependencies`/`peerDependencies`/`optionalDependencies`
    externalized, per the same page) with no `deps` override at all —
    nested under `pack`, alongside the blocks already in the file:
+
    ```ts
    import { defineConfig } from 'vite-plus';
 
@@ -468,6 +469,7 @@ Requirements this config must satisfy, carried over from
      ],
    });
    ```
+
    **`deps.alwaysBundle` lists every current runtime `dependency`, not just
    `prettier`** — confirmed against `package.json`'s actual `dependencies`
    field, which has **11** entries, not 9: `@types/feather-icons` and
@@ -475,7 +477,7 @@ Requirements this config must satisfy, carried over from
    than `devDependencies` in this repo today, verified by reading
    `package.json` directly. Both are types-only with no runtime code to
    bundle, so the array above correctly excludes them, landing at 9 real
-   entries — but the *reason* is "these two are types-only despite their
+   entries — but the _reason_ is "these two are types-only despite their
    location," not "package.json only has 9 dependencies." A vague
    `/* ...other runtime deps... */` comment isn't a config; whichever
    non-types-only packages `package.json`'s `dependencies` carries at
@@ -485,22 +487,22 @@ Requirements this config must satisfy, carried over from
    spike confirmed (by actually installing tsdown and building a trivial
    config) that its default output extension for `platform: 'node'` is
    `.mjs`, regardless of which entry. Without the override, `vp pack`
-   produces `dist/bin/index.mjs` *and* `dist/mjs/index.mjs`. The CLI side
+   produces `dist/bin/index.mjs` _and_ `dist/mjs/index.mjs`. The CLI side
    breaks at the very next step, `chmod +x dist/bin/index.js` (item 5
    below) — `generate-docs` and `action.yml`'s `runs.main` also depend on
    that literal path. The library side breaks silently instead: nothing
    in the build fails, but `package.json`'s `exports.import` and
    `"module"` fields both already say `dist/mjs/index.js`, and Phase 3's
    own text (below) only tells you to remove `require`/`main` — not to
-   touch `exports.import`/`"module"` — so ESM consumers of the *published
-   npm package* (not just this CLI) end up pointed at a file that
+   touch `exports.import`/`"module"` — so ESM consumers of the _published
+   npm package_ (not just this CLI) end up pointed at a file that
    doesn't exist. Phase 0's spike only got a passing CLI test by manually
    renaming tsdown's `.mjs` output before running it — the actual `pack`
    config must produce the right paths itself, on both entries.
 
    **This is a choice, not the only correct answer, and it's worth being
    explicit about why**: `package.json` already declares `"type":
-   "module"` (verified), so under Node's own module-resolution rules
+"module"` (verified), so under Node's own module-resolution rules
    `.js` and `.mjs` execute identically in this package — neither
    extension is more "correct" at runtime than the other. The alternative
    fix is retargeting `package.json`'s `exports.import`/`"module"` (and
@@ -521,24 +523,30 @@ Requirements this config must satisfy, carried over from
    default code-splitting is normal, expected behavior for a
    library consumed via `node_modules` resolution, where sibling chunk
    files are just... there.
-   **Partially confirmed — the array's type is real, its two-entry build
-   is not yet separately tested.** Vite+'s own `pack`-block example on
-   that page shows a single object (`pack: { dts: true, format: [...],
-   sourcemap: true }`), not an array, and only says "see tsdown's
+   **Confirmed at Phase 3 — the array's type is real, and its two-entry
+   build is now tested, not just typed.** Vite+'s own `pack`-block example
+   on that page shows a single object (`pack: { dts: true, format: [...],
+sourcemap: true }`), not an array, and only says "see tsdown's
    configuration for details." Phase 0's spike settled the type-level
    half of this: `vite-plus`'s own `dist/define-config-*.d.ts` types
    `pack?: PackUserConfig | PackUserConfig[]`, so the array form is real
    and typed, not just inferred from tsdown's own multi-config support
    (`docs/phase-0-spike-findings.md`, "tsdown `pack`-block bundled-binary
-   test"). **What the spike did not separately test**: that same section's
-   actual `vp pack` run targeted only the CLI entry (a single object, not
-   the two-entry array shown here) — its passing
-   `integration-bundled-binary.test.ts` result validates the CLI entry's
+   test"). **What the spike alone did not separately test**: that same
+   section's actual `vp pack` run targeted only the CLI entry (a single
+   object, not the two-entry array shown here) — its passing
+   `integration-bundled-binary.test.ts` result validated the CLI entry's
    own settings (`outExtensions`, `codeSplitting`), not that a real
    two-entry array builds both entries correctly in one invocation.
-   Confirm the full two-entry array actually builds cleanly via a real
-   `vp pack` run at Phase 3 implementation time before assuming the type
-   signature accepting it means it behaves correctly. Don't rely on default
+   **Phase 3 closed that gap**: `vite.config.ts`'s actual `pack` block is
+   the two-entry array described here, `package.json`'s `build` script
+   runs `vp pack` against it directly (not a single-entry config), and
+   Phase 3's own "Done" writeup (below) reports `npm run build` producing
+   both `dist/bin/index.js` (CLI) and `dist/mjs/index.js`+`index.d.ts`
+   (library) from that one `vp pack` invocation, with the full `npm run
+build`/`test`/`coverage`/`check`/`lint` suite passing clean on Node
+   24.19.0. Re-confirmed directly during Phase 4: a local `npm run build`
+   run produced both outputs from the same single `vp pack` call. Don't rely on default
    behavior for the CLI entry either way — tsdown's default posture (like most
    npm-library bundlers) is to externalize `dependencies`, which is the
    opposite of what the CLI entry needs. **`outDir: 'dist/bin'` on the
@@ -550,6 +558,7 @@ Requirements this config must satisfy, carried over from
    path; an unset `outDir` means the pack step doesn't create the file
    those three steps expect.
    Keep the `alwaysBundle` override scoped to the CLI entry object only.
+
 2. Shebang / ESM interop banner (`#!/usr/bin/env node` + the
    `__filename`/`__dirname`/`require` polyfill shim) preserved via
    Rolldown's `output.banner` (tsdown builds on Rolldown under the hood).
@@ -576,7 +585,7 @@ Requirements this config must satisfy, carried over from
    `dist/mjs/index.d.ts` in the same PR that lands this pack config, or
    the package's declared type entry point points at a file that no
    longer exists — the same class of mistake Phase 1's interim fix (§9)
-   exists to avoid for the *other* declaration path. No separate
+   exists to avoid for the _other_ declaration path. No separate
    `dist/types/` output survives Phase 3; that directory was only ever
    the two-`tsc`-invocation approach's path.
 5. `chmod +x dist/bin/index.js` — keep as an explicit post-step (or a small
@@ -985,11 +994,11 @@ build'` (confirmed by reading `package.json`) — a bare Node image with
   `.claude/` agent/skill file in this same phase, not Phase 4** — confirmed
   by a repo-wide `grep -rli biome .claude/` (excluding worktree scratch
   dirs and the generic `.claude/skills/agent-creator/references/
-  agent-examples.md` template, which references Biome only as an
+agent-examples.md` template, which references Biome only as an
   illustrative example unrelated to this repo's own tooling, not a
   real instruction): `.claude/skills/holistic-linting/PROJECT-CONFIG.md`,
   `.claude/skills/holistic-linting/SKILL.md`, `.claude/agents/
-  linting-root-cause-resolver.md`, `.claude/agents/code-review.md`, and
+linting-root-cause-resolver.md`, `.claude/agents/code-review.md`, and
   `.claude/agents/post-linting-architecture-reviewer.md` all repeatedly
   tell agents to run `npx biome check`/`biome format`/`biome lint`, read
   `biome.json` as authoritative, or check Biome-specific rules
@@ -1193,6 +1202,24 @@ Phases 2 and 3 respectively (above) — nothing toolchain-specific remains
 for this phase to touch in `.claude/`. (The Node 20 → 24 floor bump and
 `action.yml`'s `runs.using` fix, per §5, are recommended as their own
 immediate PR _ahead of_ this phase, not bundled into it — see §5.)
+
+**Done.** `biome.json` deleted — verified no live references remain:
+`grep`ed `package.json`, `.gitignore`, and every workflow in
+`.github/workflows/` for `biome`, zero hits (`test.yml`/
+`push_code_linting.yml` were already rewritten off `biome check`/
+`biome lint` in Phase 2's PR). The two remaining `.claude/` mentions
+(`PROJECT-CONFIG.md`, `SKILL.md`) are historical asides ("unlike the old
+`biome.json`"), not live instructions, so they stay. `npm run check`,
+`npm run build`, and `npm run test` (158 tests) all pass clean with
+`biome.json` gone. `.github/copilot-instructions.md` no longer exists —
+it was already collapsed into a thin `AGENTS.md`-include (#626), ahead of
+and independent of this plan, so there's nothing stale left in it to
+rewrite. `CLAUDE.md` is that same thin wrapper (`@AGENTS.md`); `AGENTS.md`
+itself already describes the Oxlint/Oxfmt/Vite+/tsdown toolchain
+end-to-end, not the old ESLint/Prettier/esbuild narrative. This plan doc
+is retired as of this PR — its "current state" sections (§3, the
+`package.json` scripts audit) stand as the historical record of what the
+cut-over replaced; no further phases are planned.
 
 Each phase = one PR, green CI required before the next phase starts.
 `integration-test.yml`'s **test logic and assertions** are the final gate

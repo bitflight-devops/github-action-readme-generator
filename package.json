@@ -64,16 +64,13 @@
     "lint:fix": "vp lint --type-aware --type-check --fix ./src/ ./__tests__/ && npm run lint:markdown:fix",
     "check": "vp check ./src/ ./__tests__/",
     "check:fix": "vp check --fix ./src/ ./__tests__/",
-    "markdownlint": "markdownlint",
     "lint:markdown": "markdownlint \"**/*.md\" --config=.markdownlint.json --ignore-path=.markdownlintignore",
     "lint:markdown:fix": "npm run lint:markdown -- --fix",
     "pre-commit": "vp staged && npm run build && npm run generate-docs && npm run lint:markdown",
     "prepare": "[ -n \"${GITHUB_ACTIONS:-}\" ] || { husky install; command -v vp >/dev/null 2>&1 || curl -fsSL https://viteplus.dev/install.sh | VP_NODE_MANAGER=no bash; }",
     "semantic-release": "semantic-release",
     "test": "vp test",
-    "coverage": "vp test --coverage",
-    "version:manual": "echo 'Run versioning commands';echo \"::set-output name=tag::v${npm_package_version}\"",
-    "postversion:manual": "git push --tags origin && git push origin"
+    "coverage": "vp test --coverage"
   },
   "commitlint": {
     "extends": [
@@ -153,7 +150,7 @@
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
-    "@tsconfig/node20": "^20.1.2",
+    "@tsconfig/node24": "^24.0.4",
     "@types/nconf": "^0.10.5",
     "@types/node": "^26.1.1",
     "@vitest/coverage-v8": "4.1.10",

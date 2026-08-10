@@ -2,7 +2,6 @@ import { execFileSync, execSync } from 'node:child_process';
 import { accessSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
-// biome-ignore lint/style/useImportType: context is imported as a value to derive the type using typeof
 import { context } from '@actions/github';
 import type { PackageJson } from 'types-package-json';
 

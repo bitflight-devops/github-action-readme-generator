@@ -450,6 +450,22 @@ describe('helpers', () => {
         expect(result).toBe('main');
       });
 
+      it.each([
+        [false, 'false'],
+        [0, '0'],
+      ])(
+        'should preserve parsed falsy branch %j as %s when versioning is disabled',
+        (branch, expected) => {
+          const inputs = createMockInputs({
+            'versioning:enabled': false,
+            'versioning:branch': branch,
+          });
+
+          const result = getCurrentVersionString(inputs);
+          expect(result).toBe(expected);
+        },
+      );
+
       it('should apply override even when not in explicit mode', () => {
         const inputs = createMockInputs({
           'versioning:enabled': true,

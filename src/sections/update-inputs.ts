@@ -42,7 +42,10 @@ export default function updateInputs(
       // Keep the complete first paragraph, including soft line breaks.
       description = description.trim().split('\n\n')[0] ?? '';
 
-      description = description.replace('\n', '<br />');
+      // Every soft break, not just the first. `markdownEscapeTableCell`
+      // converts whatever is left, so the projection is identical either way —
+      // but a single-replace reads as incomplete escaping to a scanner.
+      description = description.replaceAll('\n', '<br />');
 
       const row: string[] = [
         rowHeader(key),

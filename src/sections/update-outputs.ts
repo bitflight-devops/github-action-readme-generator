@@ -57,6 +57,7 @@ export default function updateOutputs(
     log.success();
   } else {
     log.debug(`Action has no ${sectionToken}`);
+    inputs.readmeEditor.updateSection(sectionToken, content);
   }
   const ret: Record<string, string> = {};
   ret[sectionToken] = content.join('\n');

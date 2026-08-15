@@ -51,7 +51,15 @@ export default function updateInputs(
       const row: string[] = [
         rowHeader(key),
         description,
-        values?.default ? `<code>${values.default}</code>` : '',
+        // Tested against undefined rather than truthiness: `default: false` and
+        // `default: 0` are declared defaults, and a bare truthiness check
+        // dropped them, leaving the Default column blank — which reads as "this
+        // input has no default". The usage section already emits them (as
+        // `# Default: false`), so the table was contradicting the guide beside
+        // it. An empty-string default stays blank: there is nothing to show.
+        values?.default === undefined || values.default === ''
+          ? ''
+          : `<code>${values.default}</code>`,
         values?.required ? '**true**' : '__false__',
       ];
       log.debug(JSON.stringify(row));

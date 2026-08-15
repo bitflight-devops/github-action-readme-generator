@@ -33,6 +33,9 @@ describe('ReadmeGenerator', () => {
     mockLogTask = new LogTask('mock');
     mockInputs = new Inputs({}, mockLogTask);
     mockInputs.readmeEditor = new ReadmeEditor('./README.md');
+    // The auto-mocked Inputs has no config; the real constructor always builds
+    // one, and generate() reads the `prettier` flag off it.
+    mockInputs.config = { get: vi.fn().mockReturnValue(undefined) } as unknown as Inputs['config'];
 
     readmeGenerator = new ReadmeGenerator(mockInputs, mockLogTask);
     vi.mocked(updateSection).mockImplementation(
@@ -123,6 +126,23 @@ describe('ReadmeGenerator', () => {
       expect(readmeGenerator.updateSections).toHaveBeenCalledWith(sections);
       expect(readmeGenerator.resolveUpdates).toHaveBeenCalledWith(sectionPromises);
       expect(readmeGenerator.outputSections).toHaveBeenCalledWith(combinedSections);
+    });
+
+    it.each([
+      ['unset', undefined, true],
+      ['true', true, true],
+      ['the string "true"', 'true', true],
+      ['false', false, false],
+      ['the string "false"', 'false', false],
+    ])('passes prettier=%s through to dumpToFile as %s', async (_label, configured, expected) => {
+      vi.mocked(mockInputs.config.get).mockReturnValue(configured);
+      readmeGenerator.updateSections = vi.fn().mockReturnValue([]);
+      readmeGenerator.resolveUpdates = vi.fn().mockResolvedValue({});
+      readmeGenerator.outputSections = vi.fn();
+
+      await readmeGenerator.generate();
+
+      expect(mockInputs.readmeEditor.dumpToFile).toHaveBeenCalledWith(expected);
     });
   });
 });

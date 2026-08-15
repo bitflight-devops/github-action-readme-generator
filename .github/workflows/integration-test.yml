@@ -253,7 +253,85 @@ jobs:
           echo "✅ Auto-detection validation PASSED"
           echo "   uses: $EXPECTED_OWNER/$EXPECTED_REPO@$DETECTED_VERSION"
 
-      - name: Compare with original (if exists)
+      # The checks above prove the run happened and that owner/repo/version were
+      # detected. They say nothing about whether the sections were actually
+      # filled: a run that emitted an empty inputs table, dropped inputs from the
+      # usage block, or skipped formatting entirely passes every one of them.
+      # scripts/verify-readme-contract.mjs closes that gap, enumerating the
+      # target's own action.yml so a dropped input fails rather than going
+      # unnoticed. It mirrors __tests__/integration-readme-contract.test.ts,
+      # which pins the same promises against a synthetic action.yml.
+      - name: Verify the generated README fulfils the generator's contract
+        run: |
+          node action-under-test/scripts/verify-readme-contract.mjs \
+            "test-repo/${{ matrix.action_path }}" \
+            "test-repo/${{ matrix.readme_path }}"
+
+      # Generation has to reach a fixed point: once converged, further runs must
+      # change nothing, or the tool churns a diff into every user's repository
+      # on every CI run.
+      #
+      # Convergence is asserted between passes 2 and 3, not 1 and 2, because one
+      # lag is known and reproducible. `updateUsage` is the only section updater
+      # that awaits, so it writes last, and `updateContents` therefore indexes a
+      # README still holding the *previous* usage block. `extractHeaders` toggles
+      # its in-code-block flag on any ``` line, so when the old usage region held
+      # an odd number of fences, every heading after it is invisible on pass 1
+      # and visible on pass 2. Reproduced on a fixture: pass 1 emits an empty
+      # table of contents, pass 2 emits both headings, pass 3 matches pass 2.
+      #
+      # Comparing 1 against 2 would therefore fail on any target whose committed
+      # README carries an unbalanced fence inside its usage markers — reporting
+      # a known ordering quirk as non-determinism. Comparing 2 against 3 still
+      # catches genuine non-determinism, and the pass-1 difference is surfaced
+      # as a notice so the lag stays visible rather than being swallowed.
+      #
+      # This whole check replaces an earlier one that asserted the README
+      # *differed* from the pre-run backup. That was the wrong signal in both
+      # directions: a target already up to date correctly produces no
+      # difference, and a difference says nothing about whether the content is
+      # right.
+      - name: Snapshot pass 1
+        working-directory: test-repo
+        run: cp "${{ matrix.readme_path }}" README.pass1.md
+
+      - name: Generation pass 2
+        uses: ./action-under-test
+        with:
+          action: test-repo/${{ matrix.action_path }}
+          readme: test-repo/${{ matrix.readme_path }}
+
+      - name: Snapshot pass 2
+        working-directory: test-repo
+        run: cp "${{ matrix.readme_path }}" README.pass2.md
+
+      - name: Generation pass 3
+        uses: ./action-under-test
+        with:
+          action: test-repo/${{ matrix.action_path }}
+          readme: test-repo/${{ matrix.readme_path }}
+
+      - name: Verify generation has converged
+        working-directory: test-repo
+        run: |
+          if ! diff -q README.pass1.md README.pass2.md >/dev/null; then
+            echo "::notice::this target converged on pass 2 rather than pass 1; see the contents/usage ordering note in this workflow"
+            diff -u README.pass1.md README.pass2.md || true
+          fi
+
+          if diff -u README.pass2.md "${{ matrix.readme_path }}"; then
+            echo "✓ generation has converged: pass 3 matched pass 2"
+          else
+            echo "::error::pass 3 differed from pass 2; generation does not reach a fixed point"
+            exit 1
+          fi
+
+      - name: Discard the convergence snapshots
+        if: always()
+        working-directory: test-repo
+        run: rm -f README.pass1.md README.pass2.md
+
+      - name: Compare with original (for the log only)
         if: always()
         working-directory: test-repo
         run: |

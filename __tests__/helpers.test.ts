@@ -10,6 +10,7 @@ import {
   columnHeader,
   getCurrentVersionString,
   indexOfRegex,
+  isPrettierEnabled,
   lastIndexOfRegex,
   prefixParser,
   remoteGitUrlPattern,
@@ -546,5 +547,31 @@ describe('helpers', () => {
         }
       });
     });
+  });
+});
+
+describe('isPrettierEnabled', () => {
+  const inputsWith = (prettier: unknown): Inputs =>
+    ({ config: { get: (): unknown => prettier } }) as unknown as Inputs;
+
+  // Unset means enabled, so an existing config that never mentioned `prettier`
+  // keeps formatting rather than silently losing it.
+  it('defaults to enabled when the flag is unset', () => {
+    expect(isPrettierEnabled(inputsWith(undefined))).toBe(true);
+  });
+
+  // .ghadocs.json yields a real boolean; action inputs and CLI args arrive as
+  // strings, so both spellings have to mean the same thing.
+  it.each([
+    [true, true],
+    ['true', true],
+    [false, false],
+    ['false', false],
+  ])('maps %o to %s', (configured, expected) => {
+    expect(isPrettierEnabled(inputsWith(configured))).toBe(expected);
+  });
+
+  it.each([['no'], ['0'], [''], ['yes'], [1]])('treats %o as disabled', (configured) => {
+    expect(isPrettierEnabled(inputsWith(configured))).toBe(false);
   });
 });

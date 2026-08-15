@@ -17,7 +17,14 @@ type Context = typeof githubContext;
 const Context = githubContext.constructor as new () => Context;
 
 import Action, { type Input } from './Action.js';
-import { ConfigKeys, configFileName, README_SECTIONS, type ReadmeSection } from './constants.js';
+import {
+  ConfigKeys,
+  configFileName,
+  GITHUB_ACTIONS_BRANDING_COLORS,
+  GITHUB_ACTIONS_BRANDING_ICONS,
+  README_SECTIONS,
+  type ReadmeSection,
+} from './constants.js';
 import { repositoryFinder } from './helpers.js';
 import LogTask from './logtask/index.js';
 import ReadmeEditor from './readme-editor.js';
@@ -295,6 +302,12 @@ const ConfigKeysInputsMap: Record<string, string> = {
   repo: ConfigKeys.Repo,
   title_prefix: ConfigKeys.TitlePrefix,
   pretty: ConfigKeys.Prettier,
+  // Neither is an action.yml input, but nconf's argv store folds the CLI alias
+  // onto the canonical nested key while the env transform does not — without
+  // these, INPUT_DEBUG_CONFIG would land on a bare `debug_config` key that
+  // nothing reads.
+  debug_config: ConfigKeys.DebugConfig,
+  debug_nconf: ConfigKeys.DebugNconf,
 };
 
 /**
@@ -407,6 +420,296 @@ export function collectAllDefaultValuesFromAction(
   }
 }
 
+/** Key fragments whose values are masked before the resolved config is printed. */
+const SENSITIVE_KEY_PATTERN = /auth|credential|key|passw|secret|token/i;
+
+/** Stand-in written in place of a masked value. */
+export const REDACTED = '***REDACTED***';
+
+/**
+ * Nested allow-list of key paths, mirroring the shape of the resolved config.
+ * `true` marks a leaf the tool reads; a nested object marks a group.
+ */
+/**
+ * What a known key is allowed to hold. Declaring the shape per key, rather than
+ * accepting anything scalar-ish everywhere, is what keeps a malformed value
+ * from reaching the dump: `sections` is the only key that legitimately holds an
+ * array, so an array under any other key came from a caller and nothing reads
+ * it.
+ */
+type KnownLeaf = 'scalar' | 'section-names' | 'boolean' | 'version-source' | 'branding-hash';
+
+type KnownKeyTree = { [key: string]: KnownKeyTree | KnownLeaf };
+
+/**
+ * `sections` is the one key holding an array, and its domain is the finite
+ * {@link README_SECTIONS} set — `updateSection` ignores anything else. Naming
+ * the leaf after that domain, rather than calling it a generic array, is what
+ * lets an unrecognised entry be masked instead of printed.
+ */
+const SECTION_LIST_KEYS = new Set(['sections']);
+
+/**
+ * Keys whose declared domain is a boolean. No code path reads the bytes of a
+ * value under one of these: the readers either compare against boolean literals
+ * (`save.ts` on `=== true`; `isPrettierEnabled`, `getCurrentVersionString` and
+ * `isDebugConfigEnabled` on `=== true || === 'true'`) or gate on truthiness
+ * (`update-title.ts`, `update-badges.ts`), which consumes the value's
+ * truthiness and nothing else.
+ *
+ * The domain comes from the key's contract, not from how its reader happens to
+ * test it — `action.yml` declares `branding_as_title_prefix` as
+ * `type: boolean` and `include_github_version_badge` with a boolean default,
+ * so a string under either is malformed input whose content is never read.
+ */
+const BOOLEAN_KEYS: ReadonlySet<string> = new Set<string>([
+  ConfigKeys.Save,
+  ConfigKeys.Prettier,
+  ConfigKeys.VersioningEnabled,
+  ConfigKeys.BrandingAsTitlePrefix,
+  ConfigKeys.IncludeGithubVersionBadge,
+  ConfigKeys.DebugConfig,
+  ConfigKeys.DebugNconf,
+]);
+
+/** The boolean forms nconf can hand back, parsed or still as a string. */
+const BOOLEAN_VALUES: ReadonlySet<unknown> = new Set<unknown>([true, false, 'true', 'false']);
+
+/**
+ * `versioning:source` selects a detection strategy from a closed set;
+ * `getCurrentVersionString` switches over these and treats anything else as
+ * `git-tag`, so a value outside the set is never used for its content.
+ */
+const VERSION_SOURCE_KEYS: ReadonlySet<string> = new Set<string>([ConfigKeys.VersioningSource]);
+
+/** The strategies `getCurrentVersionString` switches over. */
+const VERSION_SOURCES: ReadonlySet<unknown> = new Set<unknown>([
+  'git-tag',
+  'git-branch',
+  'git-sha',
+  'package-json',
+  'explicit',
+]);
+
+/**
+ * `image_generated` caches the branding the SVG on disk was drawn from.
+ *
+ * It is the one key the tool writes and reads back that `ConfigKeys` does not
+ * declare: `generateImgMarkup` sets it to `${icon}${color}` and, on a later
+ * run, regenerates the SVG unless the saved value equals that same string.
+ */
+const BRANDING_HASH_KEYS: ReadonlySet<string> = new Set<string>(['image_generated']);
+
+/**
+ * Whether a value is a branding hash `generateImgMarkup`'s comparison can match.
+ *
+ * The icon and colour it concatenates come from closed sets, so the producible
+ * hashes are a finite domain — the same reason `sections` and `versioning:source`
+ * are validated against their contents rather than their shape. The two sets are
+ * joined without a separator, so the colour is recovered by suffix.
+ * @param {unknown} value - The value found under a branding-hash key.
+ * @returns {boolean} True when the value is an icon name followed by a colour.
+ */
+function isBrandingHash(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  return GITHUB_ACTIONS_BRANDING_COLORS.some(
+    (color) =>
+      value.endsWith(color) && GITHUB_ACTIONS_BRANDING_ICONS.has(value.slice(0, -color.length)),
+  );
+}
+
+/**
+ * Splits colon-separated config paths into the nested shape nconf resolves them
+ * to, so `versioning:prefix` becomes `{ versioning: { prefix: 'scalar' } }`.
+ * @param {readonly string[]} paths - Colon-separated key paths.
+ * @returns {KnownKeyTree} The paths as a nested tree of declared shapes.
+ */
+function buildKnownKeyTree(paths: readonly string[]): KnownKeyTree {
+  const tree: KnownKeyTree = {};
+  for (const path of paths) {
+    const segments = path.split(':');
+    let node = tree;
+    for (const [index, segment] of segments.entries()) {
+      if (index === segments.length - 1) {
+        if (SECTION_LIST_KEYS.has(path)) node[segment] = 'section-names';
+        else if (BOOLEAN_KEYS.has(path)) node[segment] = 'boolean';
+        else if (VERSION_SOURCE_KEYS.has(path)) node[segment] = 'version-source';
+        else if (BRANDING_HASH_KEYS.has(path)) node[segment] = 'branding-hash';
+        else node[segment] = 'scalar';
+        break;
+      }
+      const next = node[segment];
+      node = next === undefined || typeof next === 'string' ? (node[segment] = {}) : next;
+    }
+  }
+  return tree;
+}
+
+/**
+ * Canonical keys {@link ConfigKeys} declares that nothing in `src` reads, and
+ * that no `action.yml` input or CLI flag can set. A value can only reach one of
+ * them through `.ghadocs.json`, and no code path consumes it once there — so it
+ * is a caller's value, not the tool's, and it is masked like any other unknown
+ * key. Drop an entry from here once a reader for it lands.
+ */
+const UNREAD_CONFIG_KEYS: ReadonlySet<string> = new Set<string>([
+  ConfigKeys.DebugReadme,
+  ConfigKeys.DebugAction,
+  ConfigKeys.DebugGithub,
+]);
+
+/**
+ * Every key this tool resolves a value out of: the canonical config keys it
+ * actually reads, plus `sections`, which `Inputs` sets and reads directly.
+ *
+ * The action-input and CLI spellings in {@link ConfigKeysInputsMap} are
+ * deliberately absent. Those are input spellings, not resolved keys — the file
+ * store performs no mapping, so `{"action": "…"}` in `.ghadocs.json` leaves a
+ * bare `action` key that nothing ever reads, and listing it here would have
+ * printed that value. Nothing is lost by masking them: when a value does arrive
+ * through an alias, nconf's argv store records the canonical key too, so the
+ * dump still shows it under `paths:action` / `debug:config`.
+ */
+const KNOWN_KEY_TREE: KnownKeyTree = buildKnownKeyTree([
+  ...Object.values(ConfigKeys).filter((key) => !UNREAD_CONFIG_KEYS.has(key)),
+  'sections',
+  ...BRANDING_HASH_KEYS,
+]);
+
+/**
+ * Whether a value is shaped like something a known leaf key can hold: a scalar,
+ * or an array of scalars.
+ *
+ * Every key in {@link KNOWN_KEY_TREE} holds a scalar except `sections`, which
+ * holds a string array. Anything richer arriving under one of those names came
+ * from a caller, not from this tool, and nothing here reads it.
+ * @param {unknown} value - The value found under a known leaf key.
+ * @returns {boolean} True when the value is a scalar or an array of scalars.
+ */
+function isScalarLeafValue(value: unknown): boolean {
+  return !Array.isArray(value) && (value === null || typeof value !== 'object');
+}
+
+/**
+ * Whether a value is an array holding only scalars — the shape `sections` has.
+ * @param {unknown} value - The value found under an array-valued key.
+ * @returns {boolean} True for an array with no object or array elements.
+ */
+function isSectionNameList(value: unknown): boolean {
+  const names = README_SECTIONS as readonly string[];
+  return Array.isArray(value) && value.every((entry) => names.includes(entry as string));
+}
+
+/**
+ * Masks every value the tool does not itself read, plus anything under a
+ * sensitive-looking key, before the resolved config is printed.
+ *
+ * `action.yml` declares no secret input, and the env store admits only
+ * `INPUT_*` keys, so ambient variables such as `GITHUB_TOKEN` never reach the
+ * config. A caller can still land one: GitHub sets `INPUT_*` for every key
+ * under `with:`, declared or not, and `.ghadocs.json` and CLI args are
+ * user-controlled. The dump exists to be pasted into bug reports, so it masks
+ * rather than relying on the runner's own secret masking.
+ *
+ * Because those three sources admit arbitrary keys, a name heuristic alone
+ * cannot make the dump safe — `--webhook=https://hooks.example/...` carries a
+ * credential under a name no pattern would flag. So the allow-list is the
+ * primary defence: a key the tool reads is printed, anything else is masked.
+ * That still shows a reporter which unexpected keys were supplied, without
+ * printing what they held. `SENSITIVE_KEY_PATTERN` stays as a second line,
+ * covering a future known key whose value is genuinely secret.
+ *
+ * Values under nconf and yargs bookkeeping keys (`_`, `$0`) are masked by the
+ * same rule; they are not configuration and nothing reads them.
+ *
+ * Recurses so nested groups (`versioning:*`, `paths:*`) are covered. Arrays are
+ * walked; a masked key's value is replaced whole rather than descended into.
+ * @param {unknown} value - The resolved config, or a nested part of it.
+ * @param {KnownKeyTree | true} known - Allow-list for this level; `true` means
+ * every key below is already within a known leaf's value.
+ * @returns {unknown} A copy with unknown and sensitive values masked.
+ */
+export function redactSensitiveValues(
+  value: unknown,
+  known: KnownKeyTree = KNOWN_KEY_TREE,
+): unknown {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, entry]) => {
+      if (SENSITIVE_KEY_PATTERN.test(key)) {
+        return [key, REDACTED];
+      }
+      const branch = known[key];
+
+      // Each known key declares the one shape it holds, and every other shape
+      // is masked. Three earlier attempts at this each closed one hole and left
+      // its mirror open — an object under a scalar key, then a scalar under a
+      // group key, then an array under a scalar key — because they asked "is
+      // this value scalar-ish?" instead of "is this the shape this key holds?".
+      // The cases below are exhaustive over the tree. A leaf declares the
+      // domain the key's contract gives it, not the shape its value happens to
+      // have and not how its reader tests it: `scalar` is a shape, and the keys
+      // that keep it are the ones whose value is read for its content.
+      switch (branch) {
+        case undefined: {
+          // Not a key this tool reads. The config sources admit arbitrary keys,
+          // so a credential can arrive under a name no pattern would flag.
+          return [key, REDACTED];
+        }
+        case 'scalar': {
+          return [key, isScalarLeafValue(entry) ? entry : REDACTED];
+        }
+        case 'section-names': {
+          // Shape alone is not enough here: the domain is finite, so an entry
+          // outside it is a value nothing reads, exactly like an unknown key.
+          return [key, isSectionNameList(entry) ? entry : REDACTED];
+        }
+        case 'boolean': {
+          // Finite for the same reason: the reader compares against boolean
+          // literals, so anything else is a value it can never act on.
+          return [key, BOOLEAN_VALUES.has(entry) ? entry : REDACTED];
+        }
+        case 'version-source': {
+          return [key, VERSION_SOURCES.has(entry) ? entry : REDACTED];
+        }
+        case 'branding-hash': {
+          return [key, isBrandingHash(entry) ? entry : REDACTED];
+        }
+        default: {
+          // A group key names a nested mapping. Anything else under one is not
+          // read out of any nested key.
+          const isGroupShaped =
+            entry !== null && typeof entry === 'object' && !Array.isArray(entry);
+          return [key, isGroupShaped ? redactSensitiveValues(entry, branch) : REDACTED];
+        }
+      }
+    }),
+  );
+}
+
+/**
+ * Whether the resolved nconf object was asked for.
+ *
+ * Two flags carry the identical promise "Print out the resolved nconf object
+ * with all values" — `--debug_config` and the older `--debug_nconf` — so either
+ * triggers the dump rather than one of them continuing to be inert.
+ *
+ * Unset means off, the opposite of `pretty`: this is a diagnostic, and neither
+ * flag is declared in `action.yml`. The value arrives as a real boolean from
+ * `.ghadocs.json` and as a string from env and CLI args, so both spellings are
+ * accepted.
+ * @param {ProviderInstance} config - The resolved config instance.
+ * @returns {boolean} True when the resolved config should be printed.
+ */
+export function isDebugConfigEnabled(config: ProviderInstance): boolean {
+  return [ConfigKeys.DebugConfig, ConfigKeys.DebugNconf].some((key) => {
+    const value = config.get(key);
+    return value === true || value === 'true';
+  });
+}
+
 /**
  * Loads the configuration
  *
@@ -422,6 +725,28 @@ export function loadConfig(
   if (process.env.GITHUB_ACTION === 'true') {
     log.info('Running in GitHub action');
   }
+
+  // nconf resolves in the order stores are registered — the first store holding
+  // a key wins. The order here is argv, then the config file, then env:
+  //
+  //   --pretty=false        beats  .ghadocs.json  beats  INPUT_PRETTY
+  //
+  // argv sits on top so an explicit CLI flag overrides `.ghadocs.json`, which it
+  // previously could not.
+  //
+  // env stays *below* the file deliberately. When this runs as a GitHub Action
+  // the runner exports an INPUT_* variable for every input carrying a default in
+  // action.yml, whether or not the workflow named it under `with:` — so
+  // INPUT_PRETTY=true and INPUT_README=README.md are present on essentially
+  // every run. Registering env above the file would let those metadata defaults
+  // outrank `.ghadocs.json`, leaving a project unable to set a custom readme
+  // path or disable formatting from its persisted config.
+  //
+  // The cost is that an explicit `with:` entry also sits below the file, since
+  // the runner flattens "set by the workflow" and "action.yml default" into the
+  // same INPUT_* variable with nothing to tell them apart.
+  config.argv(argvOptions);
+
   if (configFilePath) {
     if (fs.existsSync(configFilePath)) {
       log.info(`Config file found: ${configFilePath}`);
@@ -431,15 +756,13 @@ export function loadConfig(
     }
   }
 
-  config
-    .env({
-      lowerCase: true,
-      parseValues: true,
-      transform: (obj: KVPairType): undefined | KVPairType => {
-        return transformGitHubInputsToArgv(log, config, obj);
-      },
-    })
-    .argv(argvOptions);
+  config.env({
+    lowerCase: true,
+    parseValues: true,
+    transform: (obj: KVPairType): undefined | KVPairType => {
+      return transformGitHubInputsToArgv(log, config, obj);
+    },
+  });
 
   return config;
 }
@@ -616,7 +939,23 @@ export default class Inputs {
     this.configPath = inputContext.configPath ?? path.resolve(configFileName);
     this.config = inputContext.config ?? new Provider();
     loadConfig(log, this.config, this.configPath);
-    loadDefaultConfig(log, this.config);
+
+    // `loadDefaultConfig` calls `repositoryFinder`, which throws "No owner or
+    // repo found" when the tool runs outside a git checkout with no explicit
+    // owner/repo and no GitHub context. That is one of the two failures this
+    // flag exists to diagnose, so the dump has to survive it — without this the
+    // flag printed nothing at all on that path.
+    try {
+      loadDefaultConfig(log, this.config);
+    } catch (error) {
+      this.dumpResolvedConfig();
+      throw error;
+    }
+
+    // The other one: `loadRequiredConfig` throws when a required value is
+    // missing, so the dump goes before it while it can still be printed.
+    this.dumpResolvedConfig();
+
     loadRequiredConfig(log, this.config);
 
     this.action = inputContext.action ?? loadAction(log, this.config.get(ConfigKeys.pathsAction));
@@ -645,10 +984,27 @@ export default class Inputs {
     this.repo = inputContext.repo ?? this.config.get('repo');
   }
 
+  /**
+   * Prints the resolved configuration when `--debug_config` (or the older
+   * `--debug_nconf`) asked for it.
+   *
+   * Called from two places in the constructor because both of the failures this
+   * flag diagnoses throw, and each throws from a different call — see the
+   * comments at those call sites. Rerunning it after a successful
+   * `loadDefaultConfig` is the only path that reaches the second call, so no
+   * run prints the dump twice.
+   * @returns {void}
+   */
+  private dumpResolvedConfig(): void {
+    if (isDebugConfigEnabled(this.config)) {
+      this.log.info(`Resolved config:\n${this.stringify()}`);
+    }
+  }
+
   stringify(): string {
     if (this?.config) {
       try {
-        return YAML.stringify(this.config.get());
+        return YAML.stringify(redactSensitiveValues(this.config.get()));
       } catch (error) {
         this.log.error(`${String(error)}`);
         // continue

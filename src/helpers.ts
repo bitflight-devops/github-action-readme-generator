@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { context } from '@actions/github';
 import type { PackageJson } from 'types-package-json';
 
+import { ConfigKeys } from './constants.js';
 import type Inputs from './inputs.js';
 import LogTask from './logtask/index.js';
 import { unicodeWordMatch } from './unicode-word-match.js';
@@ -496,6 +497,22 @@ function getVersionFromPackageJson(actionDir: string, log: LogTask): string | un
     log.debug(`package.json not found at ${packageJsonPath}`);
   }
   return undefined;
+}
+
+/**
+ * Whether the generated README should be run through prettier before it is
+ * written.
+ *
+ * Unset means enabled, matching `action.yml`'s `pretty` default of `"true"`.
+ * The value arrives as a real boolean from `.ghadocs.json` and as a string from
+ * action inputs and CLI args, so both spellings are accepted; anything else
+ * (`false`, `"false"`, `"no"`, …) disables formatting.
+ * @param {Inputs} inputs - The resolved inputs to read the flag from.
+ * @returns {boolean} True when prettier formatting should run.
+ */
+export function isPrettierEnabled(inputs: Inputs): boolean {
+  const prettier = inputs.config.get(ConfigKeys.Prettier);
+  return prettier === undefined || prettier === true || prettier === 'true';
 }
 
 export function getCurrentVersionString(inputs: Inputs): string {

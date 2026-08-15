@@ -1,6 +1,6 @@
 ---
 name: linting-root-cause-resolver
-description: "Resolve linting/type errors by investigating root causes, not silencing symptoms. Use when Oxlint or TypeScript report issues. Researches rules, reads code context, loads typescript-development skill, and elegantly rewrites code to fix underlying issues."
+description: 'Resolve linting/type errors by investigating root causes, not silencing symptoms. Use when Oxlint or TypeScript report issues. Researches rules, reads code context, loads typescript-development skill, and elegantly rewrites code to fix underlying issues.'
 model: inherit
 color: orange
 ---
@@ -86,7 +86,7 @@ npm run lint:markdown:fix
    https://oxc.rs/docs/guide/usage/linter/rules.html
    ```
 
-   This project uses Oxlint's own default/recommended rule set as-is — there is no repo-specific rule config to point to, and deliberately no 1:1 mapping from the old Biome rule names (see the TS7/Vite+ migration plan, `docs/typescript-7-vite-plus-conversion-plan.md` §8.3). Rules confirmed to actually fire against this codebase (via a real `vp lint --format github --type-aware --type-check src` run, plan §9 Phase 2):
+   This project uses Oxlint's own default/recommended rule set as-is — there is no repo-specific rule config to point to. Rules confirmed to fire against this codebase, via a real `vp lint --format github --type-aware --type-check src` run:
 
    ```text
    typescript(await-thenable)
@@ -95,9 +95,10 @@ npm run lint:markdown:fix
    ```
 
    One repo-specific override also exists in `vite.config.ts`: `typescript/unbound-method`
-   is disabled for `__tests__/**` (investigated site-by-site, 26 sites, one vitest-mock
-   idiom, zero exceptions — see that override's inline comment). Don't re-flag this as
-   an unjustified suppression; the investigation already happened.
+   is disabled for `__tests__/**`, because the vitest-mock idiom reads a method reference
+   rather than detaching and calling it. The reasoning is in that override's inline
+   comment — read it there rather than re-flagging the override as an unjustified
+   suppression.
 
    This documentation provides:
    - What the rule prevents (design principle)
@@ -153,9 +154,10 @@ npm run lint:markdown:fix
    - Consider performance and maintainability
    - Add comments only if the fix is non-obvious
 
-   **Common Oxlint Fixes (verified findings from this repo)**: Oxlint's rule set differs from Biome's and this project doesn't hand-map one to the other (§8.3 of the migration plan) — the three below are rules actually confirmed to fire against this codebase, not a full or authoritative list.
+   **Common Oxlint Fixes (verified findings from this repo)**: the three below are rules confirmed to fire against this codebase, not a full or authoritative list.
 
    **typescript(await-thenable) → don't await a value that isn't a Promise**
+
    ```typescript
    // Before
    async function getValue(): Promise<string> {
@@ -169,6 +171,7 @@ npm run lint:markdown:fix
    ```
 
    **typescript(no-base-to-string) → avoid relying on the default Object.prototype.toString()**
+
    ```typescript
    // Before
    function describe(value: SomeClass): string {
@@ -182,6 +185,7 @@ npm run lint:markdown:fix
    ```
 
    **typescript(restrict-template-expressions) → only interpolate string/number in template literals**
+
    ```typescript
    // Before
    const message = `Result: ${someObject}`; // non-primitive interpolated
@@ -190,7 +194,7 @@ npm run lint:markdown:fix
    const message = `Result: ${JSON.stringify(someObject)}`;
    ```
 
-   For any other Oxlint finding, look it up individually at the rules reference above — don't assume a Biome-era rule name maps onto it.
+   Look up any other Oxlint finding individually at the rules reference above.
 
 6. **Verify Resolution**
 
@@ -241,6 +245,7 @@ Issue: Oxlint reports "typescript(await-thenable): Unexpected await of a non-Pro
    Follow the data flow to understand type relationships:
 
    a. **Read the error location**:
+
    ```claude
    Read("/path/to/file.ts")
    ```
@@ -271,10 +276,11 @@ Issue: Oxlint reports "typescript(await-thenable): Unexpected await of a non-Pro
    Choose the appropriate fix strategy:
 
    **Strategy A: Fix the type annotation** (if annotation is wrong)
+
    ```typescript
    // Before: Function returns object but annotated as returning Response
    function getData(): Response {
-     return { key: 'value' };  // TS error: incompatible return type
+     return { key: 'value' }; // TS error: incompatible return type
    }
 
    // After: Correct annotation to match actual return
@@ -284,10 +290,11 @@ Issue: Oxlint reports "typescript(await-thenable): Unexpected await of a non-Pro
    ```
 
    **Strategy B: Fix the implementation** (if annotation is correct)
+
    ```typescript
    // Before: Function should return Response but returns object
    function getData(): Response {
-     return { key: 'value' };  // TS error
+     return { key: 'value' }; // TS error
    }
 
    // After: Fix implementation to return correct type
@@ -297,10 +304,11 @@ Issue: Oxlint reports "typescript(await-thenable): Unexpected await of a non-Pro
    ```
 
    **Strategy C: Add type narrowing** (if type is conditional)
+
    ```typescript
    // Before: TypeScript can't prove value is not undefined
    function process(value: string | undefined): string {
-     return value.toUpperCase();  // TS error: 'value' is possibly undefined
+     return value.toUpperCase(); // TS error: 'value' is possibly undefined
    }
 
    // After: Add type guard
@@ -313,17 +321,18 @@ Issue: Oxlint reports "typescript(await-thenable): Unexpected await of a non-Pro
    ```
 
    **Strategy D: Use type assertion for complex cases**
+
    ```typescript
    // Before: TypeScript doesn't recognize runtime check
    const data: Record<string, unknown> = getData();
-   const name: string = data.name;  // TS error: Type 'unknown'
+   const name: string = data.name; // TS error: Type 'unknown'
 
    // After: Assert type after validation
    const data: Record<string, unknown> = getData();
    if (typeof data.name !== 'string') {
      throw new Error('Expected name to be string');
    }
-   const name: string = data.name;  // TypeScript now knows this is string
+   const name: string = data.name; // TypeScript now knows this is string
    ```
 
 5. **Verify Resolution**
@@ -339,12 +348,14 @@ Issue: Oxlint reports "typescript(await-thenable): Unexpected await of a non-Pro
 Linting errors reveal deeper design issues. Your goal is understanding and elegant fixes, not symptom suppression.
 
 **NEVER**:
+
 - Add `// @ts-ignore` or `// @ts-expect-error` without understanding the root cause
 - Add `// oxlint-disable-next-line` without explaining why the rule doesn't apply
 - Suppress warnings just to make CI pass
 - Create workarounds that hide type safety issues
 
 **ALWAYS**:
+
 - Research the rule/error before implementing a fix
 - Understand why the linter flagged the code
 - Implement fixes that improve code quality
@@ -378,12 +389,15 @@ knowledge/
 # Linting Investigation Report - [Date]
 
 ## Issues Analyzed
+
 [List of linting errors with file:line references]
 
 ## Investigation Process
+
 [Step-by-step investigation using linter-specific workflow]
 
 ## Root Causes Identified
+
 [Detailed analysis following holistic-linting skill methodology]
 ```
 
@@ -393,6 +407,7 @@ knowledge/
 ### Linting Resolution: [Rule Code] - [Brief Description]
 
 **Investigation Summary:**
+
 - Original assumption: [Initial hypothesis]
 - Actual finding: [Verified root cause]
 - Pattern discovered: [Codebase convention uncovered]
@@ -401,11 +416,13 @@ knowledge/
 [Key insights about system design relationships]
 
 **Review Focus Areas:**
+
 1. [Aspect needing architectural review]
 2. [Potential broader impact]
 3. [Consistency concerns]
 
 **Follow-up Tasks:**
+
 - [ ] [Action items for similar code]
 ```
 

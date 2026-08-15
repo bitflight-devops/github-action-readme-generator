@@ -272,14 +272,14 @@ This skill modifies Claude's standard workflow to include automatic quality chec
 
 Linter detection is handled automatically by scanning project configuration files. The linting hook's `ConfigurationDetector` identifies available tools at runtime by checking:
 
-| Config File                    | Tools Detected                                       |
-| ------------------------------ | ---------------------------------------------------- |
-| `.husky/` directory            | Husky git hooks (takes priority)                     |
+| Config File                    | Tools Detected                                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `.husky/` directory            | Husky git hooks (takes priority)                                                                       |
 | `vite.config.ts`               | Oxlint (lint, type-aware) + Oxfmt (format) via Vite+'s `vp` CLI — `fmt`/`lint`/`check`/`staged` blocks |
-| `tsconfig.json`                | TypeScript compiler                                  |
-| `package.json`, `.prettierrc*` | Prettier                                             |
-| `.markdownlint.json/.yaml`     | markdownlint                                         |
-| `.shellcheckrc`                | ShellCheck (shell scripts)                           |
+| `tsconfig.json`                | TypeScript compiler                                                                                    |
+| `package.json`, `.prettierrc*` | Prettier                                                                                               |
+| `.markdownlint.json/.yaml`     | markdownlint                                                                                           |
+| `.shellcheckrc`                | ShellCheck (shell scripts)                                                                             |
 
 **Detection Priority** (highest to lowest):
 
@@ -375,7 +375,7 @@ This section provides systematic resolution procedures for each major TypeScript
    https://oxc.rs/docs/guide/usage/linter/rules.html
    ```
 
-   This project uses Oxlint's own default/recommended rule set as-is — there is no repo-specific rule config to point to, and deliberately no 1:1 mapping from the old Biome rule names (per the TS7/Vite+ migration plan, `docs/typescript-7-vite-plus-conversion-plan.md` §8.3). Rules confirmed to actually fire against this codebase (via a real `vp lint --format github --type-aware --type-check src` run, see that plan's §9 Phase 2):
+   This project uses Oxlint's own default/recommended rule set as-is — there is no repo-specific rule config to point to. Rules confirmed to fire against this codebase, via a real `vp lint --format github --type-aware --type-check src` run:
 
    ```text
    typescript(await-thenable)
@@ -447,7 +447,7 @@ This section provides systematic resolution procedures for each major TypeScript
    vp check /path/to/file.ts
    ```
 
-**Common Oxlint Fixes (verified findings from this repo)**: Oxlint's rule set differs from Biome's and this project doesn't hand-map one to the other (§8.3 of the migration plan) — the three below are rules actually confirmed to fire against this codebase, not a full or authoritative list.
+**Common Oxlint Fixes (verified findings from this repo)**: the three below are rules confirmed to fire against this codebase, not a full or authoritative list.
 
 #### typescript(await-thenable)
 
@@ -487,7 +487,7 @@ const message = `Result: ${someObject}`;
 const message = `Result: ${JSON.stringify(someObject)}`;
 ```
 
-For any other Oxlint finding, look it up individually at the rules reference above rather than assuming a Biome-era rule name maps onto it — no such mapping exists by design.
+Look up any other Oxlint finding individually at the rules reference above.
 
 **Example Workflow Execution**:
 
@@ -596,7 +596,7 @@ Issue: Oxlint reports "typescript(await-thenable): Unexpected `await` of a non-P
    ```typescript
    // Before: Function returns object but annotated as returning Response
    function getData(): Response {
-     return { key: 'value' };  // TS2322: Type '{ key: string; }' is not assignable to type 'Response'
+     return { key: 'value' }; // TS2322: Type '{ key: string; }' is not assignable to type 'Response'
    }
 
    // After: Correct annotation to match actual return
@@ -610,7 +610,7 @@ Issue: Oxlint reports "typescript(await-thenable): Unexpected `await` of a non-P
    ```typescript
    // Before: Function should return Response but returns object
    function getData(): Response {
-     return { key: 'value' };  // TS2322
+     return { key: 'value' }; // TS2322
    }
 
    // After: Fix implementation to return correct type
@@ -624,7 +624,7 @@ Issue: Oxlint reports "typescript(await-thenable): Unexpected `await` of a non-P
    ```typescript
    // Before: TypeScript can't prove value is not undefined
    function process(value: string | undefined): string {
-     return value.toUpperCase();  // TS2532: Object is possibly 'undefined'
+     return value.toUpperCase(); // TS2532: Object is possibly 'undefined'
    }
 
    // After: Add type guard
@@ -641,14 +641,14 @@ Issue: Oxlint reports "typescript(await-thenable): Unexpected `await` of a non-P
    ```typescript
    // Before: TypeScript doesn't recognize runtime check
    const data: Record<string, unknown> = getData();
-   const name: string = data.name;  // TS2322: Type 'unknown' is not assignable to type 'string'
+   const name: string = data.name; // TS2322: Type 'unknown' is not assignable to type 'string'
 
    // After: Validate then assert (NEVER assert without validation)
    const data: Record<string, unknown> = getData();
    if (typeof data.name !== 'string') {
      throw new Error('Expected name to be string');
    }
-   const name: string = data.name;  // TypeScript now knows this is string
+   const name: string = data.name; // TypeScript now knows this is string
    ```
 
    **Strategy E: Use type predicates for custom guards**
@@ -660,10 +660,7 @@ Issue: Oxlint reports "typescript(await-thenable): Unexpected `await` of a non-P
        return false;
      }
      const record = obj as Record<string, unknown>;
-     return (
-       typeof record.name === 'string' &&
-       typeof record.version === 'string'
-     );
+     return typeof record.name === 'string' && typeof record.version === 'string';
    }
 
    // Use the type predicate
@@ -671,7 +668,7 @@ Issue: Oxlint reports "typescript(await-thenable): Unexpected `await` of a non-P
      if (!isValidConfig(input)) {
        throw new Error('Invalid config format');
      }
-     return input;  // TypeScript knows input is ConfigType
+     return input; // TypeScript knows input is ConfigType
    }
    ```
 
@@ -856,6 +853,7 @@ This project uses Husky for git hooks. The pre-commit hook runs:
 `vite.config.ts`'s `staged` block is the single, authoritative config for pre-commit file processing — read it directly for the exact per-glob commands rather than trusting a copy here; there's no separate `.lintstagedrc` or `package.json` `lint-staged` block to reconcile against it.
 
 This ensures:
+
 - TypeScript files are formatted and linted before commit
 - Other staged file types are handled per whatever `vite.config.ts`'s `staged` block configures for them
 

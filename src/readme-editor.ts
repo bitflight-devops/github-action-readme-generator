@@ -114,10 +114,13 @@ export default class ReadmeEditor {
 
   /**
    * Dumps the modified content back to the README file.
+   * @param {boolean} [prettier=true] - Run the result through prettier before
+   *   writing. Callers pass the resolved `pretty` input; it defaults to true so
+   *   constructing a ReadmeEditor directly keeps the formatting behaviour.
    * @returns {Promise<void>}
    */
-  async dumpToFile(): Promise<void> {
-    const content = await formatMarkdown(this.fileContent);
+  async dumpToFile(prettier: boolean = true): Promise<void> {
+    const content = prettier ? await formatMarkdown(this.fileContent) : this.fileContent;
     if (process.env.GITHUB_ACTIONS) {
       core.setOutput('readme_after', content);
     }

@@ -1,41 +1,34 @@
 import { defineConfig } from "vite-plus";
 
-// Phase 3 of docs/typescript-7-vite-plus-conversion-plan.md added the `pack`
-// and `test` blocks below to the `fmt`/`lint`/`check`/`staged` blocks Phase 2
-// already established.
 const config: ReturnType<typeof defineConfig> = defineConfig({
   lint: {
-    // Type-aware/type-check both required explicitly (not default-on) so
-    // `vp check` keeps the type-check coverage `prelint`'s raw `tsc --noEmit`
-    // used to provide. See §9 Phase 2.
+    // Type-aware/type-check are both off by default, and `vp check` is CI's
+    // gate — without these two, nothing in CI type-checks.
     options: {
       typeAware: true,
       typeCheck: true,
     },
     overrides: [
       {
-        // typescript/unbound-method: investigated individually across all 26
-        // sites it flagged in __tests__/** (2026-08-09). Every site is one of
-        // three sub-patterns of the same vitest-mock idiom:
+        // typescript/unbound-method fires on the vitest-mock idiom, in three
+        // shapes:
         //   expect(obj.mockMethod).toHaveBeenCalledWith(...) / .toBeCalled()
         //   expect(vi.isMockFunction(obj.mockMethod)).toBe(true)
         //   vi.mocked(obj.mockMethod).mockReturnValue(...)/.mockImplementation(...)
-        // In each, the method reference is only read (call-history/identity
-        // introspection) or reconfigured for a later call vitest itself makes
-        // through the real receiver — never detached into a bare variable and
-        // invoked without its receiver, which is the actual bug this rule
-        // guards against. 14 of the 26 are the identical line repeated in
-        // __tests__/update-contents.test.ts, so per-site inline suppressions
-        // would be pure noise. Zero exceptions found; see AGENTS.md-adjacent
-        // investigation notes in the PR description for the full site list.
+        // In each the method reference is read for call-history or identity, or
+        // reconfigured for a later call vitest makes through the real receiver.
+        // None detaches it into a bare variable and invokes it without its
+        // receiver, which is the bug the rule guards against — so the rule has
+        // nothing to catch here, and per-site suppressions would be noise.
+        // Re-check that before turning it off anywhere outside __tests__/.
         files: ["__tests__/**"],
         rules: { "typescript/unbound-method": "off" },
       },
     ],
   },
 
-  // Matches the repo's pre-existing (Biome-era) style, so adopting Oxfmt
-  // doesn't cause a mass reformat of already-conforming code.
+  // The repo's committed style. Changing any of these reformats every file
+  // under src/ and __tests__/ in one commit.
   fmt: {
     singleQuote: true,
     semi: true,
@@ -45,15 +38,14 @@ const config: ReturnType<typeof defineConfig> = defineConfig({
 
   staged: {
     "{src,__tests__}/**/*.ts": "vp check --fix",
-    // Oxfmt formats Markdown/YAML; markdownlint keeps doing prose/structure
-    // linting separately (§8.2). No Oxfmt equivalent exists for shell
-    // scripts or package.json, so neither is reformatted on commit anymore.
+    // Oxfmt formats Markdown/YAML; markdownlint does prose/structure linting
+    // separately. No Oxfmt equivalent exists for shell scripts or
+    // package.json, so neither is reformatted on commit.
     "*.{md,yaml,yml}": "vp fmt --write",
   },
 
-  // §7: replaces scripts/esbuild.mjs + tsconfig-mjs.json +
-  // scripts/set_package_type.sh + tsconfig.build.json. Two entries sharing
-  // the same source: a self-contained CLI binary and an ESM library build.
+  // Two entries sharing the same source: a self-contained CLI binary and an
+  // ESM library build.
   pack: [
     {
       // CLI (`dist/bin/index.js`) — must stay a single, self-contained file:
@@ -73,9 +65,13 @@ const config: ReturnType<typeof defineConfig> = defineConfig({
       // Node's ESM rules) and the paths generate-docs/action.yml/chmod
       // already depend on.
       outExtensions: () => ({ js: ".js" }),
-      // Rolldown code-splits on prettier's internal dynamic imports by
-      // default, producing multiple chunk files — fatal for a single-file
-      // bundled binary with no node_modules to resolve sibling chunks from.
+      // Any dependency with internal dynamic imports makes Rolldown emit
+      // multiple chunk files by default — fatal for a single-file bundled
+      // binary with no node_modules to resolve sibling chunks from. Prettier
+      // used to be the one that tripped this (src/prettier.ts now imports
+      // `prettier/standalone` with an explicit plugin list, so it no longer
+      // does), but the guard stays: it keeps the single-file invariant from
+      // depending on which packages happen to lazy-load today.
       outputOptions: { codeSplitting: false },
       // Preserves the shebang + __filename/__dirname/require ESM-interop
       // shim scripts/esbuild.mjs's banner used to inject.
@@ -87,6 +83,12 @@ await(async()=>{let{dirname:e}=await import("path"),{fileURLToPath:i}=await impo
         // Every runtime `dependency` in package.json, excluding the two
         // types-only entries (@types/feather-icons, @types/svgdom) that have
         // no runtime code to bundle.
+        //
+        // Entries match the specifier, not the package, so a bare "prettier"
+        // does NOT cover the `prettier/...` subpaths src/prettier.ts imports —
+        // each one has to be listed or it is left external and the binary dies
+        // with ERR_MODULE_NOT_FOUND wherever node_modules is absent
+        // (integration-bundled-binary.test.ts is the guard for exactly this).
         alwaysBundle: [
           "@actions/core",
           "@actions/github",
@@ -95,6 +97,9 @@ await(async()=>{let{dirname:e}=await import("path"),{fileURLToPath:i}=await impo
           "feather-icons",
           "nconf",
           "prettier",
+          "prettier/standalone",
+          "prettier/plugins/markdown",
+          "prettier/plugins/yaml",
           "svgdom",
           "yaml",
         ],
@@ -108,7 +113,7 @@ await(async()=>{let{dirname:e}=await import("path"),{fileURLToPath:i}=await impo
       },
     },
     {
-      // Library (`dist/mjs/`) — ESM-only, per §8.1 (no `dist/cjs`). Default
+      // Library (`dist/mjs/`) — ESM-only, no `dist/cjs`. Default
       // externalization (dependencies/peerDependencies/optionalDependencies)
       // applies; no `deps` override needed.
       entry: "src/index.ts",
@@ -122,8 +127,8 @@ await(async()=>{let{dirname:e}=await import("path"),{fileURLToPath:i}=await impo
     },
   ],
 
-  // Consolidated from vitest.config.ts (Phase 3 — Vite+ bundles Vitest
-  // rather than replacing it).
+  // Vite+ bundles Vitest rather than replacing it, so this is ordinary
+  // Vitest config.
   test: {
     globals: true,
     setupFiles: ["dotenv/config"],

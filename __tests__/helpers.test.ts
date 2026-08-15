@@ -431,6 +431,25 @@ describe('helpers', () => {
         expect(result).toBe('main');
       });
 
+      it('should default to main when versioning is disabled without a branch', () => {
+        const inputs = createMockInputs({
+          'versioning:enabled': false,
+        });
+
+        const result = getCurrentVersionString(inputs);
+        expect(result).toBe('main');
+      });
+
+      it('should default to main when versioning is disabled with an empty branch', () => {
+        const inputs = createMockInputs({
+          'versioning:enabled': false,
+          'versioning:branch': '',
+        });
+
+        const result = getCurrentVersionString(inputs);
+        expect(result).toBe('main');
+      });
+
       it('should apply override even when not in explicit mode', () => {
         const inputs = createMockInputs({
           'versioning:enabled': true,

@@ -9,6 +9,7 @@
 import * as core from '@actions/core';
 
 import type { ReadmeSection } from './constants.js';
+import { isPrettierEnabled } from './helpers.js';
 import type Inputs from './inputs.js';
 import type LogTask from './logtask/index.js';
 import updateSection from './sections/index.js';
@@ -98,6 +99,6 @@ export class ReadmeGenerator {
 
     this.outputSections(sections);
 
-    return this.inputs.readmeEditor.dumpToFile();
+    return this.inputs.readmeEditor.dumpToFile(isPrettierEnabled(this.inputs));
   }
 }

@@ -3,7 +3,7 @@
 ## Project: github-action-readme-generator
 
 **Stack**: TypeScript + Node.js, ESM only. Don't hardcode version numbers here — read `package.json` (`engines`, `devDependencies`) for the current floor; this file has drifted from it twice already. ESM-only: no `dist/cjs`, no `require`/`main` export — `package.json` only declares the `import` condition + `types`.
-**Linter**: Oxlint, type-aware (`lint.options: { typeAware: true, typeCheck: true }` in `vite.config.ts`), run via Vite+'s `vp` CLI — replaces Biome
+**Linter**: Oxlint, type-aware (`lint.options: { typeAware: true, typeCheck: true }` in `vite.config.ts`), run via Vite+'s `vp` CLI
 **Test Framework**: Vitest, run via Vite+'s `vp test` — config lives in `vite.config.ts`'s `test` block (no standalone `vitest.config.ts`)
 **Build**: tsdown, run via Vite+'s `vp pack` — config lives in `vite.config.ts`'s `pack` block (no `scripts/esbuild.mjs`)
 
@@ -11,11 +11,11 @@
 
 This project uses **Oxlint + Oxfmt, via Vite+ (`vp`)** exclusively for linting and formatting TypeScript/JavaScript:
 
-| Config File | Tools |
-|------------|-------|
-| `vite.config.ts` | Oxlint (lint) + Oxfmt (format), via `vp` — `fmt`/`lint`/`check`/`staged` blocks |
-| `.markdownlint.json` | markdownlint |
-| `.husky/` | Husky git hooks |
+| Config File          | Tools                                                                           |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `vite.config.ts`     | Oxlint (lint) + Oxfmt (format), via `vp` — `fmt`/`lint`/`check`/`staged` blocks |
+| `.markdownlint.json` | markdownlint                                                                    |
+| `.husky/`            | Husky git hooks                                                                 |
 
 ## Running Formatters and Linters
 
@@ -44,17 +44,18 @@ npm run lint:markdown:fix
 
 ## Oxlint Rules
 
-Oxlint's own default/recommended rule set is used as-is — this project has no hand-maintained rule config to keep in sync (unlike the old `biome.json`), and there is deliberately no 1:1 Biome→Oxlint rule mapping (see the migration plan's §8.3). The only lint-config surface this project customizes is `vite.config.ts`'s `lint` block (`options: { typeAware: true, typeCheck: true }`), which routes type checking through `tsgolint`.
+Oxlint's own default/recommended rule set is used as-is — this project has no hand-maintained rule list to keep in sync. Everything it does customize lives in `vite.config.ts`'s `lint` block: `options: { typeAware: true, typeCheck: true }`, which routes type checking through `tsgolint`, plus the one scoped override below.
 
 For rule documentation, see `https://oxc.rs/docs/guide/usage/linter/rules.html` — ~847 rules across seven categories (correctness, suspicious, pedantic, perf, style, restriction, nursery), namespaced `plugin(rule-name)`.
 
-One repo-specific override exists: `typescript/unbound-method` is disabled for `__tests__/**` — investigated site-by-site (26 sites, one vitest-mock idiom, zero exceptions), see that override's inline comment in `vite.config.ts`.
+One repo-specific override exists: `typescript/unbound-method` is disabled for `__tests__/**`, because the vitest-mock idiom reads a method reference rather than detaching and calling it. The reasoning is inline with the override in `vite.config.ts`.
 
 ## Common Error Patterns and Fixes
 
-These are actual type-aware findings confirmed by running `vp lint --format github --type-aware --type-check src` against this repo (see `docs/typescript-7-vite-plus-conversion-plan.md` §9 Phase 2) — not a hand-maintained rule list, and not a mapping of the old Biome-era patterns below.
+These are actual type-aware findings confirmed by running `vp lint --format github --type-aware --type-check src` against this repo — not a hand-maintained rule list.
 
 **typescript(await-thenable) → don't await a value that isn't a Promise**
+
 ```typescript
 // Before
 async function getValue(): Promise<string> {
@@ -68,6 +69,7 @@ async function getValue(): Promise<string> {
 ```
 
 **typescript(no-base-to-string) → avoid relying on the default Object.prototype.toString()**
+
 ```typescript
 // Before
 function describe(value: SomeClass): string {
@@ -81,6 +83,7 @@ function describe(value: SomeClass): string {
 ```
 
 **typescript(restrict-template-expressions) → only interpolate string/number in template literals**
+
 ```typescript
 // Before
 const message = `Result: ${someObject}`; // non-primitive interpolated
@@ -89,7 +92,7 @@ const message = `Result: ${someObject}`; // non-primitive interpolated
 const message = `Result: ${JSON.stringify(someObject)}`;
 ```
 
-For any other Oxlint finding, look it up individually at the rules reference above — don't assume a Biome-era rule name maps onto it.
+Look up any other Oxlint finding individually at the rules reference above.
 
 Verify resolution with `vp lint --type-aware --type-check ./src/ ./__tests__/`.
 
@@ -106,7 +109,7 @@ Pre-commit runs: `vp staged` (format/lint staged files, per `vite.config.ts`'s `
 ## Common Issues and Solutions
 
 **Issue**: An Oxlint type-aware finding you don't recognize (e.g. `typescript(await-thenable)`, `typescript(no-base-to-string)`, `typescript(restrict-template-expressions)`)
-**Solution**: Look it up at `https://oxc.rs/docs/guide/usage/linter/rules.html`, fix per the examples above — these come from `vite.config.ts`'s `lint.options.typeAware`/`typeCheck` routing through `tsgolint`, not from a Biome-style rule name.
+**Solution**: Look it up at `https://oxc.rs/docs/guide/usage/linter/rules.html` and fix per the examples above. These findings come from `vite.config.ts`'s `lint.options.typeAware`/`typeCheck` routing through `tsgolint`.
 
 **Issue**: "This async function lacks an await expression" / an unnecessary `await`
 **Solution**: Either add `await` to the return or remove it, based on whether the callee actually returns a Promise

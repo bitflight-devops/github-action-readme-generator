@@ -37,14 +37,11 @@ export default function updateOutputs(
 
       let description = values?.description ?? '';
 
-      // Check if only first line should be added (only subject without body)
+      // Keep the complete first paragraph, including soft line breaks.
+      description = description.trim().split('\n\n')[0] ?? '';
 
-      const matches = /(.*?)\n\n([Ss]*)/.exec(description);
-      if (matches && matches.length >= 2) {
-        description = matches[1] || description;
-      }
-
-      description = description.trim().replace('\n', '<br />');
+      // Convert every soft break in the first paragraph to the table's HTML form.
+      description = description.replaceAll('\n', '<br />');
       const value = values?.value ? `\`${values.value}\`` : '';
       const row: string[] = [rowHeader(key), description, value];
 
@@ -57,6 +54,7 @@ export default function updateOutputs(
     log.success();
   } else {
     log.debug(`Action has no ${sectionToken}`);
+    inputs.readmeEditor.updateSection(sectionToken, content);
   }
   const ret: Record<string, string> = {};
   ret[sectionToken] = content.join('\n');

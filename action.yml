@@ -38,15 +38,19 @@ inputs:
     description: |
       Use `prettier` to pretty print the new README.md file
     required: false
-    default: "true"
+    default: 'true'
   versioning_enabled:
     description: >
-      Enable the update of the usage version to match the latest version
-      in the `package.json` file
+      Enable the update of the usage version in the `uses:` example.
 
-      Output if your action repo is `reviewdog/action-eslint` and version in package.json is `1.0.1`:
+      The version comes from whichever `version_source` selects. The default,
+      `git-tag`, uses the latest git tag, and falls back to `package.json`, then
+      to `$npm_package_version`, then to `0.0.0` when no tag is found — a shallow
+      or tagless checkout takes that path.
 
-      `uses: reviewdog/action-eslint@1.0.1`
+      Output if your action repo is `reviewdog/action-eslint` and the latest tag is `v1.0.1`:
+
+      `uses: reviewdog/action-eslint@v1.0.1`
     required: false
     default: true
   version_override:
@@ -75,7 +79,8 @@ inputs:
 
       Options:
 
-      - `git-tag` - Latest git tag (default, standard for GitHub Actions)
+      - `git-tag` - Latest git tag (default, standard for GitHub Actions). Falls
+      back to `package.json`, then `$npm_package_version`, then `0.0.0`
 
       - `git-branch` - Current branch name (for bleeding edge users)
 
@@ -92,7 +97,7 @@ inputs:
       The title template looks like this:
       # {brand}{prefix}{title}
     required: false
-    default: "GitHub Action: "
+    default: 'GitHub Action: '
   include_github_version_badge:
     description: |
       Include additional badge showing latest tag
@@ -109,7 +114,7 @@ inputs:
 
       You can use a section template like this:
 
-      `<!-- start branding --><!-- stop branding -->`
+      `<!-- start branding --><!-- end branding -->`
 
       or use the action input:
 
@@ -146,5 +151,5 @@ outputs:
     description: |
       The content of the readme file after the changes were made
 runs:
-  using: "node24"
-  main: "./dist/bin/index.js"
+  using: 'node24'
+  main: './dist/bin/index.js'

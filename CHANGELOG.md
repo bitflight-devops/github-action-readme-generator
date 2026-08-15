@@ -1,3 +1,10 @@
+## [1.12.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.0...v1.12.1) (2026-08-15)
+
+
+### Bug Fixes
+
+* **badges:** preserve links and readable alt text ([#661](https://github.com/bitflight-devops/github-action-readme-generator/issues/661)) ([089cd7c](https://github.com/bitflight-devops/github-action-readme-generator/commit/089cd7c561f11a46c0fabad26a3bf33ebfc76105)), closes [#636](https://github.com/bitflight-devops/github-action-readme-generator/issues/636)
+
 # [1.12.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.11.0...v1.12.0) (2026-08-09)
 
 

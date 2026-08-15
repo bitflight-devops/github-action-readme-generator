@@ -308,7 +308,8 @@ jobs:
           node action-under-test/scripts/verify-readme-contract.mjs \
             "test-repo/${{ matrix.action_path }}" \
             "test-repo/${{ matrix.readme_path }}" \
-            "test-repo/README.backup.md"
+            "test-repo/README.backup.md" \
+            "${{ matrix.repo }}"
 
       - name: Discard the convergence snapshots
         if: always()

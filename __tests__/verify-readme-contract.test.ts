@@ -69,6 +69,7 @@ const verify = (
   },
   readmeDirectory = '.',
   originalReadme?: string,
+  expectedRepository?: string,
 ): string => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ghadocs-contract-verifier-'));
   temporaryDirectories.push(directory);
@@ -80,9 +81,16 @@ const verify = (
   fs.writeFileSync(actionPath, action);
   fs.writeFileSync(readmePath, readme);
   if (originalReadme !== undefined) fs.writeFileSync(originalReadmePath, originalReadme);
+  if (expectedRepository !== undefined) {
+    fs.writeFileSync(path.join(directory, 'package.json'), JSON.stringify({ version: '1.0.0' }));
+  }
   fs.writeFileSync(path.join(directory, '.ghadocs.json'), JSON.stringify(config));
   const arguments_ = [SCRIPT, actionPath, readmePath];
-  if (originalReadme !== undefined) arguments_.push(originalReadmePath);
+  if (originalReadme !== undefined || expectedRepository !== undefined) {
+    if (originalReadme === undefined) fs.writeFileSync(originalReadmePath, readme);
+    arguments_.push(originalReadmePath);
+  }
+  if (expectedRepository !== undefined) arguments_.push(expectedRepository);
   return execFileSync(process.execPath, arguments_, {
     encoding: 'utf8',
     cwd: directory,
@@ -447,6 +455,45 @@ describe('README contract verifier regressions', () => {
     ).toThrow();
   });
 
+  it.each(['before', 'after'])('rejects stale content %s the generated usage fence', (position) => {
+    const replacement =
+      position === 'before'
+        ? '<!-- start usage -->\nstale prose\n'
+        : '```\nstale prose\n<!-- end usage -->';
+    const readme =
+      position === 'before'
+        ? README.replace('<!-- start usage -->\n', replacement)
+        : README.replace('<!-- end usage -->', 'stale prose\n<!-- end usage -->');
+    expect(() => verify(readme)).toThrow();
+  });
+
+  it('compares the generated action reference with an independently resolved target', () => {
+    const readme = README.replace('owner/repo@v1', 'owner/repo@v1.0.0');
+    expect(verify(readme, ACTION, undefined, '.', undefined, 'owner/repo')).toContain(
+      'owner/repo@v1.0.0',
+    );
+    expect(() =>
+      verify(
+        readme.replace('owner/repo@v1.0.0', 'someone/else@v1.0.0'),
+        ACTION,
+        undefined,
+        '.',
+        undefined,
+        'owner/repo',
+      ),
+    ).toThrow();
+    expect(() =>
+      verify(
+        readme.replace('owner/repo@v1.0.0', 'owner/repo@v9'),
+        ACTION,
+        undefined,
+        '.',
+        undefined,
+        'owner/repo',
+      ),
+    ).toThrow();
+  });
+
   it.each([
     ['a non-empty string', 'dangerous-default'],
     ['whitespace', "' '"],
@@ -533,6 +580,19 @@ describe('README contract verifier regressions', () => {
     const readme = README.replace("    path: ''", '    removed: stale').replace(
       /<!-- start inputs -->[\s\S]*?<!-- end inputs -->/,
       '<!-- start inputs -->\n<!-- end inputs -->',
+    );
+    expect(() => verify(readme, action)).toThrow();
+  });
+
+  it.each(['inputs', 'outputs'])('rejects stale prose in a zero-declaration %s section', (name) => {
+    const action = ACTION.replace(/inputs:\n[\s\S]*?runs:/, 'runs:');
+    const emptyInputs = README.replace(
+      /<!-- start inputs -->[\s\S]*?<!-- end inputs -->/,
+      '<!-- start inputs -->\n<!-- end inputs -->',
+    ).replace("  with:\n    # Description: A \\| B\n    # \n    path: ''\n", '  with:\n');
+    const readme = emptyInputs.replace(
+      `<!-- start ${name} -->\n`,
+      `<!-- start ${name} -->\nstale prose\n`,
     );
     expect(() => verify(readme, action)).toThrow();
   });

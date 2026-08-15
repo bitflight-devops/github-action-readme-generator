@@ -42,9 +42,7 @@ const log: LogTask = new LogTask('prettier');
  * is tracked separately; see the README.
  *
  * Exported so __tests__/prettier.test.ts derives the formatted-parser set from
- * this array rather than restating it: a hand-written copy misfiles every
- * parser it forgets, and `markdown` alone provides three (`markdown`, `mdx`,
- * `remark`).
+ * this array rather than restating dependency-owned parser metadata.
  */
 export const plugins: Plugin[] = [markdown, yaml];
 

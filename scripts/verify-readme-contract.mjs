@@ -33,11 +33,12 @@
  * repositories choose which sections they opt into. Every original marker pair
  * must remain present after generation.
  *
- * Usage: node scripts/verify-readme-contract.mjs <action.yml> <README.md> [original-README.md]
+ * Usage: node scripts/verify-readme-contract.mjs <action.yml> <README.md> [original-README.md] [expected-repository]
  *
  * Exits non-zero when any check fails, printing each failure as a workflow
  * error annotation.
  */
+import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -46,11 +47,11 @@ import * as yamlPlugin from 'prettier/plugins/yaml';
 import { format } from 'prettier/standalone';
 import YAML from 'yaml';
 
-const [actionPath, readmePath, originalReadmePath] = process.argv.slice(2);
+const [actionPath, readmePath, originalReadmePath, expectedRepository] = process.argv.slice(2);
 
 if (!actionPath || !readmePath) {
   console.log(
-    'usage: node scripts/verify-readme-contract.mjs <action.yml> <README.md> [original-README.md]',
+    'usage: node scripts/verify-readme-contract.mjs <action.yml> <README.md> [original-README.md] [expected-repository]',
   );
   process.exit(2);
 }
@@ -62,6 +63,52 @@ const configPath = path.resolve('.ghadocs.json');
 const config = fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath, 'utf8')) : {};
 const prettierEnabled =
 	config.prettier === undefined || config.prettier === true || config.prettier === 'true';
+
+const versionTagPattern = /^v?\d+(?:\.\d+)*$/;
+const mostSpecificTag = (tags) => {
+  const versionTags = tags.filter((tag) => versionTagPattern.test(tag));
+  const candidates = versionTags.length > 0 ? versionTags : tags;
+  const specificity = (tag) => tag.replace(/^v/, '').split('.').length;
+  return [...candidates].sort(
+    (a, b) => specificity(b) - specificity(a) || b.length - a.length,
+  )[0];
+};
+
+/** Resolves the default generated version independently of README content. */
+const expectedVersion = () => {
+  const actionDirectory = path.dirname(path.resolve(actionPath));
+  const git = (arguments_) =>
+    execFileSync('git', arguments_, {
+      cwd: actionDirectory,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  let detected;
+  try {
+    let nearestTag;
+    try {
+      nearestTag = git(['describe', '--tags', '--abbrev=0']);
+    } catch {
+      nearestTag = git(['tag', '-l', 'v*', '--sort=-v:refname']).split('\n').filter(Boolean)[0];
+    }
+    if (nearestTag) {
+      const tags = git(['tag', '--points-at', nearestTag]).split('\n').filter(Boolean);
+      detected = mostSpecificTag(tags.length > 0 ? tags : [nearestTag]).replace(/^v/, '');
+    }
+  } catch {
+    // A package version is the production fallback when git metadata is absent.
+  }
+  if (!detected) {
+    try {
+      detected = JSON.parse(
+        fs.readFileSync(path.join(actionDirectory, 'package.json'), 'utf8'),
+      ).version;
+    } catch {}
+  }
+  detected ||= process.env.npm_package_version;
+  const version = String(detected || '0.0.0');
+  return version.startsWith('v') ? version : `v${version}`;
+};
 
 const failures = [];
 const ok = (message) => console.log(`✓ ${message}`);
@@ -248,6 +295,7 @@ if (usage === null) {
   // emits exactly one fence, so requiring one is not a new constraint on the
   // generator; it is what makes these checks mean what they say.
   const fences = [...usage.matchAll(/^```ya?ml\n([\s\S]*?)^```/gm)].map((match) => match[1]);
+  const generatedFence = fences.length === 1 ? `\`\`\`yaml\n${fences[0]}\`\`\`` : null;
 
   if (fences.length === 1) {
     ok('the usage block is a single fenced yaml code block');
@@ -258,6 +306,9 @@ if (usage === null) {
   }
 
   const fence = fences.length === 1 ? fences[0] : null;
+  if (generatedFence !== null && usage !== generatedFence) {
+    fail('the usage section carries content outside the generated yaml fence');
+  }
 
   let step = null;
   if (fence !== null) {
@@ -289,6 +340,15 @@ if (usage === null) {
     ok(`the usage block pins a version: ${uses[1]}@${uses[2]}`);
   } else if (step !== null) {
     fail(`the step's \`uses:\` is not \`owner/repo@version\`: ${JSON.stringify(step.uses)}`);
+  }
+  if (uses && expectedRepository) {
+    const expected = `${expectedRepository}@${expectedVersion()}`;
+    const actual = `${uses[1]}@${uses[2]}`;
+    if (actual === expected) {
+      ok(`the usage block targets the independently resolved action reference: ${expected}`);
+    } else {
+      fail(`the usage block targets ${actual}, expected ${expected}`);
+    }
   }
 
   const withMapping =
@@ -411,11 +471,8 @@ const tableSection = async (name, declared, expectedCells) => {
     }
   }
   if (keys.length === 0) {
-    const isEmptyTable =
-		tableRows.length === 0 ||
-		(tableRows.length === 2 && cells(tableRows[1]).every((cell) => /^-{3,}$/.test(cell)));
-    if (isEmptyTable) ok(`the ${name} section has no stale rows`);
-    else fail(`action.yml declares no ${name}, but the ${name} section still has data rows`);
+    if (body === '') ok(`the ${name} section has no stale content`);
+    else fail(`action.yml declares no ${name}, but the ${name} section is not empty`);
     return;
   }
   const rows = tableRows;

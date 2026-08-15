@@ -151,8 +151,17 @@ const generatedMarkdown = async (value) => {
 	return rendered.replaceAll('\r\n', '\n').trim();
 };
 
-const normaliseGeneratedMarkdown = async (value) => normalise(await generatedMarkdown(value));
-const normaliseGeneratedTableCell = async (value) => normaliseTableCell(await generatedMarkdown(value));
+/** Applies the same transforms as markdowner's table-cell projection. */
+const generatedTableCell = async (value) =>
+	generatedMarkdown(
+		String(value ?? '')
+			.trim()
+			.replaceAll('\n', '<br />')
+			.replaceAll(/\\+(?=\|)/g, (slashes) => slashes.repeat(2))
+			.replaceAll('|', '\\|')
+			.replaceAll(/`([^`]*)`/g, '<code>$1</code>')
+			.replaceAll('><!--', '>\\<!--'),
+	);
 
 /**
  * `update-inputs.ts` truncates a description at its first blank line, so only
@@ -298,12 +307,12 @@ if (usage === null) {
     const line = commentBlockFor(key)
       .split('\n')
       .find((candidate) => /^\s*#\s*Default:/.test(candidate));
-    return line === undefined ? null : normalise(line.replace(/^\s*#\s*Default:/, ''));
+    return line === undefined ? null : line.replace(/^\s*#\s*Default:\s?/, '').trimEnd();
   };
 
   const defaulted = inputKeys.filter((key) => inputs[key]?.default !== undefined);
   const droppedDefaults = defaulted.filter(
-    (key) => usageDefaultFor(key) !== normalise(inputs[key].default),
+    (key) => usageDefaultFor(key) !== String(inputs[key].default).trimEnd(),
   );
   if (defaulted.length === 0) {
     skip('no action.yml input declares a default, skipping the usage default check');
@@ -349,8 +358,9 @@ const tableSection = async (name, declared, expectedCells) => {
   const rowKeys = rows.slice(2).map((row) => normaliseTableCell(cells(row)[0]));
   const stale = rowKeys.filter((key) => !keys.includes(key));
   const duplicates = rowKeys.filter((key, index) => rowKeys.indexOf(key) !== index);
-  if (stale.length > 0 || duplicates.length > 0 || rowKeys.length !== keys.length) {
-    fail(`the ${name} table rows do not exactly match action.yml — stale: ${[...new Set(stale)].join(', ') || 'none'}; duplicates: ${[...new Set(duplicates)].join(', ') || 'none'}`);
+  const inDeclarationOrder = rowKeys.length === keys.length && rowKeys.every((key, index) => key === keys[index]);
+  if (stale.length > 0 || duplicates.length > 0 || !inDeclarationOrder) {
+    fail(`the ${name} table rows do not exactly match action.yml — stale: ${[...new Set(stale)].join(', ') || 'none'}; duplicates: ${[...new Set(duplicates)].join(', ') || 'none'}; order: ${inDeclarationOrder ? 'correct' : `want ${keys.join(', ')}, got ${rowKeys.join(', ')}`}`);
   }
 
   let matched = 0;
@@ -362,12 +372,20 @@ const tableSection = async (name, declared, expectedCells) => {
     }
     const cellValues = cells(row);
     let rowOk = true;
-    for (const [index, { label, expected, markdown: isMarkdown }] of expectedCells(declared[key]).entries()) {
-      if (expected === null) continue;
-      const actual = isMarkdown
-		? await normaliseGeneratedTableCell(cellValues[index + 1])
+    for (const [index, { label, expected, markdown: isMarkdown, code }] of expectedCells(declared[key]).entries()) {
+      if (expected === null && !code) continue;
+      const actual = isMarkdown || code
+		? await generatedMarkdown(cellValues[index + 1])
 		: normaliseTableCell(cellValues[index + 1]);
-      const want = isMarkdown ? await normaliseGeneratedMarkdown(expected) : normalise(expected);
+      const want = isMarkdown
+		? await generatedTableCell(expected)
+		: code === 'markdown'
+			? await generatedTableCell(expected === null || expected === '' ? '' : `\`${expected}\``)
+			: code === 'html'
+				? await generatedTableCell(
+						expected === null || expected === '' ? '' : `<code>${expected}</code>`,
+					)
+			: normalise(expected);
       if (actual !== want) {
         fail(`\`${key}\` ${label} in the ${name} table does not match action.yml — want ${JSON.stringify(want)}, got ${JSON.stringify(actual)}`);
         rowOk = false;
@@ -387,10 +405,8 @@ await tableSection('inputs', inputs, (declaration) => [
     label: 'default',
     // An empty-string default is indistinguishable from no default once it is
     // in a table cell, so it is not asserted. `false` and `0` are.
-    expected:
-      declaration?.default === undefined || declaration.default === ''
-        ? null
-        : declaration.default,
+    expected: declaration?.default === undefined || declaration.default === '' ? '' : declaration.default,
+    code: 'html',
   },
   { label: 'required flag', expected: declaration?.required ? 'true' : 'false' },
 ]);
@@ -398,6 +414,7 @@ await tableSection('inputs', inputs, (declaration) => [
 // Columns per src/sections/update-outputs.ts: Output | Description | Value
 await tableSection('outputs', outputs, (declaration) => [
   { label: 'description', expected: firstParagraph(declaration?.description), markdown: true },
+  { label: 'value', expected: declaration?.value ?? '', code: 'markdown' },
 ]);
 
 /**
@@ -440,7 +457,7 @@ const titleImage = titleBranding
 const expectedTitle = action.name ? `# ${titleImage}${titlePrefix}${action.name}` : null;
 const normalisedExpectedTitle = expectedTitle ? await generatedMarkdown(expectedTitle) : null;
 const expectedDescription = action.description
-	? await normaliseGeneratedMarkdown(
+	? await generatedMarkdown(
 			String(action.description).trim().replaceAll('\r\n', '\n').replaceAll(/ +/g, ' ').replaceAll(' \n', '\n').replaceAll('\n\n', '<br />'),
 		)
 	: null;
@@ -465,7 +482,7 @@ for (const name of ['title', 'description', 'branding']) {
     fail(`the ${name} section is empty, but action.yml declares ${name} metadata to project`);
     continue;
   }
-  const actual = name === 'title' ? await generatedMarkdown(body) : await normaliseGeneratedMarkdown(body);
+  const actual = name === 'branding' ? normalise(body) : await generatedMarkdown(body);
   let matches;
   if (name === 'title') matches = actual === normalisedExpectedTitle;
   else if (name === 'description') matches = actual === expectedDescription;

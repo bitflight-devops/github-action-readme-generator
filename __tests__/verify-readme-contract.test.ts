@@ -228,6 +228,12 @@ describe('README contract verifier regressions', () => {
       'a stale branding image path',
       README.replace('.github/ghadocs/branding.svg', '.github/ghadocs/old.svg'),
     ],
+    ['a mangled branding width', README.replace('width="15%"', 'width="9999px"')],
+    ['a mangled branding alignment', README.replace('align="center"', 'align="left"')],
+    [
+      'the title branding width in the branding section',
+      README.replace('width="15%"', 'width="60px"'),
+    ],
   ])('rejects %s', (_name, readme) => {
     expect(() => verify(readme)).toThrow();
   });

@@ -464,16 +464,24 @@ const DEFAULT_BRAND_COLOR = 'blue';
  *   section holding only that paragraph — for a multi-paragraph description,
  *   precisely the stale state this gate is for. (`firstParagraph` is still
  *   right for the tables, where `update-inputs.ts` really does truncate.)
- * - `branding` wraps its icon and colour in an `<img>` whose src and width are
- *   configurable, so those two values are matched by containment. They are
- *   never absent: an omitted `branding:` block is projected as the defaults
- *   above, so there is nothing to skip.
+ * - `branding` is one `<img>` tag with no free parts: `updateBranding` fixes
+ *   the width at `15%` and the alignment at `center`, and only the `src` comes
+ *   from config. So it is compared whole. Pinning just src, icon and colour
+ *   passes a section whose width or alignment has been mangled — the same
+ *   stale-projection state the gate exists to catch. Branding is never absent:
+ *   an omitted `branding:` block is projected as the defaults above, so there
+ *   is nothing to skip.
  */
+/** `generateImgMarkup` in src/sections/update-branding.ts, verbatim. */
+const brandingImage = (width) =>
+	`<img src="${config.branding_svg_path ?? '.github/ghadocs/branding.svg'}" width="${width}" align="center" alt="branding<icon:${action.branding?.icon ?? DEFAULT_BRAND_ICON} color:${action.branding?.color ?? DEFAULT_BRAND_COLOR}>" />`;
+
 const titlePrefix = String(config.title_prefix ?? 'GitHub Action: ');
 const titleBranding = config.branding_as_title_prefix ?? true;
-const titleImage = titleBranding
-	? `<img src="${config.branding_svg_path ?? '.github/ghadocs/branding.svg'}" width="60px" align="center" alt="branding<icon:${action.branding?.icon ?? DEFAULT_BRAND_ICON} color:${action.branding?.color ?? DEFAULT_BRAND_COLOR}>" /> `
-	: '';
+// The widths are the two literals their callers pass: `update-title.ts` asks
+// for `60px`, `update-branding.ts` for `15%`.
+const titleImage = titleBranding ? `${brandingImage('60px')} ` : '';
+const expectedBranding = await generatedMarkdown(brandingImage('15%'));
 const expectedTitle = action.name ? `# ${titleImage}${titlePrefix}${action.name}` : null;
 const normalisedExpectedTitle = expectedTitle ? await generatedMarkdown(expectedTitle) : null;
 const expectedDescription = action.description
@@ -502,14 +510,11 @@ for (const name of ['title', 'description', 'branding']) {
     fail(`the ${name} section is empty, but action.yml declares ${name} metadata to project`);
     continue;
   }
-  const actual = name === 'branding' ? normalise(body) : await generatedMarkdown(body);
+  const actual = await generatedMarkdown(body);
   let matches;
   if (name === 'title') matches = actual === normalisedExpectedTitle;
   else if (name === 'description') matches = actual === expectedDescription;
-  else {
-    const match = /<img src="([^"]+)"[^>]*alt="branding<icon:([^ ]+) color:([^>]+)>"/.exec(body);
-    matches = match?.[1] === (config.branding_svg_path ?? '.github/ghadocs/branding.svg') && match?.[2] === (action.branding?.icon ?? DEFAULT_BRAND_ICON) && match?.[3] === (action.branding?.color ?? DEFAULT_BRAND_COLOR);
-  }
+  else matches = actual === expectedBranding;
   if (matches) {
     ok(`the ${name} section carries the action's ${name} from action.yml`);
   } else {

@@ -9,9 +9,10 @@
  * - a fence in a bundled language matches the package root byte-for-byte
  * - a fence in any other language comes back **unchanged**
  *
- * The second is the one that used to be a bug and is now the contract. Asserting
- * it means adding a plugin cannot happen silently: every tag it starts
- * reformatting fails here, so the binary cost is a deliberate decision each time.
+ * The second is the side worth asserting deliberately: it makes adding a plugin
+ * impossible to do silently, because every tag that plugin starts reformatting
+ * fails here, so the binary cost is a decision taken each time rather than a
+ * side effect.
  */
 import { format as formatViaPackageRoot, getSupportInfo } from 'prettier';
 import { describe, expect, it, vi } from 'vite-plus/test';

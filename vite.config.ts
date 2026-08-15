@@ -67,11 +67,9 @@ const config: ReturnType<typeof defineConfig> = defineConfig({
       outExtensions: () => ({ js: ".js" }),
       // Any dependency with internal dynamic imports makes Rolldown emit
       // multiple chunk files by default — fatal for a single-file bundled
-      // binary with no node_modules to resolve sibling chunks from. Prettier
-      // used to be the one that tripped this (src/prettier.ts now imports
-      // `prettier/standalone` with an explicit plugin list, so it no longer
-      // does), but the guard stays: it keeps the single-file invariant from
-      // depending on which packages happen to lazy-load today.
+      // binary with no node_modules to resolve sibling chunks from. Keep this
+      // off even when no current dependency lazy-loads: it is what stops the
+      // single-file invariant from depending on which packages happen to.
       outputOptions: { codeSplitting: false },
       // Preserves the shebang + __filename/__dirname/require ESM-interop
       // shim scripts/esbuild.mjs's banner used to inject.

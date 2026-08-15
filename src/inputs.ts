@@ -644,10 +644,11 @@ export function redactSensitiveValues(
       const branch = known[key];
 
       // Each known key declares the one shape it holds, and every other shape
-      // is masked. Three earlier attempts at this each closed one hole and left
-      // its mirror open — an object under a scalar key, then a scalar under a
-      // group key, then an array under a scalar key — because they asked "is
-      // this value scalar-ish?" instead of "is this the shape this key holds?".
+      // is masked. The question a case answers is "is this the shape this key
+      // holds?", never "is this value scalar-ish?" — the second admits an
+      // object under a scalar key, a scalar under a group key, and an array
+      // under a scalar key, each of them a value nothing reads, and closing
+      // one of those leaves its mirror open.
       // The cases below are exhaustive over the tree. A leaf declares the
       // domain the key's contract gives it, not the shape its value happens to
       // have and not how its reader tests it: `scalar` is a shape, and the keys

@@ -46,6 +46,8 @@ export class GHActionDocsConfig {
 
   branding_svg_path?: string;
 
+  image_generated?: string;
+
   versioning?: Versioning;
 
   prettier?: boolean;
@@ -62,6 +64,7 @@ export class GHActionDocsConfig {
     this.title = config.title;
     this.paths = config.paths;
     this.branding_svg_path = config.branding_svg_path;
+    this.image_generated = config.image_generated;
     this.versioning = config.versioning;
     this.prettier = config.prettier;
   }

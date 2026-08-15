@@ -25,6 +25,9 @@ test('markdownEscapeTableCell escapes newlines, backslashes, and pipes', () => {
   expect(markdownEscapeTableCell(String.raw`Backslash-pipe \|`)).toBe(
     String.raw`Backslash-pipe \\\|`,
   );
+  expect(markdownEscapeTableCell(String.raw`Markdown escapes \*literal\*`)).toBe(
+    String.raw`Markdown escapes \*literal\*`,
+  );
 });
 
 test('markdownEscapeInlineCode escapes inline code', () => {

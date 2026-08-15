@@ -1,3 +1,10 @@
+## [1.12.5](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.4...v1.12.5) (2026-08-15)
+
+
+### Bug Fixes
+
+* **versioning:** preserve parsed falsy branch refs ([#663](https://github.com/bitflight-devops/github-action-readme-generator/issues/663)) ([1bf6d0e](https://github.com/bitflight-devops/github-action-readme-generator/commit/1bf6d0e8d549e79823db0e242ef2fd3bb5ae9e9d))
+
 ## [1.12.4](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.3...v1.12.4) (2026-08-15)
 
 

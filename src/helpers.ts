@@ -568,7 +568,8 @@ export function getCurrentVersionString(inputs: Inputs): string {
       versionString = `${prefix}${versionString}`;
     }
   } else {
-    versionString = inputs.config.get('versioning:branch') as string;
+    const configuredBranch = inputs.config.get('versioning:branch') as string | undefined;
+    versionString = undefinedOnEmpty(configuredBranch) ?? 'main';
   }
   log.debug(`version to use in generated example is ${versionString}`);
   return versionString;

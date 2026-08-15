@@ -20,8 +20,14 @@ test('padString pads text to width with spaces', () => {
   expect(padString('Hello', 8, 3)).toBe('   Hello   ');
 });
 
-test('markdownEscapeTableCell escapes newlines and pipes', () => {
+test('markdownEscapeTableCell escapes newlines, backslashes, and pipes', () => {
   expect(markdownEscapeTableCell('Hello\nWorld|Foo')).toBe('Hello<br />World\\|Foo');
+  expect(markdownEscapeTableCell(String.raw`Backslash-pipe \|`)).toBe(
+    String.raw`Backslash-pipe \\\|`,
+  );
+  expect(markdownEscapeTableCell(String.raw`Markdown escapes \*literal\*`)).toBe(
+    String.raw`Markdown escapes \*literal\*`,
+  );
 });
 
 test('markdownEscapeInlineCode escapes inline code', () => {
@@ -56,4 +62,16 @@ test('ArrayOfArraysToMarkdownTable converts array to markdown table', () => {
 `;
 
   expect(ArrayOfArraysToMarkdownTable(testArray)).toBe(expected);
+});
+
+test('ArrayOfArraysToMarkdownTable preserves a literal backslash before a pipe', () => {
+  const table = ArrayOfArraysToMarkdownTable([
+    ['Input', 'Description', 'Default', 'Required'],
+    ['mode', String.raw`Accepts a literal backslash-pipe \| in the text.`, 'a', 'false'],
+  ]);
+
+  expect(table).toContain(String.raw`Accepts a literal backslash-pipe \\\| in the text.`);
+  expect(table).toContain(
+    String.raw`| mode | Accepts a literal backslash-pipe \\\| in the text. | a | false |`,
+  );
 });

@@ -23,7 +23,10 @@ export function padString(text: string, width: number, paddingStart: number): st
  * @returns The escaped text.
  */
 export function markdownEscapeTableCell(text: string): string {
-  return text.replaceAll('\n', '<br />').replaceAll('|', '\\|');
+  return text
+    .replaceAll('\n', '<br />')
+    .replaceAll(/\\+(?=\|)/g, (slashes) => slashes.repeat(2))
+    .replaceAll('|', '\\|');
 }
 
 /**

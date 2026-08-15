@@ -37,12 +37,8 @@ export default function updateOutputs(
 
       let description = values?.description ?? '';
 
-      // Check if only first line should be added (only subject without body)
-
-      const matches = /(.*?)\n\n([Ss]*)/.exec(description);
-      if (matches && matches.length >= 2) {
-        description = matches[1] || description;
-      }
+      // Keep the complete first paragraph, including soft line breaks.
+      description = description.split('\n\n')[0] ?? description;
 
       description = description.trim().replace('\n', '<br />');
       const value = values?.value ? `\`${values.value}\`` : '';

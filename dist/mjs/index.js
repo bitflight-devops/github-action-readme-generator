@@ -1111,6 +1111,16 @@ argvOptions["debug:config"] = {
 	type: "boolean"
 };
 /**
+* README sections option configuration.
+* Declaring this as an array keeps a single `--sections=usage` value consistent
+* with the array shape used by `.ghadocs.json` and repeated CLI arguments.
+*/
+argvOptions.sections = {
+	alias: "sections",
+	describe: "Only generate the named README section (repeat for multiple sections)",
+	type: "array"
+};
+/**
 * Configuration inputs from the github action don't
 * all match the input names when running on cli.
 * This maps the action inputs to the cli.

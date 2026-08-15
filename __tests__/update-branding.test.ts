@@ -59,8 +59,11 @@ describe('branding generation', () => {
   });
 
   it('does not regenerate branding when the saved hash still matches', () => {
+    const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'ghadocs-branding-'));
+    const svgPath = path.join(tempDirectory, 'branding.svg');
+    fs.writeFileSync(svgPath, '<svg />');
     const values = new Map<string, unknown>([
-      ['branding_svg_path', '.github/ghadocs/branding.svg'],
+      ['branding_svg_path', svgPath],
       ['image_generated', 'book-openyellow'],
     ]);
     const inputs = {
@@ -72,9 +75,44 @@ describe('branding generation', () => {
     } as unknown as Inputs;
     const generateSvgImage = vi.spyOn(SVGEditor.prototype, 'generateSvgImage');
 
-    generateImgMarkup(inputs);
+    try {
+      generateImgMarkup(inputs);
 
-    expect(generateSvgImage).not.toHaveBeenCalled();
-    expect(inputs.config.set).not.toHaveBeenCalled();
+      expect(generateSvgImage).not.toHaveBeenCalled();
+      expect(inputs.config.set).not.toHaveBeenCalled();
+    } finally {
+      generateSvgImage.mockRestore();
+      fs.rmSync(tempDirectory, { recursive: true, force: true });
+    }
+  });
+
+  it('regenerates branding when the saved hash matches but the destination is missing', () => {
+    const values = new Map<string, unknown>([
+      ['branding_svg_path', '.github/ghadocs/moved-branding.svg'],
+      ['image_generated', 'book-openyellow'],
+    ]);
+    const inputs = {
+      action: { branding: { icon: 'book-open', color: 'yellow' } },
+      config: {
+        get: vi.fn((key: string) => values.get(key)),
+        set: vi.fn((key: string, value: unknown) => values.set(key, value)),
+      },
+    } as unknown as Inputs;
+    const generateSvgImage = vi
+      .spyOn(SVGEditor.prototype, 'generateSvgImage')
+      .mockImplementation(() => undefined);
+
+    try {
+      generateImgMarkup(inputs);
+
+      expect(generateSvgImage).toHaveBeenCalledWith(
+        '.github/ghadocs/moved-branding.svg',
+        'book-open',
+        'yellow',
+      );
+      expect(inputs.config.set).toHaveBeenCalledWith('image_generated', 'book-openyellow');
+    } finally {
+      generateSvgImage.mockRestore();
+    }
   });
 });

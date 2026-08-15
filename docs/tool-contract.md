@@ -21,9 +21,12 @@ repository and against arbitrary third-party ones.
 Everything the tool does rests on this. A change that rewrites text outside a
 marker pair is a breaking change even if every test passes.
 
-Treat marker boundaries as ownership boundaries. Do not introduce or expand
-writes outside them, and do not make new behaviour depend on whole-document
-formatting. Resolve formatter-scope changes through #668.
+Treat marker boundaries as ownership boundaries for what the _generator_
+writes: every span it composes goes between a pair, and no new behaviour may
+depend on whole-document formatting. Prettier's pass is the one thing that
+reaches outside them — with `pretty` on (the default) it reformats the entire
+file, which is why `--pretty=false` is the setting that makes outside text
+byte-identical. Resolve formatter-scope changes through #668.
 
 ## What is guaranteed, and what is prettier's
 
@@ -42,7 +45,7 @@ the committed README _look_ tidy comes from prettier afterwards.
 | **`__false__` rendered as `**false**`**                                            | **prettier**                                        |
 | **`key: ''` rendered as `key: ""`**                                                | **prettier**, and only when the fence is valid YAML |
 | **Trailing whitespace trimmed**                                                    | **prettier**                                        |
-| **Formatting within generated marker spans**                                      | **prettier**                                        |
+| **Formatting of the whole file, generated spans and the user's text alike**        | **prettier**, and only with `pretty` on             |
 
 Practical consequence for tests: asserting padded table delimiters, `**false**`,
 or double-quoted YAML values is asserting _prettier's_ behaviour. Against a

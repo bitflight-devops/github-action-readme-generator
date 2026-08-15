@@ -31,13 +31,13 @@ jobs:
           - repo: bjia56/setup-cosmocc
             action_path: action.yml
             readme_path: README.md
-            description: "Setup Cosmocc Action"
-            artifact_name: "setup-cosmocc"
+            description: 'Setup Cosmocc Action'
+            artifact_name: 'setup-cosmocc'
           - repo: catalystcommunity/action-release-action
             action_path: action.yaml
             readme_path: README.md
-            description: "Release Action"
-            artifact_name: "release-action"
+            description: 'Release Action'
+            artifact_name: 'release-action'
 
     steps:
       - name: Checkout this action (PR code)
@@ -48,8 +48,8 @@ jobs:
       - name: Setup Node.js for building action
         uses: actions/setup-node@v7.0.0
         with:
-          node-version: "24.x"
-          cache: "npm"
+          node-version: '24.x'
+          cache: 'npm'
           cache-dependency-path: action-under-test/package-lock.json
 
       - name: Install dependencies
@@ -271,26 +271,14 @@ jobs:
       # change nothing, or the tool churns a diff into every user's repository
       # on every CI run.
       #
-      # Convergence is asserted between passes 2 and 3, not 1 and 2, because one
-      # lag is known and reproducible. `updateUsage` is the only section updater
-      # that awaits, so it writes last, and `updateContents` therefore indexes a
-      # README still holding the *previous* usage block. `extractHeaders` toggles
-      # its in-code-block flag on any ``` line, so when the old usage region held
-      # an odd number of fences, every heading after it is invisible on pass 1
-      # and visible on pass 2. Reproduced on a fixture: pass 1 emits an empty
-      # table of contents, pass 2 emits both headings, pass 3 matches pass 2.
+      # Assert it between passes 2 and 3, never 1 and 2: pass 1 is allowed to
+      # differ, so comparing it reports an expected lag as non-determinism.
+      # `docs/tool-contract.md` carries the reason, and #649 tracks the lag; the
+      # pass-1 difference is surfaced as a notice so it stays visible.
       #
-      # Comparing 1 against 2 would therefore fail on any target whose committed
-      # README carries an unbalanced fence inside its usage markers — reporting
-      # a known ordering quirk as non-determinism. Comparing 2 against 3 still
-      # catches genuine non-determinism, and the pass-1 difference is surfaced
-      # as a notice so the lag stays visible rather than being swallowed.
-      #
-      # This whole check replaces an earlier one that asserted the README
-      # *differed* from the pre-run backup. That was the wrong signal in both
-      # directions: a target already up to date correctly produces no
-      # difference, and a difference says nothing about whether the content is
-      # right.
+      # Note what is deliberately not asserted: that the README changed at all.
+      # A target already up to date correctly produces no difference, and a
+      # difference says nothing about whether the content is right.
       - name: Snapshot pass 1
         working-directory: test-repo
         run: cp "${{ matrix.readme_path }}" README.pass1.md

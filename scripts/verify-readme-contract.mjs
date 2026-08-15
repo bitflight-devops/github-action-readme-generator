@@ -428,7 +428,19 @@ await tableSection('inputs', inputs, (declaration) => [
     expected: declaration?.default === undefined || declaration.default === '' ? '' : declaration.default,
     code: 'html',
   },
-  { label: 'required flag', expected: declaration?.required ? 'true' : 'false' },
+  // The generator emits the flag emphasised — `update-inputs.ts` writes
+  // `**true**` and `__false__` — so compare against that form through the same
+  // formatter the README went through. Comparing the bare word instead means
+  // reading it back through `normalise`, which strips `**` but not `__`: with
+  // `pretty` on prettier rewrites `__false__` to `**false**` and it matches by
+  // luck, and with `pretty` off the marker survives and the gate fails a
+  // correctly generated README. Matching the emphasised form also catches a
+  // flag that lost its markers, which the bare word could not.
+  {
+    label: 'required flag',
+    expected: declaration?.required ? '**true**' : '__false__',
+    markdown: true,
+  },
 ]);
 
 // Columns per src/sections/update-outputs.ts: Output | Description | Value

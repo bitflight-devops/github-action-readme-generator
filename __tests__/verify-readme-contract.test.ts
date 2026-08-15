@@ -47,11 +47,18 @@ const README =
 <!-- start inputs -->
 | **Input** | **Description** | **Default** | **Required** |
 |---|---|---|---|
-| <b><code>path</code></b> | A \\\| B |  | false |
+| <b><code>path</code></b> | A \\\| B |  | **false** |
 <!-- end inputs -->
 <!-- start outputs -->
 <!-- end outputs -->
 `;
+
+/**
+ * The inputs table as the generator emits it with the formatter off.
+ * `update-inputs.ts` writes `__false__` for an optional input; prettier is what
+ * rewrites that to `**false**`, so with `pretty` off the marker survives.
+ */
+const unformatted = (readme: string): string => readme.replace('**false**', '__false__');
 
 const verify = (
   readme = README,
@@ -106,8 +113,8 @@ describe('README contract verifier regressions', () => {
       );
       if (value !== '') {
         readme = readme.replace(
-          String.raw`A \\\| B |  | false`,
-          String.raw`A \\\| B | <code>${value}</code> | false`,
+          String.raw`A \\\| B |  | **false**`,
+          String.raw`A \\\| B | <code>${value}</code> | **false**`,
         );
       }
     }
@@ -183,7 +190,7 @@ describe('README contract verifier regressions', () => {
       `<!-- start outputs -->\n${outputTable}\n<!-- end outputs -->`,
     );
     expect(
-      verify(readme, action, {
+      verify(unformatted(readme), action, {
         title_prefix: 'GitHub Action: ',
         branding_as_title_prefix: false,
         prettier: false,
@@ -198,7 +205,7 @@ describe('README contract verifier regressions', () => {
       'an aligned delimiter the generator does not emit',
       README.replace('|---|---|---|---|', '|:---|---|---|---|'),
     ],
-    ['a short data row', README.replace(String.raw` |  | false |`, ' |  |')],
+    ['a short data row', README.replace(String.raw` |  | **false** |`, ' |  |')],
   ])('rejects %s in a generated table', (_name, readme) => {
     expect(() => verify(readme)).toThrow();
   });
@@ -277,7 +284,7 @@ describe('README contract verifier regressions', () => {
       .replace('    # Description: A \\| B', '    # Description: **bold**')
       .replace(String.raw`A \\\| B`, '__bold__');
     expect(
-      verify(readme, action, {
+      verify(unformatted(readme), action, {
         title_prefix: 'GitHub Action: ',
         branding_as_title_prefix: false,
         prettier: false,
@@ -294,7 +301,7 @@ describe('README contract verifier regressions', () => {
       .replace('    # Description: A \\| B', '    # Description: **bold**')
       .replace(String.raw`A \\\| B`, '**bold**');
     expect(() =>
-      verify(readme, action, {
+      verify(unformatted(readme), action, {
         title_prefix: 'GitHub Action: ',
         branding_as_title_prefix: false,
         prettier: false,
@@ -308,7 +315,7 @@ describe('README contract verifier regressions', () => {
       String.raw`A \\| B`,
     );
     expect(() =>
-      verify(readme, ACTION, {
+      verify(unformatted(readme), ACTION, {
         title_prefix: 'GitHub Action: ',
         branding_as_title_prefix: false,
         prettier: false,
@@ -325,7 +332,7 @@ describe('README contract verifier regressions', () => {
       .replace(String.raw`A \\\| B`, String.raw`C:\temp`)
       .replace('    # Description: A \\| B', String.raw`    # Description: C:\temp`);
     expect(
-      verify(readme, action, {
+      verify(unformatted(readme), action, {
         title_prefix: 'GitHub Action: ',
         branding_as_title_prefix: false,
         prettier: false,
@@ -342,7 +349,7 @@ describe('README contract verifier regressions', () => {
       .replace('    # Description: A \\| B', '    # Description: one two three')
       .replace(String.raw`A \\\| B`, 'one<br />two<br />three');
     expect(
-      verify(readme, action, {
+      verify(unformatted(readme), action, {
         title_prefix: 'GitHub Action: ',
         branding_as_title_prefix: false,
         prettier: false,
@@ -355,7 +362,10 @@ describe('README contract verifier regressions', () => {
     const readme = README.replace(
       '    path: value',
       '    # Default: a **b**\n    path: value',
-    ).replace(String.raw`A \\\| B |  | false`, String.raw`A \\\| B | <code>a **b**</code> | false`);
+    ).replace(
+      String.raw`A \\\| B |  | **false**`,
+      String.raw`A \\\| B | <code>a **b**</code> | **false**`,
+    );
     expect(verify(readme, action)).toContain('All contract checks passed');
     expect(() => verify(readme.replace('# Default: a **b**', '# Default: a b'), action)).toThrow();
     expect(() =>
@@ -369,10 +379,26 @@ describe('README contract verifier regressions', () => {
       '    path: value',
       `    # Default: ${value}\n    path: value`,
     ).replace(
-      String.raw`A \\\| B |  | false`,
-      String.raw`A \\\| B | <code>${value}</code> | false`,
+      String.raw`A \\\| B |  | **false**`,
+      String.raw`A \\\| B | <code>${value}</code> | **false**`,
     );
     expect(verify(readme, action)).toContain('All contract checks passed');
+  });
+
+  // `normalise` strips `**` but not `__`, so comparing the bare word `false`
+  // read the formatter-off marker as a mismatch and failed a correct README.
+  it('accepts the unformatted required marker when pretty is disabled', () => {
+    expect(
+      verify(unformatted(README.replace('**bold**', '__bold__')), ACTION, {
+        title_prefix: 'GitHub Action: ',
+        branding_as_title_prefix: false,
+        prettier: false,
+      }),
+    ).toContain('All contract checks passed');
+  });
+
+  it('rejects a required flag that contradicts action.yml', () => {
+    expect(() => verify(README.replace('| **false** |', '| **true** |'))).toThrow();
   });
 
   it('rejects an invented space after a title prefix that has none', () => {
@@ -408,7 +434,7 @@ describe('README contract verifier regressions', () => {
   });
 
   it('rejects a duplicate row when declarations remain', () => {
-    const row = String.raw`| <b><code>path</code></b> | A \\\| B |  | false |`;
+    const row = String.raw`| <b><code>path</code></b> | A \\\| B |  | **false** |`;
     const readme = README.replace('<!-- end inputs -->', `${row}\n<!-- end inputs -->`);
     expect(() => verify(readme)).toThrow();
   });

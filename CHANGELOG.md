@@ -1,3 +1,10 @@
+## [1.12.6](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.5...v1.12.6) (2026-08-15)
+
+
+### Bug Fixes
+
+* **markdown:** preserve pipes after literal backslashes ([#673](https://github.com/bitflight-devops/github-action-readme-generator/issues/673)) ([bcf3590](https://github.com/bitflight-devops/github-action-readme-generator/commit/bcf3590168dd603fa03fd4d47e23f3111b51cc82))
+
 ## [1.12.5](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.4...v1.12.5) (2026-08-15)
 
 

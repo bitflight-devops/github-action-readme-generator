@@ -1,3 +1,10 @@
+## [1.12.4](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.3...v1.12.4) (2026-08-15)
+
+
+### Bug Fixes
+
+* **branding:** generate SVG on first run ([#664](https://github.com/bitflight-devops/github-action-readme-generator/issues/664)) ([1e1910e](https://github.com/bitflight-devops/github-action-readme-generator/commit/1e1910ec9a3926487c5ae06efa89db99e79efc24))
+
 ## [1.12.3](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.2...v1.12.3) (2026-08-15)
 
 

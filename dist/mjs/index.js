@@ -1,5 +1,5 @@
 import * as fs from "node:fs";
-import { accessSync, promises, readFileSync } from "node:fs";
+import { accessSync, existsSync, promises, readFileSync } from "node:fs";
 import * as path$1 from "node:path";
 import path from "node:path";
 import * as core from "@actions/core";
@@ -1609,7 +1609,7 @@ function generateImgMarkup(inputs, width = "15%") {
 		log.info(`Generating action.yml branding image for ${iconName}`);
 		const svg = inputs.config.get("image_generated");
 		const hash = `${iconName}${brandColor}`;
-		if (svg && hash.localeCompare(svg) !== 0) {
+		if (!svg || hash.localeCompare(svg) !== 0 || !existsSync(svgPath)) {
 			generateSvgImage(svgPath, iconName, brandColor);
 			inputs.config.set("image_generated", hash);
 		}
@@ -2088,6 +2088,7 @@ var GHActionDocsConfig = class {
 	title;
 	paths;
 	branding_svg_path;
+	image_generated;
 	versioning;
 	prettier;
 	/**
@@ -2102,6 +2103,7 @@ var GHActionDocsConfig = class {
 		this.title = config.title;
 		this.paths = config.paths;
 		this.branding_svg_path = config.branding_svg_path;
+		this.image_generated = config.image_generated;
 		this.versioning = config.versioning;
 		this.prettier = config.prettier;
 	}

@@ -4,14 +4,14 @@ await(async()=>{let{dirname:e}=await import("path"),{fileURLToPath:i}=await impo
 
 import { createRequire } from "node:module";
 import * as fs$10 from "node:fs";
-import { accessSync, promises, readFileSync } from "node:fs";
+import { accessSync, existsSync, promises, readFileSync } from "node:fs";
 import * as path$2 from "node:path";
 import path, { dirname, join } from "node:path";
 import * as os$10 from "os";
 import os, { EOL } from "os";
 import * as crypto$2 from "crypto";
 import * as fs$16 from "fs";
-import fs4, { constants, existsSync, promises as promises$1, readFileSync as readFileSync$1, realpathSync, statSync } from "fs";
+import fs4, { constants, existsSync as existsSync$1, promises as promises$1, readFileSync as readFileSync$1, realpathSync, statSync } from "fs";
 import * as path$6 from "path";
 import path10, { dirname as dirname$1 } from "path";
 import * as events from "events";
@@ -17034,7 +17034,7 @@ var Context$1 = class {
 	constructor() {
 		var _a, _b, _c;
 		this.payload = {};
-		if (process.env.GITHUB_EVENT_PATH) if (existsSync(process.env.GITHUB_EVENT_PATH)) this.payload = JSON.parse(readFileSync$1(process.env.GITHUB_EVENT_PATH, { encoding: "utf8" }));
+		if (process.env.GITHUB_EVENT_PATH) if (existsSync$1(process.env.GITHUB_EVENT_PATH)) this.payload = JSON.parse(readFileSync$1(process.env.GITHUB_EVENT_PATH, { encoding: "utf8" }));
 		else {
 			const path = process.env.GITHUB_EVENT_PATH;
 			process.stdout.write(`GITHUB_EVENT_PATH ${path} does not exist${EOL}`);
@@ -320995,7 +320995,7 @@ function generateImgMarkup(inputs, width = "15%") {
 		log.info(`Generating action.yml branding image for ${iconName}`);
 		const svg = inputs.config.get("image_generated");
 		const hash = `${iconName}${brandColor}`;
-		if (svg && hash.localeCompare(svg) !== 0) {
+		if (!svg || hash.localeCompare(svg) !== 0 || !existsSync(svgPath)) {
 			generateSvgImage(svgPath, iconName, brandColor);
 			inputs.config.set("image_generated", hash);
 		}
@@ -321474,6 +321474,7 @@ var GHActionDocsConfig = class {
 	title;
 	paths;
 	branding_svg_path;
+	image_generated;
 	versioning;
 	prettier;
 	/**
@@ -321488,6 +321489,7 @@ var GHActionDocsConfig = class {
 		this.title = config.title;
 		this.paths = config.paths;
 		this.branding_svg_path = config.branding_svg_path;
+		this.image_generated = config.image_generated;
 		this.versioning = config.versioning;
 		this.prettier = config.prettier;
 	}

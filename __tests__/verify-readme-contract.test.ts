@@ -172,11 +172,11 @@ describe('README contract verifier regressions', () => {
   it('validates complete first paragraphs and whitespace-only lines in output descriptions', () => {
     const action = ACTION.replace(
       'runs:',
-      'outputs:\n  soft:\n    description: "First\\nSecond\\n\\nBody"\n  spaced:\n    description: "first\\n  \\nsecond"\nruns:',
+      'outputs:\n  soft:\n    description: "First\\nSecond\\nThird\\n\\nBody"\n  spaced:\n    description: "first\\n  \\nsecond"\nruns:',
     );
     const outputTable = String.raw`| **Output** | **Description** | **Value** |
 |---|---|---|
-| <b><code>soft</code></b> | First<br />Second |  |
+| <b><code>soft</code></b> | First<br />Second<br />Third |  |
 | <b><code>spaced</code></b> | first<br />  <br />second |  |`;
     const readme = README.replace('**bold**', '__bold__').replace(
       '<!-- start outputs -->\n<!-- end outputs -->',

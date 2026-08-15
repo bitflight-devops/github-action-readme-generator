@@ -263,7 +263,7 @@ describe('README generation contract', () => {
     it('keeps complete first paragraphs and treats only literal blank lines as boundaries', async () => {
       const action = ACTION_YML.replace(
         'description: A plain input with a default',
-        'description: "First\\nSecond\\n\\nInput body"',
+        'description: "First\\nSecond\\nThird\\n\\nInput body"',
       )
         .replace(
           'description: A required input carrying no default',
@@ -271,7 +271,7 @@ describe('README generation contract', () => {
         )
         .replace(
           'description: The first output',
-          'description: "Output first\\nOutput second\\n\\nOutput body"',
+          'description: "Output first\\nOutput second\\nOutput third\\n\\nOutput body"',
         )
         .replace(
           'description: The second output',
@@ -282,10 +282,10 @@ describe('README generation contract', () => {
       const readme = await generate(false);
       const inputs = sectionBody(readme, 'inputs');
       const outputs = sectionBody(readme, 'outputs');
-      expect(inputs).toContain('First<br />Second');
+      expect(inputs).toContain('First<br />Second<br />Third');
       expect(inputs).not.toContain('Input body');
       expect(inputs).toContain('input first<br />  <br />input second');
-      expect(outputs).toContain('Output first<br />Output second');
+      expect(outputs).toContain('Output first<br />Output second<br />Output third');
       expect(outputs).not.toContain('Output body');
       expect(outputs).toContain('output first<br />  <br />output second');
     });

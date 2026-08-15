@@ -127,8 +127,9 @@ current step list.
   - Runs `npm ci` → engine/signature checks → bootstraps `vp` → build → commit dist/ → `semantic-release`.
 - **`integration-test.yml`** ("Integration Tests - Real World Repositories")
   - The only workflow that runs the built action against **third-party**
-    repositories, and the only place the output contract is enforced. If you
-    change generation behaviour, this is what catches it.
+    repositories. `__tests__/` enforces the output contract against fixtures;
+    this is the only thing that enforces it against a repository nobody here
+    controls. If you change generation behaviour, this is what catches it.
   - Has a plain `pull_request` trigger, unlike `test.yml` — so a PR changing
     this file does show its own effect pre-merge.
   - Runs `scripts/verify-readme-contract.mjs` against each target's own

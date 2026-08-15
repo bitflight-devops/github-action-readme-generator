@@ -44,7 +44,7 @@ npm run lint:markdown:fix
 
 ## Oxlint Rules
 
-Oxlint's own default/recommended rule set is used as-is — this project has no hand-maintained rule config to keep in sync. The only lint-config surface it customizes is `vite.config.ts`'s `lint` block (`options: { typeAware: true, typeCheck: true }`), which routes type checking through `tsgolint`.
+Oxlint's own default/recommended rule set is used as-is — this project has no hand-maintained rule list to keep in sync. Everything it does customize lives in `vite.config.ts`'s `lint` block: `options: { typeAware: true, typeCheck: true }`, which routes type checking through `tsgolint`, plus the one scoped override below.
 
 For rule documentation, see `https://oxc.rs/docs/guide/usage/linter/rules.html` — ~847 rules across seven categories (correctness, suspicious, pedantic, perf, style, restriction, nursery), namespaced `plugin(rule-name)`.
 

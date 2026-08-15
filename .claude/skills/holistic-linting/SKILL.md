@@ -375,13 +375,19 @@ This section provides systematic resolution procedures for each major TypeScript
    https://oxc.rs/docs/guide/usage/linter/rules.html
    ```
 
-   This project uses Oxlint's own default/recommended rule set as-is — there is no repo-specific rule config to point to. Rules confirmed to fire against this codebase, via a real `vp lint --format github --type-aware --type-check src` run:
+   This project uses Oxlint's own default/recommended rule set as-is — there is no hand-maintained rule list to point to. Rules confirmed to fire against this codebase, via a real `vp lint --format github --type-aware --type-check src` run:
 
    ```text
    typescript(await-thenable)
    typescript(no-base-to-string)
    typescript(restrict-template-expressions)
    ```
+
+   One scoped override exists in `vite.config.ts`: `typescript/unbound-method` is
+   disabled for `__tests__/**`, because the vitest-mock idiom reads a method
+   reference rather than detaching and calling it. Its reasoning is inline where
+   the override lives — read it there rather than flagging the override as an
+   unjustified suppression.
 
    This documentation provides:
 

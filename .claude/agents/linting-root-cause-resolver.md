@@ -86,7 +86,7 @@ npm run lint:markdown:fix
    https://oxc.rs/docs/guide/usage/linter/rules.html
    ```
 
-   This project uses Oxlint's own default/recommended rule set as-is — there is no repo-specific rule config to point to. Rules confirmed to fire against this codebase, via a real `vp lint --format github --type-aware --type-check src` run:
+   This project uses Oxlint's own default/recommended rule set as-is — there is no hand-maintained rule list to point to, only the one scoped override noted below. Rules confirmed to fire against this codebase, via a real `vp lint --format github --type-aware --type-check src` run:
 
    ```text
    typescript(await-thenable)

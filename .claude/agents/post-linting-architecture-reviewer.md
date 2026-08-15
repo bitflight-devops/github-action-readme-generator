@@ -175,7 +175,7 @@ When reviewing TypeScript code fixed by linting-root-cause-resolver:
 
 ### Oxlint Rule Compliance
 
-Oxlint's own default/recommended rule set is used as-is — there's no repo-specific rule list to check against. Rules confirmed to fire against this codebase:
+Oxlint's own default/recommended rule set is used as-is — there's no hand-maintained rule list to check against, only the one scoped override noted below. Rules confirmed to fire against this codebase:
 
 - **typescript(await-thenable)**: Confirm `await` is only used on values that are actually Promises
 - **typescript(no-base-to-string)**: Verify string interpolation of objects uses an explicit, meaningful conversion rather than the default `toString()`

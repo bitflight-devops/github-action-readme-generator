@@ -333,11 +333,17 @@ describe('README generation contract', () => {
       expect(inputsTable).toMatch(/\|-{3,}\|/);
     });
 
-    it('is idempotent — a second run changes nothing', async () => {
-      const first = await generate();
+    // Passes 2 and 3, never 1 and 2 — `docs/tool-contract.md` explains why
+    // `updateContents` can leave pass 1 indexing the previous usage block.
+    // This fixture happens to settle on pass 1, so a 1-vs-2 assertion passes
+    // here and would encode the wrong rule for the first fixture that gains a
+    // contents section.
+    it('is idempotent — generation reaches a fixed point', async () => {
+      await generate();
       const second = await generate();
+      const third = await generate();
 
-      expect(second).toBe(first);
+      expect(third).toBe(second);
     });
   });
 });

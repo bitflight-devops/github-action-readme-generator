@@ -82,9 +82,9 @@ ships only the two an action's README is known in advance to hold. Reformatted:
 ` ```yaml `, ` ```yml `, and the whole markdown family — ` ```markdown `,
 ` ```md `, ` ```mdx `, and rarer spellings such as ` ```mdwn `, ` ```ronn ` and
 ` ```workbook `. Returned byte-for-byte: every other language, ` ```ts `,
-` ```json `, ` ```css ` and ` ```html ` among them. That halves the CLI binary
-and keeps the tool out of code it did not write. Naming extra plugins per
-project is
+` ```json `, ` ```css ` and ` ```html ` among them. Every plugin left out is
+weight the CLI binary does not carry, and code the tool does not rewrite.
+Naming extra plugins per project is
 [issue #660](https://github.com/bitflight-devops/github-action-readme-generator/issues/660).
 
 **A second run can differ from the first; a third will not.** The table of
@@ -270,7 +270,7 @@ value replaced by `***REDACTED***`. Keys whose names look sensitive (`auth`,
 <!-- start usage -->
 
 ```yaml
-- uses: bitflight-devops/github-action-readme-generator@v1.12.5
+- uses: bitflight-devops/github-action-readme-generator@v1.12.6
   with:
     # Description: The absolute or relative path to the `action.yml` file to read in
     # from.

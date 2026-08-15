@@ -179,11 +179,19 @@ is repo housekeeping (stale bot, assignment, tag cleanup, version updater).
 ## Working discipline
 
 - **Never write a defect into a repo file. Fix it, or open a GitHub Issue.**
-  A bug is transient state, like "350 of 400 tests pass" — committing it
-  guarantees a file that is wrong the day it is fixed, plus a second copy to
-  maintain. This applies to every tracked file: docs, code comments, this one.
-  The only permitted form is a rule you must code against today plus a link to
-  its issue, never a description of the bug.
+  A bug is transient state — committing it guarantees a file that is wrong the
+  day it is fixed, plus a second copy to maintain. This applies to every tracked
+  file: docs, code comments, this one. The only permitted form is a rule you
+  must code against today plus a link to its issue, never a description of the
+  bug.
+- **Never write a measured number into a repo file.** Test counts, file counts,
+  site counts, percentages, byte sizes, survey tallies — each is a reading taken
+  once, wrong after the next commit, and it convinces a reader precisely because
+  it looks precise. Write the rule the number was evidence for. "Investigated 26
+  sites, zero exceptions" becomes the reason the exceptions do not exist; "cost
+  3.6 MB" becomes "every plugin is weight in a binary that ships to every
+  consumer". If a reader needs the number, they can measure it — and theirs will
+  be right.
 - `.claude/skills/checker-principle/SKILL.md`: verify before trusting any fix, bot finding, or your own diff.
 - `.claude/skills/pr-review-workflow/SKILL.md`: handling PR review comments, judging draft-readiness.
 - `.claude/skills/writing-for-agents/SKILL.md`: writing or editing this file, `docs/tool-contract.md`, or any skill.

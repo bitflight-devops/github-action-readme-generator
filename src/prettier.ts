@@ -34,11 +34,9 @@ const log: LogTask = new LogTask('prettier');
  * fence in some other language is prose the action's author wrote, which the
  * tool has no business rewriting.
  *
- * Surveying 18 published action READMEs found `yaml`/`yml` in 17 of them, one
- * `javascript` fence, and `bash`/`shell`/`diff` fences that prettier does not
- * format anyway. Every other language prettier supports appeared zero times.
- * Carrying their plugins cost 3.6 MB of binary to reformat code nobody had
- * written.
+ * The bar for adding one: a language that action READMEs are known in advance
+ * to contain, not one they could. Every plugin here is weight in a binary that
+ * ships to every consumer, spent to reformat code the action's author wrote.
  *
  * Extending this per-project — naming extra prettier plugins in configuration —
  * is tracked separately; see the README.

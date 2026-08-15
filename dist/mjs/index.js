@@ -1724,7 +1724,7 @@ function updateDescription(sectionToken, inputs) {
 * @returns The escaped text.
 */
 function markdownEscapeTableCell(text) {
-	return text.replaceAll("\n", "<br />").replaceAll("|", "\\|");
+	return text.replaceAll("\n", "<br />").replaceAll(/\\+(?=\|)/g, (slashes) => slashes.repeat(2)).replaceAll("|", "\\|");
 }
 /**
 * Escapes inline code blocks in a Markdown string.

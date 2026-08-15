@@ -253,21 +253,6 @@ jobs:
           echo "✅ Auto-detection validation PASSED"
           echo "   uses: $EXPECTED_OWNER/$EXPECTED_REPO@$DETECTED_VERSION"
 
-      # The checks above prove the run happened and that owner/repo/version were
-      # detected. They say nothing about whether the sections were actually
-      # filled: a run that emitted an empty inputs table, dropped inputs from the
-      # usage block, or skipped formatting entirely passes every one of them.
-      # scripts/verify-readme-contract.mjs closes that gap, enumerating the
-      # target's own action.yml so a dropped input fails rather than going
-      # unnoticed. It mirrors __tests__/integration-readme-contract.test.ts,
-      # which pins the same promises against a synthetic action.yml.
-      - name: Verify the generated README fulfils the generator's contract
-        run: |
-          node action-under-test/scripts/verify-readme-contract.mjs \
-            "test-repo/${{ matrix.action_path }}" \
-			"test-repo/${{ matrix.readme_path }}" \
-			"test-repo/README.backup.md"
-
       # Generation has to reach a fixed point: once converged, further runs must
       # change nothing, or the tool churns a diff into every user's repository
       # on every CI run.
@@ -313,6 +298,17 @@ jobs:
             echo "::error::pass 3 differed from pass 2; generation does not reach a fixed point"
             exit 1
           fi
+
+      # The checks above prove the run happened and converged. They say nothing
+      # about whether the final sections project action.yml exactly.
+      # scripts/verify-readme-contract.mjs closes that gap against pass 3, the
+      # same README uploaded as the integration artifact.
+      - name: Verify the final README fulfils the generator's contract
+        run: |
+          node action-under-test/scripts/verify-readme-contract.mjs \
+            "test-repo/${{ matrix.action_path }}" \
+            "test-repo/${{ matrix.readme_path }}" \
+            "test-repo/README.backup.md"
 
       - name: Discard the convergence snapshots
         if: always()

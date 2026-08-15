@@ -537,6 +537,21 @@ describe('README contract verifier regressions', () => {
     expect(() => verify(readme, action)).toThrow();
   });
 
+  it('requires the generated bare with property when the action has no inputs', () => {
+    const action = ACTION.replace(/inputs:\n[\s\S]*?runs:/, 'runs:');
+    const readme = README.replace(
+      "  with:\n    # Description: A \\| B\n    # \n    path: ''\n",
+      '  with:\n',
+    ).replace(
+      /<!-- start inputs -->[\s\S]*?<!-- end inputs -->/,
+      '<!-- start inputs -->\n<!-- end inputs -->',
+    );
+
+    expect(verify(readme, action)).toContain('All contract checks passed');
+    expect(() => verify(readme.replace('  with:\n', ''), action)).toThrow();
+    expect(() => verify(readme.replace('  with:\n', '  with: {}\n'), action)).toThrow();
+  });
+
   it('rejects a duplicate row when declarations remain', () => {
     const row = String.raw`| <b><code>path</code></b> | A \\\| B |  | **false** |`;
     const readme = README.replace('<!-- end inputs -->', `${row}\n<!-- end inputs -->`);

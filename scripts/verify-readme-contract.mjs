@@ -295,9 +295,14 @@ if (usage === null) {
     step !== null && step.with !== null && typeof step.with === 'object' && !Array.isArray(step.with)
       ? step.with
       : null;
+  const hasWith = step !== null && Object.hasOwn(step, 'with');
 
   if (step === null) {
     skip('no parsed step, skipping the `with:` and input checks');
+  } else if (!hasWith) {
+    fail('the usage step carries no generated `with:` property');
+  } else if (inputKeys.length === 0 && step.with !== null) {
+    fail('the zero-input usage step does not carry the generated bare `with:`');
   } else if (withMapping === null && inputKeys.length > 0) {
     fail('the usage step declares inputs but carries no `with:` mapping');
   } else {

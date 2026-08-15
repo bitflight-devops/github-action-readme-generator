@@ -239,6 +239,20 @@ describe('README generation contract', () => {
       expect(sectionBody(await generate(), 'outputs')).toContain(key);
     });
 
+    // Splitting on the paragraph boundary before trimming takes the empty
+    // prefix, and the row then documents nothing for a declared description.
+    it.each([
+      ['inputs', 'inputs:\n  lead:\n    description: "\\n\\nActual docs"\n', 'Actual docs'],
+      ['outputs', 'outputs:\n  lead:\n    description: "\\n\\nActual docs"\n', 'Actual docs'],
+    ])('carries a %s description that opens with blank lines', async (section, yaml, text) => {
+      fs.writeFileSync(
+        actionPath,
+        `name: Lead\ndescription: Probe\n${yaml}runs:\n  using: node20\n  main: index.js\n`,
+      );
+
+      expect(sectionBody(await generate(), section)).toContain(text);
+    });
+
     it('removes stale output rows when action.yml declares no outputs', async () => {
       fs.writeFileSync(actionPath, ACTION_YML.replace(/outputs:[\s\S]*?runs:/, 'runs:'));
       // oxfmt-ignore

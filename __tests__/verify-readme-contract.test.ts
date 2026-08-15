@@ -39,7 +39,7 @@ const README =
   with:
     # Description: A \| B
     # 
-    path: value
+    path: ''
 ` +
   '```\n' +
   String.raw`
@@ -108,8 +108,8 @@ describe('README contract verifier regressions', () => {
     let readme = README.replace('    # \n', '    #\n');
     if (yaml !== undefined) {
       readme = readme.replace(
-        '    path: value',
-        `    # Default:${value === '' ? '' : ` ${value}`}\n    path: value`,
+        "    path: ''",
+        `    # Default:${value === '' ? '' : ` ${value}`}\n    path: ''`,
       );
       if (value !== '') {
         readme = readme.replace(
@@ -135,9 +135,7 @@ describe('README contract verifier regressions', () => {
       verify(README.replace('    # Description: A \\| B', '    # Description: stale')),
     ).toThrow();
     expect(() =>
-      verify(
-        README.replace('    # \n    path: value', '    # \n    # Default: stale\n    path: value'),
-      ),
+      verify(README.replace("    # \n    path: ''", "    # \n    # Default: stale\n    path: ''")),
     ).toThrow();
   });
 
@@ -225,7 +223,7 @@ describe('README contract verifier regressions', () => {
     ],
     [
       'an undeclared usage input',
-      README.replace('    path: value', '    path: value\n    removed: stale'),
+      README.replace("    path: ''", "    path: ''\n    removed: stale"),
     ],
     [
       'an undeclared table row',
@@ -359,10 +357,7 @@ describe('README contract verifier regressions', () => {
 
   it('preserves syntax-bearing input defaults in usage and table projections', () => {
     const action = ACTION.replace('required: false', "required: false\n    default: 'a **b**'");
-    const readme = README.replace(
-      '    path: value',
-      '    # Default: a **b**\n    path: value',
-    ).replace(
+    const readme = README.replace("    path: ''", "    # Default: a **b**\n    path: ''").replace(
       String.raw`A \\\| B |  | **false**`,
       String.raw`A \\\| B | <code>a **b**</code> | **false**`,
     );
@@ -375,10 +370,7 @@ describe('README contract verifier regressions', () => {
 
   it.each(['false', '0'])('accepts the declared falsy input default %s', (value) => {
     const action = ACTION.replace('required: false', `required: false\n    default: ${value}`);
-    const readme = README.replace(
-      '    path: value',
-      `    # Default: ${value}\n    path: value`,
-    ).replace(
+    const readme = README.replace("    path: ''", `    # Default: ${value}\n    path: ''`).replace(
       String.raw`A \\\| B |  | **false**`,
       String.raw`A \\\| B | <code>${value}</code> | **false**`,
     );
@@ -401,6 +393,18 @@ describe('README contract verifier regressions', () => {
     expect(() => verify(README.replace('| **false** |', '| **true** |'))).toThrow();
   });
 
+  // The key set alone matched, so the gate would certify a usage example that
+  // tells a third party's readers to pass a value the generator never emits.
+  it('rejects a usage value the generator does not emit', () => {
+    expect(() => verify(README.replace("    path: ''", '    path: dangerous-default'))).toThrow();
+  });
+
+  // normaliseTableCell strips tags, so the row-set, ordering and lookup checks
+  // all pass on a first cell that lost its wrapper.
+  it('rejects a first column that lost the generated markup', () => {
+    expect(() => verify(README.replace('| <b><code>path</code></b> |', '| path |'))).toThrow();
+  });
+
   // The header's `**Input**` normalises to `Input`, so a row lookup across the
   // whole table matches the header before the data row and compares its column
   // labels against the declaration.
@@ -409,7 +413,7 @@ describe('README contract verifier regressions', () => {
       'inputs:\n  path:\n    description: A \\| B\n    required: false',
       'inputs:\n  Input:\n    description: Collides\n    required: false',
     );
-    const readme = README.replace('    path: value', '    Input: value')
+    const readme = README.replace("    path: ''", "    Input: ''")
       .replace('    # Description: A \\| B', '    # Description: Collides')
       .replace(
         String.raw`| <b><code>path</code></b> | A \\\| B |  | **false** |`,
@@ -444,7 +448,7 @@ describe('README contract verifier regressions', () => {
 
   it('rejects an undeclared usage key when the action has no inputs', () => {
     const action = ACTION.replace(/inputs:\n[\s\S]*?runs:/, 'runs:');
-    const readme = README.replace('    path: value', '    removed: stale').replace(
+    const readme = README.replace("    path: ''", '    removed: stale').replace(
       /<!-- start inputs -->[\s\S]*?<!-- end inputs -->/,
       '<!-- start inputs -->\n<!-- end inputs -->',
     );

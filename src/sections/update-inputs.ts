@@ -39,8 +39,11 @@ export default function updateInputs(
       const values = vars[key];
       let description = values?.description ?? '';
 
-      // Keep the complete first paragraph, including soft line breaks.
-      description = description.split('\n\n')[0] ?? description;
+      // Keep the complete first paragraph, including soft line breaks. Leading
+      // blank lines go first: a description that opens with one splits into an
+      // empty first paragraph, and the row then shows nothing for an input the
+      // action did document.
+      description = description.trimStart().split('\n\n')[0] ?? '';
 
       description = description.trim().replace('\n', '<br />');
 

@@ -273,6 +273,17 @@ if (usage === null) {
     } else {
       ok(`the usage step exactly projects all ${inputKeys.length} action.yml inputs`);
     }
+
+    // `update-usage.ts` writes every value as `key: ''` — the block is a
+    // template to copy, not a configured step. Checking only the key set lets a
+    // stale value survive, and this gate would then certify a usage example
+    // telling a third party's readers to pass it.
+    const valued = Object.entries(withMapping ?? {}).filter(([, value]) => value !== '');
+    if (valued.length > 0) {
+      fail(`the usage step carries values the generator does not emit — ${valued.map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(', ')}`);
+    } else if (inputKeys.length > 0) {
+      ok('every usage value is the empty placeholder the generator emits');
+    }
   }
 
   // Compare each input's complete generated comment block in its own step.
@@ -397,6 +408,15 @@ const tableSection = async (name, declared, expectedCells) => {
     }
     const cellValues = cells(row);
     let rowOk = true;
+    // `helpers.ts` rowHeader wraps every key in `<b><code>…</code></b>`, and
+    // `normaliseTableCell` strips tags — so the row-set, ordering and lookup
+    // checks all pass on a first cell that lost the wrapper. Compare the markup
+    // itself, or a guaranteed projection goes unnoticed.
+    const wantHeader = await generatedTableCell(`<b><code>${key}</code></b>`);
+    if ((await generatedMarkdown(cellValues[0])) !== wantHeader) {
+      fail(`\`${key}\` is not wrapped as the generator writes it in the ${name} table — want ${JSON.stringify(wantHeader)}, got ${JSON.stringify(cellValues[0])}`);
+      rowOk = false;
+    }
     for (const [index, { label, expected, markdown: isMarkdown, code }] of expectedCells(declared[key]).entries()) {
       if (expected === null && !code) continue;
       const actual = isMarkdown || code

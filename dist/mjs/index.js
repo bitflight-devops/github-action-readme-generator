@@ -1377,9 +1377,10 @@ function githubBadges(owner, repo) {
 * @returns {string} - The HTML markup for the badge.
 */
 function generateBadge(item, log) {
-	const badgeTemplate = `<img src="${item.img}" alt="${encodeURIComponent(item.alt) || ""}" />`;
+	const escapeAttribute = (value) => value.replaceAll("&", "&amp;").replaceAll("\"", "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+	const badgeTemplate = `<img src="${escapeAttribute(item.img)}" alt="${escapeAttribute(item.alt)}" />`;
 	log.info(`Generating badge ${item.alt}`);
-	if (item.url) return `<a href="${encodeURIComponent(item.url)}">${badgeTemplate}</a>`;
+	if (item.url) return `<a href="${escapeAttribute(item.url)}">${badgeTemplate}</a>`;
 	return badgeTemplate;
 }
 /**

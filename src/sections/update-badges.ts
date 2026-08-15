@@ -62,7 +62,7 @@ function generateBadge(item: IBadge, log: LogTask): string {
       .replaceAll('"', '&quot;')
       .replaceAll('<', '&lt;')
       .replaceAll('>', '&gt;');
-  const badgeTemplate = `<img src="${item.img}" alt="${escapeAttribute(item.alt)}" />`;
+  const badgeTemplate = `<img src="${escapeAttribute(item.img)}" alt="${escapeAttribute(item.alt)}" />`;
   log.info(`Generating badge ${item.alt}`);
   if (item.url) {
     return `<a href="${escapeAttribute(item.url)}">${badgeTemplate}</a>`;

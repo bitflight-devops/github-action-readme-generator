@@ -56,10 +56,16 @@ function githubBadges(owner: string, repo: string): IBadge[] {
  * @returns {string} - The HTML markup for the badge.
  */
 function generateBadge(item: IBadge, log: LogTask): string {
-  const badgeTemplate = `<img src="${item.img}" alt="${encodeURIComponent(item.alt) || ''}" />`;
+  const escapeAttribute = (value: string): string =>
+    value
+      .replaceAll('&', '&amp;')
+      .replaceAll('"', '&quot;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;');
+  const badgeTemplate = `<img src="${escapeAttribute(item.img)}" alt="${escapeAttribute(item.alt)}" />`;
   log.info(`Generating badge ${item.alt}`);
   if (item.url) {
-    return `<a href="${encodeURIComponent(item.url)}">${badgeTemplate}</a>`;
+    return `<a href="${escapeAttribute(item.url)}">${badgeTemplate}</a>`;
   }
   return badgeTemplate;
 }

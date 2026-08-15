@@ -134,6 +134,14 @@ describe('README contract verifier regressions', () => {
     expect(verify(readme, action)).toContain('All contract checks passed');
   });
 
+  it('rejects dropped Markdown syntax in metadata and table descriptions', () => {
+    expect(() => verify(README.replace('**bold**', 'bold'))).toThrow();
+
+    const action = ACTION.replace(String.raw`description: A \| B`, "description: '**important**'");
+    const readme = README.replace(String.raw`A \\\| B`, 'important');
+    expect(() => verify(readme, action)).toThrow();
+  });
+
   it('accepts exact unformatted Markdown when pretty is disabled', () => {
     const action = ACTION.replace('name: Release', 'name: __Release__').replace(
       String.raw`description: A \| B`,
@@ -201,6 +209,49 @@ describe('README contract verifier regressions', () => {
     ).toContain('All contract checks passed');
   });
 
+  it('accepts every newline projected from a multiline table description', () => {
+    const action = ACTION.replace(
+      String.raw`description: A \| B`,
+      'description: |-\n      one\n      two\n      three',
+    );
+    const readme = README.replace('**bold**', '__bold__').replace(
+      String.raw`A \\\| B`,
+      'one<br />two<br />three',
+    );
+    expect(
+      verify(readme, action, {
+        title_prefix: 'GitHub Action: ',
+        branding_as_title_prefix: false,
+        prettier: false,
+      }),
+    ).toContain('All contract checks passed');
+  });
+
+  it('preserves syntax-bearing input defaults in usage and table projections', () => {
+    const action = ACTION.replace('required: false', "required: false\n    default: 'a **b**'");
+    const readme = README.replace(
+      '    path: value',
+      '    # Default: a **b**\n    path: value',
+    ).replace(String.raw`A \\\| B |  | false`, String.raw`A \\\| B | <code>a **b**</code> | false`);
+    expect(verify(readme, action)).toContain('All contract checks passed');
+    expect(() => verify(readme.replace('# Default: a **b**', '# Default: a b'), action)).toThrow();
+    expect(() =>
+      verify(readme.replace('<code>a **b**</code>', '<code>a b</code>'), action),
+    ).toThrow();
+  });
+
+  it.each(['false', '0'])('accepts the declared falsy input default %s', (value) => {
+    const action = ACTION.replace('required: false', `required: false\n    default: ${value}`);
+    const readme = README.replace(
+      '    path: value',
+      `    # Default: ${value}\n    path: value`,
+    ).replace(
+      String.raw`A \\\| B |  | false`,
+      String.raw`A \\\| B | <code>${value}</code> | false`,
+    );
+    expect(verify(readme, action)).toContain('All contract checks passed');
+  });
+
   it('rejects an invented space after a title prefix that has none', () => {
     const readme = README.replace('# GitHub Action: Release', '# Custom: Release');
     expect(() =>
@@ -237,6 +288,32 @@ describe('README contract verifier regressions', () => {
     const row = String.raw`| <b><code>path</code></b> | A \\\| B |  | false |`;
     const readme = README.replace('<!-- end inputs -->', `${row}\n<!-- end inputs -->`);
     expect(() => verify(readme)).toThrow();
+  });
+
+  it('validates output values and declaration order', () => {
+    const action = ACTION.replace(
+      'runs:',
+      "outputs:\n  first:\n    description: First result\n    value: ${{ 'a **b**' }}\n  second:\n    description: Second result\n    value: ${{ '<em>x</em>' }}\n  third:\n    description: Third result\nruns:",
+    );
+    const first = "| <b><code>first</code></b> | First result | <code>${{ 'a **b**' }}</code> |";
+    const second =
+      "| <b><code>second</code></b> | Second result | <code>${{ '<em>x</em>' }}</code> |";
+    const third = '| <b><code>third</code></b> | Third result |  |';
+    const table = `| **Output** | **Description** | **Value** |\n|---|---|---|\n${first}\n${second}\n${third}`;
+    const readme = README.replace(
+      '<!-- start outputs -->\n<!-- end outputs -->',
+      `<!-- start outputs -->\n${table}\n<!-- end outputs -->`,
+    );
+
+    expect(verify(readme, action)).toContain('All contract checks passed');
+    expect(() => verify(readme.replace('a **b**', 'a b'), action)).toThrow();
+    expect(() => verify(readme.replace('<em>x</em>', 'x'), action)).toThrow();
+    expect(() =>
+      verify(readme.replace(third, third.replace('|  |', '| stale |')), action),
+    ).toThrow();
+    expect(() =>
+      verify(readme.replace(`${first}\n${second}`, `${second}\n${first}`), action),
+    ).toThrow();
   });
 
   it('uses the generator plugin set and leaves unsupported fenced JavaScript unchanged', () => {

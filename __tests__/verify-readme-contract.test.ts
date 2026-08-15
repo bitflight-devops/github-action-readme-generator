@@ -395,6 +395,20 @@ describe('README contract verifier regressions', () => {
 
   // The key set alone matched, so the gate would certify a usage example that
   // tells a third party's readers to pass a value the generator never emits.
+  // The two projections diverge here, and both are the generator's: the usage
+  // block keeps the leading blank lines, while the table updaters trim before
+  // splitting the first paragraph, so the cell reads `Visible`. A verifier that
+  // splits without trimming expects an empty cell and rejects correct output.
+  it('accepts a description that opens with blank lines', () => {
+    const action = ACTION.replace(String.raw`description: A \| B`, 'description: "\\n\\nVisible"');
+    const readme = README.replace(
+      '    # Description: A \\| B\n    # ',
+      '    # Description:\n    #\n    # Visible\n    #',
+    ).replace(String.raw`A \\\| B`, 'Visible');
+
+    expect(verify(readme, action)).toContain('All contract checks passed');
+  });
+
   it('rejects a usage value the generator does not emit', () => {
     expect(() => verify(README.replace("    path: ''", '    path: dangerous-default'))).toThrow();
   });

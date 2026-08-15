@@ -170,8 +170,13 @@ const generatedTableCell = async (value) =>
  * `update-inputs.ts` truncates a description at its first blank line, so only
  * the leading paragraph is guaranteed to reach the table. Comparing on that
  * paragraph holds whether or not the YAML style preserved the blank line.
+ *
+ * The `trimStart()` mirrors the updaters exactly: they trim before splitting,
+ * so a description opening with a blank line reaches the table as its first
+ * real paragraph. Splitting first here would expect an empty cell and reject
+ * the generator's own output.
  */
-const firstParagraph = (value) => String(value ?? '').split('\n\n')[0];
+const firstParagraph = (value) => String(value ?? '').trimStart().split('\n\n')[0];
 
 /** Splits a Markdown table row at pipes preceded by an even backslash count. */
 const cells = (row) => {

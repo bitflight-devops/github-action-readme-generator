@@ -105,10 +105,9 @@ This is the case the tool exists for and the case least covered by unit tests;
 
 ## Bundling is this project's recurring defect class
 
-**"The published artifact cannot load a module" has recurred after build-system
-change after build-system change** (#135, #189, #223, #244, #280, #335, #516).
-`npm run build` passing and the test suite passing is not evidence that the
-release works.
+**"The published artifact cannot load a module" is the failure every
+build-system change in this repository has to be checked against.** A green
+`npm run build` and a green test suite are not evidence that the release works.
 
 The trap: a GitHub Actions runner gives this action no `node_modules` of its
 own. Externalizing a runtime dependency on the reasoning that it "is available

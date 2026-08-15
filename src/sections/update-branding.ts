@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+
 import type { FeatherIconNames } from 'feather-icons';
 
 import {
@@ -123,7 +125,7 @@ export function generateImgMarkup(inputs: Inputs, width: string = '15%'): string
     log.info(`Generating action.yml branding image for ${iconName}`);
     const svg = inputs.config.get('image_generated') as Maybe<string>;
     const hash = `${iconName}${brandColor}`;
-    if (!svg || hash.localeCompare(svg) !== 0) {
+    if (!svg || hash.localeCompare(svg) !== 0 || !existsSync(svgPath)) {
       generateSvgImage(svgPath, iconName, brandColor);
       inputs.config.set('image_generated', hash);
     }

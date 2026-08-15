@@ -42613,6 +42613,15 @@ const unicodeWordMatch = /(?:[\dA-Za-z\u00AA\u00B5\u00BA\u00C0-\u00D6\u00D8-\u00
 //#endregion
 //#region src/helpers.ts
 /**
+* Returns the input value if it is not empty, otherwise returns undefined.
+* @param value - The input value to check.
+* @returns The input value if it is not empty, otherwise undefined.
+*/
+function undefinedOnEmpty(value) {
+	if (!value || value === "") return;
+	return value;
+}
+/**
 * Converts the given text to title case.
 * @param text - The text to convert.
 * @returns The text converted to title case.
@@ -42902,7 +42911,7 @@ function getCurrentVersionString(inputs) {
 		versionString = detectedVersion ?? "0.0.0";
 		const prefix = inputs.config.get("versioning:prefix") ?? "v";
 		if (versionSource !== "git-branch" && versionSource !== "git-sha" && versionString && !versionString.startsWith(prefix)) versionString = `${prefix}${versionString}`;
-	} else versionString = inputs.config.get("versioning:branch");
+	} else versionString = undefinedOnEmpty(inputs.config.get("versioning:branch")) ?? "main";
 	log.debug(`version to use in generated example is ${versionString}`);
 	return versionString;
 }

@@ -1,3 +1,10 @@
+## [1.12.7](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.6...v1.12.7) (2026-08-15)
+
+
+### Performance Improvements
+
+* **bundle:** prettier/standalone, working pretty input, config precedence, debug_config ([#634](https://github.com/bitflight-devops/github-action-readme-generator/issues/634)) ([74398bd](https://github.com/bitflight-devops/github-action-readme-generator/commit/74398bd3c268a00a47001b292a5db7fe1c878d96))
+
 ## [1.12.6](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.5...v1.12.6) (2026-08-15)
 
 

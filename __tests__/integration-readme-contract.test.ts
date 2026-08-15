@@ -248,6 +248,48 @@ describe('README generation contract', () => {
       expect(sectionBody(await generate(), 'outputs')).toBe('');
     });
 
+    it.each([
+      ['omitted', ACTION_YML.replace(/inputs:[\s\S]*?outputs:/, 'outputs:')],
+      ['empty', ACTION_YML.replace(/inputs:[\s\S]*?outputs:/, 'inputs: {}\noutputs:')],
+    ])('removes stale input rows when action.yml inputs are %s', async (_shape, action) => {
+      fs.writeFileSync(actionPath, action);
+      // oxfmt-ignore
+      const staleReadme = README_WITH_MARKERS.replace('<!-- start inputs -->', '<!-- start inputs -->\n| **Input** | **Description** | **Default** | **Required** |\n|---|---|---|---|\n| stale | old |  | false |');
+      fs.writeFileSync(readmePath, staleReadme);
+
+      expect(sectionBody(await generate(), 'inputs')).toBe('');
+    });
+
+    it('keeps complete first paragraphs and treats only literal blank lines as boundaries', async () => {
+      const action = ACTION_YML.replace(
+        'description: A plain input with a default',
+        'description: "First\\nSecond\\n\\nInput body"',
+      )
+        .replace(
+          'description: A required input carrying no default',
+          'description: "input first\\n  \\ninput second"',
+        )
+        .replace(
+          'description: The first output',
+          'description: "Output first\\nOutput second\\n\\nOutput body"',
+        )
+        .replace(
+          'description: The second output',
+          'description: "output first\\n  \\noutput second"',
+        );
+      fs.writeFileSync(actionPath, action);
+
+      const readme = await generate(false);
+      const inputs = sectionBody(readme, 'inputs');
+      const outputs = sectionBody(readme, 'outputs');
+      expect(inputs).toContain('First<br />Second');
+      expect(inputs).not.toContain('Input body');
+      expect(inputs).toContain('input first<br />  <br />input second');
+      expect(outputs).toContain('Output first<br />Output second');
+      expect(outputs).not.toContain('Output body');
+      expect(outputs).toContain('output first<br />  <br />output second');
+    });
+
     // contents is a table of contents over the README's own headings, so it
     // stays empty until the document has headings to index. Pinning both halves
     // keeps "empty" from being mistaken for "broken".

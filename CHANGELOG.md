@@ -1,3 +1,10 @@
+## [1.12.3](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.2...v1.12.3) (2026-08-15)
+
+
+### Bug Fixes
+
+* **cli:** parse sections as an array ([#665](https://github.com/bitflight-devops/github-action-readme-generator/issues/665)) ([9d6c0a2](https://github.com/bitflight-devops/github-action-readme-generator/commit/9d6c0a23a7f246f1e165df859e3c2c58d5772664))
+
 ## [1.12.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.1...v1.12.2) (2026-08-15)
 
 

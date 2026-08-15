@@ -1,7 +1,7 @@
 {
   "name": "github-action-readme-generator",
   "displayName": "bitflight-devops/github-action-readme-generator",
-  "version": "1.12.2",
+  "version": "1.12.3",
   "description": "The docs generator for GitHub Actions. Auto-syncs action.yml to README.md with 8 sections: inputs, outputs, usage, badges, branding & more. Works as CLI or GitHub Action.",
   "keywords": [
     "github-actions",

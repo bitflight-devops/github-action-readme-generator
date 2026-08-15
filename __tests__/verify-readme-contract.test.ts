@@ -401,6 +401,24 @@ describe('README contract verifier regressions', () => {
     expect(() => verify(README.replace('| **false** |', '| **true** |'))).toThrow();
   });
 
+  // The header's `**Input**` normalises to `Input`, so a row lookup across the
+  // whole table matches the header before the data row and compares its column
+  // labels against the declaration.
+  it('matches a declaration whose name collides with the table header', () => {
+    const action = ACTION.replace(
+      'inputs:\n  path:\n    description: A \\| B\n    required: false',
+      'inputs:\n  Input:\n    description: Collides\n    required: false',
+    );
+    const readme = README.replace('    path: value', '    Input: value')
+      .replace('    # Description: A \\| B', '    # Description: Collides')
+      .replace(
+        String.raw`| <b><code>path</code></b> | A \\\| B |  | **false** |`,
+        '| <b><code>Input</code></b> | Collides |  | **false** |',
+      );
+    expect(verify(readme, action)).toContain('All contract checks passed');
+    expect(() => verify(readme.replace('| Collides |', '| Stale |'), action)).toThrow();
+  });
+
   it('rejects an invented space after a title prefix that has none', () => {
     const readme = README.replace('# GitHub Action: Release', '# Custom: Release');
     expect(() =>

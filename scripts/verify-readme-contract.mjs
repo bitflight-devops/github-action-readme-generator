@@ -375,7 +375,12 @@ const tableSection = async (name, declared, expectedCells) => {
     return;
   }
 
-  const rowKeys = rows.slice(2).map((row) => normaliseTableCell(cells(row)[0]));
+  // Data rows only. A target may declare an input named `Input` or an output
+  // named `Output`, and the header's `**Input**` normalises to exactly that —
+  // so searching the whole table matches the header first and compares its
+  // labels against the declaration, failing a correct README.
+  const dataRows = rows.slice(2);
+  const rowKeys = dataRows.map((row) => normaliseTableCell(cells(row)[0]));
   const stale = rowKeys.filter((key) => !keys.includes(key));
   const duplicates = rowKeys.filter((key, index) => rowKeys.indexOf(key) !== index);
   const inDeclarationOrder = rowKeys.length === keys.length && rowKeys.every((key, index) => key === keys[index]);
@@ -385,7 +390,7 @@ const tableSection = async (name, declared, expectedCells) => {
 
   let matched = 0;
   for (const key of keys) {
-    const row = rows.find((candidate) => normaliseTableCell(cells(candidate)[0]) === key);
+    const row = dataRows.find((candidate) => normaliseTableCell(cells(candidate)[0]) === key);
     if (!row) {
       fail(`the ${name} table has no row for the declared ${name.slice(0, -1)} \`${key}\``);
       continue;

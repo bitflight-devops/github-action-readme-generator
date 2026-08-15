@@ -150,6 +150,23 @@ describe('README contract verifier regressions', () => {
     expect(verify(readme, action)).toContain('All contract checks passed');
   });
 
+  it('ignores leading blank lines before selecting an output table paragraph', () => {
+    const action = ACTION.replace(
+      'runs:',
+      'outputs:\n  result:\n    description: "\\n\\nActual output\\nSecond line\\n\\nBody"\nruns:',
+    );
+    const table = String.raw`| **Output** | **Description** | **Value** |
+|---|---|---|
+| <b><code>result</code></b> | Actual output<br />Second line |  |`;
+    const readme = README.replace(
+      '<!-- start outputs -->\n<!-- end outputs -->',
+      `<!-- start outputs -->\n${table}\n<!-- end outputs -->`,
+    );
+
+    expect(verify(readme, action)).toContain('All contract checks passed');
+    expect(() => verify(readme.replace('Actual output<br />Second line', ''), action)).toThrow();
+  });
+
   it('accepts a structured usage description without losing its wrapped blocks', () => {
     const action = ACTION.replace(
       String.raw`description: A \| B`,
@@ -393,12 +410,8 @@ describe('README contract verifier regressions', () => {
     expect(() => verify(README.replace('| **false** |', '| **true** |'))).toThrow();
   });
 
-  // The key set alone matched, so the gate would certify a usage example that
-  // tells a third party's readers to pass a value the generator never emits.
-  // The two projections diverge here, and both are the generator's: the usage
-  // block keeps the leading blank lines, while the table updaters trim before
-  // splitting the first paragraph, so the cell reads `Visible`. A verifier that
-  // splits without trimming expects an empty cell and rejects correct output.
+  // Usage preserves the complete description while table cells use its first
+  // trimmed paragraph.
   it('accepts a description that opens with blank lines', () => {
     const action = ACTION.replace(String.raw`description: A \| B`, 'description: "\\n\\nVisible"');
     const readme = README.replace(
@@ -409,15 +422,30 @@ describe('README contract verifier regressions', () => {
     expect(verify(readme, action)).toContain('All contract checks passed');
   });
 
-  it('rejects a usage value the generator does not emit', () => {
-    expect(() => verify(README.replace("    path: ''", '    path: dangerous-default'))).toThrow();
+  it('accepts either quoted spelling of an empty generated usage placeholder', () => {
+    expect(verify(README.replace("    path: ''", '    path: ""'))).toContain(
+      'All contract checks passed',
+    );
   });
 
-  // normaliseTableCell strips tags, so the row-set, ordering and lookup checks
-  // all pass on a first cell that lost its wrapper.
-  it('rejects a first column that lost the generated markup', () => {
-    expect(() => verify(README.replace('| <b><code>path</code></b> |', '| path |'))).toThrow();
+  it.each([
+    ['a non-empty string', 'dangerous-default'],
+    ['whitespace', "' '"],
+    ['null', ''],
+    ['false', 'false'],
+    ['zero', '0'],
+    ['a sequence', '[]'],
+    ['a mapping', '{}'],
+  ])('rejects %s as a generated usage placeholder', (_name, value) => {
+    expect(() => verify(README.replace("    path: ''", `    path: ${value}`))).toThrow();
   });
+
+  it.each(['path', '<code>path</code>', '<b>path</b>'])(
+    'rejects the incomplete input row header %s',
+    (header) => {
+      expect(() => verify(README.replace('<b><code>path</code></b>', header))).toThrow();
+    },
+  );
 
   // The header's `**Input**` normalises to `Input`, so a row lookup across the
   // whole table matches the header before the data row and compares its column
@@ -435,6 +463,27 @@ describe('README contract verifier regressions', () => {
       );
     expect(verify(readme, action)).toContain('All contract checks passed');
     expect(() => verify(readme.replace('| Collides |', '| Stale |'), action)).toThrow();
+    expect(() => verify(readme.replace('<b><code>Input</code></b>', 'Input'), action)).toThrow();
+  });
+
+  it('matches an output declaration whose name collides with the table header', () => {
+    const action = ACTION.replace(
+      'runs:',
+      'outputs:\n  Output:\n    description: Collides\n    value: ${{ steps.result.outputs.value }}\nruns:',
+    );
+    const table = [
+      '| **Output** | **Description** | **Value** |',
+      '|---|---|---|',
+      '| <b><code>Output</code></b> | Collides | <code>${{ steps.result.outputs.value }}</code> |',
+    ].join('\n');
+    const readme = README.replace(
+      '<!-- start outputs -->\n<!-- end outputs -->',
+      `<!-- start outputs -->\n${table}\n<!-- end outputs -->`,
+    );
+
+    expect(verify(readme, action)).toContain('All contract checks passed');
+    expect(() => verify(readme.replace('| Collides |', '| Stale |'), action)).toThrow();
+    expect(() => verify(readme.replace('<b><code>Output</code></b>', 'Output'), action)).toThrow();
   });
 
   it('rejects an invented space after a title prefix that has none', () => {

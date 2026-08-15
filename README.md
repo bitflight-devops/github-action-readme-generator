@@ -87,11 +87,10 @@ weight the CLI binary does not carry, and code the tool does not rewrite.
 Naming extra plugins per project is
 [issue #660](https://github.com/bitflight-devops/github-action-readme-generator/issues/660).
 
-**A second run can differ from the first; a third will not.** A README that
-shifts on the second run is expected, not a fault — the lag is tracked in
+**Check convergence by generating three times and comparing passes 2 and 3.**
+Run three consecutive generations without external changes; passes 2 and 3
+must be byte-identical. Changes to this convergence rule are owned by
 [issue #649](https://github.com/bitflight-devops/github-action-readme-generator/issues/649).
-In CI, generate three times and compare passes 2 and 3; with an unchanged
-`action.yml` they are identical.
 
 ## CLI Usage
 

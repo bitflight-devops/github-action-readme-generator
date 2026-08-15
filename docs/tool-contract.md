@@ -54,20 +54,12 @@ already run prettier itself. `scripts/verify-readme-contract.mjs` deliberately
 asserts none of them; `__tests__/integration-readme-contract.test.ts` does
 assert padding, and can only do so because its fixture starts as bare markers.
 
-## Convergence takes two passes, not one
+## Convergence uses passes 2 and 3
 
-Generation reaches a fixed point, but not necessarily on the first run:
-`updateUsage` is the only section updater that awaits, so it writes last, and
-`updateContents` therefore indexes a README still holding the _previous_ usage
-block.
-
-**Assert convergence between passes 2 and 3, never 1 and 2.**
-`.github/workflows/integration-test.yml` does exactly that, and reports a pass-1
-difference as a notice rather than a failure.
-
-That is the rule to write tests against while the lag exists. The lag itself is
-a defect, tracked in #649 with its reproduction — when it closes, pass 1 becomes
-stable and this instruction is the thing to delete.
+Run three consecutive generations without external changes and compare passes
+2 and 3. They must be byte-identical. A pass-1 difference may be reported for
+visibility, but does not decide convergence. Changes to this rule are owned by
+[#649](https://github.com/bitflight-devops/github-action-readme-generator/issues/649).
 
 ## Version resolution
 
@@ -103,16 +95,11 @@ This is the case the tool exists for and the case least covered by unit tests;
 - Zero-input and zero-output actions are ordinary third-party shapes, not edge
   cases.
 
-## Bundling is this project's recurring defect class
+## Published bundles are self-contained
 
-**"The published artifact cannot load a module" is the failure every
-build-system change in this repository has to be checked against.** A green
-`npm run build` and a green test suite are not evidence that the release works.
-
-The trap: a GitHub Actions runner gives this action no `node_modules` of its
-own. Externalizing a runtime dependency on the reasoning that it "is available
-in node_modules for both GitHub Actions runner and npx usage" fails there, and
-only there — every local check still passes.
+A GitHub Actions runner gives this action no `node_modules` of its own. Every
+runtime dependency must be present in the published bundle; `npm run build`
+passing and the local test suite passing do not prove that contract.
 
 **Before changing anything about bundling: run the built binary from a
 directory with no `node_modules`.** `__tests__/integration-bundled-binary.test.ts`

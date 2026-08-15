@@ -271,10 +271,9 @@ jobs:
       # change nothing, or the tool churns a diff into every user's repository
       # on every CI run.
       #
-      # Assert it between passes 2 and 3, never 1 and 2: pass 1 is allowed to
-      # differ, so comparing it reports an expected lag as non-determinism.
-      # `docs/tool-contract.md` carries the reason, and #649 tracks the lag; the
-      # pass-1 difference is surfaced as a notice so it stays visible.
+      # Use passes 2 and 3 as the convergence pair. `docs/tool-contract.md`
+      # defines the rule, and #649 owns changes to its scope. A pass-1
+      # difference is surfaced as a notice without deciding convergence.
       #
       # Note what is deliberately not asserted: that the README changed at all.
       # A target already up to date correctly produces no difference, and a
@@ -303,7 +302,7 @@ jobs:
         working-directory: test-repo
         run: |
           if ! diff -q README.pass1.md README.pass2.md >/dev/null; then
-            echo "::notice::this target converged on pass 2 rather than pass 1; see the contents/usage ordering note in this workflow"
+            echo "::notice::pass 1 differed; convergence is assessed using passes 2 and 3; see #649"
             diff -u README.pass1.md README.pass2.md || true
           fi
 

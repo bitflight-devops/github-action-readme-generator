@@ -37,13 +37,10 @@ export default function updateOutputs(
 
       let description = values?.description ?? '';
 
-      // Keep the complete first paragraph, including soft line breaks. Leading
-      // blank lines go first: a description that opens with one splits into an
-      // empty first paragraph, and the row then shows nothing for an output the
-      // action did document.
-      description = description.trimStart().split('\n\n')[0] ?? '';
+      // Keep the complete first paragraph, including soft line breaks.
+      description = description.trim().split('\n\n')[0] ?? '';
 
-      description = description.trim().replace('\n', '<br />');
+      description = description.replace('\n', '<br />');
       const value = values?.value ? `\`${values.value}\`` : '';
       const row: string[] = [rowHeader(key), description, value];
 

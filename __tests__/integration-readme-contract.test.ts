@@ -239,18 +239,23 @@ describe('README generation contract', () => {
       expect(sectionBody(await generate(), 'outputs')).toContain(key);
     });
 
-    // Splitting on the paragraph boundary before trimming takes the empty
-    // prefix, and the row then documents nothing for a declared description.
-    it.each([
-      ['inputs', 'inputs:\n  lead:\n    description: "\\n\\nActual docs"\n', 'Actual docs'],
-      ['outputs', 'outputs:\n  lead:\n    description: "\\n\\nActual docs"\n', 'Actual docs'],
-    ])('carries a %s description that opens with blank lines', async (section, yaml, text) => {
-      fs.writeFileSync(
-        actionPath,
-        `name: Lead\ndescription: Probe\n${yaml}runs:\n  using: node20\n  main: index.js\n`,
+    it('ignores leading blank lines before selecting input and output table paragraphs', async () => {
+      const action = ACTION_YML.replace(
+        'description: A plain input with a default',
+        'description: "\\n\\nActual input\\nSecond input line\\n\\nInput body"',
+      ).replace(
+        'description: The first output',
+        'description: "\\n\\nActual output\\nSecond output line\\n\\nOutput body"',
       );
+      fs.writeFileSync(actionPath, action);
 
-      expect(sectionBody(await generate(), section)).toContain(text);
+      const readme = await generate(false);
+      const inputs = sectionBody(readme, 'inputs');
+      const outputs = sectionBody(readme, 'outputs');
+      expect(inputs).toContain('Actual input<br />Second input line');
+      expect(inputs).not.toContain('Input body');
+      expect(outputs).toContain('Actual output<br />Second output line');
+      expect(outputs).not.toContain('Output body');
     });
 
     it('removes stale output rows when action.yml declares no outputs', async () => {

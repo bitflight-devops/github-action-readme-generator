@@ -39,22 +39,16 @@ export default function updateInputs(
       const values = vars[key];
       let description = values?.description ?? '';
 
-      // Keep the complete first paragraph, including soft line breaks. Leading
-      // blank lines go first: a description that opens with one splits into an
-      // empty first paragraph, and the row then shows nothing for an input the
-      // action did document.
-      description = description.trimStart().split('\n\n')[0] ?? '';
+      // Keep the complete first paragraph, including soft line breaks.
+      description = description.trim().split('\n\n')[0] ?? '';
 
-      description = description.trim().replace('\n', '<br />');
+      description = description.replace('\n', '<br />');
 
       const row: string[] = [
         rowHeader(key),
         description,
-        // Test against undefined, never truthiness: `default: false` and
-        // `default: 0` are declared defaults and must reach the column, or it
-        // reads as "no default" and contradicts the `# Default: false` the
-        // usage section emits beside it. An empty-string default stays blank —
-        // there is nothing to show.
+        // Declared `false` and `0` defaults reach the column; undefined and an
+        // empty string render as blank.
         values?.default === undefined || values.default === ''
           ? ''
           : `<code>${values.default}</code>`,

@@ -732,8 +732,7 @@ export function loadConfig(
   //
   //   --pretty=false        beats  .ghadocs.json  beats  INPUT_PRETTY
   //
-  // argv sits on top so an explicit CLI flag overrides `.ghadocs.json`, which it
-  // previously could not.
+  // argv sits on top so an explicit CLI flag overrides `.ghadocs.json`.
   //
   // env stays *below* the file deliberately. When this runs as a GitHub Action
   // the runner exports an INPUT_* variable for every input carrying a default in

@@ -169,14 +169,22 @@ const generatedTableCell = async (value) =>
 /**
  * `update-inputs.ts` truncates a description at its first blank line, so only
  * the leading paragraph is guaranteed to reach the table. Comparing on that
- * paragraph holds whether or not the YAML style preserved the blank line.
- *
- * The `trimStart()` mirrors the updaters exactly: they trim before splitting,
- * so a description opening with a blank line reaches the table as its first
- * real paragraph. Splitting first here would expect an empty cell and reject
- * the generator's own output.
+ * paragraph holds whether or not the YAML style preserved the blank line. The
+ * trim-before-split order mirrors both table updaters.
  */
-const firstParagraph = (value) => String(value ?? '').trimStart().split('\n\n')[0];
+const firstParagraph = (value) => String(value ?? '').trim().split('\n\n')[0];
+
+/** Mirrors `rowHeader` in `src/helpers.ts`. */
+const generatedRowHeader = (value) => {
+  const source = String(value ?? '');
+  if (!source) return '';
+  const text = source
+    .replaceAll(/\*\*(.*?)\*\*/g, '$1')
+    .replaceAll(/\*(.*?)\*/g, '$1')
+    .replaceAll(/~~(.*?)~~/g, '$1')
+    .trim();
+  return `<b><code>${text}</code></b>`;
+};
 
 /** Splits a Markdown table row at pipes preceded by an even backslash count. */
 const cells = (row) => {
@@ -279,10 +287,8 @@ if (usage === null) {
       ok(`the usage step exactly projects all ${inputKeys.length} action.yml inputs`);
     }
 
-    // `update-usage.ts` writes every value as `key: ''` — the block is a
-    // template to copy, not a configured step. Checking only the key set lets a
-    // stale value survive, and this gate would then certify a usage example
-    // telling a third party's readers to pass it.
+    // Generated usage is a copyable template; every declared input value is
+    // exactly the empty string.
     const valued = Object.entries(withMapping ?? {}).filter(([, value]) => value !== '');
     if (valued.length > 0) {
       fail(`the usage step carries values the generator does not emit — ${valued.map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(', ')}`);
@@ -413,11 +419,9 @@ const tableSection = async (name, declared, expectedCells) => {
     }
     const cellValues = cells(row);
     let rowOk = true;
-    // `helpers.ts` rowHeader wraps every key in `<b><code>…</code></b>`, and
-    // `normaliseTableCell` strips tags — so the row-set, ordering and lookup
-    // checks all pass on a first cell that lost the wrapper. Compare the markup
-    // itself, or a guaranteed projection goes unnoticed.
-    const wantHeader = await generatedTableCell(`<b><code>${key}</code></b>`);
+    // The first column is generator-owned `rowHeader` markup; compare its
+    // complete projection.
+    const wantHeader = await generatedTableCell(generatedRowHeader(key));
     if ((await generatedMarkdown(cellValues[0])) !== wantHeader) {
       fail(`\`${key}\` is not wrapped as the generator writes it in the ${name} table — want ${JSON.stringify(wantHeader)}, got ${JSON.stringify(cellValues[0])}`);
       rowOk = false;

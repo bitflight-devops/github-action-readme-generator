@@ -137,6 +137,28 @@ describe('inputs', () => {
       expect(result).toBeInstanceOf(Provider);
     });
 
+    test('loadConfig parses one CLI section as an array', ({ task }) => {
+      const originalArgv = process.argv;
+      process.argv = ['node', 'script', '--sections=usage'];
+      try {
+        const config = loadConfig(new LogTask(task.name), new Provider());
+        expect(config.get('sections')).toEqual(['usage']);
+      } finally {
+        process.argv = originalArgv;
+      }
+    });
+
+    test('loadConfig parses repeated CLI sections as an array', ({ task }) => {
+      const originalArgv = process.argv;
+      process.argv = ['node', 'script', '--sections=usage', '--sections=inputs'];
+      try {
+        const config = loadConfig(new LogTask(task.name), new Provider());
+        expect(config.get('sections')).toEqual(['usage', 'inputs']);
+      } finally {
+        process.argv = originalArgv;
+      }
+    });
+
     describe('loadGithubContext', () => {
       beforeEach(() => {
         // const { statSync, readFileSync, existsSync } =

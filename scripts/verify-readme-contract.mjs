@@ -3,14 +3,8 @@
  * repository rather than a fixture.
  *
  * `.github/workflows/integration-test.yml` runs the action over third-party
- * repositories. Until this script existed those runs only checked that a
- * `<!-- start` marker, a heading and the string `uses:` were present somewhere
- * in the file — a run that emitted an empty inputs table, dropped half the
- * action's inputs from the usage block, or wrote the wrong description passed
- * all the same.
- *
- * What this asserts, all of it derived from the target's own `action.yml` so a
- * dropped or mangled entry fails here rather than going unnoticed:
+ * repositories. These checks validate the exact generated projection against
+ * the target's own `action.yml`:
  *
  *   1. every declared input reaches the usage block, inside a fenced yaml
  *      `with:` mapping, under a resolved `uses: owner/repo@version` line;
@@ -243,11 +237,15 @@ if (usage === null) {
   if (fence !== null) {
     try {
       const parsed = YAML.parse(fence);
-      const candidates = Array.isArray(parsed) ? parsed : [parsed];
-      step =
-        candidates.find(
-          (entry) => entry !== null && typeof entry === 'object' && 'uses' in entry,
-        ) ?? null;
+      if (!Array.isArray(parsed) || parsed.length !== 1) {
+        fail('the usage block must contain exactly one generated step');
+      } else {
+        const candidate = parsed[0];
+        step =
+          candidate !== null && typeof candidate === 'object' && 'uses' in candidate
+            ? candidate
+            : null;
+      }
     } catch (error) {
       fail(`the usage block is not parseable yaml: ${error.message}`);
     }

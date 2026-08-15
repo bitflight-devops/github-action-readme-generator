@@ -428,6 +428,12 @@ describe('README contract verifier regressions', () => {
     );
   });
 
+  it('rejects an additional step in the generated usage sequence', () => {
+    expect(() =>
+      verify(README.replace("    path: ''\n", "    path: ''\n- run: echo stale\n")),
+    ).toThrow();
+  });
+
   it.each([
     ['a non-empty string', 'dangerous-default'],
     ['whitespace', "' '"],

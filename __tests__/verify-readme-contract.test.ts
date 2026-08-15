@@ -302,7 +302,7 @@ describe('README contract verifier regressions', () => {
     expect(() => verify(readme, action)).toThrow();
   });
 
-  it('accepts exact unformatted Markdown when pretty is disabled', () => {
+  it.each([false, 'false'])('accepts unformatted Markdown with prettier %j', (prettier) => {
     const action = ACTION.replace('name: Release', 'name: __Release__').replace(
       String.raw`description: A \| B`,
       'description: __bold__',
@@ -315,12 +315,12 @@ describe('README contract verifier regressions', () => {
       verify(unformatted(readme), action, {
         title_prefix: 'GitHub Action: ',
         branding_as_title_prefix: false,
-        prettier: false,
+        prettier,
       }),
     ).toContain('All contract checks passed');
   });
 
-  it('rejects formatted Markdown that the disabled formatter would not emit', () => {
+  it.each([false, 'false'])('rejects formatted Markdown when prettier is %j', (prettier) => {
     const action = ACTION.replace('name: Release', 'name: __Release__').replace(
       String.raw`description: A \| B`,
       'description: __bold__',
@@ -332,7 +332,7 @@ describe('README contract verifier regressions', () => {
       verify(unformatted(readme), action, {
         title_prefix: 'GitHub Action: ',
         branding_as_title_prefix: false,
-        prettier: false,
+        prettier,
       }),
     ).toThrow();
   });

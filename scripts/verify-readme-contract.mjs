@@ -60,6 +60,8 @@ const readme = fs.readFileSync(readmePath, 'utf8');
 const originalReadme = originalReadmePath ? fs.readFileSync(originalReadmePath, 'utf8') : null;
 const configPath = path.resolve('.ghadocs.json');
 const config = fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath, 'utf8')) : {};
+const prettierEnabled =
+	config.prettier === undefined || config.prettier === true || config.prettier === 'true';
 
 const failures = [];
 const ok = (message) => console.log(`✓ ${message}`);
@@ -166,7 +168,7 @@ const normaliseTableCell = (value) =>
 /** Applies the same optional Markdown formatting as the generated README. */
 const generatedMarkdown = async (value) => {
 	const source = String(value ?? '');
-	const rendered = config.prettier ?? true
+	const rendered = prettierEnabled
 		? await format(source, { parser: 'markdown', embeddedLanguageFormatting: 'auto', plugins: [markdown, yamlPlugin] })
 		: source;
 	return rendered.replaceAll('\r\n', '\n').trim();
@@ -351,7 +353,7 @@ if (usage === null) {
     const lines = formatted.split('\n');
     if (declaration?.default !== undefined) {
       const defaultLine = `Default: ${declaration.default}`;
-      lines.push(config.prettier ?? true ? defaultLine.trimEnd() : defaultLine);
+      lines.push(prettierEnabled ? defaultLine.trimEnd() : defaultLine);
     }
     return lines.join('\n');
   };

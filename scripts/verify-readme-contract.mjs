@@ -90,7 +90,10 @@ const section = (name) => {
   if (starts.length === 0) return null;
   const last = starts.at(-1);
   const from = last.index + last[0].length;
-  const end = new RegExp(`${guard}<!--\\s+end\\s+${name}\\s+-->`).exec(readme.slice(from));
+  const ends = [
+    ...readme.slice(from).matchAll(new RegExp(`${guard}<!--\\s+end\\s+${name}\\s+-->`, 'g')),
+  ];
+  const end = ends.at(-1);
   return end ? readme.slice(from, from + end.index).trim() : null;
 };
 
@@ -272,15 +275,10 @@ if (usage === null) {
     }
   }
 
-  // Each declared default has to survive into the guide, or a user copying the
-  // block loses the information action.yml carried.
-  //
-  // Matched against the input's OWN comment block rather than the whole usage
-  // section. Searching the section would let one `# Default: true` satisfy every
-  // input that defaults to true, so a missing comment would pass unnoticed
-  // whenever two inputs share a default value.
-  // The fence, not the section: a `# Default:` comment sitting in prose or in a
-  // second snippet is not something a copier of the step would get.
+  // Compare each input's complete generated comment block in its own step.
+  // Section-wide containment lets one description/default satisfy another,
+  // while checking defaults only when currently declared admits stale comments
+  // after a declaration is removed.
   const usageLines = (fence ?? '').split('\n');
   const commentBlockFor = (key) => {
     const at = usageLines.findIndex((line) => new RegExp(`^\\s*${key}:`).test(line));
@@ -293,33 +291,37 @@ if (usage === null) {
     return block.join('\n');
   };
 
-  /**
-   * The value carried by the input's own `# Default:` comment, or null when it
-   * has none. `update-usage.ts` emits it as a single unwrapped line, so the
-   * value is the remainder of that line.
-   *
-   * Read out and compared exactly rather than substring-searched: a declared
-   * default of `1` is a prefix of a mangled `10`, so containment accepts the
-   * mismatch it exists to catch. Same reasoning as the table cells above — this
-   * path was left on `includes` when those moved to equality.
-   */
-  const usageDefaultFor = (key) => {
-    const line = commentBlockFor(key)
+  const commentBodies = (block) =>
+    block
       .split('\n')
-      .find((candidate) => /^\s*#\s*Default:/.test(candidate));
-    return line === undefined ? null : line.replace(/^\s*#\s*Default:\s?/, '').trimEnd();
+      .map((line) => line.replace(/^\s*# ?/, ''))
+      .join('\n');
+
+  const generatedUsageComments = async (declaration) => {
+    const formatted = await format(`Description: ${declaration?.description}`, {
+      semi: false,
+      parser: 'markdown',
+      proseWrap: 'always',
+      plugins: [markdown, yamlPlugin],
+    });
+    const lines = formatted.split('\n');
+    if (declaration?.default !== undefined) {
+      const defaultLine = `Default: ${declaration.default}`;
+      lines.push(config.prettier ?? true ? defaultLine.trimEnd() : defaultLine);
+    }
+    return lines.join('\n');
   };
 
-  const defaulted = inputKeys.filter((key) => inputs[key]?.default !== undefined);
-  const droppedDefaults = defaulted.filter(
-    (key) => usageDefaultFor(key) !== String(inputs[key].default).trimEnd(),
-  );
-  if (defaulted.length === 0) {
-    skip('no action.yml input declares a default, skipping the usage default check');
-  } else if (droppedDefaults.length > 0) {
-    fail(`defaults missing from the usage block: ${droppedDefaults.join(', ')}`);
+  const staleUsageComments = [];
+  for (const key of inputKeys) {
+    if (commentBodies(commentBlockFor(key)) !== (await generatedUsageComments(inputs[key]))) {
+      staleUsageComments.push(key);
+    }
+  }
+  if (staleUsageComments.length > 0) {
+    fail(`usage comments do not exactly project action.yml: ${staleUsageComments.join(', ')}`);
   } else {
-    ok(`all ${defaulted.length} declared defaults reach the usage block`);
+    ok(`all ${inputKeys.length} input descriptions and defaults reach the usage block`);
   }
 }
 
@@ -334,20 +336,38 @@ if (usage === null) {
 const tableSection = async (name, declared, expectedCells) => {
   const body = section(name);
   const keys = Object.keys(declared);
+  const expectedHeaders =
+    name === 'inputs'
+      ? ['**Input**', '**Description**', '**Default**', '**Required**']
+      : ['**Output**', '**Description**', '**Value**'];
   if (body === null) {
     skip(`no ${name} section markers in this README, skipping`);
     return;
   }
+  const tableRows = body.split('\n').filter((line) => line.trim().startsWith('|'));
+  if (tableRows.length > 0) {
+    const header = cells(tableRows[0]);
+    const delimiter = tableRows.length > 1 ? cells(tableRows[1]) : [];
+    const columnCount = expectedHeaders.length;
+    const validHeader =
+      header.length === columnCount && header.every((cell, index) => cell === expectedHeaders[index]);
+    const validDelimiter =
+      delimiter.length === columnCount && delimiter.every((cell) => /^-{3,}$/.test(cell));
+    const validRowWidths = tableRows.slice(2).every((row) => cells(row).length === columnCount);
+    if (!validHeader || !validDelimiter || !validRowWidths) {
+      fail(`the ${name} table structure does not match the generated ${columnCount}-column header and delimiter`);
+      return;
+    }
+  }
   if (keys.length === 0) {
-    const tableRows = body.split('\n').filter((line) => line.trim().startsWith('|'));
     const isEmptyTable =
 		tableRows.length === 0 ||
-		(tableRows.length === 2 && cells(tableRows[1]).every((cell) => /^:?-{3,}:?$/.test(cell)));
+		(tableRows.length === 2 && cells(tableRows[1]).every((cell) => /^-{3,}$/.test(cell)));
     if (isEmptyTable) ok(`the ${name} section has no stale rows`);
     else fail(`action.yml declares no ${name}, but the ${name} section still has data rows`);
     return;
   }
-  const rows = body.split('\n').filter((line) => line.trim().startsWith('|'));
+  const rows = tableRows;
   if (rows.length < 3) {
     fail(
       `the ${name} table has ${rows.length} row(s); expected a header, a delimiter and at least one entry`,

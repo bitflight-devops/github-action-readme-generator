@@ -11,7 +11,9 @@ import { icons } from "feather-icons";
 import chalkPkg from "chalk";
 import { execFileSync, execSync } from "node:child_process";
 import { EOL } from "node:os";
-import { format } from "prettier";
+import * as markdown from "prettier/plugins/markdown";
+import * as yaml from "prettier/plugins/yaml";
+import { format } from "prettier/standalone";
 import { SVG, registerWindow } from "@svgdotjs/svg.js";
 import { createSVGWindow } from "svgdom";
 //#region src/constants.ts
@@ -35,6 +37,29 @@ const README_SECTIONS = [
 * Represents the file name for the configuration file.
 */
 const configFileName = ".ghadocs.json";
+let ConfigKeys = /* @__PURE__ */ function(ConfigKeys) {
+	ConfigKeys["Owner"] = "owner";
+	ConfigKeys["Repo"] = "repo";
+	ConfigKeys["TitlePrefix"] = "title_prefix";
+	ConfigKeys["Prettier"] = "prettier";
+	ConfigKeys["Save"] = "save";
+	ConfigKeys["pathsAction"] = "paths:action";
+	ConfigKeys["pathsReadme"] = "paths:readme";
+	ConfigKeys["BrandingSvgPath"] = "branding_svg_path";
+	ConfigKeys["BrandingAsTitlePrefix"] = "branding_as_title_prefix";
+	ConfigKeys["VersioningEnabled"] = "versioning:enabled";
+	ConfigKeys["VersioningOverride"] = "versioning:override";
+	ConfigKeys["VersioningPrefix"] = "versioning:prefix";
+	ConfigKeys["VersioningBranch"] = "versioning:branch";
+	ConfigKeys["VersioningSource"] = "versioning:source";
+	ConfigKeys["IncludeGithubVersionBadge"] = "versioning:badge";
+	ConfigKeys["DebugNconf"] = "debug:nconf";
+	ConfigKeys["DebugReadme"] = "debug:readme";
+	ConfigKeys["DebugConfig"] = "debug:config";
+	ConfigKeys["DebugAction"] = "debug:action";
+	ConfigKeys["DebugGithub"] = "debug:github";
+	return ConfigKeys;
+}({});
 /**
 * Represents the default brand color.
 */
@@ -666,6 +691,21 @@ function getVersionFromPackageJson(actionDir, log) {
 		log.debug(`package.json not found at ${packageJsonPath}`);
 	}
 }
+/**
+* Whether the generated README should be run through prettier before it is
+* written.
+*
+* Unset means enabled, matching `action.yml`'s `pretty` default of `"true"`.
+* The value arrives as a real boolean from `.ghadocs.json` and as a string from
+* action inputs and CLI args, so both spellings are accepted; anything else
+* (`false`, `"false"`, `"no"`, …) disables formatting.
+* @param {Inputs} inputs - The resolved inputs to read the flag from.
+* @returns {boolean} True when prettier formatting should run.
+*/
+function isPrettierEnabled(inputs) {
+	const prettier = inputs.config.get("prettier");
+	return prettier === void 0 || prettier === true || prettier === "true";
+}
 function getCurrentVersionString(inputs) {
 	let versionString = "";
 	const log = new LogTask("getCurrentVersionString");
@@ -740,16 +780,32 @@ function lastIndexOfRegex(str, providedRegex) {
 }
 //#endregion
 //#region src/prettier.ts
-/**
-* This TypeScript code exports three functions: `formatYaml`, `formatMarkdown`, and `wrapDescription`.
-*
-* - `formatYaml` takes a YAML string and an optional filepath as parameters and uses the `prettier` library to format the YAML code. It returns the formatted YAML string.
-* - `formatMarkdown` takes a Markdown string and an optional filepath as parameters and uses the `prettier` library to format the Markdown code. It returns the formatted Markdown string.
-* - `wrapDescription` takes a string value, an array of content, and an optional prefix as parameters. It wraps the description text with the specified prefix and formats it using `prettier`. It returns the updated content array with the formatted description lines.
-*
-* The code utilizes the `prettier` library for code formatting and the `LogTask` class for logging purposes.
-*/
 const log$1 = new LogTask("prettier");
+/**
+* The languages a GitHub Action's README is known in advance to contain.
+*
+* `markdown` is the parser itself. `yaml` covers the workflow snippets that are
+* what an action README is mostly made of — and the ```yaml usage block this
+* tool generates.
+*
+* Nothing else is bundled. `embeddedLanguageFormatting: 'auto'` reformats fenced
+* code blocks, and `standalone` silently leaves a fence alone when its plugin is
+* absent, so this list is exactly the set of fences the tool reformats. That is
+* the intended contract, not a gap: this tool exists for GitHub Actions, and a
+* fence in some other language is prose the action's author wrote, which the
+* tool has no business rewriting.
+*
+* The bar for adding one: a language that action READMEs are known in advance
+* to contain, not one they could. Every plugin here is weight in a binary that
+* ships to every consumer, spent to reformat code the action's author wrote.
+*
+* Extending this per-project — naming extra prettier plugins in configuration —
+* is tracked separately; see the README.
+*
+* Exported so __tests__/prettier.test.ts derives the formatted-parser set from
+* this array rather than restating dependency-owned parser metadata.
+*/
+const plugins = [markdown, yaml];
 /**
 * Formats a Markdown string using `prettier`.
 * @param {string} value - The Markdown string to format.
@@ -761,6 +817,7 @@ async function formatMarkdown(value, filepath) {
 		semi: false,
 		parser: "markdown",
 		embeddedLanguageFormatting: "auto",
+		plugins,
 		...filepath ? { filepath } : {}
 	});
 }
@@ -778,7 +835,8 @@ async function wrapDescription(value, content, prefix = "    # ") {
 		formattedString = await format(value, {
 			semi: false,
 			parser: "markdown",
-			proseWrap: "always"
+			proseWrap: "always",
+			plugins
 		});
 	} catch (error) {
 		log$1.error(`${String(error)}`);
@@ -870,10 +928,13 @@ var ReadmeEditor = class {
 	}
 	/**
 	* Dumps the modified content back to the README file.
+	* @param {boolean} [prettier=true] - Run the result through prettier before
+	*   writing. Callers pass the resolved `pretty` input; it defaults to true so
+	*   constructing a ReadmeEditor directly keeps the formatting behaviour.
 	* @returns {Promise<void>}
 	*/
-	async dumpToFile() {
-		const content = await formatMarkdown(this.fileContent);
+	async dumpToFile(prettier = true) {
+		const content = prettier ? await formatMarkdown(this.fileContent) : this.fileContent;
 		if (process.env.GITHUB_ACTIONS) core.setOutput("readme_after", content);
 		return fs.promises.writeFile(this.filePath, content, "utf8");
 	}
@@ -1134,7 +1195,9 @@ const ConfigKeysInputsMap = {
 	owner: "owner",
 	repo: "repo",
 	title_prefix: "title_prefix",
-	pretty: "prettier"
+	pretty: "prettier",
+	debug_config: "debug:config",
+	debug_nconf: "debug:nconf"
 };
 function transformGitHubInputsToArgv(log, _config, obj) {
 	/** The obj.key is always in lowercase, but it checks for it without case sensitivity */
@@ -1198,6 +1261,224 @@ function collectAllDefaultValuesFromAction(log, providedMetaActionPath, provided
 		return {};
 	}
 }
+/** Key fragments whose values are masked before the resolved config is printed. */
+const SENSITIVE_KEY_PATTERN = /auth|credential|key|passw|secret|token/i;
+/** Stand-in written in place of a masked value. */
+const REDACTED = "***REDACTED***";
+/**
+* `sections` is the one key holding an array, and its domain is the finite
+* {@link README_SECTIONS} set — `updateSection` ignores anything else. Naming
+* the leaf after that domain, rather than calling it a generic array, is what
+* lets an unrecognised entry be masked instead of printed.
+*/
+const SECTION_LIST_KEYS = /* @__PURE__ */ new Set(["sections"]);
+/**
+* Keys whose declared domain is a boolean. No code path reads the bytes of a
+* value under one of these: the readers either compare against boolean literals
+* (`save.ts` on `=== true`; `isPrettierEnabled`, `getCurrentVersionString` and
+* `isDebugConfigEnabled` on `=== true || === 'true'`) or gate on truthiness
+* (`update-title.ts`, `update-badges.ts`), which consumes the value's
+* truthiness and nothing else.
+*
+* The domain comes from the key's contract, not from how its reader happens to
+* test it — `action.yml` declares `branding_as_title_prefix` as
+* `type: boolean` and `include_github_version_badge` with a boolean default,
+* so a string under either is malformed input whose content is never read.
+*/
+const BOOLEAN_KEYS = /* @__PURE__ */ new Set([
+	"save",
+	"prettier",
+	"versioning:enabled",
+	"branding_as_title_prefix",
+	"versioning:badge",
+	"debug:config",
+	"debug:nconf"
+]);
+/** The boolean forms nconf can hand back, parsed or still as a string. */
+const BOOLEAN_VALUES = /* @__PURE__ */ new Set([
+	true,
+	false,
+	"true",
+	"false"
+]);
+/**
+* `versioning:source` selects a detection strategy from a closed set;
+* `getCurrentVersionString` switches over these and treats anything else as
+* `git-tag`, so a value outside the set is never used for its content.
+*/
+const VERSION_SOURCE_KEYS = /* @__PURE__ */ new Set(["versioning:source"]);
+/** The strategies `getCurrentVersionString` switches over. */
+const VERSION_SOURCES = /* @__PURE__ */ new Set([
+	"git-tag",
+	"git-branch",
+	"git-sha",
+	"package-json",
+	"explicit"
+]);
+/**
+* `image_generated` caches the branding the SVG on disk was drawn from.
+*
+* It is the one key the tool writes and reads back that `ConfigKeys` does not
+* declare: `generateImgMarkup` sets it to `${icon}${color}` and, on a later
+* run, regenerates the SVG unless the saved value equals that same string.
+*/
+const BRANDING_HASH_KEYS = /* @__PURE__ */ new Set(["image_generated"]);
+/**
+* Whether a value is a branding hash `generateImgMarkup`'s comparison can match.
+*
+* The icon and colour it concatenates come from closed sets, so the producible
+* hashes are a finite domain — the same reason `sections` and `versioning:source`
+* are validated against their contents rather than their shape. The two sets are
+* joined without a separator, so the colour is recovered by suffix.
+* @param {unknown} value - The value found under a branding-hash key.
+* @returns {boolean} True when the value is an icon name followed by a colour.
+*/
+function isBrandingHash(value) {
+	if (typeof value !== "string") return false;
+	return GITHUB_ACTIONS_BRANDING_COLORS.some((color) => value.endsWith(color) && GITHUB_ACTIONS_BRANDING_ICONS.has(value.slice(0, -color.length)));
+}
+/**
+* Splits colon-separated config paths into the nested shape nconf resolves them
+* to, so `versioning:prefix` becomes `{ versioning: { prefix: 'scalar' } }`.
+* @param {readonly string[]} paths - Colon-separated key paths.
+* @returns {KnownKeyTree} The paths as a nested tree of declared shapes.
+*/
+function buildKnownKeyTree(paths) {
+	const tree = {};
+	for (const path of paths) {
+		const segments = path.split(":");
+		let node = tree;
+		for (const [index, segment] of segments.entries()) {
+			if (index === segments.length - 1) {
+				if (SECTION_LIST_KEYS.has(path)) node[segment] = "section-names";
+				else if (BOOLEAN_KEYS.has(path)) node[segment] = "boolean";
+				else if (VERSION_SOURCE_KEYS.has(path)) node[segment] = "version-source";
+				else if (BRANDING_HASH_KEYS.has(path)) node[segment] = "branding-hash";
+				else node[segment] = "scalar";
+				break;
+			}
+			const next = node[segment];
+			node = next === void 0 || typeof next === "string" ? node[segment] = {} : next;
+		}
+	}
+	return tree;
+}
+/**
+* Canonical keys {@link ConfigKeys} declares that nothing in `src` reads, and
+* that no `action.yml` input or CLI flag can set. A value can only reach one of
+* them through `.ghadocs.json`, and no code path consumes it once there — so it
+* is a caller's value, not the tool's, and it is masked like any other unknown
+* key. Drop an entry from here once a reader for it lands.
+*/
+const UNREAD_CONFIG_KEYS = /* @__PURE__ */ new Set([
+	"debug:readme",
+	"debug:action",
+	"debug:github"
+]);
+/**
+* Every key this tool resolves a value out of: the canonical config keys it
+* actually reads, plus `sections`, which `Inputs` sets and reads directly.
+*
+* The action-input and CLI spellings in {@link ConfigKeysInputsMap} are
+* deliberately absent. Those are input spellings, not resolved keys — the file
+* store performs no mapping, so `{"action": "…"}` in `.ghadocs.json` leaves a
+* bare `action` key that nothing ever reads, and listing it here would have
+* printed that value. Nothing is lost by masking them: when a value does arrive
+* through an alias, nconf's argv store records the canonical key too, so the
+* dump still shows it under `paths:action` / `debug:config`.
+*/
+const KNOWN_KEY_TREE = buildKnownKeyTree([
+	...Object.values(ConfigKeys).filter((key) => !UNREAD_CONFIG_KEYS.has(key)),
+	"sections",
+	...BRANDING_HASH_KEYS
+]);
+/**
+* Whether a value is shaped like something a known leaf key can hold: a scalar,
+* or an array of scalars.
+*
+* Every key in {@link KNOWN_KEY_TREE} holds a scalar except `sections`, which
+* holds a string array. Anything richer arriving under one of those names came
+* from a caller, not from this tool, and nothing here reads it.
+* @param {unknown} value - The value found under a known leaf key.
+* @returns {boolean} True when the value is a scalar or an array of scalars.
+*/
+function isScalarLeafValue(value) {
+	return !Array.isArray(value) && (value === null || typeof value !== "object");
+}
+/**
+* Whether a value is an array holding only scalars — the shape `sections` has.
+* @param {unknown} value - The value found under an array-valued key.
+* @returns {boolean} True for an array with no object or array elements.
+*/
+function isSectionNameList(value) {
+	const names = README_SECTIONS;
+	return Array.isArray(value) && value.every((entry) => names.includes(entry));
+}
+/**
+* Masks every value the tool does not itself read, plus anything under a
+* sensitive-looking key, before the resolved config is printed.
+*
+* `action.yml` declares no secret input, and the env store admits only
+* `INPUT_*` keys, so ambient variables such as `GITHUB_TOKEN` never reach the
+* config. A caller can still land one: GitHub sets `INPUT_*` for every key
+* under `with:`, declared or not, and `.ghadocs.json` and CLI args are
+* user-controlled. The dump exists to be pasted into bug reports, so it masks
+* rather than relying on the runner's own secret masking.
+*
+* Because those three sources admit arbitrary keys, a name heuristic alone
+* cannot make the dump safe — `--webhook=https://hooks.example/...` carries a
+* credential under a name no pattern would flag. So the allow-list is the
+* primary defence: a key the tool reads is printed, anything else is masked.
+* That still shows a reporter which unexpected keys were supplied, without
+* printing what they held. `SENSITIVE_KEY_PATTERN` stays as a second line,
+* covering a future known key whose value is genuinely secret.
+*
+* Values under nconf and yargs bookkeeping keys (`_`, `$0`) are masked by the
+* same rule; they are not configuration and nothing reads them.
+*
+* Recurses so nested groups (`versioning:*`, `paths:*`) are covered. Arrays are
+* walked; a masked key's value is replaced whole rather than descended into.
+* @param {unknown} value - The resolved config, or a nested part of it.
+* @param {KnownKeyTree | true} known - Allow-list for this level; `true` means
+* every key below is already within a known leaf's value.
+* @returns {unknown} A copy with unknown and sensitive values masked.
+*/
+function redactSensitiveValues(value, known = KNOWN_KEY_TREE) {
+	if (value === null || typeof value !== "object" || Array.isArray(value)) return value;
+	return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
+		if (SENSITIVE_KEY_PATTERN.test(key)) return [key, REDACTED];
+		const branch = known[key];
+		switch (branch) {
+			case void 0: return [key, REDACTED];
+			case "scalar": return [key, isScalarLeafValue(entry) ? entry : REDACTED];
+			case "section-names": return [key, isSectionNameList(entry) ? entry : REDACTED];
+			case "boolean": return [key, BOOLEAN_VALUES.has(entry) ? entry : REDACTED];
+			case "version-source": return [key, VERSION_SOURCES.has(entry) ? entry : REDACTED];
+			case "branding-hash": return [key, isBrandingHash(entry) ? entry : REDACTED];
+			default: return [key, entry !== null && typeof entry === "object" && !Array.isArray(entry) ? redactSensitiveValues(entry, branch) : REDACTED];
+		}
+	}));
+}
+/**
+* Whether the resolved nconf object was asked for.
+*
+* Two flags carry the identical promise "Print out the resolved nconf object
+* with all values" — `--debug_config` and the older `--debug_nconf` — so either
+* triggers the dump rather than one of them continuing to be inert.
+*
+* Unset means off, the opposite of `pretty`: this is a diagnostic, and neither
+* flag is declared in `action.yml`. The value arrives as a real boolean from
+* `.ghadocs.json` and as a string from env and CLI args, so both spellings are
+* accepted.
+* @param {ProviderInstance} config - The resolved config instance.
+* @returns {boolean} True when the resolved config should be printed.
+*/
+function isDebugConfigEnabled(config) {
+	return ["debug:config", "debug:nconf"].some((key) => {
+		const value = config.get(key);
+		return value === true || value === "true";
+	});
+}
 /**
 * Loads the configuration
 *
@@ -1207,6 +1488,7 @@ function loadConfig(log, providedConfig, configFilePath) {
 	log.debug("Loading config from env and argv");
 	const config = providedConfig ?? new Provider();
 	if (process.env.GITHUB_ACTION === "true") log.info("Running in GitHub action");
+	config.argv(argvOptions);
 	if (configFilePath) if (fs.existsSync(configFilePath)) {
 		log.info(`Config file found: ${configFilePath}`);
 		config.file(configFilePath);
@@ -1217,7 +1499,7 @@ function loadConfig(log, providedConfig, configFilePath) {
 		transform: (obj) => {
 			return transformGitHubInputsToArgv(log, config, obj);
 		}
-	}).argv(argvOptions);
+	});
 	return config;
 }
 /**
@@ -1321,7 +1603,13 @@ var Inputs = class {
 		this.configPath = inputContext.configPath ?? path$1.resolve(".ghadocs.json");
 		this.config = inputContext.config ?? new Provider();
 		loadConfig(log, this.config, this.configPath);
-		loadDefaultConfig(log, this.config);
+		try {
+			loadDefaultConfig(log, this.config);
+		} catch (error) {
+			this.dumpResolvedConfig();
+			throw error;
+		}
+		this.dumpResolvedConfig();
 		loadRequiredConfig(log, this.config);
 		this.action = inputContext.action ?? loadAction(log, this.config.get("paths:action"));
 		this.config.set("sections", inputContext.sections ?? this.config.get("sections"));
@@ -1341,9 +1629,23 @@ var Inputs = class {
 		*/
 		this.repo = inputContext.repo ?? this.config.get("repo");
 	}
+	/**
+	* Prints the resolved configuration when `--debug_config` (or the older
+	* `--debug_nconf`) asked for it.
+	*
+	* Called from two places in the constructor because both of the failures this
+	* flag diagnoses throw, and each throws from a different call — see the
+	* comments at those call sites. Rerunning it after a successful
+	* `loadDefaultConfig` is the only path that reaches the second call, so no
+	* run prints the dump twice.
+	* @returns {void}
+	*/
+	dumpResolvedConfig() {
+		if (isDebugConfigEnabled(this.config)) this.log.info(`Resolved config:\n${this.stringify()}`);
+	}
 	stringify() {
 		if (this?.config) try {
-			return YAML.stringify(this.config.get());
+			return YAML.stringify(redactSensitiveValues(this.config.get()));
 		} catch (error) {
 			this.log.error(`${String(error)}`);
 		}
@@ -1831,13 +2133,12 @@ function updateInputs(sectionToken, inputs) {
 		for (const key of Object.keys(vars)) {
 			const values = vars[key];
 			let description = values?.description ?? "";
-			const matches = /(.*?)\n\n([Ss]*)/.exec(description);
-			if (matches && matches.length >= 2) description = matches[1] || description;
-			description = description.trim().replace("\n", "<br />");
+			description = description.trim().split("\n\n")[0] ?? "";
+			description = description.replaceAll("\n", "<br />");
 			const row = [
 				rowHeader(key),
 				description,
-				values?.default ? `<code>${values.default}</code>` : "",
+				values?.default === void 0 || values.default === "" ? "" : `<code>${values.default}</code>`,
 				values?.required ? "**true**" : "__false__"
 			];
 			log.debug(JSON.stringify(row));
@@ -1847,7 +2148,10 @@ function updateInputs(sectionToken, inputs) {
 		log.info(`Action has ${tI} total ${sectionToken}`);
 		inputs.readmeEditor.updateSection(sectionToken, content);
 		log.success();
-	} else log.debug(`Action has no ${sectionToken}`);
+	} else {
+		log.debug(`Action has no ${sectionToken}`);
+		inputs.readmeEditor.updateSection(sectionToken, content);
+	}
 	const ret = {};
 	ret[sectionToken] = content.join("\n");
 	return ret;
@@ -1873,9 +2177,8 @@ function updateOutputs(sectionToken, inputs) {
 		for (const key of Object.keys(vars)) {
 			const values = vars[key];
 			let description = values?.description ?? "";
-			const matches = /(.*?)\n\n([Ss]*)/.exec(description);
-			if (matches && matches.length >= 2) description = matches[1] || description;
-			description = description.trim().replace("\n", "<br />");
+			description = description.trim().split("\n\n")[0] ?? "";
+			description = description.replaceAll("\n", "<br />");
 			const value = values?.value ? `\`${values.value}\`` : "";
 			const row = [
 				rowHeader(key),
@@ -1889,7 +2192,10 @@ function updateOutputs(sectionToken, inputs) {
 		log.info(`Action has ${tI} total ${sectionToken}`);
 		inputs.readmeEditor.updateSection(sectionToken, content);
 		log.success();
-	} else log.debug(`Action has no ${sectionToken}`);
+	} else {
+		log.debug(`Action has no ${sectionToken}`);
+		inputs.readmeEditor.updateSection(sectionToken, content);
+	}
 	const ret = {};
 	ret[sectionToken] = content.join("\n");
 	return ret;
@@ -2061,7 +2367,7 @@ var ReadmeGenerator = class {
 		const sectionPromises = this.updateSections(providedSections);
 		const sections = await this.resolveUpdates(sectionPromises);
 		this.outputSections(sections);
-		return this.inputs.readmeEditor.dumpToFile();
+		return this.inputs.readmeEditor.dumpToFile(isPrettierEnabled(this.inputs));
 	}
 };
 //#endregion

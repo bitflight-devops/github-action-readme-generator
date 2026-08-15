@@ -171,7 +171,7 @@ const generatedTableCell = async (value) =>
  * the leading paragraph is guaranteed to reach the table. Comparing on that
  * paragraph holds whether or not the YAML style preserved the blank line.
  */
-const firstParagraph = (value) => String(value ?? '').split(/\n[ \t]*\n/)[0];
+const firstParagraph = (value) => String(value ?? '').split('\n\n')[0];
 
 /** Splits a Markdown table row at pipes preceded by an even backslash count. */
 const cells = (row) => {

@@ -37,6 +37,8 @@ const README =
   '```yaml\n' +
   String.raw`- uses: owner/repo@v1
   with:
+    # Description: A \| B
+    # 
     path: value
 ` +
   '```\n' +
@@ -87,6 +89,87 @@ describe('README contract verifier regressions', () => {
   });
 
   it.each([
+    ['absent', undefined, ''],
+    ['empty', "''", ''],
+    ['false', 'false', 'false'],
+    ['zero', '0', '0'],
+  ])('accepts the final pretty-on blank comment with an %s default', (_name, yaml, value) => {
+    const action =
+      yaml === undefined
+        ? ACTION
+        : ACTION.replace('required: false', `required: false\n    default: ${yaml}`);
+    let readme = README.replace('    # \n', '    #\n');
+    if (yaml !== undefined) {
+      readme = readme.replace(
+        '    path: value',
+        `    # Default:${value === '' ? '' : ` ${value}`}\n    path: value`,
+      );
+      if (value !== '') {
+        readme = readme.replace(
+          String.raw`A \\\| B |  | false`,
+          String.raw`A \\\| B | <code>${value}</code> | false`,
+        );
+      }
+    }
+    expect(verify(readme, action)).toContain('All contract checks passed');
+  });
+
+  it('pairs a section with the final end marker when generated content contains that marker', () => {
+    const action = ACTION.replace(
+      'description: __bold__',
+      "description: 'Before <!-- end description --> After'",
+    );
+    const readme = README.replace('**bold**', 'Before <!-- end description --> After');
+    expect(verify(readme, action)).toContain('All contract checks passed');
+  });
+
+  it('validates generated usage descriptions and removed defaults exactly', () => {
+    expect(() =>
+      verify(README.replace('    # Description: A \\| B', '    # Description: stale')),
+    ).toThrow();
+    expect(() =>
+      verify(
+        README.replace('    # \n    path: value', '    # \n    # Default: stale\n    path: value'),
+      ),
+    ).toThrow();
+  });
+
+  it('accepts the generator-wrapped usage description', () => {
+    const description =
+      'This is a deliberately long description that should wrap across more than one generated usage comment line for exact validation.';
+    const action = ACTION.replace(String.raw`A \| B`, description);
+    const readme = README.replace(
+      '    # Description: A \\| B\n    # ',
+      '    # Description: This is a deliberately long description that should wrap across\n    # more than one generated usage comment line for exact validation.\n    # ',
+    ).replace(String.raw`A \\\| B`, description);
+    expect(verify(readme, action)).toContain('All contract checks passed');
+  });
+
+  it('accepts a structured usage description without losing its wrapped blocks', () => {
+    const action = ACTION.replace(
+      String.raw`description: A \| B`,
+      'description: |-\n      Intro.\n\n      - one\n      - two',
+    );
+    const readme = README.replace(
+      '    # Description: A \\| B\n    # ',
+      '    # Description: Intro.\n    # \n    # - one\n    # - two\n    # ',
+    ).replace(String.raw`A \\\| B`, 'Intro.');
+    expect(verify(readme, action)).toContain('All contract checks passed');
+  });
+
+  it.each([
+    ['a changed header', README.replace('**Input**', '**Argument**')],
+    ['a malformed delimiter', README.replace('|---|---|---|---|', '|--|---|---|---|')],
+    [
+      'an aligned delimiter the generator does not emit',
+      README.replace('|---|---|---|---|', '|:---|---|---|---|'),
+    ],
+    ['a short data row', README.replace(String.raw` |  | false |`, ' |  |')],
+  ])('rejects %s in a generated table', (_name, readme) => {
+    expect(() => verify(readme)).toThrow();
+  });
+
+  it.each([
     [
       'a stale leading word in the title',
       README.replace('# GitHub Action: Release', '# GitHub Action: Legacy Release'),
@@ -127,10 +210,9 @@ describe('README contract verifier regressions', () => {
       String.raw`description: A \| B`,
       'description: __bold__',
     );
-    const readme = README.replace(
-      '# GitHub Action: Release',
-      '# GitHub Action: **Release**',
-    ).replace(String.raw`A \\\| B`, '**bold**');
+    const readme = README.replace('# GitHub Action: Release', '# GitHub Action: **Release**')
+      .replace('    # Description: A \\| B', '    # Description: **bold**')
+      .replace(String.raw`A \\\| B`, '**bold**');
     expect(verify(readme, action)).toContain('All contract checks passed');
   });
 
@@ -138,7 +220,10 @@ describe('README contract verifier regressions', () => {
     expect(() => verify(README.replace('**bold**', 'bold'))).toThrow();
 
     const action = ACTION.replace(String.raw`description: A \| B`, "description: '**important**'");
-    const readme = README.replace(String.raw`A \\\| B`, 'important');
+    const readme = README.replace(
+      '    # Description: A \\| B',
+      '    # Description: **important**',
+    ).replace(String.raw`A \\\| B`, 'important');
     expect(() => verify(readme, action)).toThrow();
   });
 
@@ -149,6 +234,7 @@ describe('README contract verifier regressions', () => {
     );
     const readme = README.replace('# GitHub Action: Release', '# GitHub Action: __Release__')
       .replace('**bold**', '__bold__')
+      .replace('    # Description: A \\| B', '    # Description: **bold**')
       .replace(String.raw`A \\\| B`, '__bold__');
     expect(
       verify(readme, action, {
@@ -164,10 +250,9 @@ describe('README contract verifier regressions', () => {
       String.raw`description: A \| B`,
       'description: __bold__',
     );
-    const readme = README.replace(
-      '# GitHub Action: Release',
-      '# GitHub Action: **Release**',
-    ).replace(String.raw`A \\\| B`, '**bold**');
+    const readme = README.replace('# GitHub Action: Release', '# GitHub Action: **Release**')
+      .replace('    # Description: A \\| B', '    # Description: **bold**')
+      .replace(String.raw`A \\\| B`, '**bold**');
     expect(() =>
       verify(readme, action, {
         title_prefix: 'GitHub Action: ',
@@ -196,10 +281,9 @@ describe('README contract verifier regressions', () => {
       String.raw`description: A \| B`,
       String.raw`description: 'C:\temp'`,
     );
-    const readme = README.replace('**bold**', '__bold__').replace(
-      String.raw`A \\\| B`,
-      String.raw`C:\temp`,
-    );
+    const readme = README.replace('**bold**', '__bold__')
+      .replace(String.raw`A \\\| B`, String.raw`C:\temp`)
+      .replace('    # Description: A \\| B', String.raw`    # Description: C:\temp`);
     expect(
       verify(readme, action, {
         title_prefix: 'GitHub Action: ',
@@ -214,10 +298,9 @@ describe('README contract verifier regressions', () => {
       String.raw`description: A \| B`,
       'description: |-\n      one\n      two\n      three',
     );
-    const readme = README.replace('**bold**', '__bold__').replace(
-      String.raw`A \\\| B`,
-      'one<br />two<br />three',
-    );
+    const readme = README.replace('**bold**', '__bold__')
+      .replace('    # Description: A \\| B', '    # Description: one two three')
+      .replace(String.raw`A \\\| B`, 'one<br />two<br />three');
     expect(
       verify(readme, action, {
         title_prefix: 'GitHub Action: ',

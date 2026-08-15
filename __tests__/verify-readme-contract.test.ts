@@ -157,6 +157,40 @@ describe('README contract verifier regressions', () => {
     expect(verify(readme, action)).toContain('All contract checks passed');
   });
 
+  it('matches the generator literal blank-line boundary in table descriptions', () => {
+    const action = ACTION.replace(
+      String.raw`description: A \| B`,
+      'description: "first\\n  \\nsecond"',
+    );
+    const readme = README.replace(
+      '    # Description: A \\| B\n    # ',
+      '    # Description: first\n    #\n    # second\n    #',
+    ).replace(String.raw`A \\\| B`, 'first<br /> <br />second');
+    expect(verify(readme, action)).toContain('All contract checks passed');
+  });
+
+  it('validates complete first paragraphs and whitespace-only lines in output descriptions', () => {
+    const action = ACTION.replace(
+      'runs:',
+      'outputs:\n  soft:\n    description: "First\\nSecond\\n\\nBody"\n  spaced:\n    description: "first\\n  \\nsecond"\nruns:',
+    );
+    const outputTable = String.raw`| **Output** | **Description** | **Value** |
+|---|---|---|
+| <b><code>soft</code></b> | First<br />Second |  |
+| <b><code>spaced</code></b> | first<br />  <br />second |  |`;
+    const readme = README.replace('**bold**', '__bold__').replace(
+      '<!-- start outputs -->\n<!-- end outputs -->',
+      `<!-- start outputs -->\n${outputTable}\n<!-- end outputs -->`,
+    );
+    expect(
+      verify(readme, action, {
+        title_prefix: 'GitHub Action: ',
+        branding_as_title_prefix: false,
+        prettier: false,
+      }),
+    ).toContain('All contract checks passed');
+  });
+
   it.each([
     ['a changed header', README.replace('**Input**', '**Argument**')],
     ['a malformed delimiter', README.replace('|---|---|---|---|', '|--|---|---|---|')],

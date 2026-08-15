@@ -41,6 +41,9 @@ describe('updateBadges', () => {
     const result = updateBadges('badges', mockInputs);
 
     expect(result.badges).toContain('href="https://github.com/owner&amp;&quot;/');
+    expect(result.badges).toContain(
+      'src="https://img.shields.io/github/v/release/owner&amp;&quot;/',
+    );
     expect(result.badges).not.toContain('owner%26%22');
   });
 });

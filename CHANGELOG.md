@@ -1,3 +1,10 @@
+## [1.12.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.1...v1.12.2) (2026-08-15)
+
+
+### Bug Fixes
+
+* **versioning:** default disabled usage ref to main ([#662](https://github.com/bitflight-devops/github-action-readme-generator/issues/662)) ([93a624e](https://github.com/bitflight-devops/github-action-readme-generator/commit/93a624eb8f5071843dc1d82abd36ec18e586ed33)), closes [#637](https://github.com/bitflight-devops/github-action-readme-generator/issues/637)
+
 ## [1.12.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.0...v1.12.1) (2026-08-15)
 
 

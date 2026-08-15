@@ -68,6 +68,7 @@ const verify = (
     branding_as_title_prefix: false,
   },
   readmeDirectory = '.',
+  originalReadme?: string,
 ): string => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ghadocs-contract-verifier-'));
   temporaryDirectories.push(directory);
@@ -75,10 +76,14 @@ const verify = (
   const readmeParent = path.join(directory, readmeDirectory);
   fs.mkdirSync(readmeParent, { recursive: true });
   const readmePath = path.join(readmeParent, 'README.md');
+  const originalReadmePath = path.join(directory, 'README.original.md');
   fs.writeFileSync(actionPath, action);
   fs.writeFileSync(readmePath, readme);
+  if (originalReadme !== undefined) fs.writeFileSync(originalReadmePath, originalReadme);
   fs.writeFileSync(path.join(directory, '.ghadocs.json'), JSON.stringify(config));
-  return execFileSync(process.execPath, [SCRIPT, actionPath, readmePath], {
+  const arguments_ = [SCRIPT, actionPath, readmePath];
+  if (originalReadme !== undefined) arguments_.push(originalReadmePath);
+  return execFileSync(process.execPath, arguments_, {
     encoding: 'utf8',
     cwd: directory,
   });
@@ -93,6 +98,14 @@ afterEach(() => {
 describe('README contract verifier regressions', () => {
   it('accepts generator-equivalent Markdown and preserves a literal backslash before a pipe', () => {
     expect(verify()).toContain('All contract checks passed');
+  });
+
+  it.each(['inputs', 'outputs'])('rejects removal of opted-in %s markers', (name) => {
+    const readme = README.replace(
+      new RegExp(`<!-- start ${name} -->[\\s\\S]*?<!-- end ${name} -->\\n?`),
+      '',
+    );
+    expect(() => verify(readme, ACTION, undefined, '.', README)).toThrow();
   });
 
   it.each([

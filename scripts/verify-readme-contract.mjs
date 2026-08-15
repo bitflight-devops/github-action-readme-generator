@@ -29,10 +29,11 @@
  *   signal. The workflow asserts idempotency instead — a second run changes
  *   nothing.
  *
- * A section whose markers are absent from the target README is skipped, not
- * failed: third-party repositories choose which sections they opt into.
+ * A section whose markers were absent before generation is skipped: third-party
+ * repositories choose which sections they opt into. Every original marker pair
+ * must remain present after generation.
  *
- * Usage: node scripts/verify-readme-contract.mjs <action.yml> <README.md>
+ * Usage: node scripts/verify-readme-contract.mjs <action.yml> <README.md> [original-README.md]
  *
  * Exits non-zero when any check fails, printing each failure as a workflow
  * error annotation.
@@ -45,15 +46,18 @@ import * as yamlPlugin from 'prettier/plugins/yaml';
 import { format } from 'prettier/standalone';
 import YAML from 'yaml';
 
-const [actionPath, readmePath] = process.argv.slice(2);
+const [actionPath, readmePath, originalReadmePath] = process.argv.slice(2);
 
 if (!actionPath || !readmePath) {
-  console.log('usage: node scripts/verify-readme-contract.mjs <action.yml> <README.md>');
+  console.log(
+    'usage: node scripts/verify-readme-contract.mjs <action.yml> <README.md> [original-README.md]',
+  );
   process.exit(2);
 }
 
 const action = YAML.parse(fs.readFileSync(actionPath, 'utf8')) ?? {};
 const readme = fs.readFileSync(readmePath, 'utf8');
+const originalReadme = originalReadmePath ? fs.readFileSync(originalReadmePath, 'utf8') : null;
 const configPath = path.resolve('.ghadocs.json');
 const config = fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath, 'utf8')) : {};
 
@@ -79,17 +83,37 @@ const fail = (message) => {
  * following the editor's use of `lastIndexOfRegex` for the start token.
  */
 const guard = '(^|[^`\\\\])';
-const section = (name) => {
-  const starts = [...readme.matchAll(new RegExp(`${guard}<!--\\s+start\\s+${name}\\s+-->`, 'g'))];
+const sectionFrom = (source, name) => {
+  const starts = [...source.matchAll(new RegExp(`${guard}<!--\\s+start\\s+${name}\\s+-->`, 'g'))];
   if (starts.length === 0) return null;
   const last = starts.at(-1);
   const from = last.index + last[0].length;
   const ends = [
-    ...readme.slice(from).matchAll(new RegExp(`${guard}<!--\\s+end\\s+${name}\\s+-->`, 'g')),
+    ...source.slice(from).matchAll(new RegExp(`${guard}<!--\\s+end\\s+${name}\\s+-->`, 'g')),
   ];
   const end = ends.at(-1);
-  return end ? readme.slice(from, from + end.index).trim() : null;
+  return end ? source.slice(from, from + end.index).trim() : null;
 };
+
+const section = (name) => sectionFrom(readme, name);
+
+if (originalReadme !== null) {
+  const generatedSections = [
+    'title',
+    'branding',
+    'description',
+    'usage',
+    'inputs',
+    'outputs',
+    'contents',
+    'badges',
+  ];
+  for (const name of generatedSections) {
+    if (sectionFrom(originalReadme, name) !== null && section(name) === null) {
+      fail(`the generated README removed the original ${name} section marker pair`);
+    }
+  }
+}
 
 /**
  * Reduces a table cell and an `action.yml` value to a comparable form.

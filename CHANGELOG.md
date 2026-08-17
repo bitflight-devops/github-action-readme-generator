@@ -1,3 +1,10 @@
+## [1.12.8](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.7...v1.12.8) (2026-08-17)
+
+
+### Bug Fixes
+
+* **integration:** validate every generated section ([#674](https://github.com/bitflight-devops/github-action-readme-generator/issues/674)) ([145adf2](https://github.com/bitflight-devops/github-action-readme-generator/commit/145adf23d424efc4f7d2ff8560e58c22d4ed78c3))
+
 ## [1.12.7](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.6...v1.12.7) (2026-08-15)
 
 

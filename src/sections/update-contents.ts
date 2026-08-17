@@ -30,17 +30,20 @@ function headerToAnchor(text: string): string {
 function extractHeaders(content: string): { level: number; text: string }[] {
   const headers: { level: number; text: string }[] = [];
   const lines = content.split('\n');
-  let inCodeBlock = false;
+  let codeFence: string | undefined;
 
   for (const line of lines) {
-    // Track code block state
-    if (line.trim().startsWith('```')) {
-      inCodeBlock = !inCodeBlock;
+    const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(line);
+    if (codeFence) {
+      const fenceCharacter = codeFence[0];
+      const closingFence = new RegExp(`^\\s*${fenceCharacter}{${codeFence.length},}\\s*$`);
+      if (closingFence.test(line)) {
+        codeFence = undefined;
+      }
       continue;
     }
-
-    // Skip if inside code block
-    if (inCodeBlock) {
+    if (fenceMatch) {
+      codeFence = fenceMatch[1];
       continue;
     }
 

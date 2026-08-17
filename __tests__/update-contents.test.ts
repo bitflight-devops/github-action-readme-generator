@@ -202,6 +202,32 @@ echo "test"
       const lines = result[sectionToken].split('\n').filter((l) => l.startsWith('-'));
       expect(lines).toHaveLength(2);
     });
+
+    it('should ignore headers inside tilde and longer backtick fences', () => {
+      vi.mocked(mockInputs.readmeEditor.getReadmeContent).mockReturnValue(`
+## Before Code
+
+~~~markdown
+## Hidden By Tildes
+~~~
+
+\`\`\`\`markdown
+## Hidden By Four Backticks
+\`\`\`
+## Still Hidden By Four Backticks
+\`\`\`\`
+
+## After Code
+`);
+
+      const result = updateContents(sectionToken, mockInputs);
+
+      expect(result[sectionToken]).toContain('- [Before Code](#before-code)');
+      expect(result[sectionToken]).toContain('- [After Code](#after-code)');
+      expect(result[sectionToken]).not.toContain('Hidden By Tildes');
+      expect(result[sectionToken]).not.toContain('Hidden By Four Backticks');
+      expect(result[sectionToken]).not.toContain('Still Hidden By Four Backticks');
+    });
   });
 
   describe('nested headers and indentation', () => {

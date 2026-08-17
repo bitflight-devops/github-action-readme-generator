@@ -16,6 +16,7 @@
  * fixture rather than hardcoded, so adding an input to the fixture extends the
  * assertions with it.
  */
+import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -26,6 +27,8 @@ import YAML from 'yaml';
 import Inputs from '../src/inputs.js';
 import LogTask from '../src/logtask/index.js';
 import { ReadmeGenerator } from '../src/readme-generator.js';
+
+const VERIFIER_SCRIPT = path.resolve('scripts/verify-readme-contract.mjs');
 
 /** Inputs and outputs the generated README has to account for, one per shape. */
 const ACTION_YML = `name: Contract Test Action
@@ -363,6 +366,46 @@ describe('README generation contract', () => {
       const third = await generate();
 
       expect(third).toBe(second);
+    });
+
+    it('passes the exact verifier after contents and badges converge', async () => {
+      const originalReadme = `${README_WITH_MARKERS}\n## First Heading\n\n### Child Heading\n`;
+      const originalReadmePath = path.join(tempDir, 'README.original.md');
+      fs.writeFileSync(readmePath, originalReadme);
+      fs.writeFileSync(originalReadmePath, originalReadme);
+      fs.writeFileSync(
+        path.join(tempDir, '.ghadocs.json'),
+        JSON.stringify({
+          owner: 'contract-owner',
+          repo: 'contract-repo',
+          title_prefix: 'GitHub Action: ',
+          branding_svg_path: '.github/ghadocs/branding.svg',
+          branding_as_title_prefix: false,
+          versioning: { badge: true },
+        }),
+      );
+
+      await generate();
+      await generate();
+      const finalReadme = await generate();
+
+      expect(sectionBody(finalReadme, 'contents')).toContain('[First Heading](#first-heading)');
+      expect(sectionBody(finalReadme, 'badges')).toContain(
+        'img.shields.io/github/v/release/contract-owner/contract-repo',
+      );
+      const verification = spawnSync(
+        process.execPath,
+        [
+          VERIFIER_SCRIPT,
+          actionPath,
+          readmePath,
+          originalReadmePath,
+          'contract-owner/contract-repo',
+        ],
+        { cwd: tempDir, encoding: 'utf8' },
+      );
+      expect(verification.status, `${verification.stdout}\n${verification.stderr}`).toBe(0);
+      expect(verification.stdout).toContain('All contract checks passed');
     });
   });
 });

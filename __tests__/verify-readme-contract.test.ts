@@ -60,6 +60,13 @@ const README =
  */
 const unformatted = (readme: string): string => readme.replace('**false**', '__false__');
 
+const BADGES =
+  '<a href="https://github.com/owner/repo/releases/latest"><img src="https://img.shields.io/github/v/release/owner/repo?display_name=tag&amp;sort=semver&amp;logo=github&amp;style=flat-square" alt="Release by tag" /></a>' +
+  '<a href="https://github.com/owner/repo/releases/latest"><img src="https://img.shields.io/github/release-date/owner/repo?display_name=tag&amp;sort=semver&amp;logo=github&amp;style=flat-square" alt="Release by date" /></a>' +
+  '<img src="https://img.shields.io/github/last-commit/owner/repo?logo=github&amp;style=flat-square" alt="Commit" />' +
+  '<a href="https://github.com/owner/repo/issues"><img src="https://img.shields.io/github/issues/owner/repo?logo=github&amp;style=flat-square" alt="Open Issues" /></a>' +
+  '<img src="https://img.shields.io/github/downloads/owner/repo/total?logo=github&amp;style=flat-square" alt="Downloads" />';
+
 const verify = (
   readme = README,
   action = ACTION,
@@ -455,6 +462,15 @@ describe('README contract verifier regressions', () => {
     ).toThrow();
   });
 
+  it.each([
+    ['name', '  name: stale\n'],
+    ['run', '  run: echo stale\n'],
+    ['env', '  env:\n    STALE: true\n'],
+  ])('rejects an extra %s property in the generated usage step', (_name, property) => {
+    const readme = README.replace('  with:\n', `${property}  with:\n`);
+    expect(() => verify(readme)).toThrow();
+  });
+
   it.each(['before', 'after'])('rejects stale content %s the generated usage fence', (position) => {
     const replacement =
       position === 'before'
@@ -616,6 +632,129 @@ describe('README contract verifier regressions', () => {
     const row = String.raw`| <b><code>path</code></b> | A \\\| B |  | **false** |`;
     const readme = README.replace('<!-- end inputs -->', `${row}\n<!-- end inputs -->`);
     expect(() => verify(readme)).toThrow();
+  });
+
+  it.each([
+    ['before', 'inputs'],
+    ['after', 'inputs'],
+    ['before', 'outputs'],
+    ['after', 'outputs'],
+  ])('rejects stale prose %s the nonempty %s table', (position, name) => {
+    const outputAction = ACTION.replace(
+      'runs:',
+      'outputs:\n  result:\n    description: Result\n    value: ${{ steps.result.outputs.value }}\nruns:',
+    );
+    const outputTable = [
+      '| **Output** | **Description** | **Value** |',
+      '|---|---|---|',
+      '| <b><code>result</code></b> | Result | <code>${{ steps.result.outputs.value }}</code> |',
+    ].join('\n');
+    const baseline =
+      name === 'outputs'
+        ? README.replace(
+            '<!-- start outputs -->\n<!-- end outputs -->',
+            `<!-- start outputs -->\n${outputTable}\n<!-- end outputs -->`,
+          )
+        : README;
+    const action = name === 'outputs' ? outputAction : ACTION;
+    const readme =
+      position === 'before'
+        ? baseline.replace(`<!-- start ${name} -->\n`, `<!-- start ${name} -->\nstale prose\n`)
+        : baseline.replace(`\n<!-- end ${name} -->`, `\nstale prose\n<!-- end ${name} -->`);
+
+    expect(() => verify(readme, action)).toThrow();
+  });
+
+  it('validates the complete generated contents projection', () => {
+    const contents = [
+      '## Table of Contents',
+      '',
+      '- [First Heading](#first-heading)',
+      '  - [Child Heading](#child-heading)',
+      '- [First Heading](#first-heading-1)',
+    ].join('\n');
+    const readme = `${README}<!-- start contents -->\n${contents}\n<!-- end contents -->\n## First Heading\n### Child Heading\n## First Heading\n\n\`\`\`markdown\n## Fenced Heading\n\`\`\`\n`;
+
+    expect(verify(readme)).toContain('All contract checks passed');
+    expect(() => verify(readme.replace('#first-heading-1', '#stale'))).toThrow();
+    expect(() => verify(readme.replace('- [First Heading](#first-heading)\n', ''))).toThrow();
+    expect(() =>
+      verify(readme.replace('\n<!-- end contents -->', '\nstale prose\n<!-- end contents -->')),
+    ).toThrow();
+  });
+
+  it('requires an empty contents projection when the README has no eligible headings', () => {
+    const readme = `${README}<!-- start contents -->\n<!-- end contents -->\n`;
+    expect(verify(readme)).toContain('All contract checks passed');
+    expect(() =>
+      verify(readme.replace('<!-- start contents -->', '<!-- start contents -->\nstale entry')),
+    ).toThrow();
+  });
+
+  it('validates the complete enabled badges projection', () => {
+    const readme = `${README}<!-- start badges -->\n${BADGES}\n<!-- end badges -->\n`;
+    const config = {
+      title_prefix: 'GitHub Action: ',
+      branding_as_title_prefix: false,
+      owner: 'owner',
+      repo: 'repo',
+      versioning: { badge: true },
+    };
+
+    expect(verify(readme, ACTION, config)).toContain('All contract checks passed');
+    expect(() => verify(readme.replace('Release by tag', 'Stale tag'), ACTION, config)).toThrow();
+    expect(() =>
+      verify(
+        readme.replace('\n<!-- end badges -->', '\nstale prose\n<!-- end badges -->'),
+        ACTION,
+        config,
+      ),
+    ).toThrow();
+  });
+
+  it('preserves opted-in badges when generation is disabled', () => {
+    const original = `${README}<!-- start badges -->\nuser-owned badge\n<!-- end badges -->\n`;
+    const config = {
+      title_prefix: 'GitHub Action: ',
+      branding_as_title_prefix: false,
+      versioning: { badge: false },
+    };
+
+    expect(verify(original, ACTION, config, '.', original)).toContain('All contract checks passed');
+    expect(() =>
+      verify(original.replace('user-owned badge', 'changed badge'), ACTION, config, '.', original),
+    ).toThrow();
+    expect(
+      verify(
+        original.replace('<!-- start badges -->\n', '<!-- start badges -->\n\n'),
+        ACTION,
+        config,
+        '.',
+        original,
+      ),
+    ).toContain('All contract checks passed');
+  });
+
+  it('preserves disabled badges byte-for-byte when prettier is off', () => {
+    const base = unformatted(README.replace('**bold**', '__bold__'));
+    const original = `${base}<!-- start badges -->\n__user badge__\n<!-- end badges -->\n`;
+    const config = {
+      title_prefix: 'GitHub Action: ',
+      branding_as_title_prefix: false,
+      prettier: false,
+      versioning: { badge: false },
+    };
+
+    expect(verify(original, ACTION, config, '.', original)).toContain('All contract checks passed');
+    expect(() =>
+      verify(
+        original.replace('<!-- start badges -->\n', '<!-- start badges -->\n\n'),
+        ACTION,
+        config,
+        '.',
+        original,
+      ),
+    ).toThrow();
   });
 
   it('validates output values and declaration order', () => {

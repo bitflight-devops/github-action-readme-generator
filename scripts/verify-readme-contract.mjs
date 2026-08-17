@@ -132,7 +132,7 @@ const fail = (message) => {
  * following the editor's use of `lastIndexOfRegex` for the start token.
  */
 const guard = '(^|[^`\\\\])';
-const sectionFrom = (source, name) => {
+const sectionFrom = (source, name, trim = true) => {
   const starts = [...source.matchAll(new RegExp(`${guard}<!--\\s+start\\s+${name}\\s+-->`, 'g'))];
   if (starts.length === 0) return null;
   const last = starts.at(-1);
@@ -141,7 +141,9 @@ const sectionFrom = (source, name) => {
     ...source.slice(from).matchAll(new RegExp(`${guard}<!--\\s+end\\s+${name}\\s+-->`, 'g')),
   ];
   const end = ends.at(-1);
-  return end ? source.slice(from, from + end.index).trim() : null;
+  if (!end) return null;
+  const body = source.slice(from, from + end.index);
+  return trim ? body.trim() : body;
 };
 
 const section = (name) => sectionFrom(readme, name);
@@ -322,6 +324,18 @@ if (usage === null) {
           candidate !== null && typeof candidate === 'object' && 'uses' in candidate
             ? candidate
             : null;
+        if (step !== null) {
+          const expectedStepKeys = ['uses', 'with'];
+          const stepKeys = Object.keys(step);
+          const hasExactStepKeys =
+            stepKeys.length === expectedStepKeys.length &&
+            expectedStepKeys.every((key) => Object.hasOwn(step, key));
+          if (!hasExactStepKeys) {
+            fail(
+              `the usage step properties do not match the generator — want ${expectedStepKeys.join(', ')}, got ${stepKeys.join(', ') || 'none'}`,
+            );
+          }
+        }
       }
     } catch (error) {
       fail(`the usage block is not parseable yaml: ${error.message}`);
@@ -456,6 +470,10 @@ const tableSection = async (name, declared, expectedCells) => {
     return;
   }
   const tableRows = body.split('\n').filter((line) => line.trim().startsWith('|'));
+  if (keys.length > 0 && tableRows.length !== body.split('\n').length) {
+    fail(`the ${name} section carries content outside the generated table`);
+    return;
+  }
   if (tableRows.length > 0) {
     const header = cells(tableRows[0]);
     const delimiter = tableRows.length > 1 ? cells(tableRows[1]) : [];
@@ -651,6 +669,147 @@ for (const name of ['title', 'description', 'branding']) {
     ok(`the ${name} section carries the action's ${name} from action.yml`);
   } else {
     fail(`the ${name} section does not exactly project action.yml; section reads ${JSON.stringify(actual)}`);
+  }
+}
+
+/** Mirrors the contents projection in `src/sections/update-contents.ts`. */
+const expectedContents = async () => {
+  const headers = [];
+  let inCodeBlock = false;
+  for (const line of readme.split('\n')) {
+    if (line.trim().startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+    const match = /^(#{2,6})\s+(.+)$/.exec(line);
+    if (!match) continue;
+    const text = match[2]
+      .trim()
+      .replaceAll(/<img[^>]*>/g, '')
+      .trim()
+      .replaceAll(/\[([^\]]+)]\([^)]+\)/g, '$1');
+    if (text && !text.toLowerCase().includes('contents')) {
+      headers.push({ level: match[1].length, text });
+    }
+  }
+  if (headers.length === 0) return '';
+
+  const minimumLevel = Math.min(...headers.map(({ level }) => level));
+  const anchorCounts = new Map();
+  const lines = ['## Table of Contents', ''];
+  for (const { level, text } of headers) {
+    const baseAnchor = text
+      .toLowerCase()
+      .replaceAll(/[^\w\s-]/g, '')
+      .replaceAll(/\s+/g, '-')
+      .replaceAll(/-+/g, '-')
+      .replaceAll(/^-|-$/g, '');
+    const count = anchorCounts.get(baseAnchor) ?? 0;
+    anchorCounts.set(baseAnchor, count + 1);
+    const anchor = count === 0 ? baseAnchor : `${baseAnchor}-${count}`;
+    lines.push(`${'  '.repeat(level - minimumLevel)}- [${text}](#${anchor})`);
+  }
+  return generatedMarkdown(lines.join('\n'));
+};
+
+const contents = section('contents');
+if (contents === null) {
+  skip('no contents section markers in this README, skipping');
+} else {
+  const actual = await generatedMarkdown(contents);
+  const expected = await expectedContents();
+  if (actual === expected) {
+    ok('the contents section exactly indexes the generated README headings');
+  } else {
+    fail(
+      `the contents section does not exactly project the generated README headings — want ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+    );
+  }
+}
+
+/** Mirrors HTML attribute escaping and badge composition in `update-badges.ts`. */
+const escapeAttribute = (value) =>
+  String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+
+const expectedBadges = async (owner, repo) => {
+  const repositoryUrl = `https://github.com/${owner}/${repo}`;
+  const badges = [
+    {
+      img: `https://img.shields.io/github/v/release/${owner}/${repo}?display_name=tag&sort=semver&logo=github&style=flat-square`,
+      alt: 'Release by tag',
+      url: `${repositoryUrl}/releases/latest`,
+    },
+    {
+      img: `https://img.shields.io/github/release-date/${owner}/${repo}?display_name=tag&sort=semver&logo=github&style=flat-square`,
+      alt: 'Release by date',
+      url: `${repositoryUrl}/releases/latest`,
+    },
+    {
+      img: `https://img.shields.io/github/last-commit/${owner}/${repo}?logo=github&style=flat-square`,
+      alt: 'Commit',
+    },
+    {
+      img: `https://img.shields.io/github/issues/${owner}/${repo}?logo=github&style=flat-square`,
+      alt: 'Open Issues',
+      url: `${repositoryUrl}/issues`,
+    },
+    {
+      img: `https://img.shields.io/github/downloads/${owner}/${repo}/total?logo=github&style=flat-square`,
+      alt: 'Downloads',
+    },
+  ];
+  const markup = badges
+    .map((badge) => {
+      const image = `<img src="${escapeAttribute(badge.img)}" alt="${escapeAttribute(badge.alt)}" />`;
+      return badge.url ? `<a href="${escapeAttribute(badge.url)}">${image}</a>` : image;
+    })
+    .join('');
+  return generatedMarkdown(markup);
+};
+
+const badges = section('badges');
+if (badges === null) {
+  skip('no badges section markers in this README, skipping');
+} else {
+  const badgeSetting = config.versioning?.badge ?? true;
+  if (!badgeSetting) {
+    const originalBadges =
+      originalReadme === null ? null : sectionFrom(originalReadme, 'badges', prettierEnabled);
+    const generatedBadges = sectionFrom(readme, 'badges', prettierEnabled);
+    if (originalBadges === null) {
+      skip('badges are disabled and no original badges projection is available');
+    } else if (
+      generatedBadges !== null &&
+      (prettierEnabled
+        ? (await generatedMarkdown(generatedBadges)) === (await generatedMarkdown(originalBadges))
+        : generatedBadges === originalBadges)
+    ) {
+      ok('the disabled badges section preserves its original content');
+    } else {
+      fail('the disabled badges section does not preserve its original content');
+    }
+  } else {
+    const [repositoryOwner, repositoryName] = String(expectedRepository ?? '').split('/');
+    const owner = config.owner ?? repositoryOwner;
+    const repo = config.repo ?? repositoryName;
+    if (!owner || !repo) {
+      fail('the badges projection cannot resolve the generated repository owner and name');
+    } else {
+      const actual = await generatedMarkdown(badges);
+      const expected = await expectedBadges(owner, repo);
+      if (actual === expected) {
+        ok('the badges section exactly projects the generated repository badges');
+      } else {
+        fail(
+          `the badges section does not exactly project the generated repository badges — want ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+        );
+      }
+    }
   }
 }
 

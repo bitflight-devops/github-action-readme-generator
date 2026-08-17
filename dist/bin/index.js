@@ -216848,13 +216848,18 @@ function headerToAnchor(text) {
 function extractHeaders(content) {
 	const headers = [];
 	const lines = content.split("\n");
-	let inCodeBlock = false;
+	let codeFence;
 	for (const line of lines) {
-		if (line.trim().startsWith("```")) {
-			inCodeBlock = !inCodeBlock;
+		const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(line);
+		if (codeFence) {
+			const fenceCharacter = codeFence[0];
+			if (new RegExp(`^\\s*${fenceCharacter}{${codeFence.length},}\\s*$`).test(line)) codeFence = void 0;
 			continue;
 		}
-		if (inCodeBlock) continue;
+		if (fenceMatch) {
+			codeFence = fenceMatch[1];
+			continue;
+		}
 		const headerMatch = /^(#{2,6})\s+(.+)$/.exec(line);
 		if (headerMatch) {
 			const level = headerMatch[1].length;

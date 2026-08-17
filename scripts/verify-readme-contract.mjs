@@ -675,13 +675,21 @@ for (const name of ['title', 'description', 'branding']) {
 /** Mirrors the contents projection in `src/sections/update-contents.ts`. */
 const expectedContents = async () => {
   const headers = [];
-  let inCodeBlock = false;
+  let codeFence;
   for (const line of readme.split('\n')) {
-    if (line.trim().startsWith('```')) {
-      inCodeBlock = !inCodeBlock;
+    const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(line);
+    if (codeFence) {
+      const fenceCharacter = codeFence[0];
+      const closingFence = new RegExp(
+        `^\\s*${fenceCharacter}{${codeFence.length},}\\s*$`,
+      );
+      if (closingFence.test(line)) codeFence = undefined;
       continue;
     }
-    if (inCodeBlock) continue;
+    if (fenceMatch) {
+      codeFence = fenceMatch[1];
+      continue;
+    }
     const match = /^(#{2,6})\s+(.+)$/.exec(line);
     if (!match) continue;
     const text = match[2]

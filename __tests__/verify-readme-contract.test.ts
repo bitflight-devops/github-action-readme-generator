@@ -683,6 +683,23 @@ describe('README contract verifier regressions', () => {
     ).toThrow();
   });
 
+  it('ignores headings inside tilde and longer backtick fences', () => {
+    const contents = ['## Table of Contents', '', '- [Visible Heading](#visible-heading)'].join(
+      '\n',
+    );
+    const readme = `${README}<!-- start contents -->\n${contents}\n<!-- end contents -->\n## Visible Heading\n\n~~~markdown\n## Hidden By Tildes\n~~~\n\n\`\`\`\`markdown\n## Hidden By Four Backticks\n\`\`\`\n## Still Hidden By Four Backticks\n\`\`\`\`\n`;
+
+    expect(verify(readme)).toContain('All contract checks passed');
+    expect(() =>
+      verify(
+        readme.replace(
+          '- [Visible Heading](#visible-heading)',
+          '- [Visible Heading](#visible-heading)\n- [Hidden By Tildes](#hidden-by-tildes)',
+        ),
+      ),
+    ).toThrow();
+  });
+
   it('requires an empty contents projection when the README has no eligible headings', () => {
     const readme = `${README}<!-- start contents -->\n<!-- end contents -->\n`;
     expect(verify(readme)).toContain('All contract checks passed');

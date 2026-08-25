@@ -82,6 +82,16 @@ jobs:
       - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
         run: npm audit signatures
 
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1.17.0
+        with:
+          node-manager: false
+          # npm ci already installed deps above; vp install's default
+          # (run-install: true) writes a devEngines.packageManager pin into
+          # package.json that then breaks every later plain `npm run ...`
+          # step against the runner's actual npm version.
+          run-install: false
+
       - run: npm run build --if-present
 
       - run: |

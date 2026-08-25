@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import chalk from 'chalk';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 
 import LogTask from '../../src/logtask/index.js';
 

@@ -13,7 +13,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test';
 
 import Inputs from '../src/inputs.js';
 import LogTask from '../src/logtask/index.js';
@@ -22,13 +22,19 @@ describe('Integration Test - Issue #335: Execution from different directory', ()
   let originalCwd: string;
   let tempDir: string;
   let originalActionYmlPath: string;
-  const ACTION_YML_BACKUP = 'action.yml.backup';
+  let actionYmlBackupDir: string;
+  let actionYmlBackupPath: string;
 
   beforeEach(() => {
     // Store the original working directory
     originalCwd = process.cwd();
     // Store the original action.yml path
     originalActionYmlPath = path.resolve(originalCwd, 'action.yml');
+    // Keep a unique backup beside the original so rename remains on one filesystem.
+    actionYmlBackupDir = fs.mkdtempSync(
+      path.join(path.dirname(originalActionYmlPath), '.action-yml-'),
+    );
+    actionYmlBackupPath = path.join(actionYmlBackupDir, 'action.yml');
   });
 
   afterEach(() => {
@@ -36,8 +42,11 @@ describe('Integration Test - Issue #335: Execution from different directory', ()
     process.chdir(originalCwd);
 
     // Restore action.yml if we moved it
-    if (tempDir && fs.existsSync(path.join(tempDir, ACTION_YML_BACKUP))) {
-      fs.renameSync(path.join(tempDir, ACTION_YML_BACKUP), originalActionYmlPath);
+    if (actionYmlBackupPath && fs.existsSync(actionYmlBackupPath)) {
+      fs.renameSync(actionYmlBackupPath, originalActionYmlPath);
+    }
+    if (actionYmlBackupDir && fs.existsSync(actionYmlBackupDir)) {
+      fs.rmSync(actionYmlBackupDir, { recursive: true, force: true });
     }
 
     // Clean up the temporary directory if it exists
@@ -78,7 +87,7 @@ runs:
     // (as it would be when installed via npm since it's not in the "files" array)
     const actionYmlMoved = fs.existsSync(originalActionYmlPath);
     if (actionYmlMoved) {
-      fs.renameSync(originalActionYmlPath, path.join(tempDir, ACTION_YML_BACKUP));
+      fs.renameSync(originalActionYmlPath, actionYmlBackupPath);
     }
 
     // Verify the file was actually moved

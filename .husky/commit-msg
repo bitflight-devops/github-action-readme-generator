@@ -1,5 +1,2 @@
-#!/usr/bin/env bash
-# shellcheck source=./_/husky.sh
-. "$(dirname "$0")/_/husky.sh"
 # --no-install
 npx --yes commitlint@latest --edit "$1"

@@ -1,14 +1,16 @@
+import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { context as githubContext } from '@actions/github';
-import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vite-plus/test';
 
 import {
   basename,
   columnHeader,
   getCurrentVersionString,
   indexOfRegex,
+  isPrettierEnabled,
   lastIndexOfRegex,
   prefixParser,
   remoteGitUrlPattern,
@@ -430,6 +432,41 @@ describe('helpers', () => {
         expect(result).toBe('main');
       });
 
+      it('should default to main when versioning is disabled without a branch', () => {
+        const inputs = createMockInputs({
+          'versioning:enabled': false,
+        });
+
+        const result = getCurrentVersionString(inputs);
+        expect(result).toBe('main');
+      });
+
+      it('should default to main when versioning is disabled with an empty branch', () => {
+        const inputs = createMockInputs({
+          'versioning:enabled': false,
+          'versioning:branch': '',
+        });
+
+        const result = getCurrentVersionString(inputs);
+        expect(result).toBe('main');
+      });
+
+      it.each([
+        [false, 'false'],
+        [0, '0'],
+      ])(
+        'should preserve parsed falsy branch %j as %s when versioning is disabled',
+        (branch, expected) => {
+          const inputs = createMockInputs({
+            'versioning:enabled': false,
+            'versioning:branch': branch,
+          });
+
+          const result = getCurrentVersionString(inputs);
+          expect(result).toBe(expected);
+        },
+      );
+
       it('should apply override even when not in explicit mode', () => {
         const inputs = createMockInputs({
           'versioning:enabled': true,
@@ -441,6 +478,100 @@ describe('helpers', () => {
         const result = getCurrentVersionString(inputs);
         expect(result).toBe('v2.0.0');
       });
+
+      it('should prefer the more specific tag when multiple tags point at the same commit', () => {
+        // Regression test: `git describe --tags --abbrev=0`'s tie-break
+        // between tags at zero distance from HEAD isn't guaranteed to
+        // prefer the exact release tag (v1.11.0) over a floating major tag
+        // (v1) also pointing at that commit - a real, reproducible layout
+        // for any repo tagging releases the way this one does.
+        const tempDir = execSync('mktemp -d', { encoding: 'utf8' }).trim();
+        try {
+          execSync('git init -q', { cwd: tempDir });
+          execSync('git config user.email test@example.com', { cwd: tempDir });
+          execSync('git config user.name test', { cwd: tempDir });
+          execSync('git commit -q -m init --allow-empty', { cwd: tempDir });
+          execSync('git tag v1.11.0', { cwd: tempDir });
+          execSync('git tag v1', { cwd: tempDir });
+
+          const inputs = {
+            config: {
+              get: (key: string) =>
+                ({
+                  'versioning:enabled': true,
+                  'versioning:source': 'git-tag',
+                  'versioning:prefix': 'v',
+                })[key],
+            },
+            action: { path: path.join(tempDir, 'action.yml') },
+          } as unknown as Inputs;
+
+          const result = getCurrentVersionString(inputs);
+          expect(result).toBe('v1.11.0');
+        } finally {
+          execSync(`rm -rf ${tempDir}`);
+        }
+      });
+
+      it('should not let an unrelated co-located tag with more dots outrank a real version tag', () => {
+        // Regression test: the most-specific-tag heuristic above counts
+        // dot-separated segments, so an unrelated tag with more dots than
+        // any real version tag (e.g. a release-notes marker) must not win
+        // just because it has more segments.
+        const tempDir = execSync('mktemp -d', { encoding: 'utf8' }).trim();
+        try {
+          execSync('git init -q', { cwd: tempDir });
+          execSync('git config user.email test@example.com', { cwd: tempDir });
+          execSync('git config user.name test', { cwd: tempDir });
+          execSync('git commit -q -m init --allow-empty', { cwd: tempDir });
+          execSync('git tag v1.11.0', { cwd: tempDir });
+          execSync('git tag v1', { cwd: tempDir });
+          execSync('git tag z.release.2026.08', { cwd: tempDir });
+
+          const inputs = {
+            config: {
+              get: (key: string) =>
+                ({
+                  'versioning:enabled': true,
+                  'versioning:source': 'git-tag',
+                  'versioning:prefix': 'v',
+                })[key],
+            },
+            action: { path: path.join(tempDir, 'action.yml') },
+          } as unknown as Inputs;
+
+          const result = getCurrentVersionString(inputs);
+          expect(result).toBe('v1.11.0');
+        } finally {
+          execSync(`rm -rf ${tempDir}`);
+        }
+      });
     });
+  });
+});
+
+describe('isPrettierEnabled', () => {
+  const inputsWith = (prettier: unknown): Inputs =>
+    ({ config: { get: (): unknown => prettier } }) as unknown as Inputs;
+
+  // Unset means enabled, so an existing config that never mentioned `prettier`
+  // keeps formatting rather than silently losing it.
+  it('defaults to enabled when the flag is unset', () => {
+    expect(isPrettierEnabled(inputsWith(undefined))).toBe(true);
+  });
+
+  // .ghadocs.json yields a real boolean; action inputs and CLI args arrive as
+  // strings, so both spellings have to mean the same thing.
+  it.each([
+    [true, true],
+    ['true', true],
+    [false, false],
+    ['false', false],
+  ])('maps %o to %s', (configured, expected) => {
+    expect(isPrettierEnabled(inputsWith(configured))).toBe(expected);
+  });
+
+  it.each([['no'], ['0'], [''], ['yes'], [1]])('treats %o as disabled', (configured) => {
+    expect(isPrettierEnabled(inputsWith(configured))).toBe(false);
   });
 });

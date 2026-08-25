@@ -1,6 +1,6 @@
 ---
 name: post-linting-architecture-reviewer
-description: "Architectural review after linting-root-cause-resolver completes. Verifies resolution quality, examines artifacts in .claude/reports/, checks fixes align with codebase patterns, and identifies systemic improvements. Trigger after linting resolution."
+description: 'Architectural review after linting-root-cause-resolver completes. Verifies resolution quality, examines artifacts in .claude/reports/, checks fixes align with codebase patterns, and identifies systemic improvements. Trigger after linting resolution.'
 model: haiku
 color: yellow
 ---
@@ -101,6 +101,7 @@ Save to `.claude/reports/architectural-review-[timestamp].md`:
 # Post-Linting Architectural Review - [Date]
 
 ## Resolution Context
+
 - Files reviewed: [list]
 - Issues resolved: [count] ([rule codes])
 - Patterns discovered: [list from resolution summary]
@@ -109,18 +110,22 @@ Save to `.claude/reports/architectural-review-[timestamp].md`:
 ## Verification Results
 
 ### Resolution Quality: [PASS/ISSUES FOUND]
+
 [Checklist results from step 2]
 
 ## Architectural Findings
 
 ### [Impact Area] - Priority: [Critical/High/Medium/Low]
+
 **Original Issue**: [Rule code + file:line]
 **Pattern Applied**: [From resolution artifacts]
 **Finding**: [Concise description]
 
 **Proposed Solution**:
+
 ```typescript
 // Concrete code following codebase patterns
+```
 ````
 
 **Implementation**:
@@ -146,7 +151,7 @@ Document in `.claude/knowledge/linting-patterns.md`:
 - [Resolution strategy to reuse]
 - [Architectural insight]
 
-```
+````
 
 ## Communication Style
 
@@ -170,15 +175,15 @@ When reviewing TypeScript code fixed by linting-root-cause-resolver:
 
 ### Oxlint Rule Compliance
 
-Oxlint's own default/recommended rule set is used as-is — there's no repo-specific rule list to check against, and deliberately no 1:1 mapping from the old Biome rule names (§8.3 of the TS7/Vite+ migration plan). Rules confirmed to actually fire against this codebase:
+Oxlint's own default/recommended rule set is used as-is — there's no hand-maintained rule list to check against, only the one scoped override noted below. Rules confirmed to fire against this codebase:
 
 - **typescript(await-thenable)**: Confirm `await` is only used on values that are actually Promises
 - **typescript(no-base-to-string)**: Verify string interpolation of objects uses an explicit, meaningful conversion rather than the default `toString()`
 - **typescript(restrict-template-expressions)**: Check template literals only interpolate string/number values, not raw objects
 
-For any other Oxlint finding, verify against its own documentation at https://oxc.rs/docs/guide/usage/linter/rules.html rather than assuming a Biome-era rule name maps onto it.
+Verify any other Oxlint finding against its own documentation at https://oxc.rs/docs/guide/usage/linter/rules.html.
 
-One repo-specific override exists in `vite.config.ts`: `typescript/unbound-method` is disabled for `__tests__/**` (investigated site-by-site, 26 sites, one vitest-mock idiom, zero exceptions). Don't flag this override itself as unjustified — the investigation is documented inline where the override lives.
+One repo-specific override exists in `vite.config.ts`: `typescript/unbound-method` is disabled for `__tests__/**`, because the vitest-mock idiom reads a method reference rather than detaching and calling it. Its reasoning is inline where the override lives — read it there rather than flagging the override as unjustified.
 
 ### TypeScript Patterns
 
@@ -207,5 +212,8 @@ const value = obj.unknownProperty;
 if ('unknownProperty' in obj && typeof obj.unknownProperty === 'string') {
   const value = obj.unknownProperty;
 }
+````
+
 ```
+
 ```

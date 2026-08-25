@@ -31,13 +31,13 @@ jobs:
           - repo: bjia56/setup-cosmocc
             action_path: action.yml
             readme_path: README.md
-            description: "Setup Cosmocc Action"
-            artifact_name: "setup-cosmocc"
+            description: 'Setup Cosmocc Action'
+            artifact_name: 'setup-cosmocc'
           - repo: catalystcommunity/action-release-action
             action_path: action.yaml
             readme_path: README.md
-            description: "Release Action"
-            artifact_name: "release-action"
+            description: 'Release Action'
+            artifact_name: 'release-action'
 
     steps:
       - name: Checkout this action (PR code)
@@ -48,15 +48,28 @@ jobs:
       - name: Setup Node.js for building action
         uses: actions/setup-node@v7.0.0
         with:
-          node-version: "24.x"
-          cache: "npm"
+          node-version: '24.x'
+          cache: 'npm'
           cache-dependency-path: action-under-test/package-lock.json
 
-      - name: Install dependencies and build action
+      - name: Install dependencies
         working-directory: action-under-test
-        run: |
-          npm ci
-          npm run build
+        run: npm ci
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1.17.0
+        with:
+          node-manager: false
+          working-directory: action-under-test
+          # npm ci already installed deps above; vp install's default
+          # (run-install: true) writes a devEngines.packageManager pin into
+          # package.json that then breaks every later plain `npm run ...`
+          # step against the runner's actual npm version.
+          run-install: false
+
+      - name: Build action
+        working-directory: action-under-test
+        run: npm run build
 
       - name: Checkout target repository (${{ matrix.repo }})
         uses: actions/checkout@v7.0.1
@@ -240,7 +253,70 @@ jobs:
           echo "✅ Auto-detection validation PASSED"
           echo "   uses: $EXPECTED_OWNER/$EXPECTED_REPO@$DETECTED_VERSION"
 
-      - name: Compare with original (if exists)
+      # Generation has to reach a fixed point: once converged, further runs must
+      # change nothing, or the tool churns a diff into every user's repository
+      # on every CI run.
+      #
+      # Use passes 2 and 3 as the convergence pair. `docs/tool-contract.md`
+      # defines the rule, and #649 owns changes to its scope. A pass-1
+      # difference is surfaced as a notice without deciding convergence.
+      #
+      # Note what is deliberately not asserted: that the README changed at all.
+      # A target already up to date correctly produces no difference, and a
+      # difference says nothing about whether the content is right.
+      - name: Snapshot pass 1
+        working-directory: test-repo
+        run: cp "${{ matrix.readme_path }}" README.pass1.md
+
+      - name: Generation pass 2
+        uses: ./action-under-test
+        with:
+          action: test-repo/${{ matrix.action_path }}
+          readme: test-repo/${{ matrix.readme_path }}
+
+      - name: Snapshot pass 2
+        working-directory: test-repo
+        run: cp "${{ matrix.readme_path }}" README.pass2.md
+
+      - name: Generation pass 3
+        uses: ./action-under-test
+        with:
+          action: test-repo/${{ matrix.action_path }}
+          readme: test-repo/${{ matrix.readme_path }}
+
+      - name: Verify generation has converged
+        working-directory: test-repo
+        run: |
+          if ! diff -q README.pass1.md README.pass2.md >/dev/null; then
+            echo "::notice::pass 1 differed; convergence is assessed using passes 2 and 3; see #649"
+            diff -u README.pass1.md README.pass2.md || true
+          fi
+
+          if diff -u README.pass2.md "${{ matrix.readme_path }}"; then
+            echo "✓ generation has converged: pass 3 matched pass 2"
+          else
+            echo "::error::pass 3 differed from pass 2; generation does not reach a fixed point"
+            exit 1
+          fi
+
+      # The checks above prove the run happened and converged. They say nothing
+      # about whether the final sections project action.yml exactly.
+      # scripts/verify-readme-contract.mjs closes that gap against pass 3, the
+      # same README uploaded as the integration artifact.
+      - name: Verify the final README fulfils the generator's contract
+        run: |
+          node action-under-test/scripts/verify-readme-contract.mjs \
+            "test-repo/${{ matrix.action_path }}" \
+            "test-repo/${{ matrix.readme_path }}" \
+            "test-repo/README.backup.md" \
+            "${{ matrix.repo }}"
+
+      - name: Discard the convergence snapshots
+        if: always()
+        working-directory: test-repo
+        run: rm -f README.pass1.md README.pass2.md
+
+      - name: Compare with original (for the log only)
         if: always()
         working-directory: test-repo
         run: |

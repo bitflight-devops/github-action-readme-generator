@@ -1,11 +1,11 @@
-import { execSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 import { accessSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
-// biome-ignore lint/style/useImportType: context is imported as a value to derive the type using typeof
 import { context } from '@actions/github';
 import type { PackageJson } from 'types-package-json';
 
+import { ConfigKeys } from './constants.js';
 import type Inputs from './inputs.js';
 import LogTask from './logtask/index.js';
 import { unicodeWordMatch } from './unicode-word-match.js';
@@ -174,7 +174,8 @@ export function repoObjFromRepoName(
 // Pattern to match GitHub remote URLs in .git/config
 // Handles both HTTPS (github.com/) and SSH (github.com:) formats
 // Captures the repo name with or without .git suffix - suffix is stripped in code
-export const remoteGitUrlPattern = /url\s*=\s*.*github\.com[/:](?<owner>[^/\s]+)\/(?<repo>[^\s]+)/;
+export const remoteGitUrlPattern: RegExp =
+  /url\s*=\s*.*github\.com[/:](?<owner>[^/\s]+)\/(?<repo>[^\s]+)/;
 /**
  * Finds the repository information from the input, context, environment variables, or git configuration.
  * @param inputRepo - The input repository string.
@@ -367,18 +368,69 @@ export function rowHeader(value: string): string {
   return `<b><code>${text}</code></b>`;
 }
 
+// Matches version-shaped tags only (optional 'v' + dot-separated numeric
+// segments, e.g. `v1`, `v1.11`, `v1.11.0`) - a commit can carry unrelated
+// tags (release-notes markers, CI markers, etc.) alongside the real version
+// tags, and those must never win the specificity comparison below.
+const versionTagPattern = /^v?\d+(?:\.\d+)*$/;
+
+/**
+ * Picks the most specific tag out of several tags pointing at the same commit.
+ *
+ * A release typically carries both an exact tag (`v1.11.0`) and a floating
+ * major tag (`v1`) on the same commit, and `git describe --tags --abbrev=0`'s
+ * tie-break between tags at zero distance isn't guaranteed to prefer the
+ * exact one. Restrict to version-shaped tags first (an unrelated co-located
+ * tag with more dots, e.g. `z.release.2026.08`, must never outrank a real
+ * version tag), then sort by dot-separated segment count, then by length, so
+ * `v1.11.0` outranks `v1`.
+ */
+function mostSpecificTag(tags: string[]): string {
+  const versionTags = tags.filter((tag) => versionTagPattern.test(tag));
+  const candidates = versionTags.length > 0 ? versionTags : tags;
+  const specificity = (tag: string) => tag.replace(/^v/, '').split('.').length;
+  return [...candidates].sort((a, b) => specificity(b) - specificity(a) || b.length - a.length)[0]!;
+}
+
 /**
  * Gets the version from git tags.
  */
 function getVersionFromGitTag(actionDir: string, log: LogTask): string | undefined {
   try {
-    const gitVersion = execSync(
+    // `git describe` finds the nearest tag by commit-graph distance, which
+    // `git tag --points-at` alone can't do (it only ever matches exact
+    // commits) - HEAD is usually several commits past the last release, not
+    // on the tagged commit itself.
+    const nearestTag = execSync(
       'git describe --tags --abbrev=0 2>/dev/null || git tag -l "v*" --sort=-v:refname | head -1',
       {
         cwd: actionDir,
         encoding: 'utf8',
       },
     ).trim();
+
+    let gitVersion = nearestTag;
+    if (nearestTag) {
+      // The tag `git describe` picked may not be the most specific one:
+      // a release commit typically carries both an exact tag (v1.11.0) and
+      // a floating major tag (v1) pointing at the same commit, and
+      // `git describe`'s tie-break at zero distance isn't guaranteed to
+      // prefer the exact one. Re-resolve every tag on that same commit and
+      // pick the most specific. execFileSync (not execSync with a
+      // string-interpolated command) so a tag name containing shell
+      // metacharacters can't be interpreted by a shell.
+      const tagsOnSameCommit = execFileSync('git', ['tag', '--points-at', nearestTag], {
+        cwd: actionDir,
+        encoding: 'utf8',
+      })
+        .trim()
+        .split('\n')
+        .filter(Boolean);
+      if (tagsOnSameCommit.length > 0) {
+        gitVersion = mostSpecificTag(tagsOnSameCommit);
+      }
+    }
+
     if (gitVersion) {
       // Remove 'v' prefix if present for consistency, we'll add it back with the configured prefix
       const version = gitVersion.replace(/^v/, '');
@@ -445,6 +497,22 @@ function getVersionFromPackageJson(actionDir: string, log: LogTask): string | un
     log.debug(`package.json not found at ${packageJsonPath}`);
   }
   return undefined;
+}
+
+/**
+ * Whether the generated README should be run through prettier before it is
+ * written.
+ *
+ * Unset means enabled, matching `action.yml`'s `pretty` default of `"true"`.
+ * The value arrives as a real boolean from `.ghadocs.json` and as a string from
+ * action inputs and CLI args, so both spellings are accepted; anything else
+ * (`false`, `"false"`, `"no"`, …) disables formatting.
+ * @param {Inputs} inputs - The resolved inputs to read the flag from.
+ * @returns {boolean} True when prettier formatting should run.
+ */
+export function isPrettierEnabled(inputs: Inputs): boolean {
+  const prettier = inputs.config.get(ConfigKeys.Prettier);
+  return prettier === undefined || prettier === true || prettier === 'true';
 }
 
 export function getCurrentVersionString(inputs: Inputs): string {
@@ -517,7 +585,9 @@ export function getCurrentVersionString(inputs: Inputs): string {
       versionString = `${prefix}${versionString}`;
     }
   } else {
-    versionString = inputs.config.get('versioning:branch') as string;
+    const configuredBranch = inputs.config.get('versioning:branch');
+    versionString =
+      configuredBranch === undefined || configuredBranch === '' ? 'main' : String(configuredBranch);
   }
   log.debug(`version to use in generated example is ${versionString}`);
   return versionString;

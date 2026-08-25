@@ -1,3 +1,66 @@
+## [1.12.8](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.7...v1.12.8) (2026-08-17)
+
+
+### Bug Fixes
+
+* **integration:** validate every generated section ([#674](https://github.com/bitflight-devops/github-action-readme-generator/issues/674)) ([145adf2](https://github.com/bitflight-devops/github-action-readme-generator/commit/145adf23d424efc4f7d2ff8560e58c22d4ed78c3))
+
+## [1.12.7](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.6...v1.12.7) (2026-08-15)
+
+
+### Performance Improvements
+
+* **bundle:** prettier/standalone, working pretty input, config precedence, debug_config ([#634](https://github.com/bitflight-devops/github-action-readme-generator/issues/634)) ([74398bd](https://github.com/bitflight-devops/github-action-readme-generator/commit/74398bd3c268a00a47001b292a5db7fe1c878d96))
+
+## [1.12.6](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.5...v1.12.6) (2026-08-15)
+
+
+### Bug Fixes
+
+* **markdown:** preserve pipes after literal backslashes ([#673](https://github.com/bitflight-devops/github-action-readme-generator/issues/673)) ([bcf3590](https://github.com/bitflight-devops/github-action-readme-generator/commit/bcf3590168dd603fa03fd4d47e23f3111b51cc82))
+
+## [1.12.5](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.4...v1.12.5) (2026-08-15)
+
+
+### Bug Fixes
+
+* **versioning:** preserve parsed falsy branch refs ([#663](https://github.com/bitflight-devops/github-action-readme-generator/issues/663)) ([1bf6d0e](https://github.com/bitflight-devops/github-action-readme-generator/commit/1bf6d0e8d549e79823db0e242ef2fd3bb5ae9e9d))
+
+## [1.12.4](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.3...v1.12.4) (2026-08-15)
+
+
+### Bug Fixes
+
+* **branding:** generate SVG on first run ([#664](https://github.com/bitflight-devops/github-action-readme-generator/issues/664)) ([1e1910e](https://github.com/bitflight-devops/github-action-readme-generator/commit/1e1910ec9a3926487c5ae06efa89db99e79efc24))
+
+## [1.12.3](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.2...v1.12.3) (2026-08-15)
+
+
+### Bug Fixes
+
+* **cli:** parse sections as an array ([#665](https://github.com/bitflight-devops/github-action-readme-generator/issues/665)) ([9d6c0a2](https://github.com/bitflight-devops/github-action-readme-generator/commit/9d6c0a23a7f246f1e165df859e3c2c58d5772664))
+
+## [1.12.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.1...v1.12.2) (2026-08-15)
+
+
+### Bug Fixes
+
+* **versioning:** default disabled usage ref to main ([#662](https://github.com/bitflight-devops/github-action-readme-generator/issues/662)) ([93a624e](https://github.com/bitflight-devops/github-action-readme-generator/commit/93a624eb8f5071843dc1d82abd36ec18e586ed33)), closes [#637](https://github.com/bitflight-devops/github-action-readme-generator/issues/637)
+
+## [1.12.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.0...v1.12.1) (2026-08-15)
+
+
+### Bug Fixes
+
+* **badges:** preserve links and readable alt text ([#661](https://github.com/bitflight-devops/github-action-readme-generator/issues/661)) ([089cd7c](https://github.com/bitflight-devops/github-action-readme-generator/commit/089cd7c561f11a46c0fabad26a3bf33ebfc76105)), closes [#636](https://github.com/bitflight-devops/github-action-readme-generator/issues/636)
+
+# [1.12.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.11.0...v1.12.0) (2026-08-09)
+
+
+### Features
+
+* **lint:** migrate to Oxlint/Vite+, retire Biome (Phase 2 of TS7/Vite+ plan) ([#628](https://github.com/bitflight-devops/github-action-readme-generator/issues/628)) ([a1d3f04](https://github.com/bitflight-devops/github-action-readme-generator/commit/a1d3f04129a91b396741faf8941bcd21bfaffb69))
+
 # [1.11.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.10.10...v1.11.0) (2026-08-08)
 
 

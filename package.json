@@ -153,7 +153,7 @@
     "@tsconfig/node24": "^24.0.4",
     "@types/nconf": "^0.10.5",
     "@types/node": "^26.1.1",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "4.1.11",
     "@voidzero-dev/vite-plus-core": "0.2.8",
     "commitizen": "^4.3.1",
     "conventional-commits": "^1.6.0",

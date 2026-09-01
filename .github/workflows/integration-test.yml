@@ -57,7 +57,7 @@ jobs:
         run: npm ci
 
       - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1.17.0
+        uses: voidzero-dev/setup-vp@v1.18.0
         with:
           node-manager: false
           working-directory: action-under-test

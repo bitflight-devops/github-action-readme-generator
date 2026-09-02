@@ -83,7 +83,7 @@ jobs:
         run: npm audit signatures
 
       - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1.17.0
+        uses: voidzero-dev/setup-vp@v1.18.0
         with:
           node-manager: false
           # npm ci already installed deps above; vp install's default

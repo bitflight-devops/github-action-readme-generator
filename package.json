@@ -168,7 +168,7 @@
     "semantic-release": "^25.0.2",
     "types-package-json": "^2.0.39",
     "typescript": "7.0.2",
-    "vite-plus": "0.2.8"
+    "vite-plus": "0.2.9"
   },
   "engines": {
     "node": ">=24.19.0 <30.0.0",

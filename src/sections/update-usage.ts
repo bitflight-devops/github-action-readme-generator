@@ -60,13 +60,11 @@ export default async function updateUsage(
         content.push(...descriptions[key]);
 
         if (input.default !== undefined) {
-          // Append blank line if description had paragraphs
-          // if (input.description?.trimEnd().match(/\n *\r?\n/)) {
-          //   content.push('    #');
-          // }
-
-          // Default
-          content.push(`${indent}Default: ${input.default}`);
+          // Default. Every line stays inside the comment: a bare continuation line
+          // sits at column 0 and the fence stops being YAML.
+          const defaultLines = `${input.default}`.split(/\r?\n/);
+          defaultLines[0] = `Default: ${defaultLines[0]}`;
+          content.push(...defaultLines.map((line) => `${indent}${line}`.trimEnd()));
         }
 
         // Input name

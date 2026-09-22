@@ -36,9 +36,10 @@ README this tool has never touched stays as its author left it, however
 unformatted: a first run's diff covers the spans and no other line.
 
 Which bytes are a span is a separate question, decided by marker pairing rather
-than by the formatter. `getTokenIndexes` pairs the last start marker with the
-last end marker in the document, so a decoy marker placed after a real pair
-widens the span past its end marker
+than by the formatter. `getTokenIndexes` pairs the last start marker in the
+document with the last end marker in the document, so a repeated marker after a
+real pair moves one of the two boundaries — a repeated end marker widens the
+span past its end marker, and a repeated start marker moves the start instead
 ([#691](https://github.com/bitflight-devops/github-action-readme-generator/issues/691)).
 Code against the pairing that rule gives you until it is fixed.
 
@@ -73,9 +74,14 @@ section's span in the original and the generated README and compares what is
 left. The mask pairs the last start marker with the first end marker after it,
 deliberately not reusing `getTokenIndexes` — a mask built on the editor's own
 pairing would hide the very bytes a mis-paired span destroyed, so the two
-disagreeing is the signal. A run that moved a marker boundary is reported as
-that, not as rewritten prose, because the boundary decides which text the
-comparison is even about.
+disagreeing is the signal.
+
+A run that adds a marker to a span is reported as that as well, because a
+moved boundary and rewritten prose are different repairs. Such a section is
+then masked at its widest in both documents rather than dropped, so it cannot
+stand the comparison down for the sections whose boundaries held. The extra
+report is the only thing keyed to the marker counts, and counts can stay level
+while a boundary moves; the comparison is what catches the damage either way.
 
 ## Convergence uses passes 2 and 3
 

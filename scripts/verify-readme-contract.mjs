@@ -177,6 +177,9 @@ const markersOf = (source, name) => ({
   ends: [...source.matchAll(new RegExp(`${guard}<!--\\s+end\\s+${name}\\s+-->`, 'g'))],
 });
 
+/** Where a match's `<!--` begins, skipping the guard character it captured. */
+const markerStart = (match) => match.index + match[1].length;
+
 /**
  * The span a section *owns*, which is not always the span the editor replaces.
  *
@@ -185,15 +188,22 @@ const markersOf = (source, name) => ({
  * the run destroyed. This pairs the last start marker with the first end marker
  * after it, which is what a marker pair means, and disagreeing with the editor
  * is the signal rather than something to reproduce.
+ *
+ * `widened` pairs the first start marker with the last end marker instead. It
+ * is for a section whose markers the generation itself moved: which pair is
+ * the real one is no longer answerable, so the widest reading covers whatever
+ * moved and leaves the other sections comparable.
  */
-const ownedBounds = (source, name) => {
+const ownedBounds = (source, name, widened = false) => {
   const { starts, ends } = markersOf(source, name);
-  const start = starts.at(-1);
+  const start = widened ? starts.at(0) : starts.at(-1);
   if (!start) return null;
   const from = start.index + start[0].length;
-  const end = ends.find((match) => match.index >= from);
-  if (!end) return null;
-  return [from, end.index];
+  const end = widened ? ends.at(-1) : ends.find((match) => markerStart(match) >= from);
+  if (!end || markerStart(end) < from) return null;
+  // An end marker abutting the start marker captures that marker's own `>` as
+  // its guard, putting the match one byte behind the body — an empty span.
+  return [from, Math.max(end.index, from)];
 };
 
 /**
@@ -202,9 +212,9 @@ const ownedBounds = (source, name) => {
  * What survives is the text the tool does not own, so two masked documents
  * compare equal exactly when the generation left the user's text alone.
  */
-const maskSections = (source) => {
+const maskSections = (source, widened = new Set()) => {
   const bounds = generatedSections
-    .map((name) => ({ name, at: ownedBounds(source, name) }))
+    .map((name) => ({ name, at: ownedBounds(source, name, widened.has(name)) }))
     .filter((entry) => entry.at !== null)
     .sort((a, b) => a.at[0] - b.at[0]);
 
@@ -238,7 +248,7 @@ if (originalReadme !== null) {
   // later run pairs markers differently, so the document stops meaning what it
   // meant. Reported on its own, because the mask below would otherwise blame
   // the user's text for a boundary the generated content moved.
-  let injected = false;
+  const moved = new Set();
   for (const name of generatedSections) {
     const before = markersOf(originalReadme, name);
     const after = markersOf(readme, name);
@@ -247,7 +257,7 @@ if (originalReadme !== null) {
       ['end', 'ends'],
     ]) {
       if (after[key].length > before[key].length) {
-        injected = true;
+        moved.add(name);
         fail(`the generated ${name} section introduced an extra ${kind} marker`);
       }
     }
@@ -257,11 +267,16 @@ if (originalReadme !== null) {
   // user's. Generation replaces marker spans and formats those spans alone, so
   // every other byte — prose, tables, fences, trailing whitespace — must come
   // through untouched, whatever the `pretty` setting. See issue #668.
-  const maskedOriginal = maskSections(originalReadme);
-  const maskedGenerated = maskSections(readme);
-  if (injected) {
-    skip('skipping the outside-content check: the marker boundaries moved');
-  } else if (maskedGenerated === maskedOriginal) {
+  // A section whose markers moved is masked at its widest in both documents
+  // rather than dropped, so one such section cannot stand the check down for
+  // the rest — a run that moves a marker in one section and rewrites prose
+  // around another has to report both.
+  const maskedOriginal = maskSections(originalReadme, moved);
+  const maskedGenerated = maskSections(readme, moved);
+  if (moved.size > 0) {
+    skip(`comparing outside content with ${[...moved].join(', ')} masked at its widest`);
+  }
+  if (maskedGenerated === maskedOriginal) {
     ok('content outside the section markers is byte-identical to the original');
   } else {
     fail(

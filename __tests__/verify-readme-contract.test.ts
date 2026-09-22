@@ -896,6 +896,47 @@ describe('README contract verifier regressions', () => {
       expect(output).not.toContain('rewrote content outside the section markers');
     });
 
+    // One section whose markers moved must not stand the check down for the
+    // rest: a run that moves a marker in one section and destroys prose around
+    // another has to report both, or the log names the lesser problem only.
+    it('reports prose destroyed around one section while another section moved', () => {
+      const original = [
+        '# G',
+        '',
+        '<!-- start inputs -->',
+        '<!-- end inputs -->',
+        '',
+        '<!-- start outputs -->',
+        '| old | out |',
+        '<!-- end outputs -->',
+        'PROSE THE TOOL MUST NOT TOUCH',
+        '```text',
+        '<!-- end outputs -->',
+        '```',
+        '',
+      ].join('\n');
+      // The inputs span gains a start marker, and the outputs span is paired
+      // with the decoy end marker inside the fence, swallowing the prose.
+      const both = [
+        '# G',
+        '',
+        '<!-- start inputs -->',
+        'see <!-- start inputs --> for the pair',
+        '<!-- end inputs -->',
+        '',
+        '<!-- start outputs -->',
+        '| **Output** | **Description** |',
+        '<!-- end outputs -->',
+        '```',
+        '',
+      ].join('\n');
+
+      const output = annotations(() => verify(both, ACTION, undefined, '.', original));
+
+      expect(output).toContain('the generated inputs section introduced an extra start marker');
+      expect(output).toContain('rewrote content outside the section markers');
+    });
+
     it.each([
       ['a bullet marker', '* a bullet', '- a bullet'],
       ['bold emphasis', '__bold__', '**bold**'],

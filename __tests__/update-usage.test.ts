@@ -47,6 +47,21 @@ describe('updateUsage', () => {
     expect(mockUpdateSection).toHaveBeenCalledWith('usage', expect.any(Array));
   });
 
+  it.each([
+    ['LF', 'first\nsecond'],
+    ['CRLF', 'first\r\nsecond'],
+    ['CR', 'first\rsecond'],
+  ])('keeps a %s line break inside the comment', async (_name, value) => {
+    inputsWith({ k: { description: 'd', default: value } });
+
+    const result = await updateUsage('usage', mockInputs);
+    const body = fenceBody(result.usage);
+
+    expect(parse(body)).toEqual([{ uses: 'acme/t@v1.2.3', with: { k: '' } }]);
+    expect(result.usage).toContain('    #          second');
+    expect(result.usage).not.toMatch(/\r/);
+  });
+
   it('hangs a multi-line default under its value, not at description column', async () => {
     inputsWith({
       a: { description: 'Long prose.\n\nAnother paragraph.', default: 'first\nsecond' },

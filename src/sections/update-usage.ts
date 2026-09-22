@@ -73,7 +73,7 @@ export default async function updateUsage(
           // Default. Every line stays inside the comment: a bare continuation line
           // sits at column 0 and the fence stops being YAML. Continuation lines hang
           // under the value, so a multi-line default does not read as more prose.
-          const [firstLine, ...rest] = `${input.default}`.split(/\r?\n/);
+          const [firstLine, ...rest] = `${input.default}`.split(/\r\n|\n|\r/);
           content.push(`${indent}${defaultLabel}${firstLine}`.trimEnd());
           for (const line of rest) {
             content.push(`${indent}${defaultHang}${line}`.trimEnd());

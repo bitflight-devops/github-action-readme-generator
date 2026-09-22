@@ -2,6 +2,5 @@
 /**
  * Creates a ReadmeGenerator instance and generates docs.
  */
-declare function generateReadme(): Promise<void>;
+export declare function generateReadme(): Promise<void>;
 //#endregion
-export { generateReadme };

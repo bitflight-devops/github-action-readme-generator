@@ -717,14 +717,15 @@ function getCurrentVersionString(inputs) {
 		const actionDir = path$1.dirname(inputs.action.path);
 		log.debug(`version source: ${versionSource}`);
 		let detectedVersion;
-		if (versionSource === "explicit") if (override && override.length > 0) {
-			detectedVersion = override;
-			log.debug(`using explicit version override: ${detectedVersion}`);
+		if (versionSource === "explicit") {
+			if (override && override.length > 0) {
+				detectedVersion = override;
+				log.debug(`using explicit version override: ${detectedVersion}`);
+			} else {
+				log.debug("explicit mode but no version_override set, falling back to 0.0.0");
+				detectedVersion = "0.0.0";
+			}
 		} else {
-			log.debug("explicit mode but no version_override set, falling back to 0.0.0");
-			detectedVersion = "0.0.0";
-		}
-		else {
 			switch (versionSource) {
 				case "git-branch":
 					detectedVersion = getVersionFromGitBranch(actionDir, log);
@@ -1489,10 +1490,12 @@ function loadConfig(log, providedConfig, configFilePath) {
 	const config = providedConfig ?? new Provider();
 	if (process.env.GITHUB_ACTION === "true") log.info("Running in GitHub action");
 	config.argv(argvOptions);
-	if (configFilePath) if (fs.existsSync(configFilePath)) {
-		log.info(`Config file found: ${configFilePath}`);
-		config.file(configFilePath);
-	} else log.debug(`Config file not found: ${configFilePath}`);
+	if (configFilePath) {
+		if (fs.existsSync(configFilePath)) {
+			log.info(`Config file found: ${configFilePath}`);
+			config.file(configFilePath);
+		} else log.debug(`Config file not found: ${configFilePath}`);
+	}
 	config.env({
 		lowerCase: true,
 		parseValues: true,
@@ -2229,6 +2232,13 @@ function updateTitle(sectionToken, inputs) {
 }
 //#endregion
 //#region src/sections/update-usage.ts
+/**
+* Renders the `usage` section: a fenced workflow snippet naming every action input,
+* each preceded by its description and default as YAML comments.
+* @param {ReadmeSection} sectionToken - The README marker pair to write the section into.
+* @param {Inputs} inputs - The parsed action metadata and the README editor to write with.
+* @returns {Promise<Record<string, string>>} The rendered section, keyed by its section token.
+*/
 async function updateUsage(sectionToken, inputs) {
 	const log = new LogTask(sectionToken);
 	log.start();
@@ -2238,6 +2248,8 @@ async function updateUsage(sectionToken, inputs) {
 	log.info(`Version string: ${versionString}`);
 	const actionReference = `${actionName}@${versionString}`;
 	const indent = "    # ";
+	const defaultLabel = "Default: ";
+	const defaultHang = " ".repeat(9);
 	const content = [];
 	content.push("```yaml", `- uses: ${actionReference}`, "  with:");
 	const inp = inputs.action.inputs;
@@ -2264,7 +2276,11 @@ async function updateUsage(sectionToken, inputs) {
 			if (input !== void 0) {
 				if (!firstInput) content.push("");
 				content.push(...descriptions[key]);
-				if (input.default !== void 0) content.push(`${indent}Default: ${input.default}`);
+				if (input.default !== void 0) {
+					const [firstLine, ...rest] = `${input.default}`.split(/\r\n|\n|\r/);
+					content.push(`${indent}${defaultLabel}${firstLine}`.trimEnd());
+					for (const line of rest) content.push(`${indent}${defaultHang}${line}`.trimEnd());
+				}
 				content.push(`    ${key}: ''`);
 				firstInput = false;
 			}

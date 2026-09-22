@@ -119,20 +119,22 @@ const fail = (message) => {
 };
 
 /**
- * Content between a section's start and end markers, or null when absent.
- *
  * Mirrors `startTokenFormat` / `endTokenFormat` in `src/readme-editor.ts`,
  * including the `(^|[^\`\\])` guard, which is what stops a marker quoted inside
  * backticks or escaped with a backslash from being mistaken for a real one. A
  * README that documents the markers themselves carries several such decoys —
  * this repository's own does, both in a fenced example and in the generated
  * inputs table — and matching them reports a real section as empty.
- *
- * The last surviving start marker is paired with the first end marker after it,
- * following the editor's use of `lastIndexOfRegex` for the start token.
  */
 const guard = '(^|[^`\\\\])';
-const sectionFrom = (source, name, trim = true) => {
+
+/**
+ * Half-open [start, end) of a section's body, or null when absent.
+ *
+ * The last surviving start marker is paired with the last end marker after it,
+ * following the editor's use of `lastIndexOfRegex` for the start token.
+ */
+const sectionBounds = (source, name) => {
   const starts = [...source.matchAll(new RegExp(`${guard}<!--\\s+start\\s+${name}\\s+-->`, 'g'))];
   if (starts.length === 0) return null;
   const last = starts.at(-1);
@@ -142,27 +144,84 @@ const sectionFrom = (source, name, trim = true) => {
   ];
   const end = ends.at(-1);
   if (!end) return null;
-  const body = source.slice(from, from + end.index);
+  return [from, from + end.index];
+};
+
+/** Content between a section's start and end markers, or null when absent. */
+const sectionFrom = (source, name, trim = true) => {
+  const bounds = sectionBounds(source, name);
+  if (bounds === null) return null;
+  const body = source.slice(bounds[0], bounds[1]);
   return trim ? body.trim() : body;
 };
 
 const section = (name) => sectionFrom(readme, name);
 
+/** Every marker pair this tool knows how to fill. */
+const generatedSections = [
+  'title',
+  'branding',
+  'description',
+  'usage',
+  'inputs',
+  'outputs',
+  'contents',
+  'badges',
+];
+
+/**
+ * The document with every section body replaced by its name.
+ *
+ * What survives is the text the tool does not own, so two masked documents
+ * compare equal exactly when the generation left the user's text alone.
+ */
+const maskSections = (source) => {
+  const bounds = generatedSections
+    .map((name) => ({ name, at: sectionBounds(source, name) }))
+    .filter((entry) => entry.at !== null)
+    .sort((a, b) => a.at[0] - b.at[0]);
+
+  let masked = '';
+  let cursor = 0;
+  for (const { name, at } of bounds) {
+    // A pair nested inside one already masked would consume the same bytes
+    // twice, so leave it to the surrounding mask.
+    if (at[0] < cursor) continue;
+    masked += `${source.slice(cursor, at[0])}<${name}>`;
+    cursor = at[1];
+  }
+  return masked + source.slice(cursor);
+};
+
+/** The 1-based line number of the first byte at which two strings differ. */
+const firstDifferingLine = (left, right) => {
+  let index = 0;
+  while (index < left.length && index < right.length && left[index] === right[index]) index += 1;
+  return left.slice(0, index).split('\n').length;
+};
+
 if (originalReadme !== null) {
-  const generatedSections = [
-    'title',
-    'branding',
-    'description',
-    'usage',
-    'inputs',
-    'outputs',
-    'contents',
-    'badges',
-  ];
   for (const name of generatedSections) {
     if (sectionFrom(originalReadme, name) !== null && section(name) === null) {
       fail(`the generated README removed the original ${name} section marker pair`);
     }
+  }
+
+  // The contract's load-bearing promise: content outside the markers is the
+  // user's. Generation replaces marker spans and formats those spans alone, so
+  // every other byte — prose, tables, fences, trailing whitespace — must come
+  // through untouched, whatever the `pretty` setting. See issue #668.
+  const maskedOriginal = maskSections(originalReadme);
+  const maskedGenerated = maskSections(readme);
+  if (maskedGenerated === maskedOriginal) {
+    ok('content outside the section markers is byte-identical to the original');
+  } else {
+    fail(
+      `the generated README rewrote content outside the section markers, first differing around line ${firstDifferingLine(
+        maskedOriginal,
+        maskedGenerated,
+      )}`,
+    );
   }
 }
 

@@ -70,11 +70,12 @@ sections whose markers you added are touched.
 **Text outside the markers is yours and stays yours.** The tool replaces only
 the span between a `start`/`end` pair.
 
-**With `pretty` on (the default), the whole file is reformatted.** That is the
-one exception to the rule above: prettier runs over the entire README, so a
-first run on a file that was not already prettier-formatted will also reflow
-prose the tool did not generate. Run with `--pretty=false` if you would rather
-it left your formatting alone.
+**`pretty` formats the generated sections and nothing else.** With it on (the
+default) prettier runs over each replaced span on its own — it pads the tables
+it generated and tidies the usage block, and it never reaches your prose. A
+first run on a file that was not already prettier-formatted changes the marker
+sections and no other line. Run with `--pretty=false` to have the generated
+sections written exactly as the tool composed them.
 
 **Only yaml and markdown code blocks are reformatted; every other fence is left
 as you wrote it.** Formatting needs a prettier plugin per language, and this tool
@@ -105,7 +106,7 @@ apply to the CLI and the Action alike.
 | --paths:readme, --readme                                   | Path to the README file                                                                   | `README.md`                    |
 | --owner                                                    | The GitHub Action repository owner                                                        | autodetected                   |
 | --repo                                                     | The GitHub Action repository name                                                         | autodetected                   |
-| --prettier, --pretty                                       | Format the markdown using prettier formatter                                              | `true`                         |
+| --prettier, --pretty                                       | Format the generated sections using the prettier formatter                                | `true`                         |
 | --versioning:enabled, --versioning                         | Enable the update of the usage version to match the latest version                        | `true`                         |
 | --versioning:source, --version_source                      | How to detect the version: `git-tag`, `git-branch`, `git-sha`, `package-json`, `explicit` | `git-tag`                      |
 | --versioning:override, --version_override, --setversion    | Set a specific version to display in the README.md                                        | unset                          |
@@ -118,7 +119,8 @@ apply to the CLI and the Action alike.
 | --save                                                     | Save this config to `.ghadocs.json`                                                       | `false`                        |
 | --debug_config, --debug_nconf                              | Print out the resolved config with all values, then continue                              | off                            |
 
-To turn formatting off, pass the flag explicitly:
+To write the generated sections exactly as the tool composed them, pass the flag
+explicitly:
 
 ```sh
 npx github-action-readme-generator --pretty=false
@@ -267,7 +269,7 @@ value replaced by `***REDACTED***`. Keys whose names look sensitive (`auth`,
 <!-- start usage -->
 
 ```yaml
-- uses: bitflight-devops/github-action-readme-generator@v1.12.8
+- uses: bitflight-devops/github-action-readme-generator@v1.12.9
   with:
     # Description: The absolute or relative path to the `action.yml` file to read in
     # from.
@@ -297,7 +299,9 @@ value replaced by `***REDACTED***`. Keys whose names look sensitive (`auth`,
     # Default: false
     save: ""
 
-    # Description: Use `prettier` to pretty print the new README.md file
+    # Description: Use `prettier` to pretty print the sections this tool generates.
+    # Only the content between a section's start and end markers is formatted. The
+    # rest of the README.md file is left byte for byte as it was.
     #
     # Default: true
     pretty: ""
@@ -389,7 +393,7 @@ value replaced by `***REDACTED***`. Keys whose names look sensitive (`auth`,
 | <b><code>owner</code></b>                        | The GitHub Action repository owner, this field is autodetected by default.<br />Example: <code>bitflight-devops</code> or <code>your-gh-username</code>                                                                                                                                                                                                                                                                                                                                                                                                                                |                                           | **false**    |
 | <b><code>repo</code></b>                         | The GitHub Action repository name, this field is autodetected by default.<br />Example: <code>github-action-readme-generator</code>                                                                                                                                                                                                                                                                                                                                                                                                                                                    |                                           | **false**    |
 | <b><code>save</code></b>                         | Save the provided values in a <code>.ghadocs.json</code> file.<br />This will update any existing <code>.ghadocs.json</code> file that is in place.                                                                                                                                                                                                                                                                                                                                                                                                                                    | <code>false</code>                        | **false**    |
-| <b><code>pretty</code></b>                       | Use <code>prettier</code> to pretty print the new README.md file                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | <code>true</code>                         | **false**    |
+| <b><code>pretty</code></b>                       | Use <code>prettier</code> to pretty print the sections this tool generates.<br />Only the content between a section's start and end markers is formatted.<br />The rest of the README.md file is left byte for byte as it was.                                                                                                                                                                                                                                                                                                                                                         | <code>true</code>                         | **false**    |
 | <b><code>versioning_enabled</code></b>           | Enable the update of the usage version in the <code>uses:</code> example.<br />The version comes from whichever <code>version_source</code> selects. The default, <code>git-tag</code>, uses the latest git tag, and falls back to <code>package.json</code>, then to <code>$npm_package_version</code>, then to <code>0.0.0</code> when no tag is found — a shallow or tagless checkout takes that path.<br />Output if your action repo is <code>reviewdog/action-eslint</code> and the latest tag is <code>v1.0.1</code>:<br /><code>uses: reviewdog/action-eslint@v1.0.1</code>    | <code>true</code>                         | **false**    |
 | <b><code>version_override</code></b>             | Set a specific version to display in the README.md, maybe you want to use a major or minor version                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |                                           | **false**    |
 | <b><code>version_prefix</code></b>               | Prefix the version with this value, if it isn't already prefixed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | <code>v</code>                            | **false**    |

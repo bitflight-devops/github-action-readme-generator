@@ -23,10 +23,17 @@ marker pair is a breaking change even if every test passes.
 
 Treat marker boundaries as ownership boundaries for what the _generator_
 writes: every span it composes goes between a pair, and no new behaviour may
-depend on whole-document formatting. Prettier's pass is the one thing that
-reaches outside them — with `pretty` on (the default) it reformats the entire
-file, which is why `--pretty=false` is the setting that makes outside text
-byte-identical. Resolve formatter-scope changes through #668.
+depend on whole-document formatting. Prettier is held to the same boundary.
+`readme-editor.ts` extracts each span it replaced, formats that text on its
+own, and splices the result back, so the bytes outside a pair come through
+untouched at either `pretty` setting. `pretty` decides whether the generated
+spans are formatted, nothing wider.
+
+Two consequences for the formatter. Each span is formatted with no knowledge of
+the rest of the document, so nothing it produces may depend on surrounding
+content — a table's column padding is computed from that table alone. And a
+README this tool has never touched stays as its author left it, however
+unformatted: a first run's diff covers the marker sections and no other line.
 
 ## What is guaranteed, and what is prettier's
 
@@ -45,7 +52,7 @@ the committed README _look_ tidy comes from prettier afterwards.
 | **`__false__` rendered as `**false**`**                                            | **prettier**                                        |
 | **`key: ''` rendered as `key: ""`**                                                | **prettier**, and only when the fence is valid YAML |
 | **Trailing whitespace trimmed**                                                    | **prettier**                                        |
-| **Formatting of the whole file, generated spans and the user's text alike**        | **prettier**, and only with `pretty` on             |
+| **Formatting of the generated spans, and of nothing outside them**                 | **prettier**, and only with `pretty` on             |
 
 Practical consequence for tests: asserting padded table delimiters, `**false**`,
 or double-quoted YAML values is asserting _prettier's_ behaviour. Against a
@@ -53,6 +60,11 @@ third-party README those assertions prove nothing, because that repository may
 already run prettier itself. `scripts/verify-readme-contract.mjs` deliberately
 asserts none of them; `__tests__/integration-readme-contract.test.ts` does
 assert padding, and can only do so because its fixture starts as bare markers.
+
+What the verifier does assert about the formatter is its scope: it masks every
+marker span in the original and the generated README and compares what is left,
+so a run that rewrote a byte of the target's own prose fails against a real
+third-party repository.
 
 ## Convergence uses passes 2 and 3
 

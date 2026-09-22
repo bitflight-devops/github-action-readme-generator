@@ -35,6 +35,13 @@ export default class ReadmeEditor {
   private fileContent: string;
 
   /**
+   * The section tokens this editor has replaced, in the order they were
+   * replaced. `dumpToFile` formats these spans and nothing else — see
+   * `formatUpdatedSections`.
+   */
+  private readonly updatedSections = new Set<string>();
+
+  /**
    * Creates a new instance of `ReadmeEditor`.
    * @param {string} filePath - The path to the README file.
    */
@@ -109,18 +116,59 @@ export default class ReadmeEditor {
       this.fileContent = addNewlines
         ? `${beforeContent}\n\n${content}\n${afterContent}`
         : `${beforeContent}${content}${afterContent}`;
+      this.updatedSections.add(name);
+    }
+  }
+
+  /**
+   * Formats the span of one section in isolation and splices it back.
+   *
+   * The span is extracted in memory, trimmed, formatted on its own, and
+   * reassembled with the same surrounding newlines `updateSection` writes, so
+   * the markers and every byte outside them survive untouched.
+   * @param {string} name - The name of the section.
+   */
+  private async formatSection(name: string): Promise<void> {
+    const [startIndex, stopIndex] = this.getTokenIndexes(name);
+    if (!startIndex || !stopIndex) {
+      return;
+    }
+
+    const span = this.fileContent.slice(startIndex, stopIndex).trim();
+    const formatted = span === '' ? '' : (await formatMarkdown(span)).trim();
+
+    this.fileContent = `${this.fileContent.slice(0, startIndex)}${
+      formatted === '' ? '\n' : `\n\n${formatted}\n`
+    }${this.fileContent.slice(stopIndex)}`;
+  }
+
+  /**
+   * Formats every span this editor replaced, one span at a time.
+   *
+   * Each span is located again before it is formatted, because formatting the
+   * previous one moves the indexes of the spans after it.
+   * @returns {Promise<void>}
+   */
+  private async formatUpdatedSections(): Promise<void> {
+    for (const name of this.updatedSections) {
+      await this.formatSection(name);
     }
   }
 
   /**
    * Dumps the modified content back to the README file.
-   * @param {boolean} [prettier=true] - Run the result through prettier before
-   *   writing. Callers pass the resolved `pretty` input; it defaults to true so
-   *   constructing a ReadmeEditor directly keeps the formatting behaviour.
+   * @param {boolean} [prettier=true] - Run the replaced spans through prettier
+   *   before writing. Callers pass the resolved `pretty` input; it defaults to
+   *   true so constructing a ReadmeEditor directly keeps the formatting
+   *   behaviour. Text outside the markers is never formatted, whatever this
+   *   flag says — see `docs/tool-contract.md`.
    * @returns {Promise<void>}
    */
   async dumpToFile(prettier: boolean = true): Promise<void> {
-    const content = prettier ? await formatMarkdown(this.fileContent) : this.fileContent;
+    if (prettier) {
+      await this.formatUpdatedSections();
+    }
+    const content = this.fileContent;
     if (process.env.GITHUB_ACTIONS) {
       core.setOutput('readme_after', content);
     }

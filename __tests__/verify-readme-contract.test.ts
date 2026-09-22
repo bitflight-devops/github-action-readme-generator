@@ -800,6 +800,55 @@ describe('README contract verifier regressions', () => {
     ).toThrow();
   });
 
+  describe('content outside the markers', () => {
+    // Prose prettier would rewrite if the formatter reached outside a marker
+    // pair: a `*` bullet, `__bold__`, a run of blank lines, trailing spaces.
+    const PROSE = '* a bullet\n* another\n\n\n__bold__   \n\n';
+    const withProse = (readme: string): string => `${PROSE}${readme}${PROSE}`;
+
+    it("accepts a generation that left the user's text alone", () => {
+      const original = withProse(README);
+
+      expect(verify(original, ACTION, undefined, '.', original)).toContain(
+        'content outside the section markers is byte-identical to the original',
+      );
+    });
+
+    it('accepts a section body that changed while the surrounding text did not', () => {
+      const original = withProse(unformatted(README));
+
+      expect(verify(withProse(README), ACTION, undefined, '.', original)).toContain(
+        'content outside the section markers is byte-identical to the original',
+      );
+    });
+
+    // `verify` throws on a non-zero exit and the thrown message carries only
+    // the command line, so read the annotations the script printed instead —
+    // the point is which check failed, not that some check did.
+    const annotations = (run: () => string): string => {
+      try {
+        return run();
+      } catch (error) {
+        return String((error as { stdout?: string }).stdout ?? '');
+      }
+    };
+
+    it.each([
+      ['a bullet marker', '* a bullet', '- a bullet'],
+      ['bold emphasis', '__bold__', '**bold**'],
+      ['blank lines', '\n\n\n__bold__', '\n\n__bold__'],
+      ['trailing whitespace', '__bold__   ', '__bold__'],
+    ])('rejects a generation that rewrote %s outside the markers', (_label, from, to) => {
+      const original = withProse(README);
+      const rewritten = original.replace(from, to);
+
+      expect(() => verify(rewritten, ACTION, undefined, '.', original)).toThrow();
+      expect(annotations(() => verify(rewritten, ACTION, undefined, '.', original))).toContain(
+        'rewrote content outside the section markers',
+      );
+    });
+  });
+
   it('uses the generator plugin set and leaves unsupported fenced JavaScript unchanged', () => {
     const action = ACTION.replace(
       'description: __bold__',

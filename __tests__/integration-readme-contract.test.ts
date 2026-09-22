@@ -355,6 +355,33 @@ describe('README generation contract', () => {
       expect(inputsTable).toMatch(/\|-{3,}\|/);
     });
 
+    // The contract's load-bearing promise, end to end: the formatter runs on
+    // the spans this tool replaced and on nothing else, so a first run over an
+    // unformatted third-party README changes only the marker sections (#668).
+    // Every line below is one prettier rewrites when it reaches a whole
+    // document: `*` bullets become `-`, `__bold__` becomes `**bold**`, blank
+    // runs collapse, trailing spaces go, and an unpadded table gains padding.
+    it.each([true, false])("leaves the user's own text alone with pretty %s", async (pretty) => {
+      const prose = [
+        '* a bullet',
+        '* another',
+        '',
+        '',
+        '__bold__   ',
+        '',
+        '| a | b |',
+        '|---|---|',
+        '| a longer cell | x |',
+        '',
+      ].join('\n');
+      fs.writeFileSync(readmePath, `${prose}${README_WITH_MARKERS}${prose}`);
+
+      const readme = await generate(pretty);
+
+      expect(readme.startsWith(prose)).toBe(true);
+      expect(readme.endsWith(prose)).toBe(true);
+    });
+
     // Passes 2 and 3, never 1 and 2 — `docs/tool-contract.md` explains why
     // `updateContents` can leave pass 1 indexing the previous usage block.
     // This fixture happens to settle on pass 1, so a 1-vs-2 assertion passes

@@ -120,11 +120,13 @@ const fail = (message) => {
 
 /**
  * Mirrors `startTokenFormat` / `endTokenFormat` in `src/readme-editor.ts`,
- * including the `(^|[^\`\\])` guard, which is what stops a marker quoted inside
- * backticks or escaped with a backslash from being mistaken for a real one. A
- * README that documents the markers themselves carries several such decoys —
- * this repository's own does, both in a fenced example and in the generated
- * inputs table — and matching them reports a real section as empty.
+ * including the `(^|[^\`\\])` guard, which stops a marker quoted inline
+ * between backticks or escaped with a backslash from being mistaken for a real
+ * one — this repository's own generated inputs table carries such decoys, which
+ * matched would report a real section as empty. The guard reaches no further: a
+ * marker alone on its own line inside a fence is preceded by a newline, so it
+ * matches like any other. Which pair wins is then a pairing question, not a
+ * matching one — issue #691.
  */
 const guard = '(^|[^`\\\\])';
 
@@ -169,15 +171,40 @@ const generatedSections = [
   'badges',
 ];
 
+/** Every start and every end marker for a section, in document order. */
+const markersOf = (source, name) => ({
+  starts: [...source.matchAll(new RegExp(`${guard}<!--\\s+start\\s+${name}\\s+-->`, 'g'))],
+  ends: [...source.matchAll(new RegExp(`${guard}<!--\\s+end\\s+${name}\\s+-->`, 'g'))],
+});
+
 /**
- * The document with every section body replaced by its name.
+ * The span a section *owns*, which is not always the span the editor replaces.
+ *
+ * `sectionBounds` mirrors `src/readme-editor.ts`, so a mask built on it cannot
+ * see a span the editor paired wrongly — the mask would hide exactly the bytes
+ * the run destroyed. This pairs the last start marker with the first end marker
+ * after it, which is what a marker pair means, and disagreeing with the editor
+ * is the signal rather than something to reproduce.
+ */
+const ownedBounds = (source, name) => {
+  const { starts, ends } = markersOf(source, name);
+  const start = starts.at(-1);
+  if (!start) return null;
+  const from = start.index + start[0].length;
+  const end = ends.find((match) => match.index >= from);
+  if (!end) return null;
+  return [from, end.index];
+};
+
+/**
+ * The document with every section's owned span replaced by its name.
  *
  * What survives is the text the tool does not own, so two masked documents
  * compare equal exactly when the generation left the user's text alone.
  */
 const maskSections = (source) => {
   const bounds = generatedSections
-    .map((name) => ({ name, at: sectionBounds(source, name) }))
+    .map((name) => ({ name, at: ownedBounds(source, name) }))
     .filter((entry) => entry.at !== null)
     .sort((a, b) => a.at[0] - b.at[0]);
 
@@ -207,13 +234,34 @@ if (originalReadme !== null) {
     }
   }
 
+  // A marker the run wrote into a span is not a formatting question: every
+  // later run pairs markers differently, so the document stops meaning what it
+  // meant. Reported on its own, because the mask below would otherwise blame
+  // the user's text for a boundary the generated content moved.
+  let injected = false;
+  for (const name of generatedSections) {
+    const before = markersOf(originalReadme, name);
+    const after = markersOf(readme, name);
+    for (const [kind, key] of [
+      ['start', 'starts'],
+      ['end', 'ends'],
+    ]) {
+      if (after[key].length > before[key].length) {
+        injected = true;
+        fail(`the generated ${name} section introduced an extra ${kind} marker`);
+      }
+    }
+  }
+
   // The contract's load-bearing promise: content outside the markers is the
   // user's. Generation replaces marker spans and formats those spans alone, so
   // every other byte — prose, tables, fences, trailing whitespace — must come
   // through untouched, whatever the `pretty` setting. See issue #668.
   const maskedOriginal = maskSections(originalReadme);
   const maskedGenerated = maskSections(readme);
-  if (maskedGenerated === maskedOriginal) {
+  if (injected) {
+    skip('skipping the outside-content check: the marker boundaries moved');
+  } else if (maskedGenerated === maskedOriginal) {
     ok('content outside the section markers is byte-identical to the original');
   } else {
     fail(

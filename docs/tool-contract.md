@@ -33,7 +33,14 @@ Two consequences for the formatter. Each span is formatted with no knowledge of
 the rest of the document, so nothing it produces may depend on surrounding
 content — a table's column padding is computed from that table alone. And a
 README this tool has never touched stays as its author left it, however
-unformatted: a first run's diff covers the marker sections and no other line.
+unformatted: a first run's diff covers the spans and no other line.
+
+Which bytes are a span is a separate question, decided by marker pairing rather
+than by the formatter. `getTokenIndexes` pairs the last start marker with the
+last end marker in the document, so a decoy marker placed after a real pair
+widens the span past its end marker
+([#691](https://github.com/bitflight-devops/github-action-readme-generator/issues/691)).
+Code against the pairing that rule gives you until it is fixed.
 
 ## What is guaranteed, and what is prettier's
 
@@ -61,10 +68,14 @@ already run prettier itself. `scripts/verify-readme-contract.mjs` deliberately
 asserts none of them; `__tests__/integration-readme-contract.test.ts` does
 assert padding, and can only do so because its fixture starts as bare markers.
 
-What the verifier does assert about the formatter is its scope: it masks every
-marker span in the original and the generated README and compares what is left,
-so a run that rewrote a byte of the target's own prose fails against a real
-third-party repository.
+What the verifier does assert about the formatter is its scope: it masks each
+section's span in the original and the generated README and compares what is
+left. The mask pairs the last start marker with the first end marker after it,
+deliberately not reusing `getTokenIndexes` — a mask built on the editor's own
+pairing would hide the very bytes a mis-paired span destroyed, so the two
+disagreeing is the signal. A run that moved a marker boundary is reported as
+that, not as rewritten prose, because the boundary decides which text the
+comparison is even about.
 
 ## Convergence uses passes 2 and 3
 

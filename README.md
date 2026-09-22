@@ -77,6 +77,14 @@ first run on a file that was not already prettier-formatted changes the marker
 sections and no other line. Run with `--pretty=false` to have the generated
 sections written exactly as the tool composed them.
 
+One caveat, and it is about the markers rather than the formatter: if your
+README repeats a section's end marker after the real pair — in a fenced example,
+say — the tool pairs the start marker with the later one and replaces everything
+between. Keep marker examples above your generated sections, or quote them
+inline between backticks, until
+[issue #691](https://github.com/bitflight-devops/github-action-readme-generator/issues/691)
+is fixed.
+
 **Only yaml and markdown code blocks are reformatted; every other fence is left
 as you wrote it.** Formatting needs a prettier plugin per language, and this tool
 ships only the two an action's README is known in advance to hold. Reformatted:

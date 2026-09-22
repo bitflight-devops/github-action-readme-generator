@@ -806,6 +806,17 @@ describe('README contract verifier regressions', () => {
     const PROSE = '* a bullet\n* another\n\n\n__bold__   \n\n';
     const withProse = (readme: string): string => `${PROSE}${readme}${PROSE}`;
 
+    // `verify` throws on a non-zero exit and the thrown message carries only
+    // the command line, so read the annotations the script printed instead —
+    // the point is which check failed, not that some check did.
+    const annotations = (run: () => string): string => {
+      try {
+        return run();
+      } catch (error) {
+        return String((error as { stdout?: string }).stdout ?? '');
+      }
+    };
+
     it("accepts a generation that left the user's text alone", () => {
       const original = withProse(README);
 
@@ -822,16 +833,68 @@ describe('README contract verifier regressions', () => {
       );
     });
 
-    // `verify` throws on a non-zero exit and the thrown message carries only
-    // the command line, so read the annotations the script printed instead —
-    // the point is which check failed, not that some check did.
-    const annotations = (run: () => string): string => {
-      try {
-        return run();
-      } catch (error) {
-        return String((error as { stdout?: string }).stdout ?? '');
-      }
-    };
+    // The mask must not reuse the editor's marker pairing. If it did, a span
+    // the editor paired wrongly would be masked out by construction, hiding
+    // exactly the bytes that run destroyed — see issue #691.
+    it('rejects a run whose span swallowed the prose after the real end marker', () => {
+      const original = [
+        '# Decoy',
+        '',
+        '<!-- start inputs -->',
+        '| old | table |',
+        '<!-- end inputs -->',
+        '',
+        'USER PROSE THE TOOL MUST NOT TOUCH',
+        '',
+        '```text',
+        '<!-- end inputs -->',
+        '```',
+        '',
+      ].join('\n');
+      // What the editor writes when it pairs the start marker with the decoy
+      // end marker inside the fence: everything between them is replaced.
+      const swallowed = [
+        '# Decoy',
+        '',
+        '<!-- start inputs -->',
+        '',
+        '| **Input** | **Description** |',
+        '',
+        '<!-- end inputs -->',
+        '```',
+        '',
+      ].join('\n');
+
+      expect(() => verify(swallowed, ACTION, undefined, '.', original)).toThrow();
+      expect(annotations(() => verify(swallowed, ACTION, undefined, '.', original))).toContain(
+        'rewrote content outside the section markers',
+      );
+    });
+
+    // A marker the run wrote into a span moves the boundary, so blaming the
+    // user's text for the difference would point at the wrong line.
+    it('names the injected marker instead of blaming the surrounding text', () => {
+      const original = [
+        '# I',
+        '',
+        'USER PROSE',
+        '',
+        '<!-- start inputs -->',
+        '<!-- end inputs -->',
+        '',
+        'TAIL',
+        '',
+      ].join('\n');
+      const injected = original.replace(
+        '<!-- start inputs -->\n',
+        '<!-- start inputs -->\n\nsee <!-- start inputs --> for the pair\n\n',
+      );
+
+      const output = annotations(() => verify(injected, ACTION, undefined, '.', original));
+
+      expect(output).toContain('the generated inputs section introduced an extra start marker');
+      expect(output).not.toContain('rewrote content outside the section markers');
+    });
 
     it.each([
       ['a bullet marker', '* a bullet', '- a bullet'],

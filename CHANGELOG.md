@@ -1,3 +1,10 @@
+## [1.12.9](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.8...v1.12.9) (2026-09-22)
+
+
+### Bug Fixes
+
+* **usage:** comment continuation lines of a multi-line input default ([#687](https://github.com/bitflight-devops/github-action-readme-generator/issues/687)) ([552b645](https://github.com/bitflight-devops/github-action-readme-generator/commit/552b6454837940ecdb5ef53c94e86b7016f19a78))
+
 ## [1.12.8](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.7...v1.12.8) (2026-08-17)
 
 

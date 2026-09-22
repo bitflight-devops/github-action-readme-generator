@@ -47,6 +47,18 @@ describe('updateUsage', () => {
     expect(mockUpdateSection).toHaveBeenCalledWith('usage', expect.any(Array));
   });
 
+  it('separates a paragraph description from the Default line with a blank comment line', async () => {
+    inputsWith({ a: { description: 'First paragraph.\n\nSecond paragraph.', default: 'x' } });
+
+    const result = await updateUsage('usage', mockInputs);
+    const lines = result.usage.split('\n');
+    const defaultIndex = lines.findIndex((line) => line.includes('# Default: x'));
+
+    expect(lines).toContain('    # Second paragraph.');
+    expect(defaultIndex).toBeGreaterThan(0);
+    expect(lines[defaultIndex - 1]).toMatch(/^ *# *$/);
+  });
+
   it('emits parseable YAML for a multi-line default', async () => {
     inputsWith({ multi: { description: 'has a multi-line default', default: 'line1\nline2' } });
 

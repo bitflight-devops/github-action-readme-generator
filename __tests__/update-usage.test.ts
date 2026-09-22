@@ -19,6 +19,7 @@ describe('updateUsage', () => {
   let mockInputs: Inputs;
   let mockUpdateSection: ReturnType<typeof vi.fn>;
 
+  /** Replaces the mock action's declared inputs with the given map. */
   function inputsWith(
     actionInputs: Record<string, { description: string; default?: string }>,
   ): void {

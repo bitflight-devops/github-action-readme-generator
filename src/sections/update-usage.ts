@@ -5,6 +5,14 @@ import LogTask from '../logtask/index.js';
 import { wrapDescription } from '../prettier.js';
 
 type DescriptionType = Record<string, string[]>;
+
+/**
+ * Renders the `usage` section: a fenced workflow snippet naming every action input,
+ * each preceded by its description and default as YAML comments.
+ * @param {ReadmeSection} sectionToken - The README marker pair to write the section into.
+ * @param {Inputs} inputs - The parsed action metadata and the README editor to write with.
+ * @returns {Promise<Record<string, string>>} The rendered section, keyed by its section token.
+ */
 export default async function updateUsage(
   sectionToken: ReadmeSection,
   inputs: Inputs,

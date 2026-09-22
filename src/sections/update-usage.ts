@@ -29,6 +29,8 @@ export default async function updateUsage(
   const actionReference = `${actionName}@${versionString}`;
 
   const indent = '    # ';
+  const defaultLabel = 'Default: ';
+  const defaultHang = ' '.repeat(defaultLabel.length);
   // Build the new README
   const content: string[] = [];
   // Build the new usage section
@@ -69,10 +71,13 @@ export default async function updateUsage(
 
         if (input.default !== undefined) {
           // Default. Every line stays inside the comment: a bare continuation line
-          // sits at column 0 and the fence stops being YAML.
-          const defaultLines = `${input.default}`.split(/\r?\n/);
-          defaultLines[0] = `Default: ${defaultLines[0]}`;
-          content.push(...defaultLines.map((line) => `${indent}${line}`.trimEnd()));
+          // sits at column 0 and the fence stops being YAML. Continuation lines hang
+          // under the value, so a multi-line default does not read as more prose.
+          const [firstLine, ...rest] = `${input.default}`.split(/\r?\n/);
+          content.push(`${indent}${defaultLabel}${firstLine}`.trimEnd());
+          for (const line of rest) {
+            content.push(`${indent}${defaultHang}${line}`.trimEnd());
+          }
         }
 
         // Input name

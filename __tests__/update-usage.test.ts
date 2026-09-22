@@ -47,6 +47,19 @@ describe('updateUsage', () => {
     expect(mockUpdateSection).toHaveBeenCalledWith('usage', expect.any(Array));
   });
 
+  it('hangs a multi-line default under its value, not at description column', async () => {
+    inputsWith({
+      a: { description: 'Long prose.\n\nAnother paragraph.', default: 'first\nsecond' },
+    });
+
+    const result = await updateUsage('usage', mockInputs);
+    const lines = result.usage.split('\n');
+
+    expect(lines).toContain('    # Another paragraph.');
+    expect(lines).toContain('    #          second');
+    expect(lines).not.toContain('    # second');
+  });
+
   it('separates a paragraph description from the Default line with a blank comment line', async () => {
     inputsWith({ a: { description: 'First paragraph.\n\nSecond paragraph.', default: 'x' } });
 
@@ -75,7 +88,7 @@ describe('updateUsage', () => {
     const result = await updateUsage('usage', mockInputs);
 
     expect(result.usage).toContain('    # Default: line1');
-    expect(result.usage).toContain('    # line2');
+    expect(result.usage).toContain('    #          line2');
     expect(result.usage).not.toMatch(/^line2$/m);
   });
 
@@ -84,6 +97,6 @@ describe('updateUsage', () => {
 
     const result = await updateUsage('usage', mockInputs);
 
-    expect(result.usage).toContain('\n    # Default: first\n    #\n    # second\n');
+    expect(result.usage).toContain('\n    # Default: first\n    #\n    #          second\n');
   });
 });

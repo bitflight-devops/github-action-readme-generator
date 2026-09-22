@@ -69,19 +69,18 @@ already run prettier itself. `scripts/verify-readme-contract.mjs` deliberately
 asserts none of them; `__tests__/integration-readme-contract.test.ts` does
 assert padding, and can only do so because its fixture starts as bare markers.
 
-What the verifier does assert about the formatter is its scope: it masks each
-section's span in the original and the generated README and compares what is
-left. The mask pairs the last start marker with the first end marker after it,
-deliberately not reusing `getTokenIndexes` — a mask built on the editor's own
-pairing would hide the very bytes a mis-paired span destroyed, so the two
-disagreeing is the signal.
+What the verifier does assert about the formatter is its scope, and it asks
+only the original where the boundaries are. It cuts the original into the
+chunks outside its section spans, each carrying the markers that bound it, then
+walks the generated README: those chunks, in order, one generated span between
+each neighbouring pair, nothing left over. Asking the generated document where
+its own markers are is what would measure a run against a boundary that run had
+moved — a swallowed paragraph or a duplicated tail would then sit inside the
+span and go unseen. In the walk they have nowhere to go.
 
-A run that adds a marker to a span is reported as that as well, because a
-moved boundary and rewritten prose are different repairs. Such a section is
-then masked at its widest in both documents rather than dropped, so it cannot
-stand the comparison down for the sections whose boundaries held. The extra
-report is the only thing keyed to the marker counts, and counts can stay level
-while a boundary moves; the comparison is what catches the damage either way.
+A marker the generation writes into a span is reported separately, because it
+competes to be that section's boundary on the next run. It fails the check when
+that section has a pair to steal, and is a warning when it has none.
 
 ## Convergence uses passes 2 and 3
 

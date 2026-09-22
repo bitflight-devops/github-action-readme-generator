@@ -873,7 +873,7 @@ describe('README contract verifier regressions', () => {
 
     // A marker the run wrote into a span moves the boundary, so blaming the
     // user's text for the difference would point at the wrong line.
-    it('names the injected marker instead of blaming the surrounding text', () => {
+    it('names the marker left in the span instead of blaming the surrounding text', () => {
       const original = [
         '# I',
         '',
@@ -892,7 +892,9 @@ describe('README contract verifier regressions', () => {
 
       const output = annotations(() => verify(injected, ACTION, undefined, '.', original));
 
-      expect(output).toContain('the generated inputs section introduced an extra start marker');
+      expect(output).toContain(
+        'the generated inputs section contains an unguarded start inputs marker',
+      );
       expect(output).not.toContain('rewrote content outside the section markers');
     });
 
@@ -933,8 +935,38 @@ describe('README contract verifier regressions', () => {
 
       const output = annotations(() => verify(both, ACTION, undefined, '.', original));
 
-      expect(output).toContain('the generated inputs section introduced an extra start marker');
+      expect(output).toContain(
+        'the generated inputs section contains an unguarded start inputs marker',
+      );
       expect(output).toContain('rewrote content outside the section markers');
+    });
+
+    // The shape that showed masking is the wrong primitive: the run duplicates
+    // the user's tail, and a check that masks each document by its own markers
+    // measures the run against the boundary the run moved, then certifies the
+    // result byte-identical. The walk has nowhere to put the leftover.
+    it("rejects a run that duplicated the user's tail", () => {
+      const original = [
+        '# Doc',
+        '',
+        '<!-- start inputs -->',
+        'old table',
+        '<!-- end inputs -->',
+        '',
+        'TAIL PROSE MUST SURVIVE ONCE',
+        '',
+        '```markdown',
+        '<!-- start inputs -->',
+        '```',
+        '',
+      ].join('\n');
+      const tail = original.slice(original.indexOf('<!-- end inputs -->'));
+      const duplicated = `${original}${tail}`;
+
+      const output = annotations(() => verify(duplicated, ACTION, undefined, '.', original));
+
+      expect(output).not.toContain('byte-identical');
+      expect(output).toContain('outside the section markers');
     });
 
     it.each([

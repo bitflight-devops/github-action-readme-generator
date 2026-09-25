@@ -24,6 +24,25 @@ export const startTokenFormat = '(^|[^`\\\\])<!--\\s+start\\s+%s\\s+-->';
  */
 export const endTokenFormat = '(^|[^`\\\\])<!--\\s+end\\s+%s\\s+-->';
 
+/**
+ * What `updateSection` wrote into one section: the trimmed content and the
+ * `addNewlines` setting it was laid out under.
+ */
+interface UpdatedSection {
+  content: string;
+  addNewlines: boolean;
+}
+
+/**
+ * Lays out section content the way it sits between its markers.
+ * @param {string} content - The trimmed section content.
+ * @param {boolean} addNewlines - Whether to pad the content with newlines.
+ * @returns {string} - The text that goes between the markers.
+ */
+function layoutSpan(content: string, addNewlines: boolean): string {
+  return addNewlines ? `\n\n${content}\n` : content;
+}
+
 export default class ReadmeEditor {
   private log = new LogTask('ReadmeEditor');
 
@@ -35,12 +54,11 @@ export default class ReadmeEditor {
   private fileContent: string;
 
   /**
-   * The section tokens this editor has replaced, in the order they were
-   * replaced, each against the `addNewlines` it was replaced under.
-   * `dumpToFile` formats these spans and nothing else — see
-   * `formatUpdatedSections`.
+   * The section tokens this editor has replaced, each against the content it
+   * wrote and the `addNewlines` it wrote it under. `dumpToFile` formats these
+   * spans and nothing else — see `formatUpdatedSections`.
    */
-  private readonly updatedSections = new Map<string, boolean>();
+  private readonly updatedSections = new Map<string, UpdatedSection>();
 
   /**
    * Creates a new instance of `ReadmeEditor`.
@@ -114,50 +132,69 @@ export default class ReadmeEditor {
       const beforeContent = this.fileContent.slice(0, startIndex);
       const afterContent = this.fileContent.slice(stopIndex);
 
-      this.fileContent = addNewlines
-        ? `${beforeContent}\n\n${content}\n${afterContent}`
-        : `${beforeContent}${content}${afterContent}`;
-      this.updatedSections.set(name, addNewlines);
+      this.fileContent = `${beforeContent}${layoutSpan(content, addNewlines)}${afterContent}`;
+      this.updatedSections.set(name, { content, addNewlines });
     }
   }
 
   /**
    * Formats the span of one section in isolation and splices it back.
    *
-   * The span is extracted in memory, trimmed, formatted on its own, and
-   * reassembled with the same surrounding newlines `updateSection` wrote, so
-   * the markers and every byte outside them survive untouched.
+   * The content is formatted on its own and reassembled with the same
+   * surrounding newlines `updateSection` wrote, so the markers and every byte
+   * outside them survive untouched.
+   *
+   * The span is formatted only while its markers still bound exactly the text
+   * `updateSection` wrote. The markers are paired again here, after every
+   * section has been written, and a marker another section wrote can win that
+   * pairing; the text between such a pair is not this tool's to format.
    * @param {string} name - The name of the section.
-   * @param {boolean} addNewlines - The setting the section was replaced under.
-   *   Formatting has to reassemble the span the way `updateSection` did, or it
-   *   hands back a layout the caller asked not to have.
+   * @param {UpdatedSection} section - What `updateSection` wrote. Formatting
+   *   has to reassemble the span the way `updateSection` did, or it hands back
+   *   a layout the caller asked not to have.
    */
-  private async formatSection(name: string, addNewlines: boolean): Promise<void> {
+  private async formatSection(name: string, section: UpdatedSection): Promise<void> {
+    const { content, addNewlines } = section;
     const [startIndex, stopIndex] = this.getTokenIndexes(name);
     if (!startIndex || !stopIndex) {
       return;
     }
 
-    const span = this.fileContent.slice(startIndex, stopIndex).trim();
-    const formatted = span === '' ? '' : (await formatMarkdown(span)).trim();
-    const padded = formatted === '' ? '\n' : `\n\n${formatted}\n`;
+    if (
+      startIndex > stopIndex ||
+      this.fileContent.slice(startIndex, stopIndex) !== layoutSpan(content, addNewlines)
+    ) {
+      this.log.warn(
+        `The '${name}' markers no longer bound the text written to them. Leaving the section unformatted`,
+      );
+      return;
+    }
 
-    this.fileContent = `${this.fileContent.slice(0, startIndex)}${
-      addNewlines ? padded : formatted
-    }${this.fileContent.slice(stopIndex)}`;
+    const formatted = content === '' ? '' : (await formatMarkdown(content)).trim();
+    let span = formatted;
+    if (addNewlines) {
+      span = formatted === '' ? '\n' : layoutSpan(formatted, addNewlines);
+    }
+
+    this.fileContent = `${this.fileContent.slice(0, startIndex)}${span}${this.fileContent.slice(
+      stopIndex,
+    )}`;
   }
 
   /**
    * Formats every span this editor replaced, one span at a time.
    *
    * Each span is located again before it is formatted, because formatting the
-   * previous one moves the indexes of the spans after it.
+   * previous one moves the indexes of the spans after it. A formatted span no
+   * longer holds the text `updateSection` wrote, so it is forgotten once
+   * formatted.
    * @returns {Promise<void>}
    */
   private async formatUpdatedSections(): Promise<void> {
-    for (const [name, addNewlines] of this.updatedSections) {
-      await this.formatSection(name, addNewlines);
+    for (const [name, section] of this.updatedSections) {
+      await this.formatSection(name, section);
     }
+    this.updatedSections.clear();
   }
 
   /**

@@ -136,5 +136,50 @@ describe('ReadmeEditor', () => {
 
       expect(read()).toBe(formatted);
     });
+
+    // Each section's markers are paired again when it is formatted, after
+    // every section has been written. A marker that another section wrote into
+    // its own span can win that pairing, and the text between such a pair is
+    // not the tool's to format.
+    describe('when a later section writes one of its markers', () => {
+      const layout = (first: string, second: string): string =>
+        [
+          `<!-- start ${first} -->`,
+          `<!-- end ${first} -->`,
+          '',
+          USER_PROSE,
+          '',
+          `<!-- start ${second} -->`,
+          `<!-- end ${second} -->`,
+          '',
+        ].join('\n');
+
+      it('does not repeat text when the marker is a start marker', async () => {
+        fs.writeFileSync(readmePath, layout('inputs', 'description'), 'utf8');
+        const editor = new ReadmeEditor(readmePath);
+        editor.updateSection('inputs', UNALIGNED);
+        editor.updateSection('description', 'Add <!-- start inputs --> to your README');
+        const written = editor.getReadmeContent();
+
+        await editor.dumpToFile();
+
+        expect(read()).toBe(written);
+      });
+
+      it('leaves the text outside the markers alone when the marker is an end marker', async () => {
+        fs.writeFileSync(readmePath, layout('branding', 'usage'), 'utf8');
+        const editor = new ReadmeEditor(readmePath);
+        editor.updateSection('branding', '<img src="x" />');
+        editor.updateSection(
+          'usage',
+          ['```yaml', '# `<!-- start branding --><!-- end branding -->`', '```'].join('\n'),
+        );
+        const written = editor.getReadmeContent();
+
+        await editor.dumpToFile();
+
+        expect(read()).toBe(written);
+      });
+    });
   });
 });

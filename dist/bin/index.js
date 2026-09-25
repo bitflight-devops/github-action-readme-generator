@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import * as child from "child_process";
 import { setTimeout as setTimeout$1 } from "timers";
 import process$1 from "node:process";
-import os$1, { EOL as EOL$1 } from "node:os";
+import os$1 from "node:os";
 import tty from "node:tty";
 import { execFileSync, execSync } from "node:child_process";
 //#region \0rolldown/runtime.js
@@ -67023,13 +67023,50 @@ const startTokenFormat = "(^|[^`\\\\])<!--\\s+start\\s+%s\\s+-->";
 * The format for the end token of a section.
 */
 const endTokenFormat = "(^|[^`\\\\])<!--\\s+end\\s+%s\\s+-->";
+/**
+* Lays out section content the way it sits between its markers.
+* @param {string} content - The trimmed section content.
+* @param {boolean} addNewlines - Whether to pad the content with newlines.
+* @returns {string} - The text that goes between the markers.
+*/
+function layoutSpan(content, addNewlines) {
+	return addNewlines ? `\n\n${content}\n` : content;
+}
+/**
+* True when every line break in `text` is CRLF, and there is at least one.
+*
+* Only a document that is CRLF throughout is edited as CRLF. Removing the `\r`
+* before each `\n` and adding it back is then an exact round trip, so the
+* bytes outside the markers survive. A document that mixes the two is left as
+* it is, since no single ending would reproduce it.
+* @param {string} text - The document.
+* @returns {boolean} - Whether the document uses CRLF line endings.
+*/
+function usesCrlf(text) {
+	return text.includes("\r\n") && !/(^|[^\r])\n/.test(text);
+}
 var ReadmeEditor = class {
 	log = new LogTask("ReadmeEditor");
 	/**
 	* The path to the README file.
 	*/
 	filePath;
+	/**
+	* The document with LF line endings, whatever the file uses. Every edit and
+	* every formatter pass works on LF; `dumpToFile` restores the file's own
+	* ending on the way out.
+	*/
 	fileContent;
+	/**
+	* Whether the file on disk is CRLF throughout — see `usesCrlf`.
+	*/
+	crlf = false;
+	/**
+	* The padded sections this editor has replaced, each against the content it
+	* wrote. `dumpToFile` formats these spans and nothing else — see
+	* `formatUpdatedSections`.
+	*/
+	updatedSections = /* @__PURE__ */ new Map();
 	/**
 	* Creates a new instance of `ReadmeEditor`.
 	* @param {string} filePath - The path to the README file.
@@ -67038,15 +67075,17 @@ var ReadmeEditor = class {
 		this.filePath = filePath;
 		try {
 			fs$3.accessSync(filePath);
-			this.fileContent = fs$3.readFileSync(filePath, "utf8");
-			if (process.env.GITHUB_ACTIONS) setOutput("readme_before", this.fileContent);
+			const raw = fs$3.readFileSync(filePath, "utf8");
+			if (process.env.GITHUB_ACTIONS) setOutput("readme_before", raw);
+			this.crlf = usesCrlf(raw);
+			this.fileContent = this.crlf ? raw.replaceAll("\r\n", "\n") : raw;
 		} catch (error) {
 			this.log.fail(`Readme at '${filePath}' does not exist.`);
 			throw error;
 		}
 	}
 	/**
-	* Gets the current README content.
+	* Gets the current README content, with LF line endings.
 	* @returns {string} - The README file content.
 	*/
 	getReadmeContent() {
@@ -67081,24 +67120,66 @@ var ReadmeEditor = class {
 	*/
 	updateSection(name, providedContent, addNewlines = true) {
 		const log = new LogTask(name);
-		const content = (Array.isArray(providedContent) ? providedContent.join(EOL$1) : providedContent ?? "").trim();
+		const content = (Array.isArray(providedContent) ? providedContent.join("\n") : providedContent ?? "").replaceAll("\r\n", "\n").trim();
 		log.info(`Looking for the ${name} token in ${this.filePath}`);
 		const [startIndex, stopIndex] = this.getTokenIndexes(name, log);
 		if (startIndex && stopIndex) {
 			const beforeContent = this.fileContent.slice(0, startIndex);
 			const afterContent = this.fileContent.slice(stopIndex);
-			this.fileContent = addNewlines ? `${beforeContent}\n\n${content}\n${afterContent}` : `${beforeContent}${content}${afterContent}`;
+			this.fileContent = `${beforeContent}${layoutSpan(content, addNewlines)}${afterContent}`;
+			if (addNewlines) this.updatedSections.set(name, content);
 		}
 	}
 	/**
+	* Formats the span of one section in isolation and splices it back.
+	*
+	* The content is formatted on its own and reassembled with the same
+	* surrounding newlines `updateSection` wrote, so the markers and every byte
+	* outside them survive untouched.
+	*
+	* The span is formatted only while its markers still bound exactly the text
+	* `updateSection` wrote. The markers are paired again here, after every
+	* section has been written, and a marker another section wrote can win that
+	* pairing; the text between such a pair is not this tool's to format.
+	* @param {string} name - The name of the section.
+	* @param {string} content - The content `updateSection` wrote, padded.
+	*/
+	async formatSection(name, content) {
+		const [startIndex, stopIndex] = this.getTokenIndexes(name);
+		if (!startIndex || !stopIndex) return;
+		if (startIndex > stopIndex || this.fileContent.slice(startIndex, stopIndex) !== layoutSpan(content, true)) {
+			this.log.warn(`The '${name}' markers no longer bound the text written to them. Leaving the section unformatted`);
+			return;
+		}
+		const formatted = content === "" ? "" : (await formatMarkdown(content)).trim();
+		const span = formatted === "" ? "\n" : layoutSpan(formatted, true);
+		this.fileContent = `${this.fileContent.slice(0, startIndex)}${span}${this.fileContent.slice(stopIndex)}`;
+	}
+	/**
+	* Formats every span this editor replaced, one span at a time.
+	*
+	* Each span is located again before it is formatted, because formatting the
+	* previous one moves the indexes of the spans after it. A formatted span no
+	* longer holds the text `updateSection` wrote, so it is forgotten once
+	* formatted.
+	* @returns {Promise<void>}
+	*/
+	async formatUpdatedSections() {
+		for (const [name, content] of this.updatedSections) await this.formatSection(name, content);
+		this.updatedSections.clear();
+	}
+	/**
 	* Dumps the modified content back to the README file.
-	* @param {boolean} [prettier=true] - Run the result through prettier before
-	*   writing. Callers pass the resolved `pretty` input; it defaults to true so
-	*   constructing a ReadmeEditor directly keeps the formatting behaviour.
+	* @param {boolean} [prettier=true] - Run the replaced spans through prettier
+	*   before writing. Callers pass the resolved `pretty` input; it defaults to
+	*   true so constructing a ReadmeEditor directly keeps the formatting
+	*   behaviour. Text outside the markers is never formatted, whatever this
+	*   flag says — see `docs/tool-contract.md`.
 	* @returns {Promise<void>}
 	*/
 	async dumpToFile(prettier = true) {
-		const content = prettier ? await formatMarkdown(this.fileContent) : this.fileContent;
+		if (prettier) await this.formatUpdatedSections();
+		const content = this.crlf ? this.fileContent.replaceAll("\n", "\r\n") : this.fileContent;
 		if (process.env.GITHUB_ACTIONS) setOutput("readme_after", content);
 		return fs$3.promises.writeFile(this.filePath, content, "utf8");
 	}

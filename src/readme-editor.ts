@@ -24,15 +24,6 @@ export const startTokenFormat = '(^|[^`\\\\])<!--\\s+start\\s+%s\\s+-->';
 export const endTokenFormat = '(^|[^`\\\\])<!--\\s+end\\s+%s\\s+-->';
 
 /**
- * What `updateSection` wrote into one section: the trimmed content and the
- * `addNewlines` setting it was laid out under.
- */
-interface UpdatedSection {
-  content: string;
-  addNewlines: boolean;
-}
-
-/**
  * Lays out section content the way it sits between its markers.
  * @param {string} content - The trimmed section content.
  * @param {boolean} addNewlines - Whether to pad the content with newlines.
@@ -77,11 +68,11 @@ export default class ReadmeEditor {
   private readonly crlf: boolean = false;
 
   /**
-   * The section tokens this editor has replaced, each against the content it
-   * wrote and the `addNewlines` it wrote it under. `dumpToFile` formats these
-   * spans and nothing else — see `formatUpdatedSections`.
+   * The padded sections this editor has replaced, each against the content it
+   * wrote. `dumpToFile` formats these spans and nothing else — see
+   * `formatUpdatedSections`.
    */
-  private readonly updatedSections = new Map<string, UpdatedSection>();
+  private readonly updatedSections = new Map<string, string>();
 
   /**
    * Creates a new instance of `ReadmeEditor`.
@@ -161,7 +152,12 @@ export default class ReadmeEditor {
       const afterContent = this.fileContent.slice(stopIndex);
 
       this.fileContent = `${beforeContent}${layoutSpan(content, addNewlines)}${afterContent}`;
-      this.updatedSections.set(name, { content, addNewlines });
+      // An unpadded span sits inline, and formatting it as a Markdown document
+      // would apply block rules to inline text, so only padded spans are kept
+      // for the formatter.
+      if (addNewlines) {
+        this.updatedSections.set(name, content);
+      }
     }
   }
 
@@ -177,12 +173,9 @@ export default class ReadmeEditor {
    * section has been written, and a marker another section wrote can win that
    * pairing; the text between such a pair is not this tool's to format.
    * @param {string} name - The name of the section.
-   * @param {UpdatedSection} section - What `updateSection` wrote. Formatting
-   *   has to reassemble the span the way `updateSection` did, or it hands back
-   *   a layout the caller asked not to have.
+   * @param {string} content - The content `updateSection` wrote, padded.
    */
-  private async formatSection(name: string, section: UpdatedSection): Promise<void> {
-    const { content, addNewlines } = section;
+  private async formatSection(name: string, content: string): Promise<void> {
     const [startIndex, stopIndex] = this.getTokenIndexes(name);
     if (!startIndex || !stopIndex) {
       return;
@@ -190,7 +183,7 @@ export default class ReadmeEditor {
 
     if (
       startIndex > stopIndex ||
-      this.fileContent.slice(startIndex, stopIndex) !== layoutSpan(content, addNewlines)
+      this.fileContent.slice(startIndex, stopIndex) !== layoutSpan(content, true)
     ) {
       this.log.warn(
         `The '${name}' markers no longer bound the text written to them. Leaving the section unformatted`,
@@ -199,10 +192,7 @@ export default class ReadmeEditor {
     }
 
     const formatted = content === '' ? '' : (await formatMarkdown(content)).trim();
-    let span = formatted;
-    if (addNewlines) {
-      span = formatted === '' ? '\n' : layoutSpan(formatted, addNewlines);
-    }
+    const span = formatted === '' ? '\n' : layoutSpan(formatted, true);
 
     this.fileContent = `${this.fileContent.slice(0, startIndex)}${span}${this.fileContent.slice(
       stopIndex,
@@ -219,8 +209,8 @@ export default class ReadmeEditor {
    * @returns {Promise<void>}
    */
   private async formatUpdatedSections(): Promise<void> {
-    for (const [name, section] of this.updatedSections) {
-      await this.formatSection(name, section);
+    for (const [name, content] of this.updatedSections) {
+      await this.formatSection(name, content);
     }
     this.updatedSections.clear();
   }

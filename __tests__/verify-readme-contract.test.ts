@@ -969,6 +969,29 @@ describe('README contract verifier regressions', () => {
       expect(output).toContain('outside the section markers');
     });
 
+    // The generator writes a CRLF README's spans as CRLF. The content checks
+    // read lines, so they must see through the ending; the outside walk must
+    // not, or a changed ending outside the markers would pass.
+    it('checks a CRLF README by content and its outside text by bytes', () => {
+      const crlf = (text: string): string => text.replaceAll('\n', '\r\n');
+      const original = crlf(withProse(README));
+
+      expect(verify(original, ACTION, undefined, '.', original)).toContain(
+        'All contract checks passed',
+      );
+      expect(
+        annotations(() =>
+          verify(
+            original.replace('* a bullet\r\n', '* a bullet\n'),
+            ACTION,
+            undefined,
+            '.',
+            original,
+          ),
+        ),
+      ).toContain('rewrote content outside the section markers');
+    });
+
     it.each([
       ['a bullet marker', '* a bullet', '- a bullet'],
       ['bold emphasis', '__bold__', '**bold**'],

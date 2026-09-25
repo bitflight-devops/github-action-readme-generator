@@ -5,7 +5,6 @@
  */
 
 import * as fs from 'node:fs';
-import { EOL } from 'node:os';
 
 import * as core from '@actions/core';
 
@@ -43,6 +42,20 @@ function layoutSpan(content: string, addNewlines: boolean): string {
   return addNewlines ? `\n\n${content}\n` : content;
 }
 
+/**
+ * True when every line break in `text` is CRLF, and there is at least one.
+ *
+ * Only a document that is CRLF throughout is edited as CRLF. Removing the `\r`
+ * before each `\n` and adding it back is then an exact round trip, so the
+ * bytes outside the markers survive. A document that mixes the two is left as
+ * it is, since no single ending would reproduce it.
+ * @param {string} text - The document.
+ * @returns {boolean} - Whether the document uses CRLF line endings.
+ */
+function usesCrlf(text: string): boolean {
+  return text.includes('\r\n') && !/(^|[^\r])\n/.test(text);
+}
+
 export default class ReadmeEditor {
   private log = new LogTask('ReadmeEditor');
 
@@ -51,7 +64,17 @@ export default class ReadmeEditor {
    */
   private readonly filePath: string;
 
+  /**
+   * The document with LF line endings, whatever the file uses. Every edit and
+   * every formatter pass works on LF; `dumpToFile` restores the file's own
+   * ending on the way out.
+   */
   private fileContent: string;
+
+  /**
+   * Whether the file on disk is CRLF throughout — see `usesCrlf`.
+   */
+  private readonly crlf: boolean = false;
 
   /**
    * The section tokens this editor has replaced, each against the content it
@@ -68,10 +91,12 @@ export default class ReadmeEditor {
     this.filePath = filePath;
     try {
       fs.accessSync(filePath);
-      this.fileContent = fs.readFileSync(filePath, 'utf8');
+      const raw = fs.readFileSync(filePath, 'utf8');
       if (process.env.GITHUB_ACTIONS) {
-        core.setOutput('readme_before', this.fileContent);
+        core.setOutput('readme_before', raw);
       }
+      this.crlf = usesCrlf(raw);
+      this.fileContent = this.crlf ? raw.replaceAll('\r\n', '\n') : raw;
     } catch (error) {
       this.log.fail(`Readme at '${filePath}' does not exist.`);
       throw error;
@@ -79,7 +104,7 @@ export default class ReadmeEditor {
   }
 
   /**
-   * Gets the current README content.
+   * Gets the current README content, with LF line endings.
    * @returns {string} - The README file content.
    */
   getReadmeContent(): string {
@@ -122,9 +147,12 @@ export default class ReadmeEditor {
     addNewlines: boolean = true,
   ): void {
     const log = new LogTask(name);
+    // Content joins and lands as LF; `dumpToFile` gives it the file's ending.
     const content = (
-      Array.isArray(providedContent) ? providedContent.join(EOL) : (providedContent ?? '')
-    ).trim();
+      Array.isArray(providedContent) ? providedContent.join('\n') : (providedContent ?? '')
+    )
+      .replaceAll('\r\n', '\n')
+      .trim();
     log.info(`Looking for the ${name} token in ${this.filePath}`);
 
     const [startIndex, stopIndex] = this.getTokenIndexes(name, log);
@@ -210,7 +238,7 @@ export default class ReadmeEditor {
     if (prettier) {
       await this.formatUpdatedSections();
     }
-    const content = this.fileContent;
+    const content = this.crlf ? this.fileContent.replaceAll('\n', '\r\n') : this.fileContent;
     if (process.env.GITHUB_ACTIONS) {
       core.setOutput('readme_after', content);
     }

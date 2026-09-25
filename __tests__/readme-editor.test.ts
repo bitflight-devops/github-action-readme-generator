@@ -116,6 +116,44 @@ describe('ReadmeEditor', () => {
       expect(read()).toBe(readme(''));
     });
 
+    describe('line endings', () => {
+      const crlf = (text: string): string => text.replaceAll('\n', '\r\n');
+
+      it('writes the generated span with CRLF in a CRLF file', async () => {
+        fs.writeFileSync(readmePath, crlf(readme('stale')), 'utf8');
+        const editor = new ReadmeEditor(readmePath);
+        editor.updateSection('inputs', UNALIGNED);
+
+        await editor.dumpToFile();
+
+        expect(read()).toBe(crlf(readme(`\n${PADDED}\n`)));
+      });
+
+      // No single ending reproduces a mixed file, so the bytes outside the
+      // markers decide: they stay exactly as they were.
+      it('leaves a mixed-ending file outside the markers alone', async () => {
+        const mixed = readme('stale').replace('# Title\n', '# Title\r\n');
+        fs.writeFileSync(readmePath, mixed, 'utf8');
+        const editor = new ReadmeEditor(readmePath);
+        editor.updateSection('inputs', UNALIGNED);
+
+        await editor.dumpToFile();
+
+        expect(read().startsWith('# Title\r\n')).toBe(true);
+        expect(read().split('<!-- end inputs -->')[1]).toBe(mixed.split('<!-- end inputs -->')[1]);
+      });
+
+      // With `pretty` off, so prettier's own LF output cannot be what passes it.
+      it('writes CRLF content into an LF file as LF', async () => {
+        const editor = new ReadmeEditor(readmePath);
+        editor.updateSection('inputs', crlf(UNALIGNED));
+
+        await editor.dumpToFile(false);
+
+        expect(read()).not.toContain('\r');
+      });
+    });
+
     it('writes a file it never edited back byte-identical', async () => {
       const before = read();
 

@@ -149,11 +149,18 @@ const sectionBounds = (source, name) => {
   return [from, from + end.index];
 };
 
-/** Content between a section's start and end markers, or null when absent. */
+/**
+ * Content between a section's start and end markers, or null when absent.
+ *
+ * Returned with LF line endings: the generator writes a CRLF README's spans as
+ * CRLF, and every content check below reads lines. The outside-content walk
+ * compares the raw bytes instead, so a line ending changed outside the markers
+ * still fails.
+ */
 const sectionFrom = (source, name, trim = true) => {
   const bounds = sectionBounds(source, name);
   if (bounds === null) return null;
-  const body = source.slice(bounds[0], bounds[1]);
+  const body = source.slice(bounds[0], bounds[1]).replaceAll('\r\n', '\n');
   return trim ? body.trim() : body;
 };
 
@@ -834,7 +841,7 @@ for (const name of ['title', 'description', 'branding']) {
 const expectedContents = async () => {
   const headers = [];
   let codeFence;
-  for (const line of readme.split('\n')) {
+  for (const line of readme.split(/\r?\n/)) {
     const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(line);
     if (codeFence) {
       const fenceCharacter = codeFence[0];

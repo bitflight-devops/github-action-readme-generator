@@ -35,6 +35,11 @@ content — a table's column padding is computed from that table alone. And a
 README this tool has never touched stays as its author left it, however
 unformatted: a first run's diff covers the spans and no other line.
 
+Generated spans take the document's line ending. A README that is CRLF
+throughout is edited as LF in memory and written back as CRLF, which round-trips
+every byte outside the markers exactly. A README that mixes the two keeps its
+bytes, and its spans are written as LF, because no single ending reproduces it.
+
 Which bytes are a span is a separate question, decided by marker pairing rather
 than by the formatter. `getTokenIndexes` pairs the last start marker in the
 document with the last end marker in the document, so a repeated marker after a

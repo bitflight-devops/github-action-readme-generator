@@ -7,7 +7,7 @@ on:
       - main
       - next
       - beta
-      - "*.x"
+      - '*.x'
   repository_dispatch:
     types: [semantic-release]
 
@@ -71,7 +71,7 @@ jobs:
       - run: npm install
 
       - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1.18.0
+        uses: voidzero-dev/setup-vp@v1.21.1
         with:
           node-manager: false
           # npm install already installed deps above; vp install's default
@@ -86,12 +86,12 @@ jobs:
 
       - run: npm run test
       - run: npm run coverage
-      - name: "Report Coverage"
+      - name: 'Report Coverage'
         if: always()
         continue-on-error: true
         uses: davelosert/vitest-coverage-report-action@v2.12.2
         with:
-          json-summary-path: "./out/coverage-summary.json"
+          json-summary-path: './out/coverage-summary.json'
           json-final-path: ./out/coverage-final.json
       - run: npm run build
       - run: npm run generate-docs

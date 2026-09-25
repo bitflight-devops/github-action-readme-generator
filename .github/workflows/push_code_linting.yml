@@ -5,13 +5,13 @@ on:
       - main
       - next
       - beta
-      - "*.x"
+      - '*.x'
   push:
     branches:
       - main
       - next
       - beta
-      - "*.x"
+      - '*.x'
 
 concurrency:
   group: ci-linting-${{ github.event.pull_request.number || github.ref }}
@@ -42,7 +42,7 @@ jobs:
         run: npm install
 
       - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1.18.0
+        uses: voidzero-dev/setup-vp@v1.21.1
         with:
           node-manager: false
           # npm install already installed deps above; vp install's default

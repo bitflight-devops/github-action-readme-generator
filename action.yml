@@ -36,7 +36,9 @@ inputs:
     default: false
   pretty:
     description: |
-      Use `prettier` to pretty print the new README.md file
+      Use `prettier` to pretty print the sections this tool generates.
+      Only the content between a section's start and end markers is formatted.
+      The rest of the README.md file is left byte for byte as it was.
     required: false
     default: 'true'
   versioning_enabled:

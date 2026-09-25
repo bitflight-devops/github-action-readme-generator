@@ -23,10 +23,37 @@ marker pair is a breaking change even if every test passes.
 
 Treat marker boundaries as ownership boundaries for what the _generator_
 writes: every span it composes goes between a pair, and no new behaviour may
-depend on whole-document formatting. Prettier's pass is the one thing that
-reaches outside them — with `pretty` on (the default) it reformats the entire
-file, which is why `--pretty=false` is the setting that makes outside text
-byte-identical. Resolve formatter-scope changes through #668.
+depend on whole-document formatting. Prettier is held to the same boundary.
+`readme-editor.ts` extracts each span it replaced, formats that text on its
+own, and splices the result back, so the bytes outside a pair come through
+untouched at either `pretty` setting. `pretty` decides whether the generated
+spans are formatted, nothing wider.
+
+Two consequences for the formatter. Each span is formatted with no knowledge of
+the rest of the document, so nothing it produces may depend on surrounding
+content — a table's column padding is computed from that table alone. And a
+README this tool has never touched stays as its author left it, however
+unformatted: a first run's diff covers the spans and no other line.
+
+Only a span written with its blank-line padding is formatted. A span written
+without it (`updateSection`'s `addNewlines: false`) sits inline, where
+Markdown's block rules would rewrite it, so it is written exactly as composed at
+either `pretty` setting.
+
+Generated spans take the document's line ending. A README that is CRLF
+throughout is edited as LF in memory and written back as CRLF, which round-trips
+every byte outside the markers exactly. A README that mixes the two keeps its
+bytes, and its spans are written as LF, because no single ending reproduces it.
+
+Which bytes are a span is a separate question, decided by marker pairing rather
+than by the formatter. `getTokenIndexes` pairs the last start marker in the
+document with the last end marker in the document, so a repeated marker after a
+real pair moves one of the two boundaries — a repeated end marker widens the
+span past its end marker, and a repeated start marker moves the start instead
+([#691](https://github.com/bitflight-devops/github-action-readme-generator/issues/691)).
+Code against the pairing that rule gives you until it is fixed: a marker
+example placed above the generated sections, or quoted inline between
+backticks, is safe.
 
 ## What is guaranteed, and what is prettier's
 
@@ -45,7 +72,7 @@ the committed README _look_ tidy comes from prettier afterwards.
 | **`__false__` rendered as `**false**`**                                            | **prettier**                                        |
 | **`key: ''` rendered as `key: ""`**                                                | **prettier**, and only when the fence is valid YAML |
 | **Trailing whitespace trimmed**                                                    | **prettier**                                        |
-| **Formatting of the whole file, generated spans and the user's text alike**        | **prettier**, and only with `pretty` on             |
+| **Formatting of the generated spans, and of nothing outside them**                 | **prettier**, and only with `pretty` on             |
 
 Practical consequence for tests: asserting padded table delimiters, `**false**`,
 or double-quoted YAML values is asserting _prettier's_ behaviour. Against a
@@ -53,6 +80,19 @@ third-party README those assertions prove nothing, because that repository may
 already run prettier itself. `scripts/verify-readme-contract.mjs` deliberately
 asserts none of them; `__tests__/integration-readme-contract.test.ts` does
 assert padding, and can only do so because its fixture starts as bare markers.
+
+What the verifier does assert about the formatter is its scope, and it asks
+only the original where the boundaries are. It cuts the original into the
+chunks outside its section spans, each carrying the markers that bound it, then
+walks the generated README: those chunks, in order, one generated span between
+each neighbouring pair, nothing left over. Asking the generated document where
+its own markers are is what would measure a run against a boundary that run had
+moved — a swallowed paragraph or a duplicated tail would then sit inside the
+span and go unseen. In the walk they have nowhere to go.
+
+A marker the generation writes into a span is reported separately, because it
+competes to be that section's boundary on the next run. It fails the check when
+that section has a pair to steal, and is a warning when it has none.
 
 ## Convergence uses passes 2 and 3
 

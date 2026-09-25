@@ -800,6 +800,214 @@ describe('README contract verifier regressions', () => {
     ).toThrow();
   });
 
+  describe('content outside the markers', () => {
+    // Prose prettier would rewrite if the formatter reached outside a marker
+    // pair: a `*` bullet, `__bold__`, a run of blank lines, trailing spaces.
+    const PROSE = '* a bullet\n* another\n\n\n__bold__   \n\n';
+    const withProse = (readme: string): string => `${PROSE}${readme}${PROSE}`;
+
+    // `verify` throws on a non-zero exit and the thrown message carries only
+    // the command line, so read the annotations the script printed instead —
+    // the point is which check failed, not that some check did.
+    const annotations = (run: () => string): string => {
+      try {
+        return run();
+      } catch (error) {
+        return String((error as { stdout?: string }).stdout ?? '');
+      }
+    };
+
+    it("accepts a generation that left the user's text alone", () => {
+      const original = withProse(README);
+
+      expect(verify(original, ACTION, undefined, '.', original)).toContain(
+        'content outside the section markers is byte-identical to the original',
+      );
+    });
+
+    it('accepts a section body that changed while the surrounding text did not', () => {
+      const original = withProse(unformatted(README));
+
+      expect(verify(withProse(README), ACTION, undefined, '.', original)).toContain(
+        'content outside the section markers is byte-identical to the original',
+      );
+    });
+
+    // The mask must not reuse the editor's marker pairing. If it did, a span
+    // the editor paired wrongly would be masked out by construction, hiding
+    // exactly the bytes that run destroyed — see issue #691.
+    it('rejects a run whose span swallowed the prose after the real end marker', () => {
+      const original = [
+        '# Decoy',
+        '',
+        '<!-- start inputs -->',
+        '| old | table |',
+        '<!-- end inputs -->',
+        '',
+        'USER PROSE THE TOOL MUST NOT TOUCH',
+        '',
+        '```text',
+        '<!-- end inputs -->',
+        '```',
+        '',
+      ].join('\n');
+      // What the editor writes when it pairs the start marker with the decoy
+      // end marker inside the fence: everything between them is replaced.
+      const swallowed = [
+        '# Decoy',
+        '',
+        '<!-- start inputs -->',
+        '',
+        '| **Input** | **Description** |',
+        '',
+        '<!-- end inputs -->',
+        '```',
+        '',
+      ].join('\n');
+
+      expect(() => verify(swallowed, ACTION, undefined, '.', original)).toThrow();
+      expect(annotations(() => verify(swallowed, ACTION, undefined, '.', original))).toContain(
+        'rewrote content outside the section markers',
+      );
+    });
+
+    // A marker the run wrote into a span moves the boundary, so blaming the
+    // user's text for the difference would point at the wrong line.
+    it('names the marker left in the span instead of blaming the surrounding text', () => {
+      const original = [
+        '# I',
+        '',
+        'USER PROSE',
+        '',
+        '<!-- start inputs -->',
+        '<!-- end inputs -->',
+        '',
+        'TAIL',
+        '',
+      ].join('\n');
+      const injected = original.replace(
+        '<!-- start inputs -->\n',
+        '<!-- start inputs -->\n\nsee <!-- start inputs --> for the pair\n\n',
+      );
+
+      const output = annotations(() => verify(injected, ACTION, undefined, '.', original));
+
+      expect(output).toContain(
+        'the generated inputs section contains an unguarded start inputs marker',
+      );
+      expect(output).not.toContain('rewrote content outside the section markers');
+    });
+
+    // One section whose markers moved must not stand the check down for the
+    // rest: a run that moves a marker in one section and destroys prose around
+    // another has to report both, or the log names the lesser problem only.
+    it('reports prose destroyed around one section while another section moved', () => {
+      const original = [
+        '# G',
+        '',
+        '<!-- start inputs -->',
+        '<!-- end inputs -->',
+        '',
+        '<!-- start outputs -->',
+        '| old | out |',
+        '<!-- end outputs -->',
+        'PROSE THE TOOL MUST NOT TOUCH',
+        '```text',
+        '<!-- end outputs -->',
+        '```',
+        '',
+      ].join('\n');
+      // The inputs span gains a start marker, and the outputs span is paired
+      // with the decoy end marker inside the fence, swallowing the prose.
+      const both = [
+        '# G',
+        '',
+        '<!-- start inputs -->',
+        'see <!-- start inputs --> for the pair',
+        '<!-- end inputs -->',
+        '',
+        '<!-- start outputs -->',
+        '| **Output** | **Description** |',
+        '<!-- end outputs -->',
+        '```',
+        '',
+      ].join('\n');
+
+      const output = annotations(() => verify(both, ACTION, undefined, '.', original));
+
+      expect(output).toContain(
+        'the generated inputs section contains an unguarded start inputs marker',
+      );
+      expect(output).toContain('rewrote content outside the section markers');
+    });
+
+    // The shape that showed masking is the wrong primitive: the run duplicates
+    // the user's tail, and a check that masks each document by its own markers
+    // measures the run against the boundary the run moved, then certifies the
+    // result byte-identical. The walk has nowhere to put the leftover.
+    it("rejects a run that duplicated the user's tail", () => {
+      const original = [
+        '# Doc',
+        '',
+        '<!-- start inputs -->',
+        'old table',
+        '<!-- end inputs -->',
+        '',
+        'TAIL PROSE MUST SURVIVE ONCE',
+        '',
+        '```markdown',
+        '<!-- start inputs -->',
+        '```',
+        '',
+      ].join('\n');
+      const tail = original.slice(original.indexOf('<!-- end inputs -->'));
+      const duplicated = `${original}${tail}`;
+
+      const output = annotations(() => verify(duplicated, ACTION, undefined, '.', original));
+
+      expect(output).not.toContain('byte-identical');
+      expect(output).toContain('outside the section markers');
+    });
+
+    // The generator writes a CRLF README's spans as CRLF. The content checks
+    // read lines, so they must see through the ending; the outside walk must
+    // not, or a changed ending outside the markers would pass.
+    it('checks a CRLF README by content and its outside text by bytes', () => {
+      const crlf = (text: string): string => text.replaceAll('\n', '\r\n');
+      const original = crlf(withProse(README));
+
+      expect(verify(original, ACTION, undefined, '.', original)).toContain(
+        'All contract checks passed',
+      );
+      expect(
+        annotations(() =>
+          verify(
+            original.replace('* a bullet\r\n', '* a bullet\n'),
+            ACTION,
+            undefined,
+            '.',
+            original,
+          ),
+        ),
+      ).toContain('rewrote content outside the section markers');
+    });
+
+    it.each([
+      ['a bullet marker', '* a bullet', '- a bullet'],
+      ['bold emphasis', '__bold__', '**bold**'],
+      ['blank lines', '\n\n\n__bold__', '\n\n__bold__'],
+      ['trailing whitespace', '__bold__   ', '__bold__'],
+    ])('rejects a generation that rewrote %s outside the markers', (_label, from, to) => {
+      const original = withProse(README);
+      const rewritten = original.replace(from, to);
+
+      expect(() => verify(rewritten, ACTION, undefined, '.', original)).toThrow();
+      expect(annotations(() => verify(rewritten, ACTION, undefined, '.', original))).toContain(
+        'rewrote content outside the section markers',
+      );
+    });
+  });
+
   it('uses the generator plugin set and leaves unsupported fenced JavaScript unchanged', () => {
     const action = ACTION.replace(
       'description: __bold__',

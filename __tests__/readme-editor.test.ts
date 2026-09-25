@@ -91,6 +91,22 @@ describe('ReadmeEditor', () => {
       expect(read()).toBe(readme(`\n${UNALIGNED}\n`));
     });
 
+    // `updateSection`'s third argument asks for the content spliced in with no
+    // padding. Formatting has to reassemble the span the way `updateSection`
+    // did, or the caller gets back the layout it asked not to have.
+    it('honours addNewlines false through the formatter', async () => {
+      const editor = new ReadmeEditor(readmePath);
+      editor.updateSection('inputs', UNALIGNED, false);
+
+      await editor.dumpToFile();
+
+      // The newline before the end marker is the document's, not the span's —
+      // `updateSection` leaves it in place at either setting. What the setting
+      // decides is the padding this tool adds, and with it off there is none.
+      const span = read().split('<!-- start inputs -->')[1]?.split('<!-- end inputs -->')[0] ?? '';
+      expect(span).toBe(`${PADDED}\n`);
+    });
+
     it('collapses the span to bare markers when the section has no content', async () => {
       const editor = new ReadmeEditor(readmePath);
       editor.updateSection('inputs', '');

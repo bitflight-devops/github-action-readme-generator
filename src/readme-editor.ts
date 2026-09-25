@@ -36,10 +36,11 @@ export default class ReadmeEditor {
 
   /**
    * The section tokens this editor has replaced, in the order they were
-   * replaced. `dumpToFile` formats these spans and nothing else — see
+   * replaced, each against the `addNewlines` it was replaced under.
+   * `dumpToFile` formats these spans and nothing else — see
    * `formatUpdatedSections`.
    */
-  private readonly updatedSections = new Set<string>();
+  private readonly updatedSections = new Map<string, boolean>();
 
   /**
    * Creates a new instance of `ReadmeEditor`.
@@ -116,7 +117,7 @@ export default class ReadmeEditor {
       this.fileContent = addNewlines
         ? `${beforeContent}\n\n${content}\n${afterContent}`
         : `${beforeContent}${content}${afterContent}`;
-      this.updatedSections.add(name);
+      this.updatedSections.set(name, addNewlines);
     }
   }
 
@@ -124,11 +125,14 @@ export default class ReadmeEditor {
    * Formats the span of one section in isolation and splices it back.
    *
    * The span is extracted in memory, trimmed, formatted on its own, and
-   * reassembled with the same surrounding newlines `updateSection` writes, so
+   * reassembled with the same surrounding newlines `updateSection` wrote, so
    * the markers and every byte outside them survive untouched.
    * @param {string} name - The name of the section.
+   * @param {boolean} addNewlines - The setting the section was replaced under.
+   *   Formatting has to reassemble the span the way `updateSection` did, or it
+   *   hands back a layout the caller asked not to have.
    */
-  private async formatSection(name: string): Promise<void> {
+  private async formatSection(name: string, addNewlines: boolean): Promise<void> {
     const [startIndex, stopIndex] = this.getTokenIndexes(name);
     if (!startIndex || !stopIndex) {
       return;
@@ -136,9 +140,10 @@ export default class ReadmeEditor {
 
     const span = this.fileContent.slice(startIndex, stopIndex).trim();
     const formatted = span === '' ? '' : (await formatMarkdown(span)).trim();
+    const padded = formatted === '' ? '\n' : `\n\n${formatted}\n`;
 
     this.fileContent = `${this.fileContent.slice(0, startIndex)}${
-      formatted === '' ? '\n' : `\n\n${formatted}\n`
+      addNewlines ? padded : formatted
     }${this.fileContent.slice(stopIndex)}`;
   }
 
@@ -150,8 +155,8 @@ export default class ReadmeEditor {
    * @returns {Promise<void>}
    */
   private async formatUpdatedSections(): Promise<void> {
-    for (const name of this.updatedSections) {
-      await this.formatSection(name);
+    for (const [name, addNewlines] of this.updatedSections) {
+      await this.formatSection(name, addNewlines);
     }
   }
 

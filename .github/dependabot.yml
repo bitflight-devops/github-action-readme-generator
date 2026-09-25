@@ -33,3 +33,10 @@ updates:
         patterns:
           - "vitest"
           - "@vitest/*"
+    ignore:
+      # The release preset (package.json `release.preset`). Keep it on a major
+      # that the conventional-changelog-writer inside
+      # @semantic-release/release-notes-generator renders. Move the major by
+      # hand, after generateNotes renders a release with the new preset.
+      - dependency-name: "conventional-changelog-conventionalcommits"
+        update-types: ["version-update:semver-major"]

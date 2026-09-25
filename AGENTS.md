@@ -36,10 +36,13 @@ every change made here:
 
 Conventional Commits — the `commit-msg` hook runs commitlint (see Pre-commit hooks).
 
-PRs are squash-merged and the squash commit keeps only the PR title, so the
-title decides the release. A breaking change carries `!` after its type in the
-title (`fix(scope)!: …`); a `BREAKING CHANGE:` footer on a branch commit does
-not survive the squash.
+The headers of the commits that land on `main` decide the release. A squash
+merge lands one commit; GitHub fills its header from the PR title, or from the
+commit's own header when the PR has one commit. Mark a breaking change with `!`
+after its type (`fix(scope)!: …`) in the PR title and in the header of the
+commit that breaks, so the mark reaches `main` from either source. Keep the mark
+in the header: the merger can rewrite the squash body, and a `BREAKING CHANGE:`
+footer goes with it.
 
 ## Build & validation commands
 

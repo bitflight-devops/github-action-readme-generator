@@ -1,3 +1,13 @@
+## [2.0.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.9...v2.0.0) (2026-09-25)
+
+### ⚠ BREAKING CHANGES
+
+* **prettier:** format only the spans between section markers (#690)
+
+### Bug Fixes
+
+* **prettier:** format only the spans between section markers ([#690](https://github.com/bitflight-devops/github-action-readme-generator/issues/690)) ([f48b40d](https://github.com/bitflight-devops/github-action-readme-generator/commit/f48b40d7f03ec632f4c10957c7a2130f2d20cc7f))
+
 ## [1.12.9](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.8...v1.12.9) (2026-09-22)
 
 

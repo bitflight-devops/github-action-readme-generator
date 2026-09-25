@@ -36,6 +36,11 @@ every change made here:
 
 Conventional Commits — the `commit-msg` hook runs commitlint (see Pre-commit hooks).
 
+PRs are squash-merged and the squash commit keeps only the PR title, so the
+title decides the release. A breaking change carries `!` after its type in the
+title (`fix(scope)!: …`); a `BREAKING CHANGE:` footer on a branch commit does
+not survive the squash.
+
 ## Build & validation commands
 
 ```bash

@@ -128,7 +128,7 @@
       "@semantic-release/github",
       "@semantic-release/git"
     ],
-    "preset": "angular"
+    "preset": "conventionalcommits"
   },
   "dependencies": {
     "@actions/core": "^3.0.0",
@@ -156,6 +156,7 @@
     "@vitest/coverage-v8": "4.1.11",
     "@voidzero-dev/vite-plus-core": "0.2.8",
     "commitizen": "^4.3.1",
+    "conventional-changelog-conventionalcommits": "^10.4.0",
     "conventional-commits": "^1.6.0",
     "cz-conventional-changelog": "^3.3.0",
     "dotenv": "^17.2.4",

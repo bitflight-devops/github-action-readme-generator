@@ -799,10 +799,46 @@ const titleImage = titleBranding ? `${brandingImage('60px')} ` : '';
 const expectedBranding = await generatedMarkdown(brandingImage('15%'));
 const expectedTitle = action.name ? `# ${titleImage}${titlePrefix}${action.name}` : null;
 const normalisedExpectedTitle = expectedTitle ? await generatedMarkdown(expectedTitle) : null;
+/**
+ * Mirrors `descriptionMarkdown` in `src/sections/update-description.ts`:
+ * prose is squashed with blank lines as `<br />`, and a fenced code block is
+ * kept verbatim, separated from the prose by blank lines.
+ */
+const descriptionMarkdown = (value) => {
+  const blocks = [];
+  let prose = [];
+  let fence = null;
+  const flushProse = () => {
+    const text = prose
+      .join('\n')
+      .trim()
+      .replaceAll(/ +/g, ' ')
+      .replaceAll(' \n', '\n')
+      .replaceAll('\n\n', '<br />');
+    if (text) blocks.push(text);
+    prose = [];
+  };
+  for (const line of String(value).trim().replaceAll('\r\n', '\n').split('\n')) {
+    const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
+    if (fence === null && marker) {
+      flushProse();
+      fence = { marker, lines: [line] };
+    } else if (fence !== null) {
+      fence.lines.push(line);
+      if (marker && marker[0] === fence.marker[0] && marker.length >= fence.marker.length && line.trim() === marker) {
+        blocks.push(fence.lines.join('\n'));
+        fence = null;
+      }
+    } else {
+      prose.push(line);
+    }
+  }
+  if (fence !== null) blocks.push(fence.lines.join('\n'));
+  flushProse();
+  return blocks.join('\n\n');
+};
 const expectedDescription = action.description
-	? await generatedMarkdown(
-			String(action.description).trim().replaceAll('\r\n', '\n').replaceAll(/ +/g, ' ').replaceAll(' \n', '\n').replaceAll('\n\n', '<br />'),
-		)
+	? await generatedMarkdown(descriptionMarkdown(action.description))
 	: null;
 
 for (const name of ['title', 'description', 'branding']) {

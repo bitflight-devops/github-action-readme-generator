@@ -25,7 +25,7 @@ export default function updateTitle(
     log.start();
     name = inputs.action.name;
     if (inputs.config.get('branding_as_title_prefix') as boolean) {
-      svgInline = `${generateImgMarkup(inputs, '60px')} `;
+      svgInline = `${generateImgMarkup(inputs, '60px', inputs.readmeEditor.hasSection(sectionToken))} `;
     }
     log.info(`Writing ${name.length} characters to the title`);
     const title = `# ${svgInline}${inputs.config.get('title_prefix') as string}${

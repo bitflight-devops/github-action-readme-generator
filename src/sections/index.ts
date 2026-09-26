@@ -24,13 +24,10 @@ export default async function updateSection(
   section: ReadmeSection,
   inputs: Inputs,
 ): Promise<Record<string, string>> {
-  const [startToken, stopToken] = inputs.readmeEditor.getTokenIndexes(section);
-  // &&
-  // ['branding', 'title'].includes(section) &&
-  // inputs.config.get('branding_as_title_prefix') !== true
-  if (startToken === -1 || stopToken === -1) {
-    return {};
-  }
+  // Every configured section is generated, whether or not the README has its
+  // markers: the `sections` output reports each one, and `updateSection`
+  // writes only where the markers are. A side effect beyond the README, such
+  // as the branding image, is the updater's to gate.
   switch (section) {
     case 'branding': {
       return updateBranding(section, inputs);

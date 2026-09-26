@@ -118,61 +118,54 @@ const fail = (message) => {
   console.log(`::error::${message}`);
 };
 
-/**
- * A fence opener or closer: three or more backticks or tildes, after optional
- * indentation and blockquote prefixes.
- */
-const fenceLine = /^(?:[\t ]*>)*[\t ]*(`{3,}|~{3,})(.*)$/;
-
-/** The half-open ranges inside fenced code blocks, fence lines included. */
-const fencedRanges = (source) => {
+/** The half-open ranges Markdown renders as code, from prettier's parser. */
+const codeRanges = (source) => {
+  const shift = source.startsWith('﻿') ? 1 : 0;
   const ranges = [];
-  let open = null;
-  let offset = 0;
-  for (const line of source.split('\n')) {
-    const match = fenceLine.exec(line);
-    if (match) {
-      const [, fence, rest] = match;
-      if (open === null) {
-        if (fence[0] !== '`' || !rest.includes('`')) {
-          open = { char: fence[0], length: fence.length, from: offset };
-        }
-      } else if (fence[0] === open.char && fence.length >= open.length && rest.trim() === '') {
-        ranges.push([open.from, offset + line.length]);
-        open = null;
-      }
+  const walk = (node) => {
+    if ((node.type === 'code' || node.type === 'inlineCode') && node.position) {
+      ranges.push([node.position.start.offset + shift, node.position.end.offset + shift]);
     }
-    offset += line.length + 1;
-  }
-  if (open !== null) ranges.push([open.from, source.length]);
+    (node.children ?? []).forEach(walk);
+  };
+  walk(markdown.parsers.markdown.parse(source.slice(shift), {}));
   return ranges;
 };
 
 /**
- * Every live start and end marker for a section, as the offsets where each
- * `<!--` begins.
+ * The start and end markers that count for a section, as the offsets where
+ * each `<!--` begins.
  *
  * Written apart from `src/markers.ts` on purpose, so each implementation
  * checks the other rather than agreeing by construction. The rules are the
- * same: a marker straight after a backtick or backslash is quoted, a marker
- * inside a fenced code block is code, and the name is matched literally.
+ * same: a marker straight after a backtick or backslash is quoted, the name is
+ * matched literally, and when the markers are not a single pair, the markers
+ * inside code are examples.
  */
 const markersOf = (source, name) => {
-  const fences = fencedRanges(source);
   const literal = name.replaceAll(/[$()*+.?[\\\]^{|}]/g, '\\$&');
   const find = (kind) =>
-    [...source.matchAll(new RegExp(`(?<![\`\\\\])<!--\\s+${kind}\\s+${literal}\\s+-->`, 'g'))]
-      .filter((match) => !fences.some(([from, to]) => match.index >= from && match.index < to))
-      .map((match) => ({ at: match.index, after: match.index + match[0].length }));
-  return { starts: find('start'), ends: find('end') };
+    [...source.matchAll(new RegExp(`(?<![\`\\\\])<!--\\s+${kind}\\s+${literal}\\s+-->`, 'g'))].map(
+      (match) => ({ at: match.index, after: match.index + match[0].length }),
+    );
+  let starts = find('start');
+  let ends = find('end');
+  const pair = starts.length === 1 && ends.length === 1 && ends[0].at >= starts[0].after;
+  if (!pair) {
+    const code = codeRanges(source);
+    const live = ({ at }) => !code.some(([from, to]) => at >= from && at < to);
+    starts = starts.filter(live);
+    ends = ends.filter(live);
+  }
+  return { starts, ends };
 };
 
 /**
  * Half-open [start, end) of a section's body, or null when it has none.
  *
  * A body needs exactly one start marker and one end marker after it; the tool
- * leaves any other shape alone. The line break before an end marker that
- * starts its line belongs to the marker's line, not to the body.
+ * leaves any other shape alone. The line break and indentation before an end
+ * marker that starts its line belong to the marker's line, not to the body.
  */
 const ownedBounds = (source, name) => {
   const { starts, ends } = markersOf(source, name);
@@ -180,7 +173,8 @@ const ownedBounds = (source, name) => {
   const from = starts[0].after;
   const end = ends[0].at;
   if (end < from) return null;
-  return [from, end > from && source[end - 1] === '\n' ? end - 1 : end];
+  const indent = /\n[\t ]*$/.exec(source.slice(from, end));
+  return [from, indent ? end - indent[0].length : end];
 };
 
 /**
@@ -277,7 +271,7 @@ if (originalReadme !== null) {
   // outside chunks, in order, with one span between each neighbouring pair and
   // nothing left over. A run that duplicated the tail or swallowed a paragraph
   // fails the walk, because what it added or dropped has nowhere to go.
-  // A repeated marker outside a fence makes a section's pair ambiguous, and
+  // A repeated marker outside code makes a section's pair ambiguous, and
   // the tool leaves that section alone. Named, so an unchanged section reads
   // as the reason rather than as a miss.
   for (const name of generatedSections) {

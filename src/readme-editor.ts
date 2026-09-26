@@ -131,14 +131,24 @@ export default class ReadmeEditor {
     const span = locateSection(this.fileContent, name);
     if (!span.found && span.reason === 'ambiguous') {
       log.warn(
-        `The '${name}' section has more than one start or end marker, on lines ${span.lines.join(', ')}. Leaving it unchanged`,
+        `The '${name}' section has more than one start or end marker outside code, on lines ${span.lines.join(', ')}. Leaving it unchanged`,
+      );
+    }
+    if (!span.found && span.reason === 'unpaired') {
+      log.warn(
+        `The '${name}' section's marker on line ${span.lines.join(', ')} has no matching start or end marker. Leaving it unchanged`,
       );
     }
     if (span.found) {
       const beforeContent = this.fileContent.slice(0, span.start);
       const afterContent = this.fileContent.slice(span.end);
+      // A padded span puts the end marker on its own line. When the marker
+      // shared a line with the old body, the line break written before it
+      // belongs to the marker from now on, so one more is written to keep the
+      // span what `layoutSpan` lays out.
+      const ownLine = addNewlines && !afterContent.startsWith('\n') ? '\n' : '';
 
-      this.fileContent = `${beforeContent}${layoutSpan(content, addNewlines)}${afterContent}`;
+      this.fileContent = `${beforeContent}${layoutSpan(content, addNewlines)}${ownLine}${afterContent}`;
       // An unpadded span sits inline, and formatting it as a Markdown document
       // would apply block rules to inline text, so only padded spans are kept
       // for the formatter.

@@ -898,16 +898,19 @@ describe('README contract verifier regressions', () => {
       expect(output).not.toContain('rewrote content outside the section markers');
     });
 
-    // A marker inside a fence is code, to the tool and to this check alike —
-    // the usage block quoting `branding_svg_path`'s description is the case.
-    it('ignores a marker inside a fence in a generated span', () => {
-      const original = ['<!-- start usage -->', '<!-- end usage -->', ''].join('\n');
+    // A repeated marker inside code is an example, to the tool and to this
+    // check alike — the usage block quoting `branding_svg_path`'s description
+    // is the case.
+    it('ignores a fenced marker in a generated span when the section has its own pair', () => {
+      const branding = ['<!-- start branding -->', '<!-- end branding -->'];
+      const original = ['<!-- start usage -->', '<!-- end usage -->', ...branding, ''].join('\n');
       const generated = [
         '<!-- start usage -->',
         '```yaml',
         '# <!-- start branding --><!-- end branding -->',
         '```',
         '<!-- end usage -->',
+        ...branding,
         '',
       ].join('\n');
 

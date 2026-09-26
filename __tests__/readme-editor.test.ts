@@ -186,6 +186,39 @@ describe('ReadmeEditor', () => {
       },
     );
 
+    // A padded span moves the end marker onto its own line. The first run has
+    // to lay the span out the way every later run finds it, or it cannot
+    // format it and the second run changes the file again.
+    it('formats a one-line marker pair on the first run and changes nothing on the second', async () => {
+      fs.writeFileSync(readmePath, '# T\n<!-- start inputs --><!-- end inputs -->\n');
+      const run = async (): Promise<string> => {
+        const editor = new ReadmeEditor(readmePath);
+        editor.updateSection('inputs', UNALIGNED);
+        await editor.dumpToFile();
+        return read();
+      };
+
+      const first = await run();
+
+      expect(first).toBe(`# T\n<!-- start inputs -->\n\n${PADDED}\n\n<!-- end inputs -->\n`);
+      expect(await run()).toBe(first);
+    });
+
+    it('keeps the indentation of an end marker', async () => {
+      fs.writeFileSync(
+        readmePath,
+        '<details>\n  <!-- start inputs -->\n  old\n  <!-- end inputs -->\n</details>\n',
+      );
+      const editor = new ReadmeEditor(readmePath);
+      editor.updateSection('inputs', UNALIGNED);
+
+      await editor.dumpToFile();
+
+      expect(read()).toBe(
+        `<details>\n  <!-- start inputs -->\n\n${PADDED}\n\n  <!-- end inputs -->\n</details>\n`,
+      );
+    });
+
     // #691: a README that documents the markers repeats them. A repeat inside a
     // fence is code; a repeat outside one leaves the pair ambiguous, and the
     // section is left alone rather than paired by guesswork.

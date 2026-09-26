@@ -13,80 +13,111 @@ const body = (source: string, name = 'inputs'): string => {
   return span.found ? source.slice(span.start, span.end) : `<${span.reason}>`;
 };
 
+/** A real pair, preceded by an example of the same markers. */
+const afterExample = (...example: string[]): string =>
+  [...example, '<!-- start inputs -->', 'x', '<!-- end inputs -->', ''].join('\n');
+
 describe('locateSection', () => {
-  it('keeps the line break before an end marker that starts its line outside the body', () => {
-    expect(body('<!-- start inputs -->\nold\n<!-- end inputs -->\n')).toBe('\nold');
-  });
+  describe('the end of the body', () => {
+    it('leaves the line break before an end marker that starts its line to the marker', () => {
+      expect(body('<!-- start inputs -->\nold\n<!-- end inputs -->\n')).toBe('\nold');
+    });
 
-  it('ends the body at the end marker when the marker shares a line with it', () => {
-    expect(body('# T\n<!-- start inputs -->old<!-- end inputs -->\n')).toBe('old');
-  });
-
-  it('finds an empty body between abutting markers', () => {
-    expect(body('<!-- start inputs --><!-- end inputs -->')).toBe('');
-    expect(body('<!-- start inputs -->\n<!-- end inputs -->')).toBe('');
-  });
-
-  describe('text that looks like a marker', () => {
-    it('ignores a marker quoted after a backtick or escaped with a backslash', () => {
-      expect(body('`<!-- start inputs -->`\n<!-- start inputs -->\nx\n<!-- end inputs -->')).toBe(
-        '\nx',
-      );
-      expect(body('\\<!-- end inputs -->\n<!-- start inputs -->\nx\n<!-- end inputs -->')).toBe(
-        '\nx',
+    it('leaves the indentation before an end marker to the marker', () => {
+      expect(body('<details>\n  <!-- start inputs -->\n  old\n  <!-- end inputs -->\n')).toBe(
+        '\n  old',
       );
     });
 
+    it('ends at the end marker when the marker shares a line with the body', () => {
+      expect(body('# T\n<!-- start inputs -->old<!-- end inputs -->\n')).toBe('old');
+    });
+
+    it('finds an empty body between abutting markers', () => {
+      expect(body('<!-- start inputs --><!-- end inputs -->')).toBe('');
+      expect(body('<!-- start inputs -->\n<!-- end inputs -->')).toBe('');
+    });
+  });
+
+  it('ignores a marker quoted after a backtick or escaped with a backslash', () => {
+    expect(body(afterExample('`<!-- start inputs -->`'))).toBe('\nx');
+    expect(body(afterExample('\\<!-- end inputs -->'))).toBe('\nx');
+  });
+
+  // A single pair is located wherever it sits. Generated text can hold an
+  // unclosed fence — a description whose fence the description updater
+  // flattened — and code detection must not let it hide the pairs after it.
+  it('locates a single pair even after an unclosed fence', () => {
+    expect(
+      body(`<!-- start description -->\n\`\`\`\n<!-- end description -->\n${afterExample()}`),
+    ).toBe('\nx');
+  });
+
+  // #691: a README that documents the markers repeats them.
+  describe('when a marker repeats', () => {
     it.each([
-      ['a backtick fence', '```markdown', '```'],
-      ['a tilde fence', '~~~', '~~~'],
-      ['a fence closed by a longer fence', '```', '`````'],
-    ])('ignores markers inside %s', (_label, open, close) => {
-      const source = [
-        open,
-        '<!-- start inputs -->',
-        '<!-- end inputs -->',
-        close,
-        '<!-- start inputs -->',
-        'x',
-        '<!-- end inputs -->',
-        open,
-        '<!-- end inputs -->',
-        close,
-      ].join('\n');
+      ['a backtick fence', ['```markdown', '<!-- start inputs -->', '<!-- end inputs -->', '```']],
+      ['a tilde fence', ['~~~', '<!-- start inputs -->', '~~~']],
+      ['an indented code block', ['para', '', '    <!-- start inputs -->', '']],
+      ['a fence in a list item', ['- item', '  ```', '  <!-- start inputs -->', '  ```', '']],
+      ['a fence in a blockquote', ['> ```', '> <!-- end inputs -->', '> ```', '']],
+      ['inline code with text before it', ['Use `<!-- start inputs --><!-- end inputs -->` here.']],
+    ])('sets aside the markers inside %s', (_label, example) => {
+      expect(body(afterExample(...example))).toBe('\nx');
+    });
+
+    it.each([
+      ['a fence its blockquote closes', ['> ```', '> x', '']],
+      ['a fence indented four spaces', ['para', '    ```not a fence', '']],
+      ['a fence inside an HTML block', ['<div>', '```', '</div>', '']],
+    ])('does not let %s hide the real pair', (_label, preamble) => {
+      const source = afterExample(...preamble, '```', '<!-- start inputs -->', '```', '');
 
       expect(body(source)).toBe('\nx');
     });
 
-    it('ignores markers inside a fence inside a blockquote', () => {
-      const source = ['> ```', '> <!-- end inputs -->', '> ```', '<!-- start inputs -->', 'x'];
-
-      expect(body([...source, '<!-- end inputs -->'].join('\n'))).toBe('\nx');
+    it('reads fences on CRLF lines in a file that mixes line endings', () => {
+      expect(body(afterExample('```\r', '<!-- start inputs -->\r', '```\r'))).toBe('\nx');
     });
 
-    it('treats a fence that is never closed as running to the end of the document', () => {
-      expect(body('<!-- start inputs -->\nx\n```\n<!-- end inputs -->\n')).toBe('<unpaired>');
+    it('reads a fence on the first line after a byte order mark', () => {
+      expect(body(`﻿${afterExample('```', '<!-- start inputs -->', '```')}`)).toBe('\nx');
     });
 
-    it('does not close a fence on a shorter fence or one of the other character', () => {
-      const source = [
-        '````',
-        '```',
-        '~~~~',
-        '<!-- start inputs -->',
-        '````',
-        '<!-- start inputs -->',
-      ];
+    it.each([
+      ['start', '<!-- start inputs -->'],
+      ['end', '<!-- end inputs -->'],
+    ])(
+      'reports a repeated %s marker outside code as ambiguous, with its lines',
+      (_kind, repeat) => {
+        const source = ['<!-- start inputs -->', 'x', '<!-- end inputs -->', 'prose', repeat].join(
+          '\n',
+        );
 
-      expect(body([...source, 'x', '<!-- end inputs -->'].join('\n'))).toBe('\nx');
+        expect(locateSection(source, 'inputs')).toStrictEqual({
+          found: false,
+          reason: 'ambiguous',
+          lines: [1, 3, 5],
+        });
+      },
+    );
+
+    // This repository's own usage block quotes `branding_svg_path`'s
+    // description, whose end marker sits in inline code inside a fence.
+    it('sets aside a lone marker inside code instead of reporting it unpaired', () => {
+      expect(body('```yaml\n# `<!-- start inputs --><!-- end inputs -->`\n```\n')).toBe(
+        '<missing>',
+      );
     });
 
-    it('does not open a fence on a backtick line whose info string holds a backtick', () => {
-      expect(body('``` `code` ```\n<!-- start inputs -->\nx\n<!-- end inputs -->')).toBe('\nx');
+    it('reports markers that are all examples as missing', () => {
+      const example = ['```', '<!-- start inputs -->', '<!-- end inputs -->', '```'];
+
+      expect(body([...example, ...example].join('\n'))).toBe('<missing>');
     });
   });
 
-  describe('markers it will not guess between', () => {
+  describe('markers it will not pair', () => {
     it('reports a section with no markers as missing', () => {
       expect(locateSection('# T\n', 'inputs')).toStrictEqual({
         found: false,
@@ -101,22 +132,6 @@ describe('locateSection', () => {
       ['an end marker before the start marker', '<!-- end inputs -->\n<!-- start inputs -->\n'],
     ])('reports %s as unpaired', (_label, source) => {
       expect(body(source)).toBe('<unpaired>');
-    });
-
-    // The two shapes of #691: a repeated marker after a real pair.
-    it.each([
-      ['start', '<!-- start inputs -->'],
-      ['end', '<!-- end inputs -->'],
-    ])('reports a repeated %s marker as ambiguous, with every line', (_kind, repeat) => {
-      const source = ['<!-- start inputs -->', 'x', '<!-- end inputs -->', 'prose', repeat].join(
-        '\n',
-      );
-
-      expect(locateSection(source, 'inputs')).toStrictEqual({
-        found: false,
-        reason: 'ambiguous',
-        lines: [1, 3, 5],
-      });
     });
   });
 

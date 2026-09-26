@@ -2,17 +2,22 @@
  * Finds a section's `<!-- start NAME -->` and `<!-- end NAME -->` markers in a
  * README and pairs them.
  *
- * Some text looks like a marker and is not one:
+ * A marker straight after a backtick or a backslash is quoted or escaped, and
+ * is never a marker. The name is matched literally.
  *
- * - a marker straight after a backtick or a backslash, which is quoted inline
- *   or escaped;
- * - a marker inside a fenced code block, which renders as code — the usual
- *   shape of a README that documents the markers.
+ * A section with one start marker and one end marker after it is located
+ * wherever the pair sits. Any other shape — a README that documents the
+ * markers repeats them — has the markers inside code set aside as examples:
+ * inline code, fenced or indented code blocks. Code decides only when the
+ * markers are not a single pair: text this tool generated can hold an unclosed
+ * fence, and a code check on every lookup would let that fence hide every pair
+ * after it.
  *
- * A section is located only when it has exactly one start marker and one end
- * marker after it. Any other shape is reported rather than guessed at, because
- * a wrong guess replaces text outside the pair, which is the user's.
+ * Any other shape is reported rather than guessed at, because a wrong guess
+ * replaces text outside the pair, which is the user's.
  */
+
+import * as markdown from 'prettier/plugins/markdown';
 
 /** Where a section's body sits, or why it cannot be located. */
 export type SectionSpan =
@@ -22,29 +27,31 @@ export type SectionSpan =
       start: number;
       /**
        * Offset of the end marker's `<!--`, or of the line break before it
-       * when the end marker starts its line. That line break belongs to the
-       * marker's line, not to the body.
+       * when only spaces or tabs precede the marker on its line. That line
+       * break and indentation belong to the marker's line, not to the body.
        */
       end: number;
     }
   | {
       found: false;
       /**
-       * - `missing`: no marker for the section.
+       * - `missing`: no marker for the section, outside code.
        * - `unpaired`: a start marker without an end marker after it, or the
        *   reverse.
-       * - `ambiguous`: more than one start marker or more than one end marker.
+       * - `ambiguous`: more than one start marker or more than one end marker
+       *   outside code.
        */
       reason: 'missing' | 'unpaired' | 'ambiguous';
-      /** The 1-based lines of every marker found for the section. */
+      /** The 1-based lines of the markers that were considered. */
       lines: number[];
     };
 
-/**
- * A fence opener or closer: three or more backticks or tildes, after optional
- * indentation and blockquote prefixes.
- */
-const FENCE = /^(?:[\t ]*>)*[\t ]*(`{3,}|~{3,})(.*)$/;
+/** The parts of a Markdown AST node this module reads. */
+interface MarkdownNode {
+  type: string;
+  position?: { start: { offset: number }; end: { offset: number } };
+  children?: MarkdownNode[];
+}
 
 /**
  * Escapes the regular expression metacharacters in `text`.
@@ -56,46 +63,57 @@ function escapeRegExp(text: string): string {
 }
 
 /**
- * The half-open ranges of `source` inside fenced code blocks, fence lines
- * included. An unclosed fence runs to the end of the document, as it renders.
+ * The half-open ranges of `source` that Markdown renders as code.
+ *
+ * Parsed with the markdown parser prettier already bundles, so containers,
+ * HTML blocks and indentation follow Markdown's rules rather than a regex.
  * @param {string} source - The document.
- * @returns {Array<[number, number]>} - The fenced ranges, in document order.
+ * @returns {Array<[number, number]>} - The code ranges.
  */
-function fencedRanges(source: string): [number, number][] {
+function codeRanges(source: string): [number, number][] {
+  // The parser drops a leading byte order mark, which shifts its offsets.
+  const shift = source.startsWith('﻿') ? 1 : 0;
+  const parser = markdown.parsers.markdown;
+  const root = parser.parse(source.slice(shift), {} as never) as MarkdownNode;
   const ranges: [number, number][] = [];
-  let open: { char: string; length: number; from: number } | undefined;
-  let offset = 0;
-  for (const line of source.split('\n')) {
-    const [, fence, rest = ''] = FENCE.exec(line) ?? [];
-    if (fence !== undefined) {
-      const char = fence.charAt(0);
-      if (open === undefined) {
-        // A backtick fence's info string cannot hold a backtick; such a line
-        // is inline code, not a fence.
-        if (char !== '`' || !rest.includes('`')) {
-          open = { char, length: fence.length, from: offset };
-        }
-      } else if (char === open.char && fence.length >= open.length && rest.trim() === '') {
-        ranges.push([open.from, offset + line.length]);
-        open = undefined;
-      }
+  const walk = (node: MarkdownNode): void => {
+    if ((node.type === 'code' || node.type === 'inlineCode') && node.position) {
+      ranges.push([node.position.start.offset + shift, node.position.end.offset + shift]);
     }
-    offset += line.length + 1;
-  }
-  if (open !== undefined) {
-    ranges.push([open.from, source.length]);
-  }
+    for (const child of node.children ?? []) {
+      walk(child);
+    }
+  };
+  walk(root);
   return ranges;
 }
 
 /**
- * The 1-based line an offset sits on.
+ * The 1-based lines of a set of offsets.
  * @param {string} source - The document.
- * @param {number} offset - An offset into `source`.
- * @returns {number} - The line number.
+ * @param {number[]} offsets - Offsets into `source`.
+ * @returns {number[]} - The line numbers, in ascending order.
  */
-function lineAt(source: string, offset: number): number {
-  return source.slice(0, offset).split('\n').length;
+function linesOf(source: string, offsets: number[]): number[] {
+  return offsets.map((offset) => source.slice(0, offset).split('\n').length).sort((a, b) => a - b);
+}
+
+/**
+ * Whether the markers are exactly one start marker and one end marker after it.
+ * @param {RegExpExecArray[]} starts - The start markers.
+ * @param {RegExpExecArray[]} ends - The end markers.
+ * @returns {boolean} - Whether they form a single pair.
+ */
+function isPair(starts: RegExpExecArray[], ends: RegExpExecArray[]): boolean {
+  const [start] = starts;
+  const [end] = ends;
+  return (
+    starts.length === 1 &&
+    ends.length === 1 &&
+    start !== undefined &&
+    end !== undefined &&
+    end.index >= start.index + start[0].length
+  );
 }
 
 /**
@@ -105,33 +123,41 @@ function lineAt(source: string, offset: number): number {
  * @returns {SectionSpan} - The body's offsets, or why there is none.
  */
 export function locateSection(source: string, name: string): SectionSpan {
-  const fences = fencedRanges(source);
-  const markers = (kind: 'start' | 'end'): RegExpExecArray[] =>
-    [
-      ...source.matchAll(
-        new RegExp(`(?<![\`\\\\])<!--\\s+${kind}\\s+${escapeRegExp(name)}\\s+-->`, 'g'),
-      ),
-    ].filter((match) => !fences.some(([from, to]) => match.index >= from && match.index < to));
+  const markers = (kind: 'start' | 'end'): RegExpExecArray[] => [
+    ...source.matchAll(
+      new RegExp(`(?<![\`\\\\])<!--\\s+${kind}\\s+${escapeRegExp(name)}\\s+-->`, 'g'),
+    ),
+  ];
 
-  const starts = markers('start');
-  const ends = markers('end');
-  const lines = [...starts, ...ends]
-    .map((match) => lineAt(source, match.index))
-    .sort((a, b) => a - b);
+  let starts = markers('start');
+  let ends = markers('end');
+  if (!isPair(starts, ends)) {
+    const code = codeRanges(source);
+    const live = (match: RegExpExecArray): boolean =>
+      !code.some(([from, to]) => match.index >= from && match.index < to);
+    starts = starts.filter(live);
+    ends = ends.filter(live);
+  }
+  const lines = (): number[] =>
+    linesOf(
+      source,
+      [...starts, ...ends].map((match) => match.index),
+    );
 
   if (starts.length === 0 && ends.length === 0) {
-    return { found: false, reason: 'missing', lines };
+    return { found: false, reason: 'missing', lines: [] };
   }
   if (starts.length > 1 || ends.length > 1) {
-    return { found: false, reason: 'ambiguous', lines };
+    return { found: false, reason: 'ambiguous', lines: lines() };
   }
 
   const [start] = starts;
   const [end] = ends;
   const from = start === undefined ? -1 : start.index + start[0].length;
   if (end === undefined || from === -1 || end.index < from) {
-    return { found: false, reason: 'unpaired', lines };
+    return { found: false, reason: 'unpaired', lines: lines() };
   }
-  const lineStart = end.index > from && source.charAt(end.index - 1) === '\n';
-  return { found: true, start: from, end: lineStart ? end.index - 1 : end.index };
+
+  const indent = source.slice(from, end.index).match(/\n[\t ]*$/);
+  return { found: true, start: from, end: indent ? end.index - indent[0].length : end.index };
 }

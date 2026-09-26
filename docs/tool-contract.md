@@ -46,13 +46,20 @@ every byte outside the markers exactly. A README that mixes the two keeps its
 bytes, and its spans are written as LF, because no single ending reproduces it.
 
 Which bytes are a span is a separate question, decided by `src/markers.ts`
-rather than by the formatter. Text that only looks like a marker is not one: a
-marker straight after a backtick or a backslash is quoted, and a marker inside a
-fenced code block is code. A section is filled only when it has exactly one
-start marker and one end marker after it. A repeated marker outside a fence
-leaves the section unchanged, with a warning naming the marker lines, because
-any guess at the intended pair would replace text outside it. The line break
-before an end marker that starts its line belongs to the marker, not the span.
+rather than by the formatter. A marker straight after a backtick or a backslash
+is quoted, and is never a marker. A section with one start marker and one end
+marker after it is filled wherever the pair sits. For any other shape, the
+markers inside code — inline code, fenced or indented code blocks — are examples
+and do not count. If the markers that still count are not a single pair, the
+section is left unchanged with a warning naming the marker lines, because any
+guess at the intended pair would replace text outside it. Code decides only
+when the markers are not a single pair: generated text can hold an unclosed
+fence, and a code check on every lookup would let that fence hide every pair
+after it.
+
+The line break and indentation before an end marker that starts its line belong
+to the marker, not the span. A padded span always puts its end marker on its
+own line.
 
 ## What is guaranteed, and what is prettier's
 

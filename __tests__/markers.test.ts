@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vite-plus/test';
 
-import { locateSection } from '../src/markers.js';
+import { diagnoseMarkers, locateSection } from '../src/markers.js';
 
 /** The body `locateSection` finds, or its reason for finding none. */
 const body = (source: string, name = 'inputs'): string => {
@@ -144,5 +144,51 @@ describe('locateSection', () => {
 
     expect(body(source, name)).toBe('<missing>');
     expect(body(source.replaceAll(lookalike, name), name)).toBe('\ny');
+  });
+});
+
+describe('diagnoseMarkers', () => {
+  const sections = ['title', 'inputs', 'outputs'];
+
+  it.each([
+    ['a missing letter', 'input', 'inputs'],
+    ['a different case', 'Inputs', 'inputs'],
+    ['a transposition', 'otuputs', 'outputs'],
+  ])('suggests the section for a name with %s', (_label, name, section) => {
+    const source = `<!-- start title -->\n<!-- end title -->\n\n<!-- start ${name} -->\n`;
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([
+      `The marker <!-- start ${name} --> on line 4 names no section. Did you mean '${section}'?`,
+    ]);
+  });
+
+  // README.example.md carries a `[.github/ghadocs/examples/]` marker that
+  // nothing fills, and other tools use the same comment syntax.
+  it('ignores a marker name that is not close to any section', () => {
+    const source = [
+      '<!-- start title -->',
+      '<!-- end title -->',
+      '<!-- start [.github/ghadocs/examples/] -->',
+      '<!-- end [.github/ghadocs/examples/] -->',
+    ].join('\n');
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
+  it('ignores a mistyped marker inside code', () => {
+    const source = '<!-- start title -->\n<!-- end title -->\n\n```\n<!-- start input -->\n```\n';
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
+  it('reports a README with no section markers once', () => {
+    const [warning, ...rest] = diagnoseMarkers('# README\n', sections);
+
+    expect(warning).toContain('The README has no section markers');
+    expect(rest).toStrictEqual([]);
+  });
+
+  it('does not report a README whose only section marker is unpaired as having none', () => {
+    expect(diagnoseMarkers('<!-- start inputs -->\n', sections)).toStrictEqual([]);
   });
 });

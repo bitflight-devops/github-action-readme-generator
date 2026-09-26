@@ -33,6 +33,9 @@ describe('ReadmeGenerator', () => {
     mockLogTask = new LogTask('mock');
     mockInputs = new Inputs({}, mockLogTask);
     mockInputs.readmeEditor = new ReadmeEditor('./README.md');
+    vi.mocked(mockInputs.readmeEditor.getReadmeContent).mockReturnValue(
+      '<!-- start title -->\n<!-- end title -->\n',
+    );
     // The auto-mocked Inputs has no config; the real constructor always builds
     // one, and generate() reads the `prettier` flag off it.
     mockInputs.config = { get: vi.fn().mockReturnValue(undefined) } as unknown as Inputs['config'];
@@ -126,6 +129,31 @@ describe('ReadmeGenerator', () => {
       expect(readmeGenerator.updateSections).toHaveBeenCalledWith(sections);
       expect(readmeGenerator.resolveUpdates).toHaveBeenCalledWith(sectionPromises);
       expect(readmeGenerator.outputSections).toHaveBeenCalledWith(combinedSections);
+    });
+
+    // #641 and #644: marker problems are reported before any section is
+    // written, where a successful run would otherwise hide them.
+    it('warns about a README with no section markers', async () => {
+      vi.mocked(mockInputs.readmeEditor.getReadmeContent).mockReturnValue('# README\n');
+      readmeGenerator.updateSections = vi.fn().mockReturnValue([]);
+      readmeGenerator.resolveUpdates = vi.fn().mockResolvedValue({});
+      readmeGenerator.outputSections = vi.fn();
+
+      await readmeGenerator.generate();
+
+      expect(mockLogTask.warn).toHaveBeenCalledWith(
+        expect.stringContaining('The README has no section markers'),
+      );
+    });
+
+    it('warns nothing for a README whose markers name sections', async () => {
+      readmeGenerator.updateSections = vi.fn().mockReturnValue([]);
+      readmeGenerator.resolveUpdates = vi.fn().mockResolvedValue({});
+      readmeGenerator.outputSections = vi.fn();
+
+      await readmeGenerator.generate();
+
+      expect(mockLogTask.warn).not.toHaveBeenCalled();
     });
 
     it.each([

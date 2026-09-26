@@ -161,3 +161,85 @@ export function locateSection(source: string, name: string): SectionSpan {
   const indent = source.slice(from, end.index).match(/\n[\t ]*$/);
   return { found: true, start: from, end: indent ? end.index - indent[0].length : end.index };
 }
+
+/**
+ * The number of single-character edits between two strings.
+ * @param {string} a - One string.
+ * @param {string} b - The other string.
+ * @returns {number} - The Levenshtein distance.
+ */
+function editDistance(a: string, b: string): number {
+  let previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+  for (let i = 1; i <= a.length; i++) {
+    const current = [i];
+    for (let j = 1; j <= b.length; j++) {
+      const substitution = (previous[j - 1] ?? 0) + (a[i - 1] === b[j - 1] ? 0 : 1);
+      current.push(Math.min((previous[j] ?? 0) + 1, (current[j - 1] ?? 0) + 1, substitution));
+    }
+    previous = current;
+  }
+  return previous[b.length] ?? 0;
+}
+
+/**
+ * The section a mistyped marker name most likely meant: one within two edits,
+ * ignoring case. A name further from every section is some other tool's
+ * marker, or one this tool does not fill, and is not the user's mistake.
+ * @param {string} name - A marker name that is not a section.
+ * @param {readonly string[]} sections - The section names.
+ * @returns {string | undefined} - The closest section, if one is close.
+ */
+function closestSection(name: string, sections: readonly string[]): string | undefined {
+  let best: { section: string; distance: number } | undefined;
+  for (const section of sections) {
+    const distance = editDistance(name.toLowerCase(), section);
+    if (distance <= 2 && (best === undefined || distance < best.distance)) {
+      best = { section, distance };
+    }
+  }
+  return best?.section;
+}
+
+/**
+ * Warnings about markers that stop a README from being generated as its
+ * author intended, found before any section is written:
+ *
+ * - a marker whose name is a near miss of a section name, which the tool
+ *   otherwise skips in silence;
+ * - a README with no marker for any section, which the tool otherwise leaves
+ *   unchanged in silence.
+ *
+ * Markers inside code are examples and are not reported.
+ * @param {string} source - The document.
+ * @param {readonly string[]} sections - Every section name the tool knows.
+ * @returns {string[]} - One message per problem.
+ */
+export function diagnoseMarkers(source: string, sections: readonly string[]): string[] {
+  const code = codeRanges(source);
+  const warnings: string[] = [];
+  for (const match of source.matchAll(/(?<![`\\])<!--\s+(start|end)\s+(\S+)\s+-->/g)) {
+    const [marker, , name = ''] = match;
+    const inCode = code.some(([from, to]) => match.index >= from && match.index < to);
+    if (inCode || sections.includes(name)) {
+      continue;
+    }
+    const section = closestSection(name, sections);
+    if (section !== undefined) {
+      const [line] = linesOf(source, [match.index]);
+      warnings.push(
+        `The marker ${marker} on line ${line} names no section. Did you mean '${section}'?`,
+      );
+    }
+  }
+
+  const missing = (name: string): boolean => {
+    const span = locateSection(source, name);
+    return !span.found && span.reason === 'missing';
+  };
+  if (sections.every(missing)) {
+    warnings.push(
+      'The README has no section markers, so nothing was generated. Add a pair such as <!-- start inputs --> and <!-- end inputs --> where each section belongs; README.example.md shows every section.',
+    );
+  }
+  return warnings;
+}

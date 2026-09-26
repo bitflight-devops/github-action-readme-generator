@@ -222,6 +222,23 @@ describe('ReadmeEditor', () => {
     // #691: a README that documents the markers repeats them. A repeat inside a
     // fence is code; a repeat outside one leaves the pair ambiguous, and the
     // section is left alone rather than paired by guesswork.
+    it.each([
+      ['a start marker alone', '<!-- start inputs -->\nstale\n'],
+      [
+        'an end marker before the start marker',
+        '<!-- end inputs -->\nstale\n<!-- start inputs -->\n',
+      ],
+    ])('leaves the file unchanged for %s', async (_label, markers) => {
+      const original = `${USER_PROSE}\n${markers}`;
+      fs.writeFileSync(readmePath, original, 'utf8');
+      const editor = new ReadmeEditor(readmePath);
+      editor.updateSection('inputs', UNALIGNED);
+
+      await editor.dumpToFile();
+
+      expect(read()).toBe(original);
+    });
+
     describe('when the README repeats a marker', () => {
       const pair = ['<!-- start inputs -->', 'stale', '<!-- end inputs -->'];
 

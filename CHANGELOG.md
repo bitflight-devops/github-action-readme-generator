@@ -1,3 +1,9 @@
+## [2.0.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.0...v2.0.1) (2026-09-26)
+
+### Bug Fixes
+
+* **readme-editor:** pair section markers without guessing ([#704](https://github.com/bitflight-devops/github-action-readme-generator/issues/704)) ([758dbdc](https://github.com/bitflight-devops/github-action-readme-generator/commit/758dbdcd374851b7dfa68ec4dba2f3c5a7e22d4c))
+
 ## [2.0.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v1.12.9...v2.0.0) (2026-09-25)
 
 ### ⚠ BREAKING CHANGES

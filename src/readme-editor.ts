@@ -8,20 +8,9 @@ import * as fs from 'node:fs';
 
 import * as core from '@actions/core';
 
-import { indexOfRegex, lastIndexOfRegex } from './helpers.js';
 import LogTask from './logtask/index.js';
+import { locateSection } from './markers.js';
 import { formatMarkdown } from './prettier.js';
-
-/**
- * The format for the start token of a section.
- */
-
-export const startTokenFormat = '(^|[^`\\\\])<!--\\s+start\\s+%s\\s+-->';
-
-/**
- * The format for the end token of a section.
- */
-export const endTokenFormat = '(^|[^`\\\\])<!--\\s+end\\s+%s\\s+-->';
 
 /**
  * Lays out section content the way it sits between its markers.
@@ -103,27 +92,20 @@ export default class ReadmeEditor {
   }
 
   /**
-   * Gets the indexes of the start and end tokens for a given section.
+   * Gets the body offsets of a section — see `locateSection`.
    * @param {string} token - The section token.
-   * @returns {number[]} - The indexes of the start and end tokens.
+   * @returns {number[]} - The body's start and end offsets, or `[]` when the
+   *   section cannot be located.
    */
   getTokenIndexes(token: string, logTask?: LogTask): number[] {
-    const log = logTask ?? new LogTask('getTokenIndexes');
-    const startRegExp = new RegExp(startTokenFormat.replace('%s', token));
-    const stopRegExp = new RegExp(endTokenFormat.replace('%s', token));
-    const startIndex = lastIndexOfRegex(this.fileContent, startRegExp);
-    if (startIndex === -1) {
-      log.debug(`No start token found for section '${token}'. Skipping`);
+    const span = locateSection(this.fileContent, token);
+    if (!span.found) {
+      (logTask ?? new LogTask('getTokenIndexes')).debug(
+        `Section '${token}' is ${span.reason}. Skipping`,
+      );
       return [];
     }
-
-    const stopIndex = indexOfRegex(this.fileContent, stopRegExp);
-    if (stopIndex === -1) {
-      log.debug(`No start or end token found for section '${token}'. Skipping`);
-      return [];
-    }
-
-    return [startIndex, stopIndex];
+    return [span.start, span.end];
   }
 
   /**
@@ -146,12 +128,27 @@ export default class ReadmeEditor {
       .trim();
     log.info(`Looking for the ${name} token in ${this.filePath}`);
 
-    const [startIndex, stopIndex] = this.getTokenIndexes(name, log);
-    if (startIndex && stopIndex) {
-      const beforeContent = this.fileContent.slice(0, startIndex);
-      const afterContent = this.fileContent.slice(stopIndex);
+    const span = locateSection(this.fileContent, name);
+    if (!span.found && span.reason === 'ambiguous') {
+      log.warn(
+        `The '${name}' section has more than one start or end marker outside code, on lines ${span.lines.join(', ')}. Leaving it unchanged`,
+      );
+    }
+    if (!span.found && span.reason === 'unpaired') {
+      log.warn(
+        `The '${name}' section's markers on line(s) ${span.lines.join(', ')} are not a start marker followed by an end marker. Leaving it unchanged`,
+      );
+    }
+    if (span.found) {
+      const beforeContent = this.fileContent.slice(0, span.start);
+      const afterContent = this.fileContent.slice(span.end);
+      // A padded span puts the end marker on its own line. When the marker
+      // shared a line with the old body, the line break written before it
+      // belongs to the marker from now on, so one more is written to keep the
+      // span what `layoutSpan` lays out.
+      const ownLine = addNewlines && !afterContent.startsWith('\n') ? '\n' : '';
 
-      this.fileContent = `${beforeContent}${layoutSpan(content, addNewlines)}${afterContent}`;
+      this.fileContent = `${beforeContent}${layoutSpan(content, addNewlines)}${ownLine}${afterContent}`;
       // An unpadded span sits inline, and formatting it as a Markdown document
       // would apply block rules to inline text, so only padded spans are kept
       // for the formatter.
@@ -169,22 +166,15 @@ export default class ReadmeEditor {
    * outside them survive untouched.
    *
    * The span is formatted only while its markers still bound exactly the text
-   * `updateSection` wrote. The markers are paired again here, after every
-   * section has been written, and a marker another section wrote can win that
-   * pairing; the text between such a pair is not this tool's to format.
+   * `updateSection` wrote. The section is located again here, after every
+   * section has been written, and a marker another section wrote into its own
+   * span can make this section's markers ambiguous.
    * @param {string} name - The name of the section.
    * @param {string} content - The content `updateSection` wrote, padded.
    */
   private async formatSection(name: string, content: string): Promise<void> {
-    const [startIndex, stopIndex] = this.getTokenIndexes(name);
-    if (!startIndex || !stopIndex) {
-      return;
-    }
-
-    if (
-      startIndex > stopIndex ||
-      this.fileContent.slice(startIndex, stopIndex) !== layoutSpan(content, true)
-    ) {
+    const span = locateSection(this.fileContent, name);
+    if (!span.found || this.fileContent.slice(span.start, span.end) !== layoutSpan(content, true)) {
       this.log.warn(
         `The '${name}' markers no longer bound the text written to them. Leaving the section unformatted`,
       );
@@ -192,10 +182,10 @@ export default class ReadmeEditor {
     }
 
     const formatted = content === '' ? '' : (await formatMarkdown(content)).trim();
-    const span = formatted === '' ? '\n' : layoutSpan(formatted, true);
+    const replacement = formatted === '' ? '\n' : layoutSpan(formatted, true);
 
-    this.fileContent = `${this.fileContent.slice(0, startIndex)}${span}${this.fileContent.slice(
-      stopIndex,
+    this.fileContent = `${this.fileContent.slice(0, span.start)}${replacement}${this.fileContent.slice(
+      span.end,
     )}`;
   }
 

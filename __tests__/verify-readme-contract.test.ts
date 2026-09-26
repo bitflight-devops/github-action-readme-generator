@@ -898,6 +898,48 @@ describe('README contract verifier regressions', () => {
       expect(output).not.toContain('rewrote content outside the section markers');
     });
 
+    // A repeated marker inside code is an example, to the tool and to this
+    // check alike — the usage block quoting `branding_svg_path`'s description
+    // is the case.
+    it('ignores a fenced marker in a generated span when the section has its own pair', () => {
+      const branding = ['<!-- start branding -->', '<!-- end branding -->'];
+      const original = ['<!-- start usage -->', '<!-- end usage -->', ...branding, ''].join('\n');
+      const generated = [
+        '<!-- start usage -->',
+        '```yaml',
+        '# <!-- start branding --><!-- end branding -->',
+        '```',
+        '<!-- end usage -->',
+        ...branding,
+        '',
+      ].join('\n');
+
+      const output = annotations(() => verify(generated, ACTION, undefined, '.', original));
+
+      expect(output).not.toContain('unguarded');
+      expect(output).toContain('content outside the section markers is byte-identical');
+    });
+
+    it('names an ambiguous section and accepts it left unchanged', () => {
+      const original = withProse(
+        [
+          '<!-- start inputs -->',
+          'old',
+          '<!-- end inputs -->',
+          'x',
+          '<!-- end inputs -->',
+          '',
+        ].join('\n'),
+      );
+
+      const output = annotations(() => verify(original, ACTION, undefined, '.', original));
+
+      expect(output).toContain(
+        'the original repeats a marker for the inputs section, so the tool leaves it unchanged',
+      );
+      expect(output).toContain('content outside the section markers is byte-identical');
+    });
+
     // One section whose markers moved must not stand the check down for the
     // rest: a run that moves a marker in one section and destroys prose around
     // another has to report both, or the log names the lesser problem only.

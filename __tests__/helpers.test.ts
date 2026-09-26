@@ -9,9 +9,7 @@ import {
   basename,
   columnHeader,
   getCurrentVersionString,
-  indexOfRegex,
   isPrettierEnabled,
-  lastIndexOfRegex,
   prefixParser,
   remoteGitUrlPattern,
   repositoryFinder,
@@ -323,21 +321,6 @@ describe('helpers', () => {
       expect(vi.isMockFunction(fs.readFileSync)).toBe(true);
       expect(fs.readFileSync).toHaveBeenCalledWith('.git/config', 'utf8');
       expect(result).toEqual({ owner: 'ownergit', repo: 'repogit' });
-    });
-  });
-
-  describe('indexOfRegex and lastIndexOfRegex', () => {
-    const str = 'Hello, World!';
-    const regex = /llo/g;
-
-    test('indexOfRegex should return the correct index', () => {
-      expect(indexOfRegex(str, regex)).toBe(2);
-      expect(indexOfRegex(str, /z/g)).toBe(-1);
-    });
-
-    test('lastIndexOfRegex should return the correct index', () => {
-      expect(lastIndexOfRegex(str, regex)).toBe(5);
-      expect(lastIndexOfRegex(str, /z/g)).toBe(-1);
     });
   });
 

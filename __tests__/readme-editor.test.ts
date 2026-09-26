@@ -103,6 +103,17 @@ describe('ReadmeEditor', () => {
       expect(span).toBe('+ New\n');
     });
 
+    // #697: the span sits mid-document, where GitHub renders a leading `---`
+    // block as a thematic break, not as YAML front matter.
+    it('does not format a span that opens with --- as front matter', async () => {
+      const editor = new ReadmeEditor(readmePath);
+      editor.updateSection('inputs', "---\ntitle: 'x'\n---\nbody");
+
+      await editor.dumpToFile();
+
+      expect(read()).toContain("title: 'x'");
+    });
+
     it('collapses the span to bare markers when the section has no content', async () => {
       const editor = new ReadmeEditor(readmePath);
       editor.updateSection('inputs', '');

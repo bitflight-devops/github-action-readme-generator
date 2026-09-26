@@ -45,15 +45,14 @@ throughout is edited as LF in memory and written back as CRLF, which round-trips
 every byte outside the markers exactly. A README that mixes the two keeps its
 bytes, and its spans are written as LF, because no single ending reproduces it.
 
-Which bytes are a span is a separate question, decided by marker pairing rather
-than by the formatter. `getTokenIndexes` pairs the last start marker in the
-document with the last end marker in the document, so a repeated marker after a
-real pair moves one of the two boundaries — a repeated end marker widens the
-span past its end marker, and a repeated start marker moves the start instead
-([#691](https://github.com/bitflight-devops/github-action-readme-generator/issues/691)).
-Code against the pairing that rule gives you until it is fixed: a marker
-example placed above the generated sections, or quoted inline between
-backticks, is safe.
+Which bytes are a span is a separate question, decided by `src/markers.ts`
+rather than by the formatter. Text that only looks like a marker is not one: a
+marker straight after a backtick or a backslash is quoted, and a marker inside a
+fenced code block is code. A section is filled only when it has exactly one
+start marker and one end marker after it. A repeated marker outside a fence
+leaves the section unchanged, with a warning naming the marker lines, because
+any guess at the intended pair would replace text outside it. The line break
+before an end marker that starts its line belongs to the marker, not the span.
 
 ## What is guaranteed, and what is prettier's
 

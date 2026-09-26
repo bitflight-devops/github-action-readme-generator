@@ -119,34 +119,68 @@ const fail = (message) => {
 };
 
 /**
- * Mirrors `startTokenFormat` / `endTokenFormat` in `src/readme-editor.ts`,
- * including the `(^|[^\`\\])` guard, which stops a marker quoted inline
- * between backticks or escaped with a backslash from being mistaken for a real
- * one — this repository's own generated inputs table carries such decoys, which
- * matched would report a real section as empty. The guard reaches no further: a
- * marker alone on its own line inside a fence is preceded by a newline, so it
- * matches like any other. Which pair wins is then a pairing question, not a
- * matching one — issue #691.
+ * A fence opener or closer: three or more backticks or tildes, after optional
+ * indentation and blockquote prefixes.
  */
-const guard = '(^|[^`\\\\])';
+const fenceLine = /^(?:[\t ]*>)*[\t ]*(`{3,}|~{3,})(.*)$/;
+
+/** The half-open ranges inside fenced code blocks, fence lines included. */
+const fencedRanges = (source) => {
+  const ranges = [];
+  let open = null;
+  let offset = 0;
+  for (const line of source.split('\n')) {
+    const match = fenceLine.exec(line);
+    if (match) {
+      const [, fence, rest] = match;
+      if (open === null) {
+        if (fence[0] !== '`' || !rest.includes('`')) {
+          open = { char: fence[0], length: fence.length, from: offset };
+        }
+      } else if (fence[0] === open.char && fence.length >= open.length && rest.trim() === '') {
+        ranges.push([open.from, offset + line.length]);
+        open = null;
+      }
+    }
+    offset += line.length + 1;
+  }
+  if (open !== null) ranges.push([open.from, source.length]);
+  return ranges;
+};
 
 /**
- * Half-open [start, end) of a section's body, or null when absent.
+ * Every live start and end marker for a section, as the offsets where each
+ * `<!--` begins.
  *
- * The last surviving start marker is paired with the last end marker after it,
- * following the editor's use of `lastIndexOfRegex` for the start token.
+ * Written apart from `src/markers.ts` on purpose, so each implementation
+ * checks the other rather than agreeing by construction. The rules are the
+ * same: a marker straight after a backtick or backslash is quoted, a marker
+ * inside a fenced code block is code, and the name is matched literally.
  */
-const sectionBounds = (source, name) => {
-  const starts = [...source.matchAll(new RegExp(`${guard}<!--\\s+start\\s+${name}\\s+-->`, 'g'))];
-  if (starts.length === 0) return null;
-  const last = starts.at(-1);
-  const from = last.index + last[0].length;
-  const ends = [
-    ...source.slice(from).matchAll(new RegExp(`${guard}<!--\\s+end\\s+${name}\\s+-->`, 'g')),
-  ];
-  const end = ends.at(-1);
-  if (!end) return null;
-  return [from, from + end.index];
+const markersOf = (source, name) => {
+  const fences = fencedRanges(source);
+  const literal = name.replaceAll(/[$()*+.?[\\\]^{|}]/g, '\\$&');
+  const find = (kind) =>
+    [...source.matchAll(new RegExp(`(?<![\`\\\\])<!--\\s+${kind}\\s+${literal}\\s+-->`, 'g'))]
+      .filter((match) => !fences.some(([from, to]) => match.index >= from && match.index < to))
+      .map((match) => ({ at: match.index, after: match.index + match[0].length }));
+  return { starts: find('start'), ends: find('end') };
+};
+
+/**
+ * Half-open [start, end) of a section's body, or null when it has none.
+ *
+ * A body needs exactly one start marker and one end marker after it; the tool
+ * leaves any other shape alone. The line break before an end marker that
+ * starts its line belongs to the marker's line, not to the body.
+ */
+const ownedBounds = (source, name) => {
+  const { starts, ends } = markersOf(source, name);
+  if (starts.length !== 1 || ends.length !== 1) return null;
+  const from = starts[0].after;
+  const end = ends[0].at;
+  if (end < from) return null;
+  return [from, end > from && source[end - 1] === '\n' ? end - 1 : end];
 };
 
 /**
@@ -158,7 +192,7 @@ const sectionBounds = (source, name) => {
  * still fails.
  */
 const sectionFrom = (source, name, trim = true) => {
-  const bounds = sectionBounds(source, name);
+  const bounds = ownedBounds(source, name);
   if (bounds === null) return null;
   const body = source.slice(bounds[0], bounds[1]).replaceAll('\r\n', '\n');
   return trim ? body.trim() : body;
@@ -177,36 +211,6 @@ const generatedSections = [
   'contents',
   'badges',
 ];
-
-/** Every start and every end marker for a section, in document order. */
-const markersOf = (source, name) => ({
-  starts: [...source.matchAll(new RegExp(`${guard}<!--\\s+start\\s+${name}\\s+-->`, 'g'))],
-  ends: [...source.matchAll(new RegExp(`${guard}<!--\\s+end\\s+${name}\\s+-->`, 'g'))],
-});
-
-/** Where a match's `<!--` begins, skipping the guard character it captured. */
-const markerStart = (match) => match.index + match[1].length;
-
-/**
- * The span a section owns: its last start marker to the first end marker after
- * it, which is what a marker pair means.
- *
- * Deliberately not `sectionBounds`, which mirrors `src/readme-editor.ts`. A
- * check built on the editor's own pairing cannot see a span the editor paired
- * wrongly — it would agree with the run about exactly the bytes the run
- * destroyed. Disagreeing with the editor is the signal.
- */
-const ownedBounds = (source, name) => {
-  const { starts, ends } = markersOf(source, name);
-  const start = starts.at(-1);
-  if (!start) return null;
-  const from = start.index + start[0].length;
-  const end = ends.find((match) => markerStart(match) >= from);
-  if (!end) return null;
-  // An end marker abutting the start marker captures that marker's own `>` as
-  // its guard, putting the match one byte behind the body — an empty span.
-  return [from, Math.max(end.index, from)];
-};
 
 /**
  * The original's text outside its section spans, in document order.
@@ -239,14 +243,16 @@ const outsideChunks = (source) => {
   return { chunks, names };
 };
 
-/** The section markers left unguarded inside a generated span. */
-const markersIn = (text) => {
+/** The live section markers in the generated README between two offsets. */
+const markersIn = (from, to) => {
   const found = [];
   for (const name of generatedSections) {
-    for (const kind of ['start', 'end']) {
-      if (new RegExp(`${guard}<!--\\s+${kind}\\s+${name}\\s+-->`).test(text)) {
-        found.push({ kind, name });
-      }
+    const { starts, ends } = markersOf(readme, name);
+    for (const [kind, markers] of [
+      ['start', starts],
+      ['end', ends],
+    ]) {
+      if (markers.some(({ at }) => at >= from && at < to)) found.push({ kind, name });
     }
   }
   return found;
@@ -271,13 +277,13 @@ if (originalReadme !== null) {
   // outside chunks, in order, with one span between each neighbouring pair and
   // nothing left over. A run that duplicated the tail or swallowed a paragraph
   // fails the walk, because what it added or dropped has nowhere to go.
-  // A repeated marker in the original makes its pair ambiguous, and the tool
-  // resolves that ambiguity destructively (#691). Named up front, so the walk
-  // below reporting a rewrite far from the damage reads as a consequence.
+  // A repeated marker outside a fence makes a section's pair ambiguous, and
+  // the tool leaves that section alone. Named, so an unchanged section reads
+  // as the reason rather than as a miss.
   for (const name of generatedSections) {
     const { starts, ends } = markersOf(originalReadme, name);
     if (starts.length > 1 || ends.length > 1) {
-      skip(`the original repeats a marker for the ${name} section, so its pair is ambiguous — see #691`);
+      skip(`the original repeats a marker for the ${name} section, so the tool leaves it unchanged`);
     }
   }
 
@@ -298,15 +304,15 @@ if (originalReadme !== null) {
       break;
     }
 
-    // Between two chunks sits one generated span. A section marker inside it
-    // competes to be that section's boundary, and the editor takes the last
-    // one in the document — so where that section has a pair to steal, the
-    // next run pairs differently. Where it has none, nothing pairs with it
-    // until the user adds the pair, which is a warning rather than damage.
+    // Between two chunks sits one generated span. A live section marker inside
+    // it repeats that section's marker, so where the section has a pair, the
+    // next run finds it ambiguous and stops updating it. Where it has none,
+    // the marker is unpaired until the user adds the pair, which is a warning
+    // rather than damage.
     if (index > 0) {
-      for (const { kind, name } of markersIn(readme.slice(cursor, at))) {
+      for (const { kind, name } of markersIn(cursor, at)) {
         const message = `the generated ${names[index - 1]} section contains an unguarded ${kind} ${name} marker`;
-        if (ownedBounds(readme, name) === null) {
+        if (ownedBounds(originalReadme, name) === null) {
           skip(`${message}; harmless until this README opens a ${name} section`);
         } else {
           fail(message);

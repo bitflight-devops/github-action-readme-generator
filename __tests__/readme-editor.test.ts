@@ -171,6 +171,62 @@ describe('ReadmeEditor', () => {
       expect(read()).toBe(formatted);
     });
 
+    // #693: the end marker's own position is the boundary, not the character
+    // before it.
+    it.each([true, false])(
+      'replaces the whole span when the end marker shares its line (pretty: %s)',
+      async (pretty) => {
+        fs.writeFileSync(readmePath, '# T\n<!-- start inputs -->old<!-- end inputs -->\ntail\n');
+        const editor = new ReadmeEditor(readmePath);
+        editor.updateSection('inputs', 'new', false);
+
+        await editor.dumpToFile(pretty);
+
+        expect(read()).toBe('# T\n<!-- start inputs -->new<!-- end inputs -->\ntail\n');
+      },
+    );
+
+    // #691: a README that documents the markers repeats them. A repeat inside a
+    // fence is code; a repeat outside one leaves the pair ambiguous, and the
+    // section is left alone rather than paired by guesswork.
+    describe('when the README repeats a marker', () => {
+      const pair = ['<!-- start inputs -->', 'stale', '<!-- end inputs -->'];
+
+      it.each([
+        ['start', '<!-- start inputs -->'],
+        ['end', '<!-- end inputs -->'],
+      ])(
+        'leaves the file unchanged when a %s marker repeats outside a fence',
+        async (_kind, repeat) => {
+          const original = [...pair, '', USER_PROSE, '', repeat, ''].join('\n');
+          fs.writeFileSync(readmePath, original, 'utf8');
+          const editor = new ReadmeEditor(readmePath);
+          editor.updateSection('inputs', UNALIGNED);
+
+          await editor.dumpToFile();
+
+          expect(read()).toBe(original);
+        },
+      );
+
+      it.each([
+        ['above', (fence: string) => [fence, '', ...pair]],
+        ['below', (fence: string) => [...pair, '', fence]],
+      ])('fills the real pair when the repeat is inside a fence %s it', async (_where, layout) => {
+        const fence = ['```markdown', '<!-- start inputs -->', '<!-- end inputs -->', '```'].join(
+          '\n',
+        );
+        fs.writeFileSync(readmePath, [...layout(fence), ''].join('\n'), 'utf8');
+        const editor = new ReadmeEditor(readmePath);
+        editor.updateSection('inputs', UNALIGNED);
+
+        await editor.dumpToFile();
+
+        const filled = pair.join('\n').replace('\nstale', `\n\n${PADDED}\n`);
+        expect(read()).toBe([...layout(fence), ''].join('\n').replace(pair.join('\n'), filled));
+      });
+    });
+
     // Each section's markers are paired again when it is formatted, after
     // every section has been written. A marker that another section wrote into
     // its own span can win that pairing, and the text between such a pair is

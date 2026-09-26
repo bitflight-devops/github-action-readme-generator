@@ -758,25 +758,114 @@ function getCurrentVersionString(inputs) {
 	log.debug(`version to use in generated example is ${versionString}`);
 	return versionString;
 }
-function indexOfRegex(str, providedRegex) {
-	const regex = providedRegex.global ? providedRegex : new RegExp(providedRegex.source, `${providedRegex.flags}g`);
-	let index = -1;
-	let match = regex.exec(str);
-	while (match) {
-		index = match.index;
-		match = regex.exec(str);
-	}
-	return index;
+//#endregion
+//#region src/markers.ts
+/**
+* Finds a section's `<!-- start NAME -->` and `<!-- end NAME -->` markers in a
+* README and pairs them.
+*
+* A marker straight after a backtick or a backslash is quoted or escaped, and
+* is never a marker. The name is matched literally.
+*
+* A section with one start marker and one end marker after it is located
+* wherever the pair sits. Any other shape — a README that documents the
+* markers repeats them — has the markers inside code set aside as examples:
+* inline code, fenced or indented code blocks. Code decides only when the
+* markers are not a single pair: text this tool generated can hold an unclosed
+* fence, and a code check on every lookup would let that fence hide every pair
+* after it.
+*
+* Any other shape is reported rather than guessed at, because a wrong guess
+* replaces text outside the pair, which is the user's.
+*/
+/**
+* Escapes the regular expression metacharacters in `text`.
+* @param {string} text - Literal text.
+* @returns {string} - A pattern that matches `text` exactly.
+*/
+function escapeRegExp(text) {
+	return text.replaceAll(/[$()*+.?[\\\]^{|}]/g, "\\$&");
 }
-function lastIndexOfRegex(str, providedRegex) {
-	const regex = providedRegex.global ? providedRegex : new RegExp(providedRegex.source, `${providedRegex.flags}g`);
-	let index = -1;
-	let match = regex.exec(str);
-	while (match) {
-		index = match.index + match[0].length;
-		match = regex.exec(str);
+/**
+* The half-open ranges of `source` that Markdown renders as code.
+*
+* Parsed with the markdown parser prettier already bundles, so containers,
+* HTML blocks and indentation follow Markdown's rules rather than a regex.
+* @param {string} source - The document.
+* @returns {Array<[number, number]>} - The code ranges.
+*/
+function codeRanges(source) {
+	const shift = source.startsWith("﻿") ? 1 : 0;
+	const root = markdown.parsers.markdown.parse(source.slice(shift), {});
+	const ranges = [];
+	const walk = (node) => {
+		if ((node.type === "code" || node.type === "inlineCode") && node.position) ranges.push([node.position.start.offset + shift, node.position.end.offset + shift]);
+		for (const child of node.children ?? []) walk(child);
+	};
+	walk(root);
+	return ranges;
+}
+/**
+* The 1-based lines of a set of offsets.
+* @param {string} source - The document.
+* @param {number[]} offsets - Offsets into `source`.
+* @returns {number[]} - The line numbers, in ascending order.
+*/
+function linesOf(source, offsets) {
+	return offsets.map((offset) => source.slice(0, offset).split("\n").length).sort((a, b) => a - b);
+}
+/**
+* Whether the markers are exactly one start marker and one end marker after it.
+* @param {RegExpExecArray[]} starts - The start markers.
+* @param {RegExpExecArray[]} ends - The end markers.
+* @returns {boolean} - Whether they form a single pair.
+*/
+function isPair(starts, ends) {
+	const [start] = starts;
+	const [end] = ends;
+	return starts.length === 1 && ends.length === 1 && start !== void 0 && end !== void 0 && end.index >= start.index + start[0].length;
+}
+/**
+* Locates the body of a section between its markers.
+* @param {string} source - The document.
+* @param {string} name - The section name, matched literally.
+* @returns {SectionSpan} - The body's offsets, or why there is none.
+*/
+function locateSection(source, name) {
+	const markers = (kind) => [...source.matchAll(new RegExp(`(?<![\`\\\\])<!--\\s+${kind}\\s+${escapeRegExp(name)}\\s+-->`, "g"))];
+	let starts = markers("start");
+	let ends = markers("end");
+	if (!isPair(starts, ends)) {
+		const code = codeRanges(source);
+		const live = (match) => !code.some(([from, to]) => match.index >= from && match.index < to);
+		starts = starts.filter(live);
+		ends = ends.filter(live);
 	}
-	return index;
+	const lines = () => linesOf(source, [...starts, ...ends].map((match) => match.index));
+	if (starts.length === 0 && ends.length === 0) return {
+		found: false,
+		reason: "missing",
+		lines: []
+	};
+	if (starts.length > 1 || ends.length > 1) return {
+		found: false,
+		reason: "ambiguous",
+		lines: lines()
+	};
+	const [start] = starts;
+	const [end] = ends;
+	const from = start === void 0 ? -1 : start.index + start[0].length;
+	if (end === void 0 || from === -1 || end.index < from) return {
+		found: false,
+		reason: "unpaired",
+		lines: lines()
+	};
+	const indent = source.slice(from, end.index).match(/\n[\t ]*$/);
+	return {
+		found: true,
+		start: from,
+		end: indent ? end.index - indent[0].length : end.index
+	};
 }
 //#endregion
 //#region src/prettier.ts
@@ -852,14 +941,6 @@ async function wrapDescription(value, content, prefix = "    # ") {
 * It has methods to update specific sections within the file and dump the modified content back to the file.
 */
 /**
-* The format for the start token of a section.
-*/
-const startTokenFormat = "(^|[^`\\\\])<!--\\s+start\\s+%s\\s+-->";
-/**
-* The format for the end token of a section.
-*/
-const endTokenFormat = "(^|[^`\\\\])<!--\\s+end\\s+%s\\s+-->";
-/**
 * Lays out section content the way it sits between its markers.
 * @param {string} content - The trimmed section content.
 * @param {boolean} addNewlines - Whether to pad the content with newlines.
@@ -928,25 +1009,18 @@ var ReadmeEditor = class {
 		return this.fileContent;
 	}
 	/**
-	* Gets the indexes of the start and end tokens for a given section.
+	* Gets the body offsets of a section — see `locateSection`.
 	* @param {string} token - The section token.
-	* @returns {number[]} - The indexes of the start and end tokens.
+	* @returns {number[]} - The body's start and end offsets, or `[]` when the
+	*   section cannot be located.
 	*/
 	getTokenIndexes(token, logTask) {
-		const log = logTask ?? new LogTask("getTokenIndexes");
-		const startRegExp = new RegExp(startTokenFormat.replace("%s", token));
-		const stopRegExp = new RegExp(endTokenFormat.replace("%s", token));
-		const startIndex = lastIndexOfRegex(this.fileContent, startRegExp);
-		if (startIndex === -1) {
-			log.debug(`No start token found for section '${token}'. Skipping`);
+		const span = locateSection(this.fileContent, token);
+		if (!span.found) {
+			(logTask ?? new LogTask("getTokenIndexes")).debug(`Section '${token}' is ${span.reason}. Skipping`);
 			return [];
 		}
-		const stopIndex = indexOfRegex(this.fileContent, stopRegExp);
-		if (stopIndex === -1) {
-			log.debug(`No start or end token found for section '${token}'. Skipping`);
-			return [];
-		}
-		return [startIndex, stopIndex];
+		return [span.start, span.end];
 	}
 	/**
 	* Updates a specific section in the README file with the provided content.
@@ -958,11 +1032,14 @@ var ReadmeEditor = class {
 		const log = new LogTask(name);
 		const content = (Array.isArray(providedContent) ? providedContent.join("\n") : providedContent ?? "").replaceAll("\r\n", "\n").trim();
 		log.info(`Looking for the ${name} token in ${this.filePath}`);
-		const [startIndex, stopIndex] = this.getTokenIndexes(name, log);
-		if (startIndex && stopIndex) {
-			const beforeContent = this.fileContent.slice(0, startIndex);
-			const afterContent = this.fileContent.slice(stopIndex);
-			this.fileContent = `${beforeContent}${layoutSpan(content, addNewlines)}${afterContent}`;
+		const span = locateSection(this.fileContent, name);
+		if (!span.found && span.reason === "ambiguous") log.warn(`The '${name}' section has more than one start or end marker outside code, on lines ${span.lines.join(", ")}. Leaving it unchanged`);
+		if (!span.found && span.reason === "unpaired") log.warn(`The '${name}' section's markers on line(s) ${span.lines.join(", ")} are not a start marker followed by an end marker. Leaving it unchanged`);
+		if (span.found) {
+			const beforeContent = this.fileContent.slice(0, span.start);
+			const afterContent = this.fileContent.slice(span.end);
+			const ownLine = addNewlines && !afterContent.startsWith("\n") ? "\n" : "";
+			this.fileContent = `${beforeContent}${layoutSpan(content, addNewlines)}${ownLine}${afterContent}`;
 			if (addNewlines) this.updatedSections.set(name, content);
 		}
 	}
@@ -974,22 +1051,21 @@ var ReadmeEditor = class {
 	* outside them survive untouched.
 	*
 	* The span is formatted only while its markers still bound exactly the text
-	* `updateSection` wrote. The markers are paired again here, after every
-	* section has been written, and a marker another section wrote can win that
-	* pairing; the text between such a pair is not this tool's to format.
+	* `updateSection` wrote. The section is located again here, after every
+	* section has been written, and a marker another section wrote into its own
+	* span can make this section's markers ambiguous.
 	* @param {string} name - The name of the section.
 	* @param {string} content - The content `updateSection` wrote, padded.
 	*/
 	async formatSection(name, content) {
-		const [startIndex, stopIndex] = this.getTokenIndexes(name);
-		if (!startIndex || !stopIndex) return;
-		if (startIndex > stopIndex || this.fileContent.slice(startIndex, stopIndex) !== layoutSpan(content, true)) {
+		const span = locateSection(this.fileContent, name);
+		if (!span.found || this.fileContent.slice(span.start, span.end) !== layoutSpan(content, true)) {
 			this.log.warn(`The '${name}' markers no longer bound the text written to them. Leaving the section unformatted`);
 			return;
 		}
 		const formatted = content === "" ? "" : (await formatMarkdown(content)).trim();
-		const span = formatted === "" ? "\n" : layoutSpan(formatted, true);
-		this.fileContent = `${this.fileContent.slice(0, startIndex)}${span}${this.fileContent.slice(stopIndex)}`;
+		const replacement = formatted === "" ? "\n" : layoutSpan(formatted, true);
+		this.fileContent = `${this.fileContent.slice(0, span.start)}${replacement}${this.fileContent.slice(span.end)}`;
 	}
 	/**
 	* Formats every span this editor replaced, one span at a time.

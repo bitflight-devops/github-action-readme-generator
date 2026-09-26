@@ -153,8 +153,8 @@
     "@tsconfig/node24": "^24.0.4",
     "@types/nconf": "^0.10.5",
     "@types/node": "^26.1.1",
-    "@vitest/coverage-v8": "4.1.11",
-    "@voidzero-dev/vite-plus-core": "0.2.8",
+    "@vitest/coverage-v8": "5.0.1",
+    "@voidzero-dev/vite-plus-core": "1.0.0-rc.0",
     "commitizen": "^4.3.1",
     "conventional-changelog-conventionalcommits": "^9.3.1",
     "conventional-commits": "^1.6.0",
@@ -163,13 +163,13 @@
     "husky": "^9.1.7",
     "is-ci": "^4.1.0",
     "markdownlint-cli": "^0.49.0",
-    "oxlint-tsgolint": "7.0.2001",
     "rimraf": "^6.1.2",
     "run-script-os": "^1.1.6",
     "semantic-release": "^25.0.2",
     "types-package-json": "^2.0.39",
     "typescript": "7.0.2",
-    "vite-plus": "0.3.1"
+    "vite-plus": "1.0.0-rc.0",
+    "vitest": "5.0.1"
   },
   "engines": {
     "node": ">=24.19.0 <30.0.0",
@@ -191,5 +191,9 @@
   },
   "volta": {
     "node": "24.19.0"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0-rc.0",
+    "vitest": "5.0.1"
   }
 }

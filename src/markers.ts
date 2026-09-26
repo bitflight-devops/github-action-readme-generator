@@ -216,18 +216,33 @@ function closestSection(name: string, sections: readonly string[]): string | und
  */
 export function diagnoseMarkers(source: string, sections: readonly string[]): string[] {
   const code = codeRanges(source);
-  const warnings: string[] = [];
+  const byName = new Map<string, RegExpExecArray[]>();
   for (const match of source.matchAll(/(?<![`\\])<!--\s+(start|end)\s+(\S+)\s+-->/g)) {
-    const [marker, , name = ''] = match;
-    const inCode = code.some(([from, to]) => match.index >= from && match.index < to);
-    if (inCode || sections.includes(name)) {
+    const name = match[2] ?? '';
+    if (!sections.includes(name)) {
+      byName.set(name, [...(byName.get(name) ?? []), match]);
+    }
+  }
+
+  const warnings: string[] = [];
+  for (const [name, markers] of byName) {
+    const section = closestSection(name, sections);
+    if (section === undefined) {
       continue;
     }
-    const section = closestSection(name, sections);
-    if (section !== undefined) {
+    // The rule `locateSection` follows: a single pair counts wherever it
+    // sits, and code only sets aside markers that are not one pair.
+    const starts = markers.filter((match) => match[1] === 'start');
+    const ends = markers.filter((match) => match[1] === 'end');
+    const live = isPair(starts, ends)
+      ? markers
+      : markers.filter(
+          (match) => !code.some(([from, to]) => match.index >= from && match.index < to),
+        );
+    for (const match of live) {
       const [line] = linesOf(source, [match.index]);
       warnings.push(
-        `The marker ${marker} on line ${line} names no section. Did you mean '${section}'?`,
+        `The marker ${match[0]} on line ${line} names no section. Did you mean '${section}'?`,
       );
     }
   }

@@ -92,20 +92,13 @@ export default class ReadmeEditor {
   }
 
   /**
-   * Gets the body offsets of a section — see `locateSection`.
-   * @param {string} token - The section token.
-   * @returns {number[]} - The body's start and end offsets, or `[]` when the
-   *   section cannot be located.
+   * Whether the README has a section this editor can fill — see
+   * `locateSection`.
+   * @param {string} name - The section name.
+   * @returns {boolean} - Whether the section's markers were located.
    */
-  getTokenIndexes(token: string, logTask?: LogTask): number[] {
-    const span = locateSection(this.fileContent, token);
-    if (!span.found) {
-      (logTask ?? new LogTask('getTokenIndexes')).debug(
-        `Section '${token}' is ${span.reason}. Skipping`,
-      );
-      return [];
-    }
-    return [span.start, span.end];
+  hasSection(name: string): boolean {
+    return locateSection(this.fileContent, name).found;
   }
 
   /**

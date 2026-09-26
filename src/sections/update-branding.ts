@@ -105,9 +105,16 @@ export function getValidBrandColor(color?: string): BrandColors {
  *
  * @param inputs - The inputs instance with data for the function.
  * @param width - The width of the image (default is '15%').
+ * @param writeImage - Whether to write the image file. A caller whose section
+ *   is not in the README passes false, so no file is written for markup that
+ *   is never shown.
  * @returns The HTML image markup with branding information or an error message.
  */
-export function generateImgMarkup(inputs: Inputs, width: string = '15%'): string {
+export function generateImgMarkup(
+  inputs: Inputs,
+  width: string = '15%',
+  writeImage: boolean = true,
+): string {
   // Create a log task for debugging
   const log = new LogTask('generateImgMarkup');
   if (!inputs.action.branding) {
@@ -122,6 +129,9 @@ export function generateImgMarkup(inputs: Inputs, width: string = '15%'): string
   const result = `<img src="${svgPath}" width="${width}" align="center" alt="branding<icon:${iconName} color:${brandColor}>" />`;
 
   if (svgPath) {
+    if (!writeImage) {
+      return result;
+    }
     log.info(`Generating action.yml branding image for ${iconName}`);
     const svg = inputs.config.get('image_generated') as Maybe<string>;
     const hash = `${iconName}${brandColor}`;
@@ -155,7 +165,11 @@ export default function updateBranding(
   log.start();
   /** create <img  /> markup with an image width of 15% */
   const imageWidth = '15%';
-  const content = generateImgMarkup(inputs, imageWidth);
+  const content = generateImgMarkup(
+    inputs,
+    imageWidth,
+    inputs.readmeEditor.hasSection(sectionToken),
+  );
   inputs.readmeEditor.updateSection(sectionToken, content);
   if (content && content !== '') {
     log.success('branding svg successfully created');

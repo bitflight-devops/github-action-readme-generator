@@ -181,7 +181,11 @@ export default class ReadmeEditor {
       return;
     }
 
-    const formatted = content === '' ? '' : (await formatMarkdown(content)).trim();
+    // Front matter is only recognised at the very start of a document. The
+    // span sits mid-document, where GitHub renders a leading `---` block as a
+    // thematic break, so a leading newline keeps prettier from reading it as
+    // YAML front matter.
+    const formatted = content === '' ? '' : (await formatMarkdown(`\n${content}`)).trim();
     const replacement = formatted === '' ? '\n' : layoutSpan(formatted, true);
 
     this.fileContent = `${this.fileContent.slice(0, span.start)}${replacement}${this.fileContent.slice(

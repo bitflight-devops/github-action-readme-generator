@@ -129,7 +129,7 @@ export default class ReadmeEditor {
     }
     if (!span.found && span.reason === 'unpaired') {
       log.warn(
-        `The '${name}' section's marker on line ${span.lines.join(', ')} has no matching start or end marker. Leaving it unchanged`,
+        `The '${name}' section's markers on line(s) ${span.lines.join(', ')} are not a start marker followed by an end marker. Leaving it unchanged`,
       );
     }
     if (span.found) {

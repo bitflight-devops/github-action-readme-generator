@@ -819,7 +819,7 @@ const descriptionMarkdown = (value) => {
     prose = [];
   };
   for (const line of String(value).trim().replaceAll('\r\n', '\n').split('\n')) {
-    const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
+    const marker = /^ {0,3}(`{3,}(?!.*`)|~{3,})/.exec(line)?.[1];
     if (fence === null && marker) {
       flushProse();
       fence = { marker, lines: [line] };

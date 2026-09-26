@@ -50,6 +50,14 @@ describe('descriptionMarkdown', () => {
     expect(descriptionMarkdown('Intro\n\n~~~\nopen  only')).toBe('Intro\n\n~~~\nopen  only');
   });
 
+  // A backtick fence's info string cannot hold a backtick, so this line is an
+  // inline code span.
+  it('reads a line opening with an inline code span as prose', () => {
+    expect(descriptionMarkdown('```code``` is  prose\n\nnext  para')).toBe(
+      '```code``` is prose<br />next para',
+    );
+  });
+
   it('leaves backticks that do not start a line as prose', () => {
     expect(descriptionMarkdown('Use ```  inline')).toBe('Use ``` inline');
   });

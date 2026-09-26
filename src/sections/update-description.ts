@@ -9,8 +9,12 @@ import type { ReadmeSection } from '../constants.js';
 import type Inputs from '../inputs.js';
 import LogTask from '../logtask/index.js';
 
-/** A fence opener or closer: three or more backticks or tildes. */
-const FENCE = /^ {0,3}(`{3,}|~{3,})/;
+/**
+ * A fence opener or closer: three or more backticks or tildes. A backtick
+ * fence's info string cannot hold a backtick, so such a line is an inline
+ * code span, not a fence.
+ */
+const FENCE = /^ {0,3}(`{3,}(?!.*`)|~{3,})/;
 
 /**
  * Converts an action.yml description to the Markdown of the description

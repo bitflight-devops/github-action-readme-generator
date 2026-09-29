@@ -112,10 +112,8 @@ function linesOf(source: string, offsets: number[]): number[] {
  */
 function isUnclosedFence(code: string): boolean {
   const lines = code.split('\n');
-  const opener = /^(`{3,}|~{3,})/.exec(lines[0] ?? '')?.[1];
-  if (opener === undefined) {
-    return false;
-  }
+  // A fenced block's node starts at its fence, so the opener is always there.
+  const opener = /^(`{3,}|~{3,})/.exec(lines[0] ?? '')?.[1] ?? '```';
   const closer = (lines.at(-1) ?? '').replace(/^[\t >]*/, '').trimEnd();
   const closes =
     lines.length > 1 &&

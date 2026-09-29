@@ -98,6 +98,7 @@ export class ReadmeGenerator {
     for (const warning of diagnoseMarkers(
       this.inputs.readmeEditor.getReadmeContent(),
       README_SECTIONS,
+      providedSections,
     )) {
       this.log.warn(warning);
     }

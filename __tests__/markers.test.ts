@@ -220,6 +220,14 @@ describe('diagnoseMarkers', () => {
     expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
   });
 
+  // A real start marker and a mistyped example end marker in closed code are
+  // not a pair.
+  it('ignores a mistyped example in closed code after a real start marker', () => {
+    const source = ['<!-- start inputs -->', '```', '<!-- end input -->', '```'].join('\n');
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
   it('ignores a mistyped marker inside code', () => {
     const source = '<!-- start title -->\n<!-- end title -->\n\n```\n<!-- start input -->\n```\n';
 
@@ -229,8 +237,20 @@ describe('diagnoseMarkers', () => {
   it('reports a README with no section markers once', () => {
     const [warning, ...rest] = diagnoseMarkers('# README\n', sections);
 
-    expect(warning).toContain('The README has no section markers');
+    expect(warning).toContain('The README has no markers for the sections being generated');
     expect(rest).toStrictEqual([]);
+  });
+
+  // `--sections=inputs` against a README with only a title pair generates
+  // nothing, so the warning is about the requested sections.
+  it('reports missing markers for the requested sections only', () => {
+    const source = '<!-- start title -->\n<!-- end title -->\n';
+
+    expect(diagnoseMarkers(source, sections, ['inputs'])).toStrictEqual([
+      'The README has no markers for the sections being generated (inputs), so nothing was generated. Add a pair such as <!-- start inputs --> and <!-- end inputs --> where each section belongs; README.example.md shows every section.',
+    ]);
+    expect(diagnoseMarkers(source, sections, ['title'])).toStrictEqual([]);
+    expect(diagnoseMarkers(source, sections, [])).toStrictEqual([]);
   });
 
   it('does not report a README whose only section marker is unpaired as having none', () => {

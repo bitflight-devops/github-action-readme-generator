@@ -201,51 +201,61 @@ function closestSection(name: string, sections: readonly string[]): string | und
 }
 
 /**
+ * Whether a code range is a fence that nothing closes. It runs to the end of
+ * the document, so the markers inside it are not examples: generated text can
+ * hold such a fence, and it would otherwise hide every marker after it.
+ * @param {string} code - The source text of a code range.
+ * @returns {boolean} - Whether it is an unclosed fence.
+ */
+function isUnclosedFence(code: string): boolean {
+  const lines = code.split('\n');
+  const opener = /^[\t >]*(`{3,}|~{3,})/.exec(lines[0] ?? '')?.[1];
+  if (opener === undefined) {
+    return false;
+  }
+  const closer = (lines.at(-1) ?? '').replace(/^[\t >]*/, '').trimEnd();
+  const closes =
+    lines.length > 1 &&
+    closer.length >= opener.length &&
+    closer === opener.charAt(0).repeat(closer.length);
+  return !closes;
+}
+
+/**
  * Warnings about markers that stop a README from being generated as its
  * author intended, found before any section is written:
  *
  * - a marker whose name is a near miss of a section name, which the tool
  *   otherwise skips in silence;
- * - a README with no marker for any section, which the tool otherwise leaves
- *   unchanged in silence.
+ * - a README with no marker for any section being generated, which the tool
+ *   otherwise leaves unchanged in silence.
  *
- * Markers inside code are examples and are not reported.
+ * A marker inside closed code is an example and is not reported. A marker
+ * inside a fence that nothing closes is reported, as `locateSection` would
+ * still find it.
  * @param {string} source - The document.
  * @param {readonly string[]} sections - Every section name the tool knows.
+ * @param {readonly string[]} requested - The sections being generated.
  * @returns {string[]} - One message per problem.
  */
-export function diagnoseMarkers(source: string, sections: readonly string[]): string[] {
-  const code = codeRanges(source);
-  // Markers are grouped by the section they are meant for: their own name, or
-  // the section a near-miss name was meant to be. A typo can split one pair
-  // across two names, and the pair rule below needs the whole pair.
-  const bySection = new Map<string, RegExpExecArray[]>();
+export function diagnoseMarkers(
+  source: string,
+  sections: readonly string[],
+  requested: readonly string[] = sections,
+): string[] {
+  const examples = codeRanges(source).filter(
+    ([from, to]) => !isUnclosedFence(source.slice(from, to)),
+  );
+  const warnings: string[] = [];
   for (const match of source.matchAll(/(?<![`\\])<!--\s+(start|end)\s+(\S+)\s+-->/g)) {
     const name = match[2] ?? '';
-    const section = sections.includes(name) ? name : closestSection(name, sections);
-    if (section !== undefined) {
-      bySection.set(section, [...(bySection.get(section) ?? []), match]);
-    }
-  }
-
-  const warnings: string[] = [];
-  for (const [section, markers] of bySection) {
-    // The rule `locateSection` follows: a single pair counts wherever it
-    // sits, and code only sets aside markers that are not one pair.
-    const starts = markers.filter((match) => match[1] === 'start');
-    const ends = markers.filter((match) => match[1] === 'end');
-    const live = isPair(starts, ends)
-      ? markers
-      : markers.filter(
-          (match) => !code.some(([from, to]) => match.index >= from && match.index < to),
-        );
-    for (const match of live) {
-      if (match[2] !== section) {
-        const [line] = linesOf(source, [match.index]);
-        warnings.push(
-          `The marker ${match[0]} on line ${line} names no section. Did you mean '${section}'?`,
-        );
-      }
+    const section = sections.includes(name) ? undefined : closestSection(name, sections);
+    const example = examples.some(([from, to]) => match.index >= from && match.index < to);
+    if (section !== undefined && !example) {
+      const [line] = linesOf(source, [match.index]);
+      warnings.push(
+        `The marker ${match[0]} on line ${line} names no section. Did you mean '${section}'?`,
+      );
     }
   }
 
@@ -253,9 +263,9 @@ export function diagnoseMarkers(source: string, sections: readonly string[]): st
     const span = locateSection(source, name);
     return !span.found && span.reason === 'missing';
   };
-  if (sections.every(missing)) {
+  if (requested.length > 0 && requested.every(missing)) {
     warnings.push(
-      'The README has no section markers, so nothing was generated. Add a pair such as <!-- start inputs --> and <!-- end inputs --> where each section belongs; README.example.md shows every section.',
+      `The README has no markers for the sections being generated (${requested.join(', ')}), so nothing was generated. Add a pair such as <!-- start inputs --> and <!-- end inputs --> where each section belongs; README.example.md shows every section.`,
     );
   }
   return warnings;

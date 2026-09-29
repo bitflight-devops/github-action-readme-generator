@@ -142,7 +142,7 @@ describe('ReadmeGenerator', () => {
       await readmeGenerator.generate();
 
       expect(mockLogTask.warn).toHaveBeenCalledWith(
-        expect.stringContaining('The README has no section markers'),
+        expect.stringContaining('The README has no markers for the sections being generated'),
       );
     });
 

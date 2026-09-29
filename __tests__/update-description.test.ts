@@ -3,81 +3,79 @@
  */
 import { describe, expect, it } from 'vite-plus/test';
 
+import { formatMarkdown } from '../src/prettier.js';
 import { descriptionMarkdown } from '../src/sections/update-description.js';
 
 describe('descriptionMarkdown', () => {
-  it('squashes prose and turns blank lines into breaks', () => {
+  it('trims the description and keeps its lines as written', () => {
     expect(descriptionMarkdown('  One  line \nnext\n\nNew  paragraph  ')).toBe(
-      'One line\nnext<br />New paragraph',
+      'One  line \nnext\n\nNew  paragraph',
     );
   });
 
   it('reads CRLF line endings as LF', () => {
-    expect(descriptionMarkdown('A\r\n\r\nB')).toBe('A<br />B');
+    expect(descriptionMarkdown('A\r\n\r\nB')).toBe('A\n\nB');
   });
 
-  // #705: a fence keeps its own lines, set apart from the prose by blank lines.
-  it('keeps a fenced code block verbatim on lines of its own', () => {
+  // #711: blank lines and indentation carry the structure of block Markdown.
+  it('keeps a list whose item holds a fenced code block', () => {
+    const description = [
+      'Does things.',
+      '',
+      '- Run:',
+      '',
+      '    ```yaml',
+      '    uses:  x',
+      '    ```',
+    ].join('\n');
+
+    expect(descriptionMarkdown(description)).toBe(description);
+  });
+
+  it('keeps an indented code block', () => {
+    expect(descriptionMarkdown('Intro\n\n    indented  line')).toBe('Intro\n\n    indented  line');
+  });
+});
+
+describe('the formatted description section', () => {
+  const section = async (description: string): Promise<string> =>
+    (await formatMarkdown(`\n${descriptionMarkdown(description)}`)).trim();
+
+  it('keeps paragraphs, lists and fences as block Markdown', async () => {
     const description = [
       'Does  things.',
       '',
-      '```yaml',
-      'uses:  x',
+      'Second paragraph.',
       '',
-      '  with: y',
-      '```',
+      '- Run:',
       '',
-      'After  it.',
+      '    ```yaml',
+      '    uses:  x',
+      '    ```',
+      '',
+      '- Done',
     ].join('\n');
 
-    expect(descriptionMarkdown(description)).toBe(
-      ['Does things.', '', '```yaml', 'uses:  x', '', '  with: y', '```', '', 'After it.'].join(
-        '\n',
-      ),
+    expect(await section(description)).toBe(
+      [
+        'Does things.',
+        '',
+        'Second paragraph.',
+        '',
+        '- Run:',
+        '',
+        '  ```yaml',
+        '  uses: x',
+        '  ```',
+        '',
+        '- Done',
+      ].join('\n'),
     );
   });
 
-  it('closes a fence only on a fence of the same character and at least its length', () => {
-    const description = ['````', '```', '~~~~', '````', 'after'].join('\n');
+  it('is stable when formatted again', async () => {
+    const once = await section('Intro\n\n- a\n\n  more of a\n- b\n\n    code');
 
-    expect(descriptionMarkdown(description)).toBe(
-      ['````', '```', '~~~~', '````', '', 'after'].join('\n'),
-    );
-  });
-
-  it('keeps an unclosed fence to the end, as it renders', () => {
-    expect(descriptionMarkdown('Intro\n\n~~~\nopen  only')).toBe('Intro\n\n~~~\nopen  only');
-  });
-
-  // A backtick fence's info string cannot hold a backtick, so this line is an
-  // inline code span.
-  it('reads a line opening with an inline code span as prose', () => {
-    expect(descriptionMarkdown('```code``` is  prose\n\nnext  para')).toBe(
-      '```code``` is prose<br />next para',
-    );
-  });
-
-  it('keeps a fenced code block inside a list item verbatim', () => {
-    const description = ['- Run:', '', '    ```yaml', '    uses:  x', '', '    ```', '- Done'].join(
-      '\n',
-    );
-
-    expect(descriptionMarkdown(description)).toBe(
-      ['- Run:', '', '    ```yaml', '    uses:  x', '', '    ```', '', '- Done'].join('\n'),
-    );
-  });
-
-  it('squashes an indented code block as prose, as before', () => {
-    expect(descriptionMarkdown('Intro\n\n    indented  line')).toBe('Intro<br /> indented line');
-  });
-
-  it('squashes an indented code block whose first line is backticks as prose', () => {
-    expect(descriptionMarkdown('Intro\n\n    ```not  a fence\n    x')).toBe(
-      'Intro<br /> ```not a fence\n x',
-    );
-  });
-
-  it('leaves backticks that do not start a line as prose', () => {
-    expect(descriptionMarkdown('Use ```  inline')).toBe('Use ``` inline');
+    expect(await section(once)).toBe(once);
   });
 });

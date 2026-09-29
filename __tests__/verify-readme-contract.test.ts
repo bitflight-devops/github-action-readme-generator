@@ -158,6 +158,18 @@ describe('README contract verifier regressions', () => {
     expect(verify(readme, action)).toContain('All contract checks passed');
   });
 
+  // #711: the description section keeps a description's block Markdown.
+  it('expects a block Markdown description as written', () => {
+    const action = ACTION.replace(
+      'description: __bold__',
+      'description: |\n  Intro.\n\n  - one\n  - two',
+    );
+    expect(verify(README.replace('**bold**', 'Intro.\n\n- one\n- two'), action)).toContain(
+      'All contract checks passed',
+    );
+    expect(() => verify(README.replace('**bold**', 'Intro.<br />- one\n- two'), action)).toThrow();
+  });
+
   it('validates generated usage descriptions and removed defaults exactly', () => {
     expect(() =>
       verify(README.replace('    # Description: A \\| B', '    # Description: stale')),

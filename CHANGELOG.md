@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.1...v2.0.2) (2026-09-26)
+
+### Bug Fixes
+
+* **readme-editor:** stop formatting a leading --- span as front matter ([#707](https://github.com/bitflight-devops/github-action-readme-generator/issues/707)) ([c03fc51](https://github.com/bitflight-devops/github-action-readme-generator/commit/c03fc5101f7d179e9dee30c8015b3b3f3d42ae44))
+* **sections:** write the branding image only where the README shows it ([#706](https://github.com/bitflight-devops/github-action-readme-generator/issues/706)) ([70abc24](https://github.com/bitflight-devops/github-action-readme-generator/commit/70abc2484b9de0567cb2eba203ec87bbe4274a1c))
+
 ## [2.0.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.0...v2.0.1) (2026-09-26)
 
 ### Bug Fixes

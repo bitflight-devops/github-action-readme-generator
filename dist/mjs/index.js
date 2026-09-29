@@ -1009,18 +1009,13 @@ var ReadmeEditor = class {
 		return this.fileContent;
 	}
 	/**
-	* Gets the body offsets of a section — see `locateSection`.
-	* @param {string} token - The section token.
-	* @returns {number[]} - The body's start and end offsets, or `[]` when the
-	*   section cannot be located.
+	* Whether the README has a section this editor can fill — see
+	* `locateSection`.
+	* @param {string} name - The section name.
+	* @returns {boolean} - Whether the section's markers were located.
 	*/
-	getTokenIndexes(token, logTask) {
-		const span = locateSection(this.fileContent, token);
-		if (!span.found) {
-			(logTask ?? new LogTask("getTokenIndexes")).debug(`Section '${token}' is ${span.reason}. Skipping`);
-			return [];
-		}
-		return [span.start, span.end];
+	hasSection(name) {
+		return locateSection(this.fileContent, name).found;
 	}
 	/**
 	* Updates a specific section in the README file with the provided content.
@@ -1063,7 +1058,7 @@ var ReadmeEditor = class {
 			this.log.warn(`The '${name}' markers no longer bound the text written to them. Leaving the section unformatted`);
 			return;
 		}
-		const formatted = content === "" ? "" : (await formatMarkdown(content)).trim();
+		const formatted = content === "" ? "" : (await formatMarkdown(`\n${content}`)).trim();
 		const replacement = formatted === "" ? "\n" : layoutSpan(formatted, true);
 		this.fileContent = `${this.fileContent.slice(0, span.start)}${replacement}${this.fileContent.slice(span.end)}`;
 	}
@@ -2047,9 +2042,12 @@ function getValidBrandColor(color) {
 *
 * @param inputs - The inputs instance with data for the function.
 * @param width - The width of the image (default is '15%').
+* @param writeImage - Whether to write the image file. A caller whose section
+*   is not in the README passes false, so no file is written for markup that
+*   is never shown.
 * @returns The HTML image markup with branding information or an error message.
 */
-function generateImgMarkup(inputs, width = "15%") {
+function generateImgMarkup(inputs, width = "15%", writeImage = true) {
 	const log = new LogTask("generateImgMarkup");
 	if (!inputs.action.branding) {
 		log.info("No branding section");
@@ -2061,6 +2059,7 @@ function generateImgMarkup(inputs, width = "15%") {
 	const svgPath = inputs.config.get("branding_svg_path");
 	const result = `<img src="${svgPath}" width="${width}" align="center" alt="branding<icon:${iconName} color:${brandColor}>" />`;
 	if (svgPath) {
+		if (!writeImage) return result;
 		log.info(`Generating action.yml branding image for ${iconName}`);
 		const svg = inputs.config.get("image_generated");
 		const hash = `${iconName}${brandColor}`;
@@ -2086,7 +2085,7 @@ function updateBranding(sectionToken, inputs) {
 	const log = new LogTask(sectionToken);
 	log.info(`Brand details: ${JSON.stringify(inputs.action.branding)}`);
 	log.start();
-	const content = generateImgMarkup(inputs, "15%");
+	const content = generateImgMarkup(inputs, "15%", inputs.readmeEditor.hasSection(sectionToken));
 	inputs.readmeEditor.updateSection(sectionToken, content);
 	if (content && content !== "") log.success("branding svg successfully created");
 	else log.fail("branding svg failed to be created");
@@ -2374,7 +2373,7 @@ function updateTitle(sectionToken, inputs) {
 	if (inputs.action.name) {
 		log.start();
 		name = inputs.action.name;
-		if (inputs.config.get("branding_as_title_prefix")) svgInline = `${generateImgMarkup(inputs, "60px")} `;
+		if (inputs.config.get("branding_as_title_prefix")) svgInline = `${generateImgMarkup(inputs, "60px", inputs.readmeEditor.hasSection(sectionToken))} `;
 		log.info(`Writing ${name.length} characters to the title`);
 		const title = `# ${svgInline}${inputs.config.get("title_prefix")}${inputs.action.name}`;
 		log.info(`Title: ${title}`);
@@ -2453,8 +2452,6 @@ async function updateUsage(sectionToken, inputs) {
 //#region src/sections/index.ts
 const log = new LogTask("updateSection");
 async function updateSection(section, inputs) {
-	const [startToken, stopToken] = inputs.readmeEditor.getTokenIndexes(section);
-	if (startToken === -1 || stopToken === -1) return {};
 	switch (section) {
 		case "branding": return updateBranding(section, inputs);
 		case "badges": return updateBadges(section, inputs);

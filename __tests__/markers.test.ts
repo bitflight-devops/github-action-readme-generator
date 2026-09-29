@@ -65,6 +65,10 @@ describe('locateSection', () => {
     it.each([
       ['a fenced code block', ['```', '<!-- start inputs -->', '<!-- end inputs -->', '```']],
       ['inline code', ['Add `x <!-- start inputs --><!-- end inputs -->` to your README.']],
+      [
+        'inline code opened by triple backticks',
+        ['Add ```x <!-- start inputs --><!-- end inputs -->``` to your README.'],
+      ],
     ])('reports a pair that is only an example in %s as missing', (_label, example) => {
       expect(body(example.join('\n'))).toBe('<missing>');
     });
@@ -241,6 +245,15 @@ describe('diagnoseMarkers', () => {
   // not a pair.
   it('ignores a mistyped example in closed code after a real start marker', () => {
     const source = ['<!-- start inputs -->', '```', '<!-- end input -->', '```'].join('\n');
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
+  it.each([
+    ['inline code opened by triple backticks', 'Use ```x <!-- start input -->``` here.'],
+    ['an indented code block opening with backticks', 'para\n\n    ```\n    <!-- start input -->'],
+  ])('ignores a mistyped marker in %s', (_label, example) => {
+    const source = `<!-- start title -->\n<!-- end title -->\n\n${example}\n`;
 
     expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
   });

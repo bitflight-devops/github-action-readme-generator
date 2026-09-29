@@ -126,9 +126,12 @@ const fail = (message) => {
 const exampleRanges = (source) => {
   const shift = source.startsWith('﻿') ? 1 : 0;
   const ranges = [];
+  // Only a fenced block can be unclosed. Its node starts at its fence; an
+  // indented block's node starts at its indentation, and inline code is its
+  // own node kind.
   const closedFence = (text) => {
     const lines = text.split('\n');
-    const opener = /^[\t >]*(`{3,}|~{3,})/.exec(lines[0])?.[1];
+    const opener = /^(`{3,}|~{3,})/.exec(lines[0])?.[1];
     if (!opener) return true;
     const closer = lines.at(-1).replace(/^[\t >]*/, '').trimEnd();
     return lines.length > 1 && closer.length >= opener.length && /^(`+|~+)$/.test(closer) && closer[0] === opener[0];
@@ -137,7 +140,7 @@ const exampleRanges = (source) => {
     if ((node.type === 'code' || node.type === 'inlineCode') && node.position) {
       const from = node.position.start.offset + shift;
       const to = node.position.end.offset + shift;
-      if (closedFence(source.slice(from, to))) ranges.push([from, to]);
+      if (node.type === 'inlineCode' || closedFence(source.slice(from, to))) ranges.push([from, to]);
     }
     (node.children ?? []).forEach(walk);
   };

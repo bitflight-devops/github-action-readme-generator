@@ -69,17 +69,23 @@ function escapeRegExp(text: string): string {
  * Parsed with the markdown parser prettier already bundles, so containers,
  * HTML blocks and indentation follow Markdown's rules rather than a regex.
  * @param {string} source - The document.
- * @returns {Array<[number, number]>} - The code ranges.
+ * @returns {Array<[number, number, boolean]>} - The code ranges, each with
+ *   whether it is a fenced code block.
  */
-function codeRanges(source: string): [number, number][] {
+function codeRanges(source: string): [number, number, boolean][] {
   // The parser drops a leading byte order mark, which shifts its offsets.
   const shift = source.startsWith('﻿') ? 1 : 0;
   const parser = markdown.parsers.markdown;
   const root = parser.parse(source.slice(shift), {} as never) as MarkdownNode;
-  const ranges: [number, number][] = [];
+  const ranges: [number, number, boolean][] = [];
   const walk = (node: MarkdownNode): void => {
     if ((node.type === 'code' || node.type === 'inlineCode') && node.position) {
-      ranges.push([node.position.start.offset + shift, node.position.end.offset + shift]);
+      const from = node.position.start.offset + shift;
+      const to = node.position.end.offset + shift;
+      // A fenced block's node starts at its fence; an indented block's node
+      // starts at its indentation, and inline code is its own kind.
+      const fenced = node.type === 'code' && /^(`{3}|~{3})/.test(source.slice(from, to));
+      ranges.push([from, to, fenced]);
     }
     for (const child of node.children ?? []) {
       walk(child);
@@ -100,13 +106,13 @@ function linesOf(source: string, offsets: number[]): number[] {
 }
 
 /**
- * Whether a code range is a fence that nothing closes.
- * @param {string} code - The source text of a code range.
+ * Whether a fenced code block is one that nothing closes.
+ * @param {string} code - The source text of a fenced code block.
  * @returns {boolean} - Whether it is an unclosed fence.
  */
 function isUnclosedFence(code: string): boolean {
   const lines = code.split('\n');
-  const opener = /^[\t >]*(`{3,}|~{3,})/.exec(lines[0] ?? '')?.[1];
+  const opener = /^(`{3,}|~{3,})/.exec(lines[0] ?? '')?.[1];
   if (opener === undefined) {
     return false;
   }
@@ -119,20 +125,22 @@ function isUnclosedFence(code: string): boolean {
 }
 
 /** The last document `exampleRanges` parsed, and its result. */
-let parsed: { source: string; ranges: [number, number][] } | undefined;
+let parsed: { source: string; ranges: [number, number, boolean][] } | undefined;
 
 /**
  * The half-open ranges of `source` whose markers are examples: every code
- * range except a fence that nothing closes. The last result is kept, because
+ * range except a fenced code block that nothing closes. The last result is kept, because
  * each section is located more than once in the same document.
  * @param {string} source - The document.
- * @returns {Array<[number, number]>} - The example ranges.
+ * @returns {Array<[number, number, boolean]>} - The example ranges.
  */
-function exampleRanges(source: string): [number, number][] {
+function exampleRanges(source: string): [number, number, boolean][] {
   if (parsed?.source !== source) {
     parsed = {
       source,
-      ranges: codeRanges(source).filter(([from, to]) => !isUnclosedFence(source.slice(from, to))),
+      ranges: codeRanges(source).filter(
+        ([from, to, fenced]) => !fenced || !isUnclosedFence(source.slice(from, to)),
+      ),
     };
   }
   return parsed.ranges;

@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vite-plus/test';
 
-import { locateSection } from '../src/markers.js';
+import { diagnoseMarkers, locateSection } from '../src/markers.js';
 
 /** The body `locateSection` finds, or its reason for finding none. */
 const body = (source: string, name = 'inputs'): string => {
@@ -144,5 +144,132 @@ describe('locateSection', () => {
 
     expect(body(source, name)).toBe('<missing>');
     expect(body(source.replaceAll(lookalike, name), name)).toBe('\ny');
+  });
+});
+
+describe('diagnoseMarkers', () => {
+  const sections = ['title', 'inputs', 'outputs'];
+
+  it.each([
+    ['a missing letter', 'input', 'inputs'],
+    ['a different case', 'Inputs', 'inputs'],
+    ['a transposition', 'otuputs', 'outputs'],
+  ])('suggests the section for a name with %s', (_label, name, section) => {
+    const source = `<!-- start title -->\n<!-- end title -->\n\n<!-- start ${name} -->\n`;
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([
+      `The marker <!-- start ${name} --> on line 4 names no section. Did you mean '${section}'?`,
+    ]);
+  });
+
+  // README.example.md carries a `[.github/ghadocs/examples/]` marker that
+  // nothing fills, and other tools use the same comment syntax.
+  it('ignores a marker name that is not close to any section', () => {
+    const source = [
+      '<!-- start title -->',
+      '<!-- end title -->',
+      '<!-- start [.github/ghadocs/examples/] -->',
+      '<!-- end [.github/ghadocs/examples/] -->',
+    ].join('\n');
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
+  // A single pair counts wherever it sits, as in `locateSection`: generated
+  // text can hold an unclosed fence, which would otherwise hide the pair.
+  it('reports a single mistyped pair after an unclosed fence', () => {
+    const source = [
+      '<!-- start title -->',
+      '```',
+      '<!-- end title -->',
+      '<!-- start input -->',
+      '<!-- end input -->',
+    ].join('\n');
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([
+      "The marker <!-- start input --> on line 4 names no section. Did you mean 'inputs'?",
+      "The marker <!-- end input --> on line 5 names no section. Did you mean 'inputs'?",
+    ]);
+  });
+
+  // One mistyped side splits the pair across two names; the pair rule has to
+  // see both sides to know the pair counts.
+  it('reports a pair with one mistyped side after an unclosed fence', () => {
+    const source = [
+      '<!-- start title -->',
+      '```',
+      '<!-- end title -->',
+      '<!-- start input -->',
+      '<!-- end inputs -->',
+    ].join('\n');
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([
+      "The marker <!-- start input --> on line 4 names no section. Did you mean 'inputs'?",
+    ]);
+  });
+
+  it('ignores a mistyped example inside code next to a real pair', () => {
+    const source = [
+      '```',
+      '<!-- start input -->',
+      '```',
+      '<!-- start inputs -->',
+      '<!-- end inputs -->',
+    ].join('\n');
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
+  // A real start marker and a mistyped example end marker in closed code are
+  // not a pair.
+  it('ignores a mistyped example in closed code after a real start marker', () => {
+    const source = ['<!-- start inputs -->', '```', '<!-- end input -->', '```'].join('\n');
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
+  it.each([
+    ['inline code opened by triple backticks', 'Use ```x <!-- start input -->``` here.'],
+    ['an indented code block opening with backticks', 'para\n\n    ```\n    <!-- start input -->'],
+  ])('ignores a mistyped marker in %s', (_label, example) => {
+    const source = `<!-- start title -->\n<!-- end title -->\n\n${example}\n`;
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
+  it('ignores a mistyped marker quoted in inline code', () => {
+    const source =
+      '<!-- start title -->\n<!-- end title -->\n\nUse `x <!-- start input -->` here.\n';
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
+  it('ignores a mistyped marker inside code', () => {
+    const source = '<!-- start title -->\n<!-- end title -->\n\n```\n<!-- start input -->\n```\n';
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
+  it('reports a README with no section markers once', () => {
+    const [warning, ...rest] = diagnoseMarkers('# README\n', sections);
+
+    expect(warning).toContain('The README has no markers for the sections being generated');
+    expect(rest).toStrictEqual([]);
+  });
+
+  // `--sections=inputs` against a README with only a title pair generates
+  // nothing, so the warning is about the requested sections.
+  it('reports missing markers for the requested sections only', () => {
+    const source = '<!-- start title -->\n<!-- end title -->\n';
+
+    expect(diagnoseMarkers(source, sections, ['inputs'])).toStrictEqual([
+      'The README has no markers for the sections being generated (inputs), so nothing was generated. Add a pair such as <!-- start inputs --> and <!-- end inputs --> where each section belongs; README.example.md shows every section.',
+    ]);
+    expect(diagnoseMarkers(source, sections, ['title'])).toStrictEqual([]);
+    expect(diagnoseMarkers(source, sections, [])).toStrictEqual([]);
+  });
+
+  it('does not report a README whose only section marker is unpaired as having none', () => {
+    expect(diagnoseMarkers('<!-- start inputs -->\n', sections)).toStrictEqual([]);
   });
 });

@@ -8,10 +8,11 @@
 
 import * as core from '@actions/core';
 
-import type { ReadmeSection } from './constants.js';
+import { README_SECTIONS, type ReadmeSection } from './constants.js';
 import { isPrettierEnabled } from './helpers.js';
 import type Inputs from './inputs.js';
 import type LogTask from './logtask/index.js';
+import { diagnoseMarkers } from './markers.js';
 import updateSection from './sections/index.js';
 
 export type SectionKV = Record<string, string>;
@@ -94,6 +95,13 @@ export class ReadmeGenerator {
    * @returns Promise resolving when done
    */
   async generate(providedSections: ReadmeSection[] = this.inputs.sections): Promise<void> {
+    for (const warning of diagnoseMarkers(
+      this.inputs.readmeEditor.getReadmeContent(),
+      README_SECTIONS,
+      providedSections,
+    )) {
+      this.log.warn(warning);
+    }
     const sectionPromises = this.updateSections(providedSections);
     const sections = await this.resolveUpdates(sectionPromises);
 

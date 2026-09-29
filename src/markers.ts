@@ -68,17 +68,23 @@ function escapeRegExp(text: string): string {
  * Parsed with the markdown parser prettier already bundles, so containers,
  * HTML blocks and indentation follow Markdown's rules rather than a regex.
  * @param {string} source - The document.
- * @returns {Array<[number, number]>} - The code ranges.
+ * @returns {Array<[number, number, boolean]>} - The code ranges, each with
+ *   whether it is a fenced code block.
  */
-function codeRanges(source: string): [number, number][] {
+function codeRanges(source: string): [number, number, boolean][] {
   // The parser drops a leading byte order mark, which shifts its offsets.
   const shift = source.startsWith('﻿') ? 1 : 0;
   const parser = markdown.parsers.markdown;
   const root = parser.parse(source.slice(shift), {} as never) as MarkdownNode;
-  const ranges: [number, number][] = [];
+  const ranges: [number, number, boolean][] = [];
   const walk = (node: MarkdownNode): void => {
     if ((node.type === 'code' || node.type === 'inlineCode') && node.position) {
-      ranges.push([node.position.start.offset + shift, node.position.end.offset + shift]);
+      const from = node.position.start.offset + shift;
+      const to = node.position.end.offset + shift;
+      // A fenced block's node starts at its fence; an indented block's node
+      // starts at its indentation, and inline code is its own kind.
+      const fenced = node.type === 'code' && /^(`{3}|~{3})/.test(source.slice(from, to));
+      ranges.push([from, to, fenced]);
     }
     for (const child of node.children ?? []) {
       walk(child);
@@ -201,15 +207,15 @@ function closestSection(name: string, sections: readonly string[]): string | und
 }
 
 /**
- * Whether a code range is a fence that nothing closes. It runs to the end of
+ * Whether a fenced code block is one that nothing closes. It runs to the end of
  * the document, so the markers inside it are not examples: generated text can
  * hold such a fence, and it would otherwise hide every marker after it.
- * @param {string} code - The source text of a code range.
+ * @param {string} code - The source text of a fenced code block.
  * @returns {boolean} - Whether it is an unclosed fence.
  */
 function isUnclosedFence(code: string): boolean {
   const lines = code.split('\n');
-  const opener = /^[\t >]*(`{3,}|~{3,})/.exec(lines[0] ?? '')?.[1];
+  const opener = /^(`{3,}|~{3,})/.exec(lines[0] ?? '')?.[1];
   if (opener === undefined) {
     return false;
   }
@@ -244,7 +250,7 @@ export function diagnoseMarkers(
   requested: readonly string[] = sections,
 ): string[] {
   const examples = codeRanges(source).filter(
-    ([from, to]) => !isUnclosedFence(source.slice(from, to)),
+    ([from, to, fenced]) => !fenced || !isUnclosedFence(source.slice(from, to)),
   );
   const warnings: string[] = [];
   for (const match of source.matchAll(/(?<![`\\])<!--\s+(start|end)\s+(\S+)\s+-->/g)) {

@@ -228,6 +228,15 @@ describe('diagnoseMarkers', () => {
     expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
   });
 
+  it.each([
+    ['inline code opened by triple backticks', 'Use ```x <!-- start input -->``` here.'],
+    ['an indented code block opening with backticks', 'para\n\n    ```\n    <!-- start input -->'],
+  ])('ignores a mistyped marker in %s', (_label, example) => {
+    const source = `<!-- start title -->\n<!-- end title -->\n\n${example}\n`;
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
   it('ignores a mistyped marker quoted in inline code', () => {
     const source =
       '<!-- start title -->\n<!-- end title -->\n\nUse `x <!-- start input -->` here.\n';

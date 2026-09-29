@@ -1,3 +1,11 @@
+## [2.0.3](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.2...v2.0.3) (2026-09-29)
+
+### Bug Fixes
+
+* **markers:** never pair a marker with an example in closed code ([#712](https://github.com/bitflight-devops/github-action-readme-generator/issues/712)) ([44f4da7](https://github.com/bitflight-devops/github-action-readme-generator/commit/44f4da7dd76eef5d712cc14682f66a7fe97e3adf))
+* **readme-generator:** warn about mistyped and missing section markers ([#708](https://github.com/bitflight-devops/github-action-readme-generator/issues/708)) ([7d6c536](https://github.com/bitflight-devops/github-action-readme-generator/commit/7d6c536fa4e8513e9d0c5e7fa52af0a88e58cfb1))
+* **sections:** keep fenced code blocks in a description intact ([#709](https://github.com/bitflight-devops/github-action-readme-generator/issues/709)) ([47728d4](https://github.com/bitflight-devops/github-action-readme-generator/commit/47728d45160b76aebae1d7a8a8e4183b264b33d5))
+
 ## [2.0.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.1...v2.0.2) (2026-09-26)
 
 ### Bug Fixes

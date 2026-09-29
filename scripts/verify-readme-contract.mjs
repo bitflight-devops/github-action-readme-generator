@@ -799,10 +799,50 @@ const titleImage = titleBranding ? `${brandingImage('60px')} ` : '';
 const expectedBranding = await generatedMarkdown(brandingImage('15%'));
 const expectedTitle = action.name ? `# ${titleImage}${titlePrefix}${action.name}` : null;
 const normalisedExpectedTitle = expectedTitle ? await generatedMarkdown(expectedTitle) : null;
+/**
+ * Mirrors `descriptionMarkdown` in `src/sections/update-description.ts`:
+ * prose is squashed with blank lines as `<br />`, and a fenced code block —
+ * found by parsing, so one inside a list counts — keeps its own lines,
+ * verbatim, set apart from the prose by blank lines.
+ */
+const descriptionMarkdown = (value) => {
+  const text = String(value).trim().replaceAll('\r\n', '\n');
+  const lineOf = (offset) => text.slice(0, offset).split('\n').length - 1;
+  const fences = [];
+  const walk = (node) => {
+    if (node.type === 'code' && node.position) {
+      const { start, end } = node.position;
+      if (/^(```|~~~)/.test(text.slice(start.offset, end.offset))) {
+        fences.push([lineOf(start.offset), lineOf(end.offset)]);
+      }
+    }
+    (node.children ?? []).forEach(walk);
+  };
+  walk(markdown.parsers.markdown.parse(text, {}));
+
+  const blocks = [];
+  let current = null;
+  text.split('\n').forEach((line, index) => {
+    const code = fences.some(([first, last]) => index >= first && index <= last);
+    if (current?.code === code) current.lines.push(line);
+    else blocks.push((current = { code, lines: [line] }));
+  });
+  return blocks
+    .map(({ code, lines }) =>
+      code
+        ? lines.join('\n')
+        : lines
+            .join('\n')
+            .trim()
+            .replaceAll(/ +/g, ' ')
+            .replaceAll(' \n', '\n')
+            .replaceAll('\n\n', '<br />'),
+    )
+    .filter(Boolean)
+    .join('\n\n');
+};
 const expectedDescription = action.description
-	? await generatedMarkdown(
-			String(action.description).trim().replaceAll('\r\n', '\n').replaceAll(/ +/g, ' ').replaceAll(' \n', '\n').replaceAll('\n\n', '<br />'),
-		)
+	? await generatedMarkdown(descriptionMarkdown(action.description))
 	: null;
 
 for (const name of ['title', 'description', 'branding']) {

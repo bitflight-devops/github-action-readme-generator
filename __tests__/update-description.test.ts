@@ -71,6 +71,12 @@ describe('descriptionMarkdown', () => {
     expect(descriptionMarkdown('Intro\n\n    indented  line')).toBe('Intro<br /> indented line');
   });
 
+  it('squashes an indented code block whose first line is backticks as prose', () => {
+    expect(descriptionMarkdown('Intro\n\n    ```not  a fence\n    x')).toBe(
+      'Intro<br /> ```not a fence\n x',
+    );
+  });
+
   it('leaves backticks that do not start a line as prose', () => {
     expect(descriptionMarkdown('Use ```  inline')).toBe('Use ``` inline');
   });

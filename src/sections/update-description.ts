@@ -34,7 +34,9 @@ function fencedLines(text: string): [number, number][] {
   const walk = (node: MarkdownNode): void => {
     const { position } = node;
     if (node.type === 'code' && position) {
-      const source = text.slice(position.start.offset, position.end.offset).trimStart();
+      // A fenced block's node starts at its fence; an indented block's node
+      // starts at its indentation, even when its first line is backticks.
+      const source = text.slice(position.start.offset, position.end.offset);
       if (source.startsWith('```') || source.startsWith('~~~')) {
         ranges.push([lineOf(position.start.offset), lineOf(position.end.offset)]);
       }

@@ -812,7 +812,7 @@ const descriptionMarkdown = (value) => {
   const walk = (node) => {
     if (node.type === 'code' && node.position) {
       const { start, end } = node.position;
-      if (/^(```|~~~)/.test(text.slice(start.offset, end.offset).trimStart())) {
+      if (/^(```|~~~)/.test(text.slice(start.offset, end.offset))) {
         fences.push([lineOf(start.offset), lineOf(end.offset)]);
       }
     }

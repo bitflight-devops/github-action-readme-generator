@@ -118,13 +118,26 @@ const fail = (message) => {
   console.log(`::error::${message}`);
 };
 
-/** The half-open ranges Markdown renders as code, from prettier's parser. */
-const codeRanges = (source) => {
+/**
+ * The half-open ranges whose markers are examples, from prettier's parser:
+ * inline code, indented code, and fenced code that its closing fence ends. A
+ * fence that nothing closes runs to the end of the document and is not one.
+ */
+const exampleRanges = (source) => {
   const shift = source.startsWith('﻿') ? 1 : 0;
   const ranges = [];
+  const closedFence = (text) => {
+    const lines = text.split('\n');
+    const opener = /^[\t >]*(`{3,}|~{3,})/.exec(lines[0])?.[1];
+    if (!opener) return true;
+    const closer = lines.at(-1).replace(/^[\t >]*/, '').trimEnd();
+    return lines.length > 1 && closer.length >= opener.length && /^(`+|~+)$/.test(closer) && closer[0] === opener[0];
+  };
   const walk = (node) => {
     if ((node.type === 'code' || node.type === 'inlineCode') && node.position) {
-      ranges.push([node.position.start.offset + shift, node.position.end.offset + shift]);
+      const from = node.position.start.offset + shift;
+      const to = node.position.end.offset + shift;
+      if (closedFence(source.slice(from, to))) ranges.push([from, to]);
     }
     (node.children ?? []).forEach(walk);
   };
@@ -139,8 +152,7 @@ const codeRanges = (source) => {
  * Written apart from `src/markers.ts` on purpose, so each implementation
  * checks the other rather than agreeing by construction. The rules are the
  * same: a marker straight after a backtick or backslash is quoted, the name is
- * matched literally, and when the markers are not a single pair, the markers
- * inside code are examples.
+ * matched literally, and a marker inside closed code is an example.
  */
 const markersOf = (source, name) => {
   const literal = name.replaceAll(/[$()*+.?[\\\]^{|}]/g, '\\$&');
@@ -148,16 +160,12 @@ const markersOf = (source, name) => {
     [...source.matchAll(new RegExp(`(?<![\`\\\\])<!--\\s+${kind}\\s+${literal}\\s+-->`, 'g'))].map(
       (match) => ({ at: match.index, after: match.index + match[0].length }),
     );
-  let starts = find('start');
-  let ends = find('end');
-  const pair = starts.length === 1 && ends.length === 1 && ends[0].at >= starts[0].after;
-  if (!pair) {
-    const code = codeRanges(source);
-    const live = ({ at }) => !code.some(([from, to]) => at >= from && at < to);
-    starts = starts.filter(live);
-    ends = ends.filter(live);
-  }
-  return { starts, ends };
+  const starts = find('start');
+  const ends = find('end');
+  if (starts.length === 0 && ends.length === 0) return { starts, ends };
+  const examples = exampleRanges(source);
+  const counts = ({ at }) => !examples.some(([from, to]) => at >= from && at < to);
+  return { starts: starts.filter(counts), ends: ends.filter(counts) };
 };
 
 /**

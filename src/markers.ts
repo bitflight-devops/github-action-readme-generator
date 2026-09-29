@@ -5,16 +5,17 @@
  * A marker straight after a backtick or a backslash is quoted or escaped, and
  * is never a marker. The name is matched literally.
  *
- * A section with one start marker and one end marker after it is located
- * wherever the pair sits. Any other shape — a README that documents the
- * markers repeats them — has the markers inside code set aside as examples:
- * inline code, fenced or indented code blocks. Code decides only when the
- * markers are not a single pair: text this tool generated can hold an unclosed
- * fence, and a code check on every lookup would let that fence hide every pair
- * after it.
+ * A marker inside closed code — inline code, an indented code block, or a
+ * fenced code block that its closing fence ends — is an example and does not
+ * count. A marker inside a fence that nothing closes does count: such a fence
+ * runs to the end of the document, and text generated from an action's
+ * metadata can hold one, so treating it as code would hide every marker after
+ * it.
  *
- * Any other shape is reported rather than guessed at, because a wrong guess
- * replaces text outside the pair, which is the user's.
+ * A section is located only when the markers that count are one start marker
+ * and one end marker after it. Any other shape is reported rather than guessed
+ * at, because a wrong guess replaces text outside the pair, which is the
+ * user's.
  */
 
 import * as markdown from 'prettier/plugins/markdown';
@@ -99,21 +100,42 @@ function linesOf(source: string, offsets: number[]): number[] {
 }
 
 /**
- * Whether the markers are exactly one start marker and one end marker after it.
- * @param {RegExpExecArray[]} starts - The start markers.
- * @param {RegExpExecArray[]} ends - The end markers.
- * @returns {boolean} - Whether they form a single pair.
+ * Whether a code range is a fence that nothing closes.
+ * @param {string} code - The source text of a code range.
+ * @returns {boolean} - Whether it is an unclosed fence.
  */
-function isPair(starts: RegExpExecArray[], ends: RegExpExecArray[]): boolean {
-  const [start] = starts;
-  const [end] = ends;
-  return (
-    starts.length === 1 &&
-    ends.length === 1 &&
-    start !== undefined &&
-    end !== undefined &&
-    end.index >= start.index + start[0].length
-  );
+function isUnclosedFence(code: string): boolean {
+  const lines = code.split('\n');
+  const opener = /^[\t >]*(`{3,}|~{3,})/.exec(lines[0] ?? '')?.[1];
+  if (opener === undefined) {
+    return false;
+  }
+  const closer = (lines.at(-1) ?? '').replace(/^[\t >]*/, '').trimEnd();
+  const closes =
+    lines.length > 1 &&
+    closer.length >= opener.length &&
+    closer === opener.charAt(0).repeat(closer.length);
+  return !closes;
+}
+
+/** The last document `exampleRanges` parsed, and its result. */
+let parsed: { source: string; ranges: [number, number][] } | undefined;
+
+/**
+ * The half-open ranges of `source` whose markers are examples: every code
+ * range except a fence that nothing closes. The last result is kept, because
+ * each section is located more than once in the same document.
+ * @param {string} source - The document.
+ * @returns {Array<[number, number]>} - The example ranges.
+ */
+function exampleRanges(source: string): [number, number][] {
+  if (parsed?.source !== source) {
+    parsed = {
+      source,
+      ranges: codeRanges(source).filter(([from, to]) => !isUnclosedFence(source.slice(from, to))),
+    };
+  }
+  return parsed.ranges;
 }
 
 /**
@@ -131,12 +153,12 @@ export function locateSection(source: string, name: string): SectionSpan {
 
   let starts = markers('start');
   let ends = markers('end');
-  if (!isPair(starts, ends)) {
-    const code = codeRanges(source);
-    const live = (match: RegExpExecArray): boolean =>
-      !code.some(([from, to]) => match.index >= from && match.index < to);
-    starts = starts.filter(live);
-    ends = ends.filter(live);
+  if (starts.length > 0 || ends.length > 0) {
+    const examples = exampleRanges(source);
+    const counts = (match: RegExpExecArray): boolean =>
+      !examples.some(([from, to]) => match.index >= from && match.index < to);
+    starts = starts.filter(counts);
+    ends = ends.filter(counts);
   }
   const lines = (): number[] =>
     linesOf(
@@ -201,27 +223,6 @@ function closestSection(name: string, sections: readonly string[]): string | und
 }
 
 /**
- * Whether a code range is a fence that nothing closes. It runs to the end of
- * the document, so the markers inside it are not examples: generated text can
- * hold such a fence, and it would otherwise hide every marker after it.
- * @param {string} code - The source text of a code range.
- * @returns {boolean} - Whether it is an unclosed fence.
- */
-function isUnclosedFence(code: string): boolean {
-  const lines = code.split('\n');
-  const opener = /^[\t >]*(`{3,}|~{3,})/.exec(lines[0] ?? '')?.[1];
-  if (opener === undefined) {
-    return false;
-  }
-  const closer = (lines.at(-1) ?? '').replace(/^[\t >]*/, '').trimEnd();
-  const closes =
-    lines.length > 1 &&
-    closer.length >= opener.length &&
-    closer === opener.charAt(0).repeat(closer.length);
-  return !closes;
-}
-
-/**
  * Warnings about markers that stop a README from being generated as its
  * author intended, found before any section is written:
  *
@@ -230,9 +231,8 @@ function isUnclosedFence(code: string): boolean {
  * - a README with no marker for any section being generated, which the tool
  *   otherwise leaves unchanged in silence.
  *
- * A marker inside closed code is an example and is not reported. A marker
- * inside a fence that nothing closes is reported, as `locateSection` would
- * still find it.
+ * Markers are read as `locateSection` reads them: one inside closed code is
+ * an example and is not reported.
  * @param {string} source - The document.
  * @param {readonly string[]} sections - Every section name the tool knows.
  * @param {readonly string[]} requested - The sections being generated.
@@ -243,9 +243,7 @@ export function diagnoseMarkers(
   sections: readonly string[],
   requested: readonly string[] = sections,
 ): string[] {
-  const examples = codeRanges(source).filter(
-    ([from, to]) => !isUnclosedFence(source.slice(from, to)),
-  );
+  const examples = exampleRanges(source);
   const warnings: string[] = [];
   for (const match of source.matchAll(/(?<![`\\])<!--\s+(start|end)\s+(\S+)\s+-->/g)) {
     const name = match[2] ?? '';

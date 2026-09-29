@@ -920,6 +920,28 @@ describe('README contract verifier regressions', () => {
       expect(output).toContain('content outside the section markers is byte-identical');
     });
 
+    // A start marker and an end marker inside a closed code example are not a
+    // pair, so a run that filled between them rewrote the user's text.
+    it('rejects a run that paired a start marker with an end marker in a code example', () => {
+      const original = [
+        '<!-- start inputs -->',
+        '',
+        'USER PROSE',
+        '',
+        '```markdown',
+        '<!-- end inputs -->',
+        '```',
+        '',
+      ].join('\n');
+      const filled = ['<!-- start inputs -->', '', 'NEW', '<!-- end inputs -->', '```', ''].join(
+        '\n',
+      );
+
+      expect(annotations(() => verify(filled, ACTION, undefined, '.', original))).toContain(
+        'rewrote content outside the section markers',
+      );
+    });
+
     it('names an ambiguous section and accepts it left unchanged', () => {
       const original = withProse(
         [

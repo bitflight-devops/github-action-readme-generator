@@ -16,8 +16,7 @@ describe('descriptionMarkdown', () => {
     expect(descriptionMarkdown('A\r\n\r\nB')).toBe('A<br />B');
   });
 
-  // #705: flattening the blank line before a fence moved its opening fence
-  // mid-line, and the closing fence then opened a fence nothing closed.
+  // #705: a fence keeps its own lines, set apart from the prose by blank lines.
   it('keeps a fenced code block verbatim on lines of its own', () => {
     const description = [
       'Does  things.',
@@ -56,6 +55,20 @@ describe('descriptionMarkdown', () => {
     expect(descriptionMarkdown('```code``` is  prose\n\nnext  para')).toBe(
       '```code``` is prose<br />next para',
     );
+  });
+
+  it('keeps a fenced code block inside a list item verbatim', () => {
+    const description = ['- Run:', '', '    ```yaml', '    uses:  x', '', '    ```', '- Done'].join(
+      '\n',
+    );
+
+    expect(descriptionMarkdown(description)).toBe(
+      ['- Run:', '', '    ```yaml', '    uses:  x', '', '    ```', '', '- Done'].join('\n'),
+    );
+  });
+
+  it('squashes an indented code block as prose, as before', () => {
+    expect(descriptionMarkdown('Intro\n\n    indented  line')).toBe('Intro<br /> indented line');
   });
 
   it('leaves backticks that do not start a line as prose', () => {

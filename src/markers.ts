@@ -216,20 +216,20 @@ function closestSection(name: string, sections: readonly string[]): string | und
  */
 export function diagnoseMarkers(source: string, sections: readonly string[]): string[] {
   const code = codeRanges(source);
-  const byName = new Map<string, RegExpExecArray[]>();
+  // Markers are grouped by the section they are meant for: their own name, or
+  // the section a near-miss name was meant to be. A typo can split one pair
+  // across two names, and the pair rule below needs the whole pair.
+  const bySection = new Map<string, RegExpExecArray[]>();
   for (const match of source.matchAll(/(?<![`\\])<!--\s+(start|end)\s+(\S+)\s+-->/g)) {
     const name = match[2] ?? '';
-    if (!sections.includes(name)) {
-      byName.set(name, [...(byName.get(name) ?? []), match]);
+    const section = sections.includes(name) ? name : closestSection(name, sections);
+    if (section !== undefined) {
+      bySection.set(section, [...(bySection.get(section) ?? []), match]);
     }
   }
 
   const warnings: string[] = [];
-  for (const [name, markers] of byName) {
-    const section = closestSection(name, sections);
-    if (section === undefined) {
-      continue;
-    }
+  for (const [section, markers] of bySection) {
     // The rule `locateSection` follows: a single pair counts wherever it
     // sits, and code only sets aside markers that are not one pair.
     const starts = markers.filter((match) => match[1] === 'start');
@@ -240,10 +240,12 @@ export function diagnoseMarkers(source: string, sections: readonly string[]): st
           (match) => !code.some(([from, to]) => match.index >= from && match.index < to),
         );
     for (const match of live) {
-      const [line] = linesOf(source, [match.index]);
-      warnings.push(
-        `The marker ${match[0]} on line ${line} names no section. Did you mean '${section}'?`,
-      );
+      if (match[2] !== section) {
+        const [line] = linesOf(source, [match.index]);
+        warnings.push(
+          `The marker ${match[0]} on line ${line} names no section. Did you mean '${section}'?`,
+        );
+      }
     }
   }
 

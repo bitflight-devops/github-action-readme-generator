@@ -192,6 +192,34 @@ describe('diagnoseMarkers', () => {
     ]);
   });
 
+  // One mistyped side splits the pair across two names; the pair rule has to
+  // see both sides to know the pair counts.
+  it('reports a pair with one mistyped side after an unclosed fence', () => {
+    const source = [
+      '<!-- start title -->',
+      '```',
+      '<!-- end title -->',
+      '<!-- start input -->',
+      '<!-- end inputs -->',
+    ].join('\n');
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([
+      "The marker <!-- start input --> on line 4 names no section. Did you mean 'inputs'?",
+    ]);
+  });
+
+  it('ignores a mistyped example inside code next to a real pair', () => {
+    const source = [
+      '```',
+      '<!-- start input -->',
+      '```',
+      '<!-- start inputs -->',
+      '<!-- end inputs -->',
+    ].join('\n');
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
   it('ignores a mistyped marker inside code', () => {
     const source = '<!-- start title -->\n<!-- end title -->\n\n```\n<!-- start input -->\n```\n';
 

@@ -1,3 +1,9 @@
+## [2.0.4](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.3...v2.0.4) (2026-09-29)
+
+### Bug Fixes
+
+* **sections:** keep a description's block Markdown in the description section ([#713](https://github.com/bitflight-devops/github-action-readme-generator/issues/713)) ([a14c23f](https://github.com/bitflight-devops/github-action-readme-generator/commit/a14c23fa93d39b70979f521bf2b8a8c48a4cf2f6))
+
 ## [2.0.3](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.2...v2.0.3) (2026-09-29)
 
 ### Bug Fixes

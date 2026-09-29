@@ -767,16 +767,17 @@ function getCurrentVersionString(inputs) {
 * A marker straight after a backtick or a backslash is quoted or escaped, and
 * is never a marker. The name is matched literally.
 *
-* A section with one start marker and one end marker after it is located
-* wherever the pair sits. Any other shape — a README that documents the
-* markers repeats them — has the markers inside code set aside as examples:
-* inline code, fenced or indented code blocks. Code decides only when the
-* markers are not a single pair: text this tool generated can hold an unclosed
-* fence, and a code check on every lookup would let that fence hide every pair
-* after it.
+* A marker inside closed code — inline code, an indented code block, or a
+* fenced code block that its closing fence ends — is an example and does not
+* count. A marker inside a fence that nothing closes does count: such a fence
+* runs to the end of the document, and text generated from an action's
+* metadata can hold one, so treating it as code would hide every marker after
+* it.
 *
-* Any other shape is reported rather than guessed at, because a wrong guess
-* replaces text outside the pair, which is the user's.
+* A section is located only when the markers that count are one start marker
+* and one end marker after it. Any other shape is reported rather than guessed
+* at, because a wrong guess replaces text outside the pair, which is the
+* user's.
 */
 /**
 * Escapes the regular expression metacharacters in `text`.
@@ -792,14 +793,24 @@ function escapeRegExp(text) {
 * Parsed with the markdown parser prettier already bundles, so containers,
 * HTML blocks and indentation follow Markdown's rules rather than a regex.
 * @param {string} source - The document.
-* @returns {Array<[number, number]>} - The code ranges.
+* @returns {Array<[number, number, boolean]>} - The code ranges, each with
+*   whether it is a fenced code block.
 */
 function codeRanges(source) {
 	const shift = source.startsWith("﻿") ? 1 : 0;
 	const root = markdown.parsers.markdown.parse(source.slice(shift), {});
 	const ranges = [];
 	const walk = (node) => {
-		if ((node.type === "code" || node.type === "inlineCode") && node.position) ranges.push([node.position.start.offset + shift, node.position.end.offset + shift]);
+		if ((node.type === "code" || node.type === "inlineCode") && node.position) {
+			const from = node.position.start.offset + shift;
+			const to = node.position.end.offset + shift;
+			const fenced = node.type === "code" && /^(`{3}|~{3})/.test(source.slice(from, to));
+			ranges.push([
+				from,
+				to,
+				fenced
+			]);
+		}
 		for (const child of node.children ?? []) walk(child);
 	};
 	walk(root);
@@ -815,15 +826,31 @@ function linesOf(source, offsets) {
 	return offsets.map((offset) => source.slice(0, offset).split("\n").length).sort((a, b) => a - b);
 }
 /**
-* Whether the markers are exactly one start marker and one end marker after it.
-* @param {RegExpExecArray[]} starts - The start markers.
-* @param {RegExpExecArray[]} ends - The end markers.
-* @returns {boolean} - Whether they form a single pair.
+* Whether a fenced code block is one that nothing closes.
+* @param {string} code - The source text of a fenced code block.
+* @returns {boolean} - Whether it is an unclosed fence.
 */
-function isPair(starts, ends) {
-	const [start] = starts;
-	const [end] = ends;
-	return starts.length === 1 && ends.length === 1 && start !== void 0 && end !== void 0 && end.index >= start.index + start[0].length;
+function isUnclosedFence(code) {
+	const lines = code.split("\n");
+	const opener = /^(`{3,}|~{3,})/.exec(lines[0] ?? "")?.[1] ?? "```";
+	const closer = (lines.at(-1) ?? "").replace(/^[\t >]*/, "").trimEnd();
+	return !(lines.length > 1 && closer.length >= opener.length && closer === opener.charAt(0).repeat(closer.length));
+}
+/** The last document `exampleRanges` parsed, and its result. */
+let parsed;
+/**
+* The half-open ranges of `source` whose markers are examples: every code
+* range except a fenced code block that nothing closes. The last result is kept, because
+* each section is located more than once in the same document.
+* @param {string} source - The document.
+* @returns {Array<[number, number, boolean]>} - The example ranges.
+*/
+function exampleRanges(source) {
+	if (parsed?.source !== source) parsed = {
+		source,
+		ranges: codeRanges(source).filter(([from, to, fenced]) => !fenced || !isUnclosedFence(source.slice(from, to)))
+	};
+	return parsed.ranges;
 }
 /**
 * Locates the body of a section between its markers.
@@ -835,11 +862,11 @@ function locateSection(source, name) {
 	const markers = (kind) => [...source.matchAll(new RegExp(`(?<![\`\\\\])<!--\\s+${kind}\\s+${escapeRegExp(name)}\\s+-->`, "g"))];
 	let starts = markers("start");
 	let ends = markers("end");
-	if (!isPair(starts, ends)) {
-		const code = codeRanges(source);
-		const live = (match) => !code.some(([from, to]) => match.index >= from && match.index < to);
-		starts = starts.filter(live);
-		ends = ends.filter(live);
+	if (starts.length > 0 || ends.length > 0) {
+		const examples = exampleRanges(source);
+		const counts = (match) => !examples.some(([from, to]) => match.index >= from && match.index < to);
+		starts = starts.filter(counts);
+		ends = ends.filter(counts);
 	}
 	const lines = () => linesOf(source, [...starts, ...ends].map((match) => match.index));
 	if (starts.length === 0 && ends.length === 0) return {
@@ -866,6 +893,78 @@ function locateSection(source, name) {
 		start: from,
 		end: indent ? end.index - indent[0].length : end.index
 	};
+}
+/**
+* The number of single-character edits between two strings.
+* @param {string} a - One string.
+* @param {string} b - The other string.
+* @returns {number} - The Levenshtein distance.
+*/
+function editDistance(a, b) {
+	let previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+	for (let i = 1; i <= a.length; i++) {
+		const current = [i];
+		for (let j = 1; j <= b.length; j++) {
+			const substitution = (previous[j - 1] ?? 0) + (a[i - 1] === b[j - 1] ? 0 : 1);
+			current.push(Math.min((previous[j] ?? 0) + 1, (current[j - 1] ?? 0) + 1, substitution));
+		}
+		previous = current;
+	}
+	return previous[b.length] ?? 0;
+}
+/**
+* The section a mistyped marker name most likely meant: one within two edits,
+* ignoring case. A name further from every section is some other tool's
+* marker, or one this tool does not fill, and is not the user's mistake.
+* @param {string} name - A marker name that is not a section.
+* @param {readonly string[]} sections - The section names.
+* @returns {string | undefined} - The closest section, if one is close.
+*/
+function closestSection(name, sections) {
+	let best;
+	for (const section of sections) {
+		const distance = editDistance(name.toLowerCase(), section);
+		if (distance <= 2 && (best === void 0 || distance < best.distance)) best = {
+			section,
+			distance
+		};
+	}
+	return best?.section;
+}
+/**
+* Warnings about markers that stop a README from being generated as its
+* author intended, found before any section is written:
+*
+* - a marker whose name is a near miss of a section name, which the tool
+*   otherwise skips in silence;
+* - a README with no marker for any section being generated, which the tool
+*   otherwise leaves unchanged in silence.
+*
+* Markers are read as `locateSection` reads them: one inside closed code is
+* an example and is not reported.
+* @param {string} source - The document.
+* @param {readonly string[]} sections - Every section name the tool knows.
+* @param {readonly string[]} requested - The sections being generated.
+* @returns {string[]} - One message per problem.
+*/
+function diagnoseMarkers(source, sections, requested = sections) {
+	const examples = exampleRanges(source);
+	const warnings = [];
+	for (const match of source.matchAll(/(?<![`\\])<!--\s+(start|end)\s+(\S+)\s+-->/g)) {
+		const name = match[2] ?? "";
+		const section = sections.includes(name) ? void 0 : closestSection(name, sections);
+		const example = examples.some(([from, to]) => match.index >= from && match.index < to);
+		if (section !== void 0 && !example) {
+			const [line] = linesOf(source, [match.index]);
+			warnings.push(`The marker ${match[0]} on line ${line} names no section. Did you mean '${section}'?`);
+		}
+	}
+	const missing = (name) => {
+		const span = locateSection(source, name);
+		return !span.found && span.reason === "missing";
+	};
+	if (requested.length > 0 && requested.every(missing)) warnings.push(`The README has no markers for the sections being generated (${requested.join(", ")}), so nothing was generated. Add a pair such as <!-- start inputs --> and <!-- end inputs --> where each section belongs; README.example.md shows every section.`);
+	return warnings;
 }
 //#endregion
 //#region src/prettier.ts
@@ -2165,12 +2264,64 @@ function updateContents(sectionToken, inputs) {
 }
 //#endregion
 //#region src/sections/update-description.ts
+/**
+* The 0-based first and last line of each fenced code block in `text`.
+*
+* Found with the markdown parser prettier already bundles, so a fence inside
+* a list or a blockquote, or a line that only opens an inline code span,
+* follows Markdown's rules. Indented code blocks are not included: their
+* lines are treated as prose.
+* @param {string} text - The description, with LF line endings.
+* @returns {Array<[number, number]>} - The line ranges, inclusive.
+*/
+function fencedLines(text) {
+	const lineOf = (offset) => text.slice(0, offset).split("\n").length - 1;
+	const ranges = [];
+	const walk = (node) => {
+		const { position } = node;
+		if (node.type === "code" && position) {
+			const source = text.slice(position.start.offset, position.end.offset);
+			if (source.startsWith("```") || source.startsWith("~~~")) ranges.push([lineOf(position.start.offset), lineOf(position.end.offset)]);
+		}
+		for (const child of node.children ?? []) walk(child);
+	};
+	walk(markdown.parsers.markdown.parse(text, {}));
+	return ranges;
+}
+/**
+* Converts an action.yml description to the Markdown of the description
+* section.
+*
+* Prose is squashed and its blank lines become `<br />`. A fenced code block
+* keeps its own lines, verbatim, with a blank line between it and the prose
+* around it — see #705.
+* @param {string} description - The description from action.yml.
+* @returns {string} - The section's Markdown.
+*/
+function descriptionMarkdown(description) {
+	const text = description.trim().replaceAll("\r\n", "\n");
+	const fences = fencedLines(text);
+	const segments = [];
+	for (const [index, line] of text.split("\n").entries()) {
+		const code = fences.some(([first, last]) => index >= first && index <= last);
+		const last = segments.at(-1);
+		if (last?.code === code) last.lines.push(line);
+		else segments.push({
+			code,
+			lines: [line]
+		});
+	}
+	return segments.map(({ code, lines }) => {
+		const block = lines.join("\n");
+		return code ? block : block.trim().replaceAll(/ +/g, " ").replaceAll(" \n", "\n").replaceAll("\n\n", "<br />");
+	}).filter((block) => block !== "").join("\n\n");
+}
 function updateDescription(sectionToken, inputs) {
 	const log = new LogTask(sectionToken);
 	const content = [];
 	if (inputs?.action?.description) {
 		log.start();
-		const desc = inputs.action.description.trim().replaceAll("\r\n", "\n").replaceAll(/ +/g, " ").replaceAll(" \n", "\n").replaceAll("\n\n", "<br />");
+		const desc = descriptionMarkdown(inputs.action.description);
 		log.info(`Writing ${desc.length} characters to the description section`);
 		content.push(desc);
 		inputs.readmeEditor.updateSection(sectionToken, content);
@@ -2538,6 +2689,7 @@ var ReadmeGenerator = class {
 	* @returns Promise resolving when done
 	*/
 	async generate(providedSections = this.inputs.sections) {
+		for (const warning of diagnoseMarkers(this.inputs.readmeEditor.getReadmeContent(), README_SECTIONS, providedSections)) this.log.warn(warning);
 		const sectionPromises = this.updateSections(providedSections);
 		const sections = await this.resolveUpdates(sectionPromises);
 		this.outputSections(sections);

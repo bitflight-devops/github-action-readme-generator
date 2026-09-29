@@ -228,6 +228,13 @@ describe('diagnoseMarkers', () => {
     expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
   });
 
+  it('ignores a mistyped marker quoted in inline code', () => {
+    const source =
+      '<!-- start title -->\n<!-- end title -->\n\nUse `x <!-- start input -->` here.\n';
+
+    expect(diagnoseMarkers(source, sections)).toStrictEqual([]);
+  });
+
   it('ignores a mistyped marker inside code', () => {
     const source = '<!-- start title -->\n<!-- end title -->\n\n```\n<!-- start input -->\n```\n';
 

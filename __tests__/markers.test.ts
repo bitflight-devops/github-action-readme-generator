@@ -44,13 +44,34 @@ describe('locateSection', () => {
     expect(body(afterExample('\\<!-- end inputs -->'))).toBe('\nx');
   });
 
-  // A single pair is located wherever it sits. Generated text can hold an
-  // unclosed fence — a description whose fence the description updater
-  // flattened — and code detection must not let it hide the pairs after it.
-  it('locates a single pair even after an unclosed fence', () => {
-    expect(
-      body(`<!-- start description -->\n\`\`\`\n<!-- end description -->\n${afterExample()}`),
-    ).toBe('\nx');
+  // A fence that nothing closes runs to the end of the document, and markers
+  // inside it still count, so it cannot hide the pairs after it.
+  it('locates pairs inside and after a fence that nothing closes', () => {
+    const source = `<!-- start description -->\n\`\`\`\n<!-- end description -->\n${afterExample()}`;
+
+    expect(body(source, 'description')).toBe('\n```');
+    expect(body(source)).toBe('\nx');
+  });
+
+  describe('markers inside closed code', () => {
+    it('does not pair a start marker with an end marker in a later code example', () => {
+      const source = ['<!-- start inputs -->', 'prose', '```', '<!-- end inputs -->', '```'].join(
+        '\n',
+      );
+
+      expect(body(source)).toBe('<unpaired>');
+    });
+
+    it.each([
+      ['a fenced code block', ['```', '<!-- start inputs -->', '<!-- end inputs -->', '```']],
+      ['inline code', ['Add `x <!-- start inputs --><!-- end inputs -->` to your README.']],
+      [
+        'inline code opened by triple backticks',
+        ['Add ```x <!-- start inputs --><!-- end inputs -->``` to your README.'],
+      ],
+    ])('reports a pair that is only an example in %s as missing', (_label, example) => {
+      expect(body(example.join('\n'))).toBe('<missing>');
+    });
   });
 
   // #691: a README that documents the markers repeats them.

@@ -47,15 +47,15 @@ bytes, and its spans are written as LF, because no single ending reproduces it.
 
 Which bytes are a span is a separate question, decided by `src/markers.ts`
 rather than by the formatter. A marker straight after a backtick or a backslash
-is quoted, and is never a marker. A section with one start marker and one end
-marker after it is filled wherever the pair sits. For any other shape, the
-markers inside code — inline code, fenced or indented code blocks — are examples
-and do not count. If the markers that still count are not a single pair, the
-section is left unchanged with a warning naming the marker lines, because any
-guess at the intended pair would replace text outside it. Code decides only
-when the markers are not a single pair: generated text can hold an unclosed
-fence, and a code check on every lookup would let that fence hide every pair
-after it.
+is quoted, and is never a marker. A marker inside closed code — inline code, an
+indented code block, or a fenced code block that its closing fence ends — is an
+example and does not count. A marker inside a fence that nothing closes does
+count: that fence runs to the end of the document, and text generated from an
+action's metadata can hold one, so treating it as code would hide every marker
+after it. A section is filled only when the markers that count are one start
+marker and one end marker after it. Any other shape leaves the section
+unchanged, with a warning naming the marker lines, because any guess at the
+intended pair would replace text outside it.
 
 The line break and indentation before an end marker that starts its line belong
 to the marker, not the span. A padded span always puts its end marker on its

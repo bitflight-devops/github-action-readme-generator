@@ -270,6 +270,28 @@ describe('ReadmeEditor', () => {
         },
       );
 
+      // The only end marker is an example in closed code, so pairing it with
+      // the real start marker would replace the prose and code between them.
+      it('leaves the file unchanged when the only end marker is in a code example', async () => {
+        const original = [
+          '<!-- start inputs -->',
+          '',
+          USER_PROSE,
+          '',
+          '```markdown',
+          '<!-- end inputs -->',
+          '```',
+          '',
+        ].join('\n');
+        fs.writeFileSync(readmePath, original, 'utf8');
+        const editor = new ReadmeEditor(readmePath);
+        editor.updateSection('inputs', UNALIGNED);
+
+        await editor.dumpToFile();
+
+        expect(read()).toBe(original);
+      });
+
       it.each([
         ['above', (fence: string) => [fence, '', ...pair]],
         ['below', (fence: string) => [...pair, '', fence]],

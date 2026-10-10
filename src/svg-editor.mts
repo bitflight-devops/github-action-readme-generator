@@ -107,9 +107,8 @@ export default class SVGEditor {
   writeSVGFile(svgPath: string, svgContent: string): void {
     fs.mkdirSync(path.dirname(svgPath), { recursive: true });
     this.log.debug(`Writing SVG file to ${svgPath}`);
-    fs.writeFile(svgPath, svgContent, 'utf8', () => {
-      return this.log.debug(`SVG image generated: ${svgPath}`);
-    });
+    fs.writeFileSync(svgPath, svgContent, 'utf8');
+    this.log.debug(`SVG image generated: ${svgPath}`);
   }
 
   /**

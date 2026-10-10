@@ -21,6 +21,7 @@ export default async function save(inputs: Inputs, log: LogTask): Promise<void> 
       await docsConfig.save(inputs.configPath);
     } catch (error) {
       log.error(`${String(error)}`);
+      throw error;
     }
   }
 }

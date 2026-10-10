@@ -88,6 +88,7 @@ export async function wrapDescription(
     });
   } catch (error) {
     log.error(`${String(error)}`);
+    throw error;
   }
 
   content.push(...formattedString.split('\n').map((line) => prefix + line.replace(prefix, '')));

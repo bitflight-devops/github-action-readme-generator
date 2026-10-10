@@ -53,6 +53,7 @@ const config: ReturnType<typeof defineConfig> = defineConfig({
       // isolated tempdir with no node_modules, so every runtime `dependency`
       // has to be bundled in, not left external.
       entry: "src/cli.ts",
+      outputOptions: { entryFileNames: "index.js", codeSplitting: false },
       platform: "node",
       outDir: "dist/bin",
       // tsdown auto-enables declaration output repo-wide because
@@ -70,7 +71,6 @@ const config: ReturnType<typeof defineConfig> = defineConfig({
       // binary with no node_modules to resolve sibling chunks from. Keep this
       // off even when no current dependency lazy-loads: it is what stops the
       // single-file invariant from depending on which packages happen to.
-      outputOptions: { codeSplitting: false },
       // Preserves the shebang + __filename/__dirname/require ESM-interop
       // shim scripts/esbuild.mjs's banner used to inject.
       banner: `#!/usr/bin/env node

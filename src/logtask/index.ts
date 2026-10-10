@@ -137,7 +137,7 @@ export default class LogTask {
   /**
    * Map of ingroup settings per task name.
    */
-  private static ingroupSettings = new Map<string, boolean>();
+  private groupActive = false;
 
   /**
    * The width of the indentation for log messages.
@@ -169,14 +169,14 @@ export default class LogTask {
    * Gets the ingroup setting for the task.
    */
   get ingroup(): boolean {
-    return LogTask.ingroupSettings.get(this.name) ?? false;
+    return this.groupActive;
   }
 
   /**
    * Sets the ingroup setting for this task.
    */
   set ingroup(value: boolean) {
-    LogTask.ingroupSettings.set(this.name, value);
+    this.groupActive = value;
   }
 
   getMessageString(step: string, desc: string, emojiStr: string): string {

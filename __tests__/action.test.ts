@@ -157,21 +157,21 @@ describe('Action', () => {
       expect(() => new Action(actTestYmlPath, mockLogTask)).toThrow('Invalid action metadata syntax');
     });
 
-    it('accepts scalar defaults and optional metadata through YAML loading', async () => {
+    it('accepts scalar defaults and nullish descriptions through YAML loading', async () => {
       vi.mocked(fs.readFileSync).mockReturnValueOnce(YAML.stringify({
         ...metadata,
         inputs: {
           enabled: { description: 'Enabled', default: false, required: false },
           retries: { description: 'Retries', default: 3 },
-          optional: { default: null },
+          optional: { default: null, description: null },
         },
-        outputs: { result: { description: 'Result' } },
+        outputs: { result: { description: null } },
       }));
       const { default: Action } = await import('../src/Action.js');
       const action = new Action(actTestYmlPath, mockLogTask);
       expect(action.inputs?.enabled?.default).toBe(false);
       expect(action.inputs?.retries?.default).toBe(3);
-      expect(action.outputs?.result?.description).toBe('Result');
+      expect(action.outputs?.result?.description).toBeNull();
     });
   });
 

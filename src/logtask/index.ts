@@ -264,7 +264,7 @@ export default class LogTask {
     const desc = message === '' ? `Completed ${this.name}.` : message;
     if (ingroup) {
       this.ingroup = false;
-      if (process.env.GITHUB_ACTIONS) {
+      if (inGitHubActions()) {
         core.endGroup();
       }
     }
@@ -281,11 +281,11 @@ export default class LogTask {
     const desc = message === '' ? `Failed ${this.name}.` : message;
     if (ingroup) {
       this.ingroup = false;
-      if (process.env.GITHUB_ACTIONS) {
+      if (inGitHubActions()) {
         core.endGroup();
       }
     }
-    const msgtype = process.env.GITHUB_ACTIONS ? LogGroup.IS_FAILED : LogGroup.IS_ERROR;
+    const msgtype = inGitHubActions() ? LogGroup.IS_FAILED : LogGroup.IS_ERROR;
     this.logStep('❌', 'FAILURE', desc, msgtype);
   }
 

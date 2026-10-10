@@ -140,7 +140,7 @@ describe('LogTask', () => {
     it('should log a failure message', () => {
       vi.stubEnv('GITHUB_ACTIONS', 'false');
       logTask.fail(testMessage);
-      expect(core.setFailed).toHaveBeenCalledWith(
+      expect(core.error).toHaveBeenCalledWith(
         chalk.bgRedBright(`[FAILURE][TestTask   ] ❌: ${chalk.yellow.bold(testMessage)}`),
       );
     });
@@ -148,7 +148,7 @@ describe('LogTask', () => {
     it('should log a failure message without ingroup', () => {
       vi.stubEnv('GITHUB_ACTIONS', 'false');
       logTask.fail(testMessage, false);
-      expect(core.setFailed).toHaveBeenCalledWith(
+      expect(core.error).toHaveBeenCalledWith(
         chalk.bgRedBright(`[FAILURE][TestTask   ] ❌: ${chalk.yellow.bold(testMessage)}`),
       );
     });
@@ -158,6 +158,7 @@ describe('LogTask', () => {
       logTask.ingroup = true;
       logTask.fail(testMessage);
       expect(core.endGroup).toHaveBeenCalled();
+      expect(core.setFailed).toHaveBeenCalled();
     });
   });
 

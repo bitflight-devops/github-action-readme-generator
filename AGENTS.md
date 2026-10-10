@@ -81,7 +81,8 @@ npm run generate-docs  # regenerate README.md from action.yml
 
 ```text
 src/
-  cli.ts                  CLI error-reporting entry point (dist/bin/index.js)\n  index.ts                library entry point (dist/mjs/index.js); retains import-time generation
+  cli.ts                  CLI error-reporting entry point (dist/bin/index.js)
+  index.ts                library entry point (dist/mjs/index.js); retains import-time generation
   Action.ts                action.yml metadata parsing
   inputs.ts                 Inputs class: CLI args -> .ghadocs.json -> action.yml cascade
   readme-generator.ts   ReadmeGenerator class - generate()/updateSections()/outputSections()

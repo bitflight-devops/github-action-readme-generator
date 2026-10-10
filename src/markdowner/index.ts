@@ -79,9 +79,9 @@ export function getColumnCounts(data: MarkdownArrayRowType): {
  */
 export function padArrayRows(data: MarkdownArrayRowType, maxCols: number): MarkdownArrayRowType {
   return data.map((row) => {
-    const padding = Array.from({ length: maxCols - row.length }).fill('');
+    const padding: string[] = Array.from({ length: Math.max(0, maxCols - row.length) }, () => '');
     return [...row, ...padding];
-  }) as MarkdownArrayRowType;
+  });
 }
 
 /**
@@ -94,38 +94,17 @@ export function ArrayOfArraysToMarkdownTable(providedTableContent: MarkdownArray
   const clonedData = cloneArray(providedTableContent);
   const { maxCols } = getColumnCounts(clonedData);
   const paddedData = padArrayRows(clonedData, maxCols);
-  const maxRows = paddedData.length;
+  const renderCells = (cells: string[]): string => `|${cells.join('|')}|\n`;
+  const escaped = (value: string): string =>
+    markdownEscapeInlineCode(markdownEscapeTableCell(value)).trim();
 
-  const markdownArrayRowsLength = maxRows + 1;
-  const markdownArrayEntriesLength = maxCols * 2 + 1;
-  const markdownArrays: MarkdownArrayRowType = Array.from({ length: markdownArrayRowsLength }, () =>
-    Array.from({ length: markdownArrayEntriesLength }, () => '|'),
-  );
-
-  const outputStrings: string[] = [];
-  let i = 0;
-  for (const row of markdownArrays) {
-    let col = 0;
-    const idx = i > 1 ? i - 1 : 0;
-    const dataRow = paddedData[idx];
-    for (let j = 0; j < row.length; j++) {
-      let content = markdownEscapeTableCell(dataRow[col] ?? '');
-      content = markdownEscapeInlineCode(content);
-      if (j % 2 === 1) {
-        if (i === 0) {
-          markdownArrays[i][j] = ` **${content.trim()}** `;
-        } else if (i === 1) {
-          markdownArrays[i][j] = '---';
-        } else {
-          markdownArrays[i][j] = ` ${content.trim()} `;
-        }
-        col += 1;
-      }
-    }
-    outputStrings.push(`${markdownArrays[i].join('')}\n`);
-    i += 1;
+  const header = paddedData[0] ?? [];
+  const lines = [renderCells(header.map((value) => ` **${escaped(value)}** `))];
+  lines.push(renderCells(Array.from({ length: maxCols }, () => '---')));
+  for (const row of paddedData.slice(1)) {
+    lines.push(renderCells(row.map((value) => ` ${escaped(value)} `)));
   }
-  return outputStrings.join('');
+  return lines.join('');
 }
 
 export default ArrayOfArraysToMarkdownTable;

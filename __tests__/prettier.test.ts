@@ -292,22 +292,10 @@ describe('prettier', () => {
       expect(await wrapDescription(undefined, undefined as unknown as string[])).toEqual([]);
     });
 
-    // Prettier's markdown parser accepts malformed markdown — unterminated
-    // fences and invalid json/yaml fence bodies all format without throwing —
-    // so the catch is only reachable via a non-string value slipping past the
-    // type. It swallows the error rather than propagating, which leaves
-    // formattedString empty and still appends one bare prefix line.
-    //
-    // The logger is spied on rather than left to run: LogTask.error emits a
-    // `::error::` line, which GitHub Actions turns into an error annotation on
-    // an otherwise-passing run.
-    it('logs and falls back to a single prefix line when formatting throws', async () => {
+    it('propagates formatter failures after logging the error', async () => {
       const logged = vi.spyOn(LogTask.prototype, 'error').mockImplementation(() => {});
-
       try {
-        const result = await wrapDescription(42 as unknown as string, ['line 1'], '# ');
-
-        expect(result).toEqual(['line 1', '# ']);
+        await expect(wrapDescription(42 as unknown as string, ['line 1'], '# ')).rejects.toThrow();
         expect(logged).toHaveBeenCalledOnce();
       } finally {
         logged.mockRestore();

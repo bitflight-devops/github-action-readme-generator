@@ -123,14 +123,14 @@ export type ActionYaml = {
  * Parses and represents metadata from action.yml.
  */
 export default class Action implements ActionYaml {
-  static validate(obj: unknown): obj is ActionType {
+  static validate(obj: unknown): obj is ActionYaml {
     if (typeof obj !== 'object' || obj === null) {
       return false;
     }
     const record = obj as Record<string, unknown>;
     if ('name' in record && 'description' in record && 'runs' in record) {
-      const runs = record.runs as Record<string, unknown> | undefined;
-      if (runs && 'using' in runs) {
+      const runs = record.runs;
+      if (typeof runs === 'object' && runs !== null && !Array.isArray(runs) && 'using' in runs) {
         return (
           typeof record.name === 'string' &&
           typeof record.description === 'string' &&
@@ -183,7 +183,7 @@ export default class Action implements ActionYaml {
     try {
       actionYaml = this.loadActionFrom(actionPath);
     } catch (error) {
-      throw new Error(`Failed to load ${actionPath}. ${String(error)}`);
+      throw new Error(`Failed to load ${actionPath}. ${String(error)}`, { cause: error });
     }
     this.log.debug(`Action YAML: ${JSON.stringify(actionYaml)}`);
 
@@ -215,7 +215,7 @@ export default class Action implements ActionYaml {
     this.rawYamlString = fs.readFileSync(actionPath, 'utf8');
 
     this.log.debug(`Parse ${actionPath} from ${actionDir}`);
-    const actionObj = YAML.parse(this.rawYamlString) as ActionYaml;
+    const actionObj: unknown = YAML.parse(this.rawYamlString);
     if (Action.validate(actionObj)) {
       return actionObj;
     }

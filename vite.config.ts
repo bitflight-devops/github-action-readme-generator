@@ -52,7 +52,7 @@ const config: ReturnType<typeof defineConfig> = defineConfig({
       // integration-bundled-binary.test.ts copies only this file into an
       // isolated tempdir with no node_modules, so every runtime `dependency`
       // has to be bundled in, not left external.
-      entry: "src/index.ts",
+      entry: "src/cli.ts",
       platform: "node",
       outDir: "dist/bin",
       // tsdown auto-enables declaration output repo-wide because

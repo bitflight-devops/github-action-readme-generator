@@ -153,7 +153,7 @@ export function readFile(filename: string): string {
   try {
     return readFileSync(filename, 'utf8');
   } catch (error) {
-    throw new Error(`Cannot read file ${filename}: ${String(error)}`);
+    throw new Error(`Cannot read file ${filename}: ${String(error)}`, { cause: error });
   }
 }
 

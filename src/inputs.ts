@@ -963,7 +963,17 @@ export default class Inputs {
       'sections',
       inputContext.sections ?? (this.config.get('sections') as ReadmeSection[]),
     );
-    this.sections = this.config.get('sections') as ReadmeSection[];
+    const configuredSections: unknown = this.config.get('sections');
+    if (
+      !Array.isArray(configuredSections) ||
+      !configuredSections.every(
+        (section: unknown) =>
+          typeof section === 'string' && (README_SECTIONS as readonly string[]).includes(section),
+      )
+    ) {
+      throw new Error('Invalid sections configuration: expected an array of supported README sections');
+    }
+    this.sections = configuredSections as ReadmeSection[];
     this.readmePath =
       inputContext.readmePath ?? path.resolve(this.config.get(ConfigKeys.pathsReadme) as string);
     this.readmeEditor = inputContext.readmeEditor ?? new ReadmeEditor(this.readmePath);

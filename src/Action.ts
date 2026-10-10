@@ -130,22 +130,14 @@ export default class Action implements ActionYaml {
     const record = obj as Record<string, unknown>;
     const isRecord = (value: unknown): value is Record<string, unknown> =>
       typeof value === 'object' && value !== null && !Array.isArray(value);
-    const validEntries = (value: unknown, fields: readonly string[]): boolean =>
+    const validDescriptions = (value: unknown): boolean =>
       value === undefined ||
       (isRecord(value) &&
         Object.values(value).every(
-          (entry) =>
-            isRecord(entry) &&
-            fields.every((field) => entry[field] === undefined || typeof entry[field] === 'string'),
+          (entry) => isRecord(entry) &&
+            (entry.description === undefined || typeof entry.description === 'string'),
         ));
-    if (
-      !validEntries(record.inputs, ['description', 'default', 'deprecationMessage']) ||
-      !validEntries(record.outputs, ['description', 'value']) ||
-      (record.branding !== undefined &&
-        (!isRecord(record.branding) ||
-          (record.branding.icon !== undefined && typeof record.branding.icon !== 'string') ||
-          (record.branding.color !== undefined && typeof record.branding.color !== 'string')))
-    ) {
+    if (!validDescriptions(record.inputs) || !validDescriptions(record.outputs)) {
       return false;
     }
     if ('name' in record && 'description' in record && 'runs' in record) {

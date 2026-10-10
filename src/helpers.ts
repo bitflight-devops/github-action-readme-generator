@@ -89,59 +89,6 @@ export function prefixParser(text: string | undefined): string | undefined {
 }
 
 /**
- * Wraps the given text into multiple lines with a maximum width of 80 characters.
- * @param text - The text to wrap.
- * @param content - The array to store the wrapped lines.
- * @param prepend - The string to prepend to each wrapped line.
- * @returns The array of wrapped lines.
- */
-export function wrapText(
-  text: string | undefined,
-  content: string[],
-  prepend: string = '',
-): string[] {
-  // Constrain the width of the description
-  if (!text) {
-    return content;
-  }
-  const width = 80;
-
-  let description = text
-    .trim()
-    .replaceAll('\r\n', '\n') // Convert CR to LF
-    .replaceAll(/ +/g, ' ') //    Squash consecutive spaces
-    .replaceAll(' \n', '\n'); //  Squash space followed by newline
-
-  while (description) {
-    // Longer than width? Find a space to break apart
-    let segment: string;
-    if (description.length > width) {
-      segment = description.slice(0, Math.max(0, width + 1));
-      while (!segment.endsWith(' ') && !segment.endsWith('\n') && segment) {
-        segment = segment.slice(0, Math.max(0, segment.length - 1));
-      }
-
-      // Trimmed too much?
-      if (segment.length < width * 0.67) {
-        segment = description;
-      }
-    } else {
-      segment = description;
-    }
-
-    // Check for newline
-    const newlineIndex = segment.indexOf('\n');
-    if (newlineIndex >= 0) {
-      segment = segment.slice(0, Math.max(0, newlineIndex + 1));
-    }
-    content.push(`${prepend}${segment}`.trimEnd());
-    // Remaining
-    description = description.slice(segment.length);
-  }
-  return content;
-}
-
-/**
  * Represents a repository with owner and repo properties.
  */
 export interface Repo {
@@ -281,37 +228,6 @@ export function repositoryFinder(
     log.error(`Couldn't retrieve owner or repo in .git/config file: ${String(error)}`);
   }
   throw new Error('No owner or repo found');
-}
-
-/**
- * Returns the default branch of the git repository.
- * @returns The default branch.
- */
-/**
- * Gets the default branch for the Git repository.
- *
- * @returns The name of the default branch.
- */
-export function getDefaultGitBranch(): string {
-  let result: Buffer | undefined;
-  try {
-    // Run git command to get default branch
-    result = execSync('git symbolic-ref HEAD | sed s@^refs/heads/@@');
-  } catch (error) {
-    // If command fails, try alternative for MacOS
-    if (error) {
-      try {
-        result = execSync(
-          "git remote set-head origin -a;git remote show origin | head 50 sed -n 's/^.*default branch \\(.*\\)/\\1/p'",
-        );
-      } catch {
-        result = execSync(
-          "git remote set-head origin -a;git remote show origin | sed -n 's/^s*HEAD branch: \\(.*\\)/\\1/p'",
-        );
-      }
-    }
-  }
-  return result?.toString().trim() ?? '';
 }
 
 /**

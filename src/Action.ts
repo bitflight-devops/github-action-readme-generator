@@ -128,6 +128,19 @@ export default class Action implements ActionYaml {
       return false;
     }
     const record = obj as Record<string, unknown>;
+    const isRecord = (value: unknown): value is Record<string, unknown> =>
+      typeof value === 'object' && value !== null && !Array.isArray(value);
+    const validDescriptions = (value: unknown): boolean =>
+      value === undefined ||
+      (isRecord(value) &&
+        Object.values(value).every(
+          (entry) =>
+            isRecord(entry) &&
+            (entry.description === undefined || typeof entry.description === 'string'),
+        ));
+    if (!validDescriptions(record.inputs) || !validDescriptions(record.outputs)) {
+      return false;
+    }
     if ('name' in record && 'description' in record && 'runs' in record) {
       const runs = record.runs;
       if (typeof runs === 'object' && runs !== null && !Array.isArray(runs) && 'using' in runs) {

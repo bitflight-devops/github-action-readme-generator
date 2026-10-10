@@ -137,6 +137,44 @@ describe('Action', () => {
     });
   });
 
+  describe('nested metadata validation', () => {
+    const metadata = {
+      name: 'Fixture action',
+      description: 'Fixture description',
+      runs: { using: 'node24', main: 'index.js' },
+    };
+
+    it.each([
+      { inputs: { option: null } },
+      { inputs: { option: 42 } },
+      { inputs: { option: { description: 42 } } },
+      { outputs: { result: null } },
+      { outputs: { result: { description: false } } },
+      { inputs: 'not a mapping' },
+    ])('rejects malformed nested metadata through YAML loading: %j', async (nested) => {
+      vi.mocked(fs.readFileSync).mockReturnValueOnce(YAML.stringify({ ...metadata, ...nested }));
+      const { default: Action } = await import('../src/Action.js');
+      expect(() => new Action(actTestYmlPath, mockLogTask)).toThrow('Invalid action metadata syntax');
+    });
+
+    it('accepts scalar defaults and optional metadata through YAML loading', async () => {
+      vi.mocked(fs.readFileSync).mockReturnValueOnce(YAML.stringify({
+        ...metadata,
+        inputs: {
+          enabled: { description: 'Enabled', default: false, required: false },
+          retries: { description: 'Retries', default: 3 },
+          optional: { default: null },
+        },
+        outputs: { result: { description: 'Result' } },
+      }));
+      const { default: Action } = await import('../src/Action.js');
+      const action = new Action(actTestYmlPath, mockLogTask);
+      expect(action.inputs?.enabled?.default).toBe(false);
+      expect(action.inputs?.retries?.default).toBe(3);
+      expect(action.outputs?.result?.description).toBe('Result');
+    });
+  });
+
   describe('inputDefault', () => {
     it('should return the default value for an input', async () => {
       const { default: Action } = await import('../src/Action.js');

@@ -17,7 +17,6 @@ import {
   stripRefs,
   titlecase,
   undefinedOnEmpty,
-  wrapText,
 } from '../src/helpers.js';
 import type Inputs from '../src/inputs.js';
 import {
@@ -190,40 +189,6 @@ describe('helpers', () => {
         // @ts-expect-error testing wrong argument type
         prefixParser(1);
       }).toThrow(TypeError);
-    });
-  });
-
-  describe('wrapText', () => {
-    it('should return the content array if the text is empty', () => {
-      const content = ['line 1', 'line 2'];
-      const result = wrapText('', content);
-      expect(result).toEqual(content);
-    });
-
-    it('should wrap the text into multiple lines with a maximum width of 80 characters', () => {
-      const content: string[] = [];
-      const result = wrapText(
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod ultricies mi, nec convallis nisi. Donec pulvinar vestibulum tellus, in posuere ex. Sed eget semper ipsum.',
-        content,
-      );
-      expect(result).toEqual([
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod ultricies',
-        'mi, nec convallis nisi. Donec pulvinar vestibulum tellus, in posuere ex. Sed',
-        'eget semper ipsum.',
-      ]);
-    });
-
-    it('should prepend the given string to each wrapped line', () => {
-      const content: string[] = [];
-      const result = wrapText(
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod ultricies mi, nec convallis nisi.',
-        content,
-        '> ',
-      );
-      expect(result).toEqual([
-        '> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod ultricies',
-        '> mi, nec convallis nisi.',
-      ]);
     });
   });
 

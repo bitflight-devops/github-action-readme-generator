@@ -3,8 +3,8 @@ description: Sets up Node.js environment
 
 inputs:
   version:
-    description: "The version of Node.js to use"
-    default: "24.x"
+    description: "The version of Node.js to use. When omitted, detect a compatible version."
+    default: ""
     required: false
     type: string
 
@@ -22,9 +22,13 @@ runs:
       shell: bash
       env:
         npm_config_engine_strict: true
+        REQUESTED_NODE_VERSION: ${{ inputs.version }}
       run: |
+        if [ -n "${REQUESTED_NODE_VERSION}" ]; then
+          NODE_VERSION="${REQUESTED_NODE_VERSION}"
+
         # check if the installed node version works with the engines field in package.json
-        if npm ln --dry-run --ignore-scripts &>/dev/null; then
+        elif npm ln --dry-run --ignore-scripts &>/dev/null; then
           NODE_VERSION="$(node -v)"
 
         # check if .npmrc specifies a node version
@@ -43,8 +47,8 @@ runs:
         fi
 
         # check that we now have a node version, if not, use the default
-        if ! grep -qoP '^v?\d+\.(x|\d+\.)?(\d+|x)?' <<<"${NODE_VERSION}"; then
-          NODE_VERSION="${{ inputs.version || '24.x' }}"
+        if [ -z "${REQUESTED_NODE_VERSION}" ] && ! grep -qoP '^v?\d+\.(x|\d+\.)?(\d+|x)?' <<<"${NODE_VERSION}"; then
+          NODE_VERSION="24.x"
           echo "::warning::Unable to determine Node.js version from project files, using default version ${NODE_VERSION}"
         fi
 

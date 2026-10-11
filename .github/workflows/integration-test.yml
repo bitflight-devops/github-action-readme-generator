@@ -67,9 +67,9 @@ jobs:
           # step against the runner's actual npm version.
           run-install: false
 
-      - name: Build action
+      - name: Build and verify packaged entry points
         working-directory: action-under-test
-        run: npm run build
+        run: npm run test -- --run __tests__/integration-bundled-binary.test.ts
 
       - name: Checkout target repository (${{ matrix.repo }})
         uses: actions/checkout@v7.0.1

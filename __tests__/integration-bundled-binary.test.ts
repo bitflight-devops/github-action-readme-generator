@@ -1,139 +1,209 @@
-/**
- * Integration test that validates the bundled dist/bin/index.js binary
- * is self-contained and does not require external node_modules at runtime.
- *
- * REGRESSION TEST FOR: ERR_MODULE_NOT_FOUND: Cannot find package 'prettier'
- *
- * ROOT CAUSE:
- * `prettier` was listed in the `external` array in scripts/esbuild.mjs, which
- * excluded it from the bundle. When the action runs in a user's workflow, only
- * `dist/` is present — there is no `node_modules/prettier` to resolve.
- *
- * THE FIX:
- * Removed `prettier` from the `external` array so it gets bundled into
- * dist/bin/index.js. Since prettier is a declared `dependency` (not
- * devDependency) in package.json, bundling it is correct.
- *
- * WHAT THIS TEST VALIDATES:
- * - The dist/bin/index.js binary runs successfully in an isolated temporary
- *   directory that has no node_modules directory
- * - No ERR_MODULE_NOT_FOUND error for 'prettier' or any other bundled dep
- * - The binary produces valid README output when given a valid action.yml
- */
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vite-plus/test';
+import YAML from 'yaml';
 
-describe('Integration Test - Bundled Binary Self-Containment', () => {
-  let tempDir: string;
-  const binaryPath = path.resolve(import.meta.dirname, '../dist/bin/index.js');
+const repositoryDir = path.resolve(import.meta.dirname, '..');
+const packageManifest = JSON.parse(
+  fs.readFileSync(path.join(repositoryDir, 'package.json'), 'utf8'),
+) as { name: string; dependencies: Record<string, string> };
 
-  beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gha-bundled-binary-test-'));
-  });
-
-  afterEach(() => {
-    if (tempDir && fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    }
-  });
-
-  it('dist/bin/index.js exists and is executable', () => {
-    expect(fs.existsSync(binaryPath), `dist/bin/index.js not found at ${binaryPath}`).toBe(true);
-    const stat = fs.statSync(binaryPath);
-    // Check that it's a file with non-zero size (bundled with prettier it should be >20MB)
-    expect(stat.size).toBeGreaterThan(1024 * 1024); // at least 1MB
-  });
-
-  it('binary runs without ERR_MODULE_NOT_FOUND for prettier when no node_modules present', () => {
-    // Set up a minimal action.yml and README.md in tempDir (no node_modules)
-    const actionYml = `name: Test Action
-description: A test action for bundled binary validation
+const actionYml = `name: Test Action
+description: A test action for packaged generation
+branding:
+  icon: activity
+  color: green
 inputs:
   my-input:
     description: A test input
     required: false
     default: hello
-outputs:
-  my-output:
-    description: A test output
 runs:
-  using: node20
+  using: node24
   main: index.js
 `;
-    fs.writeFileSync(path.join(tempDir, 'action.yml'), actionYml);
 
-    const readmeMd = `# Test Action
-
-<!-- start title -->
-<!-- end title -->
+const originalReadme = `# Hand-written heading  
 
 <!-- start description -->
+stale-description
 <!-- end description -->
 
+An unformatted paragraph   between sections.
+
 <!-- start usage -->
+stale-usage
 <!-- end usage -->
 
-<!-- start inputs -->
-<!-- end inputs -->
+<!-- start branding -->
+stale-branding
+<!-- end branding -->
 
-<!-- start outputs -->
-<!-- end outputs -->
+Hand-written footer.  
 `;
-    const readmePath = path.join(tempDir, 'README.md');
-    fs.writeFileSync(readmePath, readmeMd);
 
-    // Copy the binary into tempDir so Node.js resolves modules from tempDir,
-    // not from the project root (which has node_modules/prettier). This accurately
-    // simulates the GitHub Actions runner where only dist/ is available without
-    // an adjacent node_modules directory.
-    const isolatedBinaryPath = path.join(tempDir, 'index.js');
-    fs.copyFileSync(binaryPath, isolatedBinaryPath);
-    fs.chmodSync(isolatedBinaryPath, 0o755);
+describe('Packaged entry points', () => {
+  let tempDir: string;
+  let readmePath: string;
+  let isolatedBinaryPath: string;
 
-    // Confirm no node_modules are present in the isolated directory
-    expect(fs.existsSync(path.join(tempDir, 'node_modules'))).toBe(false);
+  beforeAll(() => {
+    const build = spawnSync('npm', ['run', 'build'], {
+      cwd: repositoryDir,
+      encoding: 'utf8',
+      timeout: 60_000,
+    });
+    expect(build.status, build.error?.message ?? `${build.stdout}\n${build.stderr}`).toBe(0);
+  }, 65_000);
 
-    // Run the binary from tempDir — no node_modules anywhere in the hierarchy above tempDir
-    let stderr = '';
-    let exitCode = 0;
+  function writeConfig(overrides: Record<string, unknown> = {}) {
+    fs.writeFileSync(
+      path.join(tempDir, '.ghadocs.json'),
+      JSON.stringify({
+        owner: 'testowner',
+        repo: 'testrepo',
+        paths: { action: 'action.yml', readme: 'README.md' },
+        sections: ['description', 'usage'],
+        pretty: true,
+        versioning: { enabled: true, source: 'explicit', override: '1.2.3', prefix: 'v' },
+        ...overrides,
+      }),
+    );
+  }
 
-    try {
-      execSync(
-        `node "${isolatedBinaryPath}" --owner testowner --repo testrepo` +
-          ` --paths:action "${path.join(tempDir, 'action.yml')}"` +
-          ` --paths:readme "${readmePath}"`,
-        {
-          cwd: tempDir,
-          encoding: 'utf8',
-          env: {
-            ...process.env,
-            // Clear GitHub Actions env vars to avoid side effects
-            GITHUB_ACTIONS: undefined,
-            GITHUB_REPOSITORY: undefined,
-            INPUT_OWNER: undefined,
-            INPUT_REPO: undefined,
-          },
-        },
-      );
-    } catch (error: unknown) {
-      const execError = error as { stdout?: string; stderr?: string; status?: number };
-      stderr = execError.stderr ?? '';
-      exitCode = execError.status ?? 1;
+  function runNode(args: string[]) {
+    return spawnSync(process.execPath, args, {
+      cwd: tempDir,
+      encoding: 'utf8',
+      timeout: 30_000,
+      env: Object.fromEntries(
+        Object.entries(process.env).filter(
+          ([key]) =>
+            !key.startsWith('INPUT_') && key !== 'GITHUB_ACTIONS' && key !== 'GITHUB_REPOSITORY',
+        ),
+      ),
+    });
+  }
+
+  function expectGeneratedReadme() {
+    const generated = fs.readFileSync(readmePath, 'utf8');
+    const description = generated.match(
+      /<!-- start description -->([\s\S]*?)<!-- end description -->/u,
+    )?.[1];
+    const usage = generated.match(/<!-- start usage -->([\s\S]*?)<!-- end usage -->/u)?.[1];
+    const workflow = usage?.match(/```yaml\n([\s\S]*?)\n```/u)?.[1];
+
+    expect(description?.trim()).toBe('A test action for packaged generation');
+    expect(YAML.parse(workflow ?? '')).toEqual([
+      { uses: 'testowner/testrepo@v1.2.3', with: { 'my-input': '' } },
+    ]);
+    expect(generated).toBe(
+      originalReadme
+        .replace('\nstale-description\n', description ?? '')
+        .replace('\nstale-usage\n', usage ?? ''),
+    );
+  }
+
+  function installLibraryFixture() {
+    const modulesDir = path.join(tempDir, 'node_modules');
+    const libraryDir = path.join(modulesDir, packageManifest.name);
+    fs.mkdirSync(path.join(libraryDir, 'dist'), { recursive: true });
+    fs.copyFileSync(
+      path.join(repositoryDir, 'package.json'),
+      path.join(libraryDir, 'package.json'),
+    );
+    fs.copyFileSync(path.join(repositoryDir, 'action.yml'), path.join(libraryDir, 'action.yml'));
+    fs.cpSync(path.join(repositoryDir, 'dist/mjs'), path.join(libraryDir, 'dist/mjs'), {
+      recursive: true,
+    });
+
+    // The library resolves its declared dependencies; the CLI fixture receives only its binary.
+    for (const dependency of Object.keys(packageManifest.dependencies)) {
+      const target = path.join(modulesDir, dependency);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.symlinkSync(path.join(repositoryDir, 'node_modules', dependency), target, 'junction');
     }
+  }
 
-    // The binary must NOT fail with ERR_MODULE_NOT_FOUND for prettier
-    expect(stderr).not.toContain('ERR_MODULE_NOT_FOUND');
-    expect(stderr).not.toContain("Cannot find package 'prettier'");
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gha-packaged-entry-test-'));
+    readmePath = path.join(tempDir, 'README.md');
+    isolatedBinaryPath = path.join(tempDir, 'index.js');
+    fs.copyFileSync(path.join(repositoryDir, 'dist/bin/index.js'), isolatedBinaryPath);
+    fs.writeFileSync(path.join(tempDir, 'action.yml'), actionYml);
+    fs.writeFileSync(readmePath, originalReadme);
+    writeConfig();
+  });
 
-    // The binary should succeed (exit 0)
-    expect(exitCode, `stderr: ${stderr}`).toBe(0);
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
 
-    // The README should be updated with generated content
-    const generatedReadme = fs.readFileSync(readmePath, 'utf8');
-    expect(generatedReadme).toContain('testowner/testrepo');
+  it('generates a README from the CLI copied alone without node_modules', () => {
+    const result = runNode([isolatedBinaryPath]);
+
+    expect(result.status, result.stderr).toBe(0);
+    expectGeneratedReadme();
+  });
+
+  it('reports startup failures from the isolated CLI with a nonzero exit', () => {
+    fs.rmSync(readmePath);
+
+    const result = runNode([isolatedBinaryPath]);
+
+    expect(result.status, result.stderr).toBe(1);
+    expect(result.stderr.trim()).toBe(`ENOENT: no such file or directory, access '${readmePath}'`);
+    expect(fs.existsSync(readmePath)).toBe(false);
+  });
+
+  it('reports SVG write failures before the isolated CLI changes the README', () => {
+    const svgPath = path.join(tempDir, 'branding.svg');
+    fs.mkdirSync(svgPath);
+    writeConfig({ sections: ['branding'], branding_svg_path: svgPath });
+
+    const result = runNode([isolatedBinaryPath]);
+
+    expect(result.status, result.stderr).toBe(1);
+    expect(result.stderr.trim()).toBe(
+      `EISDIR: illegal operation on a directory, open '${svgPath}'`,
+    );
+    expect(fs.readFileSync(readmePath, 'utf8')).toBe(originalReadme);
+  });
+
+  it('completes generation while importing the public ESM library in native Node', () => {
+    installLibraryFixture();
+    const readmeAtImportPath = path.join(tempDir, 'README.at-import.md');
+    const result = runNode([
+      '--input-type=module',
+      '--eval',
+      `import assert from 'node:assert/strict';
+       import { readFileSync, writeFileSync } from 'node:fs';
+       const { generateReadme } = await import(${JSON.stringify(packageManifest.name)});
+       assert.equal(typeof generateReadme, 'function');
+       writeFileSync(${JSON.stringify(readmeAtImportPath)}, readFileSync(${JSON.stringify(readmePath)}));`,
+    ]);
+
+    expect(result.status, result.stderr).toBe(0);
+    expectGeneratedReadme();
+    expect(fs.readFileSync(readmeAtImportPath, 'utf8')).toBe(fs.readFileSync(readmePath, 'utf8'));
+  });
+
+  it('rejects a native library import with the original filesystem error', () => {
+    installLibraryFixture();
+    fs.rmSync(readmePath);
+    const result = runNode([
+      '--input-type=module',
+      '--eval',
+      `import assert from 'node:assert/strict';
+       await assert.rejects(import(${JSON.stringify(packageManifest.name)}), {
+         code: 'ENOENT', path: ${JSON.stringify(readmePath)},
+       });`,
+    ]);
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(fs.existsSync(readmePath)).toBe(false);
   });
 });

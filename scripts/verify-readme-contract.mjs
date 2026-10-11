@@ -599,7 +599,7 @@ if (usage === null) {
       .join('\n');
 
   const generatedUsageComments = async (declaration) => {
-    const formatted = await format(`Description: ${declaration?.description}`, {
+    const formatted = await format(`Description: ${declaration?.description ?? ''}`, {
       semi: false,
       parser: 'markdown',
       proseWrap: 'always',
@@ -607,8 +607,12 @@ if (usage === null) {
     });
     const lines = formatted.split('\n');
     if (declaration?.default !== undefined) {
-      const defaultLine = `Default: ${declaration.default}`;
-      lines.push(prettierEnabled ? defaultLine.trimEnd() : defaultLine);
+      const label = 'Default: ';
+      const [first, ...continuations] = String(declaration.default).split(/\r\n|\n|\r/);
+      lines.push(`${label}${first}`.trimEnd());
+      for (const line of continuations) {
+        lines.push(`${' '.repeat(label.length)}${line}`.trimEnd());
+      }
     }
     return lines.join('\n');
   };
@@ -737,9 +741,12 @@ await tableSection('inputs', inputs, (declaration) => [
   { label: 'description', expected: firstParagraph(declaration?.description), markdown: true },
   {
     label: 'default',
-    // An empty-string default is indistinguishable from no default once it is
-    // in a table cell, so it is not asserted. `false` and `0` are.
-    expected: declaration?.default === undefined || declaration.default === '' ? '' : declaration.default,
+    // Missing and empty-string defaults have empty cells. Every other declared
+    // value is rendered as text, including `false`, `0`, and `null`.
+    expected:
+      declaration?.default === undefined || declaration.default === ''
+        ? ''
+        : String(declaration.default),
     code: 'html',
   },
   // The generator emits the flag emphasised — `update-inputs.ts` writes

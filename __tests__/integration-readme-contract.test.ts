@@ -242,6 +242,225 @@ describe('README generation contract', () => {
       expect(sectionBody(await generate(), 'outputs')).toContain(key);
     });
 
+    it.each([undefined, '', 'null'])(
+      'renders and verifies empty descriptions for YAML descriptions written as %j',
+      async (description) => {
+        const descriptionLine =
+          description === undefined ? '' : `    description: ${description}\n`;
+        fs.writeFileSync(
+          actionPath,
+          `name: Nullish description action
+description: Metadata with empty descriptions
+inputs:
+  option:
+${descriptionLine}    default: false
+outputs:
+  result:
+${descriptionLine}    value: output
+runs:
+  using: node24
+  main: index.js
+`,
+        );
+        const before = 'Keep this prefix.\n';
+        const after = '\nKeep this suffix.\n';
+        const originalReadme = `${before}${[
+          '<!-- start usage -->',
+          '<!-- end usage -->',
+          '<!-- start inputs -->',
+          '<!-- end inputs -->',
+          '<!-- start outputs -->',
+          '<!-- end outputs -->',
+          '',
+        ].join('\n')}${after}`;
+        fs.writeFileSync(readmePath, originalReadme);
+        fs.writeFileSync(
+          path.join(tempDir, '.ghadocs.json'),
+          JSON.stringify({
+            owner: 'contract-owner',
+            repo: 'contract-repo',
+            paths: { action: actionPath, readme: readmePath },
+            sections: ['usage', 'inputs', 'outputs'],
+            prettier: false,
+            versioning: { source: 'explicit', override: '1.2.3', prefix: 'v', badge: false },
+          }),
+        );
+
+        const readme = await generate(false);
+
+        for (const section of ['inputs', 'outputs']) {
+          const rows = sectionBody(readme, section)
+            .split('\n')
+            .filter((line) => line.startsWith('|'));
+          const cells = rows[2]
+            .split('|')
+            .slice(1, -1)
+            .map((cell) => cell.trim());
+          expect(cells[0]).toBe(
+            section === 'inputs' ? '<b><code>option</code></b>' : '<b><code>result</code></b>',
+          );
+          expect(cells[1]).toBe('');
+        }
+        expect(sectionBody(readme, 'inputs')).toContain('<code>false</code>');
+        expect(sectionBody(readme, 'usage')).toContain("option: ''");
+        expect(
+          sectionBody(readme, 'usage')
+            .match(/^\s*# Description:.*$/gmu)
+            ?.map((line) => line.trim()),
+        ).toEqual(['# Description:']);
+        expect(readme.startsWith(before)).toBe(true);
+        expect(readme.endsWith(after)).toBe(true);
+
+        const verify = (candidate: string) => {
+          fs.writeFileSync(readmePath, candidate);
+          return spawnSync(
+            process.execPath,
+            [VERIFIER_SCRIPT, actionPath, readmePath, path.join(tempDir, 'README.original.md')],
+            { cwd: tempDir, encoding: 'utf8' },
+          );
+        };
+        fs.writeFileSync(path.join(tempDir, 'README.original.md'), originalReadme);
+        const valid = verify(readme);
+        expect(valid.status, `${valid.stdout}\n${valid.stderr}`).toBe(0);
+        expect(valid.stdout).toContain('All contract checks passed');
+
+        const staleDescription = readme.replace('    # Description:', '    # Description: stale');
+        expect(staleDescription).not.toBe(readme);
+        const stale = verify(staleDescription);
+        expect(stale.status).not.toBe(0);
+        expect(stale.stdout).toContain('usage comments do not exactly project action.yml');
+      },
+    );
+
+    it.each([false, true])(
+      'renders and verifies declared default values with pretty %s',
+      async (pretty) => {
+        fs.writeFileSync(
+          actionPath,
+          `name: Declared defaults action
+description: Metadata with supported default values
+inputs:
+  absent_default:
+    description: No default
+  empty_default:
+    description: Empty default
+    default: ''
+  null_default:
+    description: Null default
+    default: null
+  false_default:
+    description: False default
+    default: false
+  zero_default:
+    description: Zero default
+    default: 0
+  multiline_default:
+    description: Multiline default
+    default: |-
+      first
+      second
+  blank_line_default:
+    description: Blank line default
+    default: |-
+      before
+
+      after
+runs:
+  using: node24
+  main: index.js
+`,
+        );
+        const originalReadme = [
+          'Keep this prefix.  ',
+          '<!-- start usage -->',
+          '<!-- end usage -->',
+          '<!-- start inputs -->',
+          '<!-- end inputs -->',
+          'Keep this suffix.  ',
+          '',
+        ].join('\n');
+        const originalReadmePath = path.join(tempDir, 'README.original.md');
+        fs.writeFileSync(readmePath, originalReadme);
+        fs.writeFileSync(originalReadmePath, originalReadme);
+        fs.writeFileSync(
+          path.join(tempDir, '.ghadocs.json'),
+          JSON.stringify({
+            owner: 'contract-owner',
+            repo: 'contract-repo',
+            paths: { action: actionPath, readme: readmePath },
+            sections: ['usage', 'inputs'],
+            prettier: pretty,
+            versioning: { source: 'explicit', override: '1.2.3', prefix: 'v', badge: false },
+          }),
+        );
+
+        const readme = await generate(pretty);
+        const usage = sectionBody(readme, 'usage');
+        expect(
+          usage
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.startsWith('# Default:')),
+        ).toEqual([
+          '# Default:',
+          '# Default: null',
+          '# Default: false',
+          '# Default: 0',
+          '# Default: first',
+          '# Default: before',
+        ]);
+        expect(usage).toContain('    # Default: first\n    #          second');
+        expect(usage).toContain('    # Default: before\n    #\n    #          after');
+        const defaultCells = sectionBody(readme, 'inputs')
+          .split('\n')
+          .filter((line) => line.startsWith('|'))
+          .slice(2)
+          .map((line) => line.split('|')[3].trim());
+        expect(defaultCells).toEqual([
+          '',
+          '',
+          '<code>null</code>',
+          '<code>false</code>',
+          '<code>0</code>',
+          '<code>first<br />second</code>',
+          '<code>before<br /><br />after</code>',
+        ]);
+
+        const verify = (candidate: string) => {
+          fs.writeFileSync(readmePath, candidate);
+          return spawnSync(
+            process.execPath,
+            [VERIFIER_SCRIPT, actionPath, readmePath, originalReadmePath],
+            { cwd: tempDir, encoding: 'utf8' },
+          );
+        };
+        const valid = verify(readme);
+        expect(valid.status, `${valid.stdout}\n${valid.stderr}`).toBe(0);
+        expect(valid.stdout).toContain('All contract checks passed');
+
+        const corruptions = [
+          {
+            readme: readme.replace('    # Default:\n', '    # Default: stale\n'),
+            diagnostic: 'usage comments do not exactly project action.yml: empty_default',
+          },
+          {
+            readme: readme.replace('<code>null</code>', ''),
+            diagnostic: '`null_default` default in the inputs table does not match action.yml',
+          },
+          {
+            readme: readme.replace('    #          second', '    # second'),
+            diagnostic: 'usage comments do not exactly project action.yml: multiline_default',
+          },
+        ];
+        for (const corruption of corruptions) {
+          expect(corruption.readme).not.toBe(readme);
+          const invalid = verify(corruption.readme);
+          expect(invalid.status).not.toBe(0);
+          expect(invalid.stdout).toContain(corruption.diagnostic);
+        }
+      },
+    );
+
     it('ignores leading blank lines before selecting input and output table paragraphs', async () => {
       const action = ACTION_YML.replace(
         'description: A plain input with a default',

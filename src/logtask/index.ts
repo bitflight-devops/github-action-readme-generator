@@ -96,26 +96,8 @@ function highlightStep(step: string, message: string): string {
   return msg;
 }
 
-function handleOutput(startGroup: LogGroup, msg: string, originalString?: string): void {
-  // Logic to handle different log outputs based on the environment (GitHub Actions or local)
-  const ci = inGitHubActions();
-
+function handleOutput(startGroup: LogGroup, msg: string): void {
   switch (startGroup) {
-    case LogGroup.START_GROUP: {
-      if (ci && originalString) {
-        core.startGroup(originalString);
-      } else {
-        core.info(msg);
-      }
-
-      break;
-    }
-    case LogGroup.END_GROUP: {
-      if (ci) {
-        core.endGroup();
-      }
-      break;
-    }
     // Logic to handle erroring or failed steps
     case LogGroup.IS_ERROR: {
       core.error(msg);
@@ -134,10 +116,7 @@ function handleOutput(startGroup: LogGroup, msg: string, originalString?: string
  * Represents a logging task with various log step methods.
  */
 export default class LogTask {
-  /**
-   * Map of ingroup settings per task name.
-   */
-  private static ingroupSettings = new Map<string, boolean>();
+  private groupOpen = false;
 
   /**
    * The width of the indentation for log messages.
@@ -165,29 +144,9 @@ export default class LogTask {
     this.name = name?.trim();
   }
 
-  /**
-   * Gets the ingroup setting for the task.
-   */
-  get ingroup(): boolean {
-    return LogTask.ingroupSettings.get(this.name) ?? false;
-  }
-
-  /**
-   * Sets the ingroup setting for this task.
-   */
-  set ingroup(value: boolean) {
-    LogTask.ingroupSettings.set(this.name, value);
-  }
-
   getMessageString(step: string, desc: string, emojiStr: string): string {
-    let msg: string;
-    if (this.ingroup) {
-      const indentStr = ' '.repeat(LogTask.indentWidth);
-      msg = `${indentStr}   ${emojiStr}: ${this.name} > ${desc}`;
-    } else {
-      const stepStr = step.padEnd(LogTask.indentWidth, ' ');
-      msg = `[${stepStr}][${this.name.padEnd(11, ' ')}] ${emojiStr}: ${desc}`;
-    }
+    const stepStr = step.padEnd(LogTask.indentWidth, ' ');
+    const msg = `[${stepStr}][${this.name.padEnd(11, ' ')}] ${emojiStr}: ${desc}`;
     return highlightStep(step, msg);
   }
 
@@ -211,7 +170,18 @@ export default class LogTask {
     const { desc } = highlightMessage(step, message);
     const msg = this.getMessageString(step, desc, emojiStr);
 
-    handleOutput(startGroup, msg, message);
+    if (startGroup === LogGroup.START_GROUP) {
+      if (inGitHubActions() && message !== '' && !this.groupOpen) {
+        core.startGroup(message);
+        this.groupOpen = true;
+      } else {
+        core.info(msg);
+      }
+    } else if (startGroup === LogGroup.END_GROUP) {
+      this.end();
+    } else {
+      handleOutput(startGroup, msg);
+    }
   }
 
   /**
@@ -236,6 +206,14 @@ export default class LogTask {
     this.logStep('🚀', 'START', desc, LogGroup.START_GROUP);
   }
 
+  /** Closes this task's group once, including when called from a finally block. */
+  end(): void {
+    if (this.groupOpen) {
+      this.groupOpen = false;
+      core.endGroup();
+    }
+  }
+
   /**
    * Logs an info message.
    * @param message - The message of the info message.
@@ -257,16 +235,13 @@ export default class LogTask {
   /**
    * Logs a success message.
    * @param message - The message of the success message.
-   * @param ingroup - Indicates whether the success message is in a group.
+   * @param ingroup - Whether to close this task's group before the message.
    */
   success(message: string = '', ingroup: boolean = true): void {
     // Logic to log a success message
     const desc = message === '' ? `Completed ${this.name}.` : message;
     if (ingroup) {
-      this.ingroup = false;
-      if (inGitHubActions()) {
-        core.endGroup();
-      }
+      this.end();
     }
     this.logStep('✅', 'SUCCESS', desc);
   }
@@ -274,16 +249,13 @@ export default class LogTask {
   /**
    * Logs a failure message.
    * @param message - The message of the failure message.
-   * @param ingroup - Indicates whether the failure message is in a group.
+   * @param ingroup - Whether to close this task's group before the message.
    */
   fail(message: string = '', ingroup: boolean = true): void {
     // Logic to log a failure message
     const desc = message === '' ? `Failed ${this.name}.` : message;
     if (ingroup) {
-      this.ingroup = false;
-      if (inGitHubActions()) {
-        core.endGroup();
-      }
+      this.end();
     }
     const msgtype = inGitHubActions() ? LogGroup.IS_FAILED : LogGroup.IS_ERROR;
     this.logStep('❌', 'FAILURE', desc, msgtype);

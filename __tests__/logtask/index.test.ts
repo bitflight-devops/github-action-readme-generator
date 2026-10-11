@@ -12,10 +12,11 @@ describe('LogTask', () => {
   beforeEach(() => {
     logTask = new LogTask('TestTask');
     vi.stubEnv('GITHUB_ACTIONS', 'false');
+    vi.stubEnv('DEBUG', 'false');
   });
 
   afterEach(() => {
-    logTask.ingroup = false;
+    logTask.end();
     vi.resetAllMocks();
     vi.unstubAllEnvs();
   });
@@ -39,13 +40,7 @@ describe('LogTask', () => {
   });
 
   describe('getMessageString', () => {
-    it('should return the formatted message string when ingroup is enabled', () => {
-      logTask.ingroup = true;
-      const result = logTask.getMessageString('START', testMessage, '🚀');
-      expect(result).toBe(chalk.yellowBright('        🚀: TestTask > Test message'));
-    });
-
-    it('should return the formatted message string when ingroup is disabled', () => {
+    it('should return the formatted message string', () => {
       const result = logTask.getMessageString('START', testMessage, '🚀');
       expect(result).toBe(chalk.yellowBright('[START][TestTask   ] 🚀: Test message'));
     });
@@ -68,13 +63,13 @@ describe('LogTask', () => {
 
   describe('debug', () => {
     it('should log a debug message if debug mode is enabled', () => {
-      LogTask.isDebug = vi.fn().mockReturnValue(true);
+      vi.mocked(core.isDebug).mockReturnValue(true);
       logTask.debug(testMessage);
       expect(core.info).toHaveBeenCalledWith('[DEBUG][TestTask   ] 🐞: Test message');
     });
 
     it('should not log a debug message if debug mode is disabled', () => {
-      LogTask.isDebug = vi.fn().mockReturnValue(false);
+      vi.mocked(core.isDebug).mockReturnValue(false);
       logTask.debug(testMessage);
       expect(core.info).not.toHaveBeenCalled();
     });
@@ -128,11 +123,21 @@ describe('LogTask', () => {
       );
     });
 
-    it('should end the group if ingroup is enabled and GITHUB_ACTIONS is true', () => {
-      process.env.GITHUB_ACTIONS = 'true';
-      logTask.ingroup = true;
+    it('closes its started group only once on successful completion and cleanup', () => {
+      vi.stubEnv('GITHUB_ACTIONS', 'true');
+      logTask.start();
       logTask.success(testMessage);
-      expect(core.endGroup).toHaveBeenCalled();
+      logTask.end();
+      expect(core.endGroup).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not close another instance's group with the same task name", () => {
+      vi.stubEnv('GITHUB_ACTIONS', 'true');
+      logTask.start();
+
+      new LogTask('TestTask').success(testMessage);
+
+      expect(core.endGroup).not.toHaveBeenCalled();
     });
   });
 
@@ -153,11 +158,21 @@ describe('LogTask', () => {
       );
     });
 
-    it('should end the group if ingroup is enabled and GITHUB_ACTIONS is true', () => {
+    it('closes its started group only once on failure and cleanup', () => {
       vi.stubEnv('GITHUB_ACTIONS', 'true');
-      logTask.ingroup = true;
+      logTask.start();
       logTask.fail(testMessage);
-      expect(core.endGroup).toHaveBeenCalled();
+      logTask.end();
+      expect(core.endGroup).toHaveBeenCalledTimes(1);
+      expect(core.setFailed).toHaveBeenCalled();
+    });
+
+    it('reports an unstarted failure without emitting an end command', () => {
+      vi.stubEnv('GITHUB_ACTIONS', 'true');
+
+      logTask.fail(testMessage);
+
+      expect(core.endGroup).not.toHaveBeenCalled();
       expect(core.setFailed).toHaveBeenCalled();
     });
   });

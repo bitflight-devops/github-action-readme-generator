@@ -36,12 +36,16 @@ export default function updateDescription(
   // Build the new description section
   if (inputs?.action?.description) {
     log.start();
-    const desc = descriptionMarkdown(inputs.action.description);
+    try {
+      const desc = descriptionMarkdown(inputs.action.description);
 
-    log.info(`Writing ${desc.length} characters to the description section`);
-    content.push(desc);
-    inputs.readmeEditor.updateSection(sectionToken, content);
-    log.success();
+      log.info(`Writing ${desc.length} characters to the description section`);
+      content.push(desc);
+      inputs.readmeEditor.updateSection(sectionToken, content);
+      log.success();
+    } finally {
+      log.end();
+    }
   }
   const ret: Record<string, string> = {};
   ret[sectionToken] = content.join('\n');

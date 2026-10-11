@@ -18,13 +18,9 @@ export default async function updateUsage(
   inputs: Inputs,
 ): Promise<Record<string, string>> {
   const log = new LogTask(sectionToken);
-  log.start();
 
   const actionName = `${inputs.owner}/${inputs.repo}`;
-  log.info(`Action name: ${actionName}`);
   const versionString: string = getCurrentVersionString(inputs);
-
-  log.info(`Version string: ${versionString}`);
 
   const actionReference = `${actionName}@${versionString}`;
 
@@ -39,6 +35,7 @@ export default async function updateUsage(
   const inp = inputs.action.inputs;
   let firstInput = true;
   const descriptionPromises: Record<string, Promise<string[]>> = {};
+  const descriptions: DescriptionType = {};
   if (inp) {
     for (const key of Object.keys(inp)) {
       const input = inp[key];
@@ -51,7 +48,6 @@ export default async function updateUsage(
       }
     }
 
-    const descriptions: DescriptionType = {};
     const kvArray = await Promise.all(
       Object.keys(descriptionPromises).map(async (key) => {
         return { key, value: await descriptionPromises[key] };
@@ -59,44 +55,55 @@ export default async function updateUsage(
     );
     for (const e of kvArray) {
       descriptions[e.key] = e.value;
-      log.debug(`${e.key}: ${descriptions[e.key].join('\n')}`);
-    }
-
-    for (const key of Object.keys(inp)) {
-      const input = inp[key];
-      if (input !== undefined) {
-        // Line break between inputs
-        if (!firstInput) {
-          content.push('');
-        }
-
-        // Constrain the width of the description, and append it
-        content.push(...descriptions[key]);
-
-        if (input.default !== undefined) {
-          // Default. Every line stays inside the comment: a bare continuation line
-          // sits at column 0 and the fence stops being YAML. Continuation lines hang
-          // under the value, so a multi-line default does not read as more prose.
-          const [firstLine, ...rest] = `${input.default}`.split(/\r\n|\n|\r/);
-          content.push(`${indent}${defaultLabel}${firstLine}`.trimEnd());
-          for (const line of rest) {
-            content.push(`${indent}${defaultHang}${line}`.trimEnd());
-          }
-        }
-
-        // Input name
-        content.push(`    ${key}: ''`);
-
-        firstInput = false;
-      }
     }
   }
 
-  content.push('```\n');
+  // Workflow groups share one output stream. Await preparation before opening
+  // this synchronous render group so concurrent usage updates cannot overlap it.
+  log.start();
+  try {
+    log.info(`Action name: ${actionName}`);
+    log.info(`Version string: ${versionString}`);
+    if (inp) {
+      for (const key of Object.keys(inp)) {
+        const input = inp[key];
+        if (input !== undefined) {
+          log.debug(`${key}: ${descriptions[key].join('\n')}`);
+          // Line break between inputs
+          if (!firstInput) {
+            content.push('');
+          }
 
-  inputs.readmeEditor.updateSection(sectionToken, content);
-  log.success();
-  const ret: Record<string, string> = {};
-  ret[sectionToken] = content.join('\n');
-  return ret;
+          // Constrain the width of the description, and append it
+          content.push(...descriptions[key]);
+
+          if (input.default !== undefined) {
+            // Default. Every line stays inside the comment: a bare continuation line
+            // sits at column 0 and the fence stops being YAML. Continuation lines hang
+            // under the value, so a multi-line default does not read as more prose.
+            const [firstLine, ...rest] = `${input.default}`.split(/\r\n|\n|\r/);
+            content.push(`${indent}${defaultLabel}${firstLine}`.trimEnd());
+            for (const line of rest) {
+              content.push(`${indent}${defaultHang}${line}`.trimEnd());
+            }
+          }
+
+          // Input name
+          content.push(`    ${key}: ''`);
+
+          firstInput = false;
+        }
+      }
+    }
+
+    content.push('```\n');
+
+    inputs.readmeEditor.updateSection(sectionToken, content);
+    log.success();
+    const ret: Record<string, string> = {};
+    ret[sectionToken] = content.join('\n');
+    return ret;
+  } finally {
+    log.end();
+  }
 }

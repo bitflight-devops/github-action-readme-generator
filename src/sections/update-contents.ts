@@ -73,51 +73,54 @@ export default function updateContents(
 ): Record<string, string> {
   const log = new LogTask(sectionToken);
   log.start();
+  try {
+    const content: string[] = [];
+    const readmeContent = inputs.readmeEditor.getReadmeContent();
 
-  const content: string[] = [];
-  const readmeContent = inputs.readmeEditor.getReadmeContent();
+    // Extract headers from README
+    const headers = extractHeaders(readmeContent);
 
-  // Extract headers from README
-  const headers = extractHeaders(readmeContent);
+    // Filter out the title (h1) and contents section itself
+    const tocHeaders = headers.filter(
+      (h) => h.level >= 2 && !h.text.toLowerCase().includes('contents'),
+    );
 
-  // Filter out the title (h1) and contents section itself
-  const tocHeaders = headers.filter(
-    (h) => h.level >= 2 && !h.text.toLowerCase().includes('contents'),
-  );
+    if (tocHeaders.length === 0) {
+      log.info('No headers found for table of contents');
+    } else {
+      log.info(`Generating table of contents with ${tocHeaders.length} entries`);
 
-  if (tocHeaders.length === 0) {
-    log.info('No headers found for table of contents');
-  } else {
-    log.info(`Generating table of contents with ${tocHeaders.length} entries`);
+      // Find minimum header level for proper indentation
+      const minLevel = Math.min(...tocHeaders.map((h) => h.level));
 
-    // Find minimum header level for proper indentation
-    const minLevel = Math.min(...tocHeaders.map((h) => h.level));
+      // Track anchor occurrences to disambiguate duplicates like GitHub does
+      const anchorCounts = new Map<string, number>();
 
-    // Track anchor occurrences to disambiguate duplicates like GitHub does
-    const anchorCounts = new Map<string, number>();
+      // Generate TOC entries
+      content.push('## Table of Contents', '');
 
-    // Generate TOC entries
-    content.push('## Table of Contents', '');
+      for (const header of tocHeaders) {
+        const indent = '  '.repeat(header.level - minLevel);
+        const baseAnchor = headerToAnchor(header.text);
 
-    for (const header of tocHeaders) {
-      const indent = '  '.repeat(header.level - minLevel);
-      const baseAnchor = headerToAnchor(header.text);
+        // Track occurrences and compute unique anchor
+        const count = anchorCounts.get(baseAnchor) ?? 0;
+        anchorCounts.set(baseAnchor, count + 1);
 
-      // Track occurrences and compute unique anchor
-      const count = anchorCounts.get(baseAnchor) ?? 0;
-      anchorCounts.set(baseAnchor, count + 1);
+        // First occurrence uses base anchor, subsequent ones get -1, -2, etc.
+        const anchor = count === 0 ? baseAnchor : `${baseAnchor}-${count}`;
 
-      // First occurrence uses base anchor, subsequent ones get -1, -2, etc.
-      const anchor = count === 0 ? baseAnchor : `${baseAnchor}-${count}`;
-
-      content.push(`${indent}- [${header.text}](#${anchor})`);
+        content.push(`${indent}- [${header.text}](#${anchor})`);
+      }
     }
+
+    inputs.readmeEditor.updateSection(sectionToken, content);
+    log.success();
+
+    const ret: Record<string, string> = {};
+    ret[sectionToken] = content.join('\n');
+    return ret;
+  } finally {
+    log.end();
   }
-
-  inputs.readmeEditor.updateSection(sectionToken, content);
-  log.success();
-
-  const ret: Record<string, string> = {};
-  ret[sectionToken] = content.join('\n');
-  return ret;
 }

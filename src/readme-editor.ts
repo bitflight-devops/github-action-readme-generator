@@ -72,7 +72,7 @@ export default class ReadmeEditor {
     try {
       fs.accessSync(filePath);
       const raw = fs.readFileSync(filePath, 'utf8');
-      if (process.env.GITHUB_ACTIONS) {
+      if (process.env.GITHUB_ACTIONS === 'true') {
         core.setOutput('readme_before', raw);
       }
       this.crlf = usesCrlf(raw);
@@ -216,7 +216,7 @@ export default class ReadmeEditor {
       await this.formatUpdatedSections();
     }
     const content = this.crlf ? this.fileContent.replaceAll('\n', '\r\n') : this.fileContent;
-    if (process.env.GITHUB_ACTIONS) {
+    if (process.env.GITHUB_ACTIONS === 'true') {
       core.setOutput('readme_after', content);
     }
     return fs.promises.writeFile(this.filePath, content, 'utf8');

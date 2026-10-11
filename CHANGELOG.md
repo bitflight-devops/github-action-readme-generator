@@ -1,3 +1,26 @@
+## [2.0.5](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.4...v2.0.5) (2026-10-11)
+
+### Bug Fixes
+
+* add CLI-only generation error boundary ([#654](https://github.com/bitflight-devops/github-action-readme-generator/issues/654)) ([#725](https://github.com/bitflight-devops/github-action-readme-generator/issues/725)) ([6a27eaa](https://github.com/bitflight-devops/github-action-readme-generator/commit/6a27eaaf76026283f81124a5c76c22a443595455))
+* **ci:** honor explicit Node versions before automatic detection ([95a9e68](https://github.com/bitflight-devops/github-action-readme-generator/commit/95a9e6808c2b0ee77369f3ea54193ec2e07c64a7))
+* **ci:** honor explicit Node versions in the test matrix ([#735](https://github.com/bitflight-devops/github-action-readme-generator/issues/735)) ([3f03f0d](https://github.com/bitflight-devops/github-action-readme-generator/commit/3f03f0ddcf81dbfb028697e5327675b83278cf78))
+* complete SVG writes before reporting success ([#717](https://github.com/bitflight-devops/github-action-readme-generator/issues/717)) ([170e499](https://github.com/bitflight-devops/github-action-readme-generator/commit/170e499314394b6b44b11f67ade9b497a5abd9d8))
+* consistently interpret GitHub Actions environment flag ([#670](https://github.com/bitflight-devops/github-action-readme-generator/issues/670)) ([#723](https://github.com/bitflight-devops/github-action-readme-generator/issues/723)) ([68756ad](https://github.com/bitflight-devops/github-action-readme-generator/commit/68756ad11283ba30960f3ee8d02a55cb78ff3e3b))
+* fail generation on formatting and requested save errors ([#654](https://github.com/bitflight-devops/github-action-readme-generator/issues/654)) ([#718](https://github.com/bitflight-devops/github-action-readme-generator/issues/718)) ([bb48434](https://github.com/bitflight-devops/github-action-readme-generator/commit/bb48434718838c11006f276c184a20ac41de2f61))
+* guard malformed runs metadata and preserve load error causes ([#720](https://github.com/bitflight-devops/github-action-readme-generator/issues/720)) ([c6caf7a](https://github.com/bitflight-devops/github-action-readme-generator/commit/c6caf7a07ba19a5d2ce17f9452da8241887a64dc))
+* load native ESM configuration and verify fresh package entry points ([5f92784](https://github.com/bitflight-devops/github-action-readme-generator/commit/5f92784434cf65edc441ebf885ada07a134ffbc3))
+* load native ESM configuration and verify fresh package entry points ([#733](https://github.com/bitflight-devops/github-action-readme-generator/issues/733)) ([55746ed](https://github.com/bitflight-devops/github-action-readme-generator/commit/55746ed58d95fc94c0585b95d41f533c887ad786))
+* pair section log groups and honor Actions mode at output boundaries ([2d45100](https://github.com/bitflight-devops/github-action-readme-generator/commit/2d451006f5de39e2b9c370647e172e460c2590a4))
+* pair section log groups and honor Actions output mode ([#734](https://github.com/bitflight-devops/github-action-readme-generator/issues/734)) ([ceaa03a](https://github.com/bitflight-devops/github-action-readme-generator/commit/ceaa03a866105732c31149e57aa2b1d2bfe46b7c))
+* preserve empty metadata descriptions and cover reviewed errors ([3c0a181](https://github.com/bitflight-devops/github-action-readme-generator/commit/3c0a1815318477f4f52d4d54432e0f5fe586fbfe))
+* preserve empty metadata descriptions and verify reviewed error paths ([#732](https://github.com/bitflight-devops/github-action-readme-generator/issues/732)) ([f8c0f4e](https://github.com/bitflight-devops/github-action-readme-generator/commit/f8c0f4e29fd5115d2651d8e440bb0081ced8a392))
+* preserve original file read error as cause ([#722](https://github.com/bitflight-devops/github-action-readme-generator/issues/722)) ([05553e0](https://github.com/bitflight-devops/github-action-readme-generator/commit/05553e05d04fd9c88c9a632716e97336cd81156c))
+* validate consumed nested metadata descriptions ([#670](https://github.com/bitflight-devops/github-action-readme-generator/issues/670)) ([#729](https://github.com/bitflight-devops/github-action-readme-generator/issues/729)) ([330ab9a](https://github.com/bitflight-devops/github-action-readme-generator/commit/330ab9aa05740f32a82b04547d021363c76ab244))
+* validate README section configuration at input boundary ([#670](https://github.com/bitflight-devops/github-action-readme-generator/issues/670)) ([#726](https://github.com/bitflight-devops/github-action-readme-generator/issues/726)) ([40c9efd](https://github.com/bitflight-devops/github-action-readme-generator/commit/40c9efd1eec677f6bf024402459661741330233a))
+* verify declared defaults using their rendered projection ([beb2180](https://github.com/bitflight-devops/github-action-readme-generator/commit/beb2180abd2d9b225af0b8db0a37201c2616021a))
+* verify empty metadata descriptions through the contract checker ([a5e2d31](https://github.com/bitflight-devops/github-action-readme-generator/commit/a5e2d31f836cd779be511973c0138dd1a9030a0b))
+
 ## [2.0.4](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.3...v2.0.4) (2026-09-29)
 
 ### Bug Fixes

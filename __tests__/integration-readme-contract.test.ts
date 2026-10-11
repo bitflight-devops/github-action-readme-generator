@@ -243,7 +243,7 @@ describe('README generation contract', () => {
     });
 
     it.each([undefined, '', 'null'])(
-      'renders empty descriptions for YAML descriptions written as %j',
+      'renders and verifies empty descriptions for YAML descriptions written as %j',
       async (description) => {
         const descriptionLine =
           description === undefined ? '' : `    description: ${description}\n`;
@@ -264,7 +264,27 @@ runs:
         );
         const before = 'Keep this prefix.\n';
         const after = '\nKeep this suffix.\n';
-        fs.writeFileSync(readmePath, `${before}${README_WITH_MARKERS}${after}`);
+        const originalReadme = `${before}${[
+          '<!-- start usage -->',
+          '<!-- end usage -->',
+          '<!-- start inputs -->',
+          '<!-- end inputs -->',
+          '<!-- start outputs -->',
+          '<!-- end outputs -->',
+          '',
+        ].join('\n')}${after}`;
+        fs.writeFileSync(readmePath, originalReadme);
+        fs.writeFileSync(
+          path.join(tempDir, '.ghadocs.json'),
+          JSON.stringify({
+            owner: 'contract-owner',
+            repo: 'contract-repo',
+            paths: { action: actionPath, readme: readmePath },
+            sections: ['usage', 'inputs', 'outputs'],
+            prettier: false,
+            versioning: { source: 'explicit', override: '1.2.3', prefix: 'v', badge: false },
+          }),
+        );
 
         const readme = await generate(false);
 
@@ -290,6 +310,25 @@ runs:
         ).toEqual(['# Description:']);
         expect(readme.startsWith(before)).toBe(true);
         expect(readme.endsWith(after)).toBe(true);
+
+        const verify = (candidate: string) => {
+          fs.writeFileSync(readmePath, candidate);
+          return spawnSync(
+            process.execPath,
+            [VERIFIER_SCRIPT, actionPath, readmePath, path.join(tempDir, 'README.original.md')],
+            { cwd: tempDir, encoding: 'utf8' },
+          );
+        };
+        fs.writeFileSync(path.join(tempDir, 'README.original.md'), originalReadme);
+        const valid = verify(readme);
+        expect(valid.status, `${valid.stdout}\n${valid.stderr}`).toBe(0);
+        expect(valid.stdout).toContain('All contract checks passed');
+
+        const staleDescription = readme.replace('    # Description:', '    # Description: stale');
+        expect(staleDescription).not.toBe(readme);
+        const stale = verify(staleDescription);
+        expect(stale.status).not.toBe(0);
+        expect(stale.stdout).toContain('usage comments do not exactly project action.yml');
       },
     );
 

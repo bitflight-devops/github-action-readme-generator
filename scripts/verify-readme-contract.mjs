@@ -599,7 +599,7 @@ if (usage === null) {
       .join('\n');
 
   const generatedUsageComments = async (declaration) => {
-    const formatted = await format(`Description: ${declaration?.description}`, {
+    const formatted = await format(`Description: ${declaration?.description ?? ''}`, {
       semi: false,
       parser: 'markdown',
       proseWrap: 'always',

@@ -46,7 +46,7 @@ jobs:
           path: action-under-test
 
       - name: Setup Node.js for building action
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version: '24.x'
           cache: 'npm'
@@ -57,7 +57,7 @@ jobs:
         run: npm ci
 
       - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1.21.1
+        uses: voidzero-dev/setup-vp@v1.21.2
         with:
           node-manager: false
           working-directory: action-under-test
@@ -351,7 +351,7 @@ jobs:
 
       - name: Upload generated README as artifact
         if: always()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: readme-${{ matrix.artifact_name }}-${{ github.run_number }}
           path: test-repo/${{ matrix.readme_path }}

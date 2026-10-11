@@ -9,7 +9,7 @@ import * as path from 'node:path';
 
 import * as core from '@actions/core';
 import { context as githubContext } from '@actions/github';
-import nconf, { Provider } from 'nconf';
+import nconf from 'nconf';
 import YAML from 'yaml';
 
 // Get Context type and constructor from the exported context instance
@@ -321,7 +321,7 @@ type KVPairType = {
 /**
  * Type alias for Provider instance
  */
-type ProviderInstance = InstanceType<typeof Provider>;
+type ProviderInstance = nconf.Provider;
 
 export function transformGitHubInputsToArgv(
   log: LogTask,
@@ -722,7 +722,7 @@ export function loadConfig(
   configFilePath?: string,
 ): ProviderInstance {
   log.debug('Loading config from env and argv');
-  const config = providedConfig ?? new Provider();
+  const config = providedConfig ?? new nconf.Provider();
   if (process.env.GITHUB_ACTION === 'true') {
     log.info('Running in GitHub action');
   }
@@ -937,7 +937,7 @@ export default class Inputs {
     this.log.debug('Initializing Inputs');
     const inputContext = providedInputContext ?? {};
     this.configPath = inputContext.configPath ?? path.resolve(configFileName);
-    this.config = inputContext.config ?? new Provider();
+    this.config = inputContext.config ?? new nconf.Provider();
     loadConfig(log, this.config, this.configPath);
 
     // `loadDefaultConfig` calls `repositoryFinder`, which throws "No owner or

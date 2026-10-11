@@ -48,7 +48,7 @@
   "scripts": {
     "all": "npm run build && npm run format && npm run lint && npm run test",
     "prebuild": "tsc --project tsconfig.json --noemit",
-    "build": "rimraf dist out && vp pack && chmod +x dist/bin/index.js",
+    "build": "rimraf dist && vp pack && chmod +x dist/bin/index.js",
     "build:docker": "run-script-os",
     "build:docker:default": "docker run --rm -t -v $(pwd):/work -w /work node:24-alpine sh -c 'apk add --no-cache curl && curl -fsSL https://viteplus.dev/install.sh | VP_NODE_MANAGER=no bash && export PATH=\"$HOME/.vite-plus/bin:$PATH\" && npm run build'",
     "build:docker:win32": "docker run --rm -t -v \"%cd%\":/work -w /work node:24-alpine sh -c \"apk add --no-cache curl && curl -fsSL https://viteplus.dev/install.sh | VP_NODE_MANAGER=no bash && export PATH=\\\"$HOME/.vite-plus/bin:$PATH\\\" && npm run build\"",

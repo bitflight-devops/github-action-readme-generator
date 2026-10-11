@@ -137,12 +137,26 @@ describe('Action', () => {
     });
   });
 
-  describe('nested metadata validation', () => {
+  describe('metadata validation', () => {
     const metadata = {
       name: 'Fixture action',
       description: 'Fixture description',
       runs: { using: 'node24', main: 'index.js' },
     };
+
+    it.each(['node24', 42, true])('rejects scalar runs %j with metadata context', async (runs) => {
+      vi.mocked(fs.readFileSync).mockReturnValueOnce(YAML.stringify({ ...metadata, runs }));
+      const { default: Action } = await import('../src/Action.js');
+
+      expect(() => new Action(actTestYmlPath, mockLogTask)).toThrow(
+        expect.objectContaining({
+          message: expect.stringContaining(`Failed to load ${actTestYmlPath}`),
+          cause: expect.objectContaining({
+            message: `Invalid action metadata syntax in ${actTestYmlPath}.`,
+          }),
+        }),
+      );
+    });
 
     it.each([
       { inputs: { option: null } },
@@ -154,19 +168,23 @@ describe('Action', () => {
     ])('rejects malformed nested metadata through YAML loading: %j', async (nested) => {
       vi.mocked(fs.readFileSync).mockReturnValueOnce(YAML.stringify({ ...metadata, ...nested }));
       const { default: Action } = await import('../src/Action.js');
-      expect(() => new Action(actTestYmlPath, mockLogTask)).toThrow('Invalid action metadata syntax');
+      expect(() => new Action(actTestYmlPath, mockLogTask)).toThrow(
+        'Invalid action metadata syntax',
+      );
     });
 
     it('accepts scalar defaults and nullish descriptions through YAML loading', async () => {
-      vi.mocked(fs.readFileSync).mockReturnValueOnce(YAML.stringify({
-        ...metadata,
-        inputs: {
-          enabled: { description: 'Enabled', default: false, required: false },
-          retries: { description: 'Retries', default: 3 },
-          optional: { default: null, description: null },
-        },
-        outputs: { result: { description: null } },
-      }));
+      vi.mocked(fs.readFileSync).mockReturnValueOnce(
+        YAML.stringify({
+          ...metadata,
+          inputs: {
+            enabled: { description: 'Enabled', default: false, required: false },
+            retries: { description: 'Retries', default: 3 },
+            optional: { default: null, description: null },
+          },
+          outputs: { result: { description: null } },
+        }),
+      );
       const { default: Action } = await import('../src/Action.js');
       const action = new Action(actTestYmlPath, mockLogTask);
       expect(action.inputs?.enabled?.default).toBe(false);

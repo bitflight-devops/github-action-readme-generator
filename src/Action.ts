@@ -135,8 +135,7 @@ export default class Action implements ActionYaml {
       (isRecord(value) &&
         Object.values(value).every(
           (entry) =>
-            isRecord(entry) &&
-            (entry.description == null || typeof entry.description === 'string'),
+            isRecord(entry) && (entry.description == null || typeof entry.description === 'string'),
         ));
     if (!validDescriptions(record.inputs) || !validDescriptions(record.outputs)) {
       return false;

@@ -242,6 +242,57 @@ describe('README generation contract', () => {
       expect(sectionBody(await generate(), 'outputs')).toContain(key);
     });
 
+    it.each([undefined, '', 'null'])(
+      'renders empty descriptions for YAML descriptions written as %j',
+      async (description) => {
+        const descriptionLine =
+          description === undefined ? '' : `    description: ${description}\n`;
+        fs.writeFileSync(
+          actionPath,
+          `name: Nullish description action
+description: Metadata with empty descriptions
+inputs:
+  option:
+${descriptionLine}    default: false
+outputs:
+  result:
+${descriptionLine}    value: output
+runs:
+  using: node24
+  main: index.js
+`,
+        );
+        const before = 'Keep this prefix.\n';
+        const after = '\nKeep this suffix.\n';
+        fs.writeFileSync(readmePath, `${before}${README_WITH_MARKERS}${after}`);
+
+        const readme = await generate(false);
+
+        for (const section of ['inputs', 'outputs']) {
+          const rows = sectionBody(readme, section)
+            .split('\n')
+            .filter((line) => line.startsWith('|'));
+          const cells = rows[2]
+            .split('|')
+            .slice(1, -1)
+            .map((cell) => cell.trim());
+          expect(cells[0]).toBe(
+            section === 'inputs' ? '<b><code>option</code></b>' : '<b><code>result</code></b>',
+          );
+          expect(cells[1]).toBe('');
+        }
+        expect(sectionBody(readme, 'inputs')).toContain('<code>false</code>');
+        expect(sectionBody(readme, 'usage')).toContain("option: ''");
+        expect(
+          sectionBody(readme, 'usage')
+            .match(/^\s*# Description:.*$/gmu)
+            ?.map((line) => line.trim()),
+        ).toEqual(['# Description:']);
+        expect(readme.startsWith(before)).toBe(true);
+        expect(readme.endsWith(after)).toBe(true);
+      },
+    );
+
     it('ignores leading blank lines before selecting input and output table paragraphs', async () => {
       const action = ACTION_YML.replace(
         'description: A plain input with a default',

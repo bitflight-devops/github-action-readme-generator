@@ -43,7 +43,11 @@ export default async function updateUsage(
     for (const key of Object.keys(inp)) {
       const input = inp[key];
       if (input !== undefined) {
-        descriptionPromises[key] = wrapDescription(`Description: ${input.description}`, [], indent);
+        descriptionPromises[key] = wrapDescription(
+          `Description: ${input.description ?? ''}`,
+          [],
+          indent,
+        );
       }
     }
 

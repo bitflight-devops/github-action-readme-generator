@@ -4,7 +4,7 @@ import * as path$1 from "node:path";
 import path from "node:path";
 import * as core from "@actions/core";
 import { context } from "@actions/github";
-import { Provider } from "nconf";
+import nconf from "nconf";
 import YAML from "yaml";
 import * as feather from "feather-icons";
 import { icons } from "feather-icons";
@@ -187,16 +187,8 @@ function highlightStep(step, message) {
 	}
 	return msg;
 }
-function handleOutput(startGroup, msg, originalString) {
-	const ci = inGitHubActions();
+function handleOutput(startGroup, msg) {
 	switch (startGroup) {
-		case 1:
-			if (ci && originalString) core.startGroup(originalString);
-			else core.info(msg);
-			break;
-		case 2:
-			if (ci) core.endGroup();
-			break;
 		case 3:
 			core.error(msg);
 			break;
@@ -210,10 +202,7 @@ function handleOutput(startGroup, msg, originalString) {
 * Represents a logging task with various log step methods.
 */
 var LogTask = class LogTask {
-	/**
-	* Map of ingroup settings per task name.
-	*/
-	static ingroupSettings = /* @__PURE__ */ new Map();
+	groupOpen = false;
 	/**
 	* The width of the indentation for log messages.
 	*/
@@ -236,23 +225,8 @@ var LogTask = class LogTask {
 	constructor(name) {
 		this.name = name?.trim();
 	}
-	/**
-	* Gets the ingroup setting for the task.
-	*/
-	get ingroup() {
-		return LogTask.ingroupSettings.get(this.name) ?? false;
-	}
-	/**
-	* Sets the ingroup setting for this task.
-	*/
-	set ingroup(value) {
-		LogTask.ingroupSettings.set(this.name, value);
-	}
 	getMessageString(step, desc, emojiStr) {
-		let msg;
-		if (this.ingroup) msg = `${" ".repeat(LogTask.indentWidth)}   ${emojiStr}: ${this.name} > ${desc}`;
-		else msg = `[${step.padEnd(LogTask.indentWidth, " ")}][${this.name.padEnd(11, " ")}] ${emojiStr}: ${desc}`;
-		return highlightStep(step, msg);
+		return highlightStep(step, `[${step.padEnd(LogTask.indentWidth, " ")}][${this.name.padEnd(11, " ")}] ${emojiStr}: ${desc}`);
 	}
 	/**
 	* Logs a step with the given emoji, type, message and group.
@@ -264,7 +238,14 @@ var LogTask = class LogTask {
 	logStep(emojiStr, step, message, startGroup = 0) {
 		if (step.length > LogTask.indentWidth) LogTask.indentWidth = step.length;
 		const { desc } = highlightMessage(step, message);
-		handleOutput(startGroup, this.getMessageString(step, desc, emojiStr), message);
+		const msg = this.getMessageString(step, desc, emojiStr);
+		if (startGroup === 1) {
+			if (inGitHubActions() && message !== "" && !this.groupOpen) {
+				core.startGroup(message);
+				this.groupOpen = true;
+			} else core.info(msg);
+		} else if (startGroup === 2) this.end();
+		else handleOutput(startGroup, msg);
 	}
 	/**
 	* Logs a debug message.
@@ -280,6 +261,13 @@ var LogTask = class LogTask {
 	start(message = "") {
 		const desc = message === "" ? `Starting ${this.name}...` : message;
 		this.logStep("🚀", "START", desc, 1);
+	}
+	/** Closes this task's group once, including when called from a finally block. */
+	end() {
+		if (this.groupOpen) {
+			this.groupOpen = false;
+			core.endGroup();
+		}
 	}
 	/**
 	* Logs an info message.
@@ -298,28 +286,22 @@ var LogTask = class LogTask {
 	/**
 	* Logs a success message.
 	* @param message - The message of the success message.
-	* @param ingroup - Indicates whether the success message is in a group.
+	* @param ingroup - Whether to close this task's group before the message.
 	*/
 	success(message = "", ingroup = true) {
 		const desc = message === "" ? `Completed ${this.name}.` : message;
-		if (ingroup) {
-			this.ingroup = false;
-			if (process.env.GITHUB_ACTIONS) core.endGroup();
-		}
+		if (ingroup) this.end();
 		this.logStep("✅", "SUCCESS", desc);
 	}
 	/**
 	* Logs a failure message.
 	* @param message - The message of the failure message.
-	* @param ingroup - Indicates whether the failure message is in a group.
+	* @param ingroup - Whether to close this task's group before the message.
 	*/
 	fail(message = "", ingroup = true) {
 		const desc = message === "" ? `Failed ${this.name}.` : message;
-		if (ingroup) {
-			this.ingroup = false;
-			if (process.env.GITHUB_ACTIONS) core.endGroup();
-		}
-		const msgtype = process.env.GITHUB_ACTIONS ? 4 : 3;
+		if (ingroup) this.end();
+		const msgtype = inGitHubActions() ? 4 : 3;
 		this.logStep("❌", "FAILURE", desc, msgtype);
 	}
 	/**
@@ -351,9 +333,12 @@ var Action = class Action {
 	static validate(obj) {
 		if (typeof obj !== "object" || obj === null) return false;
 		const record = obj;
+		const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+		const validDescriptions = (value) => value === void 0 || isRecord(value) && Object.values(value).every((entry) => isRecord(entry) && (entry.description == null || typeof entry.description === "string"));
+		if (!validDescriptions(record.inputs) || !validDescriptions(record.outputs)) return false;
 		if ("name" in record && "description" in record && "runs" in record) {
 			const runs = record.runs;
-			if (runs && "using" in runs) return typeof record.name === "string" && typeof record.description === "string" && typeof runs.using === "string";
+			if (typeof runs === "object" && runs !== null && !Array.isArray(runs) && "using" in runs) return typeof record.name === "string" && typeof record.description === "string" && typeof runs.using === "string";
 		}
 		return false;
 	}
@@ -388,7 +373,7 @@ var Action = class Action {
 		try {
 			actionYaml = this.loadActionFrom(actionPath);
 		} catch (error) {
-			throw new Error(`Failed to load ${actionPath}. ${String(error)}`);
+			throw new Error(`Failed to load ${actionPath}. ${String(error)}`, { cause: error });
 		}
 		this.log.debug(`Action YAML: ${JSON.stringify(actionYaml)}`);
 		this.name = actionYaml.name;
@@ -460,7 +445,7 @@ function readFile(filename) {
 	try {
 		return readFileSync(filename, "utf8");
 	} catch (error) {
-		throw new Error(`Cannot read file ${filename}: ${String(error)}`);
+		throw new Error(`Cannot read file ${filename}: ${String(error)}`, { cause: error });
 	}
 }
 function repoObjFromRepoName(repository, log, from) {
@@ -1028,6 +1013,7 @@ async function wrapDescription(value, content, prefix = "    # ") {
 		});
 	} catch (error) {
 		log$1.error(`${String(error)}`);
+		throw error;
 	}
 	content.push(...formattedString.split("\n").map((line) => prefix + line.replace(prefix, "")));
 	return content;
@@ -1092,7 +1078,7 @@ var ReadmeEditor = class {
 		try {
 			fs.accessSync(filePath);
 			const raw = fs.readFileSync(filePath, "utf8");
-			if (process.env.GITHUB_ACTIONS) core.setOutput("readme_before", raw);
+			if (process.env.GITHUB_ACTIONS === "true") core.setOutput("readme_before", raw);
 			this.crlf = usesCrlf(raw);
 			this.fileContent = this.crlf ? raw.replaceAll("\r\n", "\n") : raw;
 		} catch (error) {
@@ -1186,7 +1172,7 @@ var ReadmeEditor = class {
 	async dumpToFile(prettier = true) {
 		if (prettier) await this.formatUpdatedSections();
 		const content = this.crlf ? this.fileContent.replaceAll("\n", "\r\n") : this.fileContent;
-		if (process.env.GITHUB_ACTIONS) core.setOutput("readme_after", content);
+		if (process.env.GITHUB_ACTIONS === "true") core.setOutput("readme_after", content);
 		return fs.promises.writeFile(this.filePath, content, "utf8");
 	}
 };
@@ -1737,8 +1723,8 @@ function isDebugConfigEnabled(config) {
 */
 function loadConfig(log, providedConfig, configFilePath) {
 	log.debug("Loading config from env and argv");
-	const config = providedConfig ?? new Provider();
-	if (process.env.GITHUB_ACTION === "true") log.info("Running in GitHub action");
+	const config = providedConfig ?? new nconf.Provider();
+	if (process.env.GITHUB_ACTIONS === "true") log.info("Running in GitHub action");
 	config.argv(argvOptions);
 	if (configFilePath) {
 		if (fs.existsSync(configFilePath)) {
@@ -1854,7 +1840,7 @@ var Inputs = class {
 		this.log.debug("Initializing Inputs");
 		const inputContext = providedInputContext ?? {};
 		this.configPath = inputContext.configPath ?? path$1.resolve(".ghadocs.json");
-		this.config = inputContext.config ?? new Provider();
+		this.config = inputContext.config ?? new nconf.Provider();
 		loadConfig(log, this.config, this.configPath);
 		try {
 			loadDefaultConfig(log, this.config);
@@ -1866,13 +1852,15 @@ var Inputs = class {
 		loadRequiredConfig(log, this.config);
 		this.action = inputContext.action ?? loadAction(log, this.config.get("paths:action"));
 		this.config.set("sections", inputContext.sections ?? this.config.get("sections"));
-		this.sections = this.config.get("sections");
+		const configuredSections = this.config.get("sections");
+		if (!Array.isArray(configuredSections) || !configuredSections.every((section) => typeof section === "string")) throw new Error("Invalid sections configuration: expected an array of section names");
+		this.sections = configuredSections;
 		this.readmePath = inputContext.readmePath ?? path$1.resolve(this.config.get("paths:readme"));
 		this.readmeEditor = inputContext.readmeEditor ?? new ReadmeEditor(this.readmePath);
 		/**
 		* Output the readme path that is being parsed
 		*/
-		if (process.env.GITHUB_ACTIONS) core.setOutput("readme", this.readmePath);
+		if (process.env.GITHUB_ACTIONS === "true") core.setOutput("readme", this.readmePath);
 		/**
 		* owner is required, and if it doesn't exist it is handled by nconf which throws an error
 		*/
@@ -1969,15 +1957,19 @@ function updateBadges(sectionToken, inputs) {
 	const enableVersioning = config ? config.versioning?.badge : false;
 	log.info(`Versioning badge: ${enableVersioning}`);
 	log.start();
-	let content = "";
-	if (enableVersioning) {
-		content = generateBadges(githubBadges(inputs.owner, inputs.repo), log).join("");
-		inputs.readmeEditor.updateSection(sectionToken, content);
+	try {
+		let content = "";
+		if (enableVersioning) {
+			content = generateBadges(githubBadges(inputs.owner, inputs.repo), log).join("");
+			inputs.readmeEditor.updateSection(sectionToken, content);
+		}
+		log.success();
+		const ret = {};
+		ret[sectionToken] = content;
+		return ret;
+	} finally {
+		log.end();
 	}
-	log.success();
-	const ret = {};
-	ret[sectionToken] = content;
-	return ret;
 }
 //#endregion
 //#region src/svg-editor.mts
@@ -2048,9 +2040,8 @@ var SVGEditor = class {
 	writeSVGFile(svgPath, svgContent) {
 		fs.mkdirSync(path$1.dirname(svgPath), { recursive: true });
 		this.log.debug(`Writing SVG file to ${svgPath}`);
-		fs.writeFile(svgPath, svgContent, "utf8", () => {
-			return this.log.debug(`SVG image generated: ${svgPath}`);
-		});
+		fs.writeFileSync(svgPath, svgContent, "utf8");
+		this.log.debug(`SVG image generated: ${svgPath}`);
 	}
 	/**
 	* Generates the SVG content for the branding image.
@@ -2184,13 +2175,17 @@ function updateBranding(sectionToken, inputs) {
 	const log = new LogTask(sectionToken);
 	log.info(`Brand details: ${JSON.stringify(inputs.action.branding)}`);
 	log.start();
-	const content = generateImgMarkup(inputs, "15%", inputs.readmeEditor.hasSection(sectionToken));
-	inputs.readmeEditor.updateSection(sectionToken, content);
-	if (content && content !== "") log.success("branding svg successfully created");
-	else log.fail("branding svg failed to be created");
-	const ret = {};
-	ret[sectionToken] = content;
-	return ret;
+	try {
+		const content = generateImgMarkup(inputs, "15%", inputs.readmeEditor.hasSection(sectionToken));
+		inputs.readmeEditor.updateSection(sectionToken, content);
+		if (content && content !== "") log.success("branding svg successfully created");
+		else log.fail("branding svg failed to be created");
+		const ret = {};
+		ret[sectionToken] = content;
+		return ret;
+	} finally {
+		log.end();
+	}
 }
 //#endregion
 //#region src/sections/update-contents.ts
@@ -2239,28 +2234,32 @@ function extractHeaders(content) {
 function updateContents(sectionToken, inputs) {
 	const log = new LogTask(sectionToken);
 	log.start();
-	const content = [];
-	const tocHeaders = extractHeaders(inputs.readmeEditor.getReadmeContent()).filter((h) => h.level >= 2 && !h.text.toLowerCase().includes("contents"));
-	if (tocHeaders.length === 0) log.info("No headers found for table of contents");
-	else {
-		log.info(`Generating table of contents with ${tocHeaders.length} entries`);
-		const minLevel = Math.min(...tocHeaders.map((h) => h.level));
-		const anchorCounts = /* @__PURE__ */ new Map();
-		content.push("## Table of Contents", "");
-		for (const header of tocHeaders) {
-			const indent = "  ".repeat(header.level - minLevel);
-			const baseAnchor = headerToAnchor(header.text);
-			const count = anchorCounts.get(baseAnchor) ?? 0;
-			anchorCounts.set(baseAnchor, count + 1);
-			const anchor = count === 0 ? baseAnchor : `${baseAnchor}-${count}`;
-			content.push(`${indent}- [${header.text}](#${anchor})`);
+	try {
+		const content = [];
+		const tocHeaders = extractHeaders(inputs.readmeEditor.getReadmeContent()).filter((h) => h.level >= 2 && !h.text.toLowerCase().includes("contents"));
+		if (tocHeaders.length === 0) log.info("No headers found for table of contents");
+		else {
+			log.info(`Generating table of contents with ${tocHeaders.length} entries`);
+			const minLevel = Math.min(...tocHeaders.map((h) => h.level));
+			const anchorCounts = /* @__PURE__ */ new Map();
+			content.push("## Table of Contents", "");
+			for (const header of tocHeaders) {
+				const indent = "  ".repeat(header.level - minLevel);
+				const baseAnchor = headerToAnchor(header.text);
+				const count = anchorCounts.get(baseAnchor) ?? 0;
+				anchorCounts.set(baseAnchor, count + 1);
+				const anchor = count === 0 ? baseAnchor : `${baseAnchor}-${count}`;
+				content.push(`${indent}- [${header.text}](#${anchor})`);
+			}
 		}
+		inputs.readmeEditor.updateSection(sectionToken, content);
+		log.success();
+		const ret = {};
+		ret[sectionToken] = content.join("\n");
+		return ret;
+	} finally {
+		log.end();
 	}
-	inputs.readmeEditor.updateSection(sectionToken, content);
-	log.success();
-	const ret = {};
-	ret[sectionToken] = content.join("\n");
-	return ret;
 }
 //#endregion
 //#region src/sections/update-description.ts
@@ -2282,11 +2281,15 @@ function updateDescription(sectionToken, inputs) {
 	const content = [];
 	if (inputs?.action?.description) {
 		log.start();
-		const desc = descriptionMarkdown(inputs.action.description);
-		log.info(`Writing ${desc.length} characters to the description section`);
-		content.push(desc);
-		inputs.readmeEditor.updateSection(sectionToken, content);
-		log.success();
+		try {
+			const desc = descriptionMarkdown(inputs.action.description);
+			log.info(`Writing ${desc.length} characters to the description section`);
+			content.push(desc);
+			inputs.readmeEditor.updateSection(sectionToken, content);
+			log.success();
+		} finally {
+			log.end();
+		}
 	}
 	const ret = {};
 	ret[sectionToken] = content.join("\n");
@@ -2349,7 +2352,7 @@ function getColumnCounts(data) {
 */
 function padArrayRows(data, maxCols) {
 	return data.map((row) => {
-		const padding = Array.from({ length: maxCols - row.length }).fill("");
+		const padding = Array.from({ length: Math.max(0, maxCols - row.length) }, () => "");
 		return [...row, ...padding];
 	});
 }
@@ -2363,28 +2366,12 @@ function ArrayOfArraysToMarkdownTable(providedTableContent) {
 	const clonedData = cloneArray(providedTableContent);
 	const { maxCols } = getColumnCounts(clonedData);
 	const paddedData = padArrayRows(clonedData, maxCols);
-	const markdownArrayRowsLength = paddedData.length + 1;
-	const markdownArrayEntriesLength = maxCols * 2 + 1;
-	const markdownArrays = Array.from({ length: markdownArrayRowsLength }, () => Array.from({ length: markdownArrayEntriesLength }, () => "|"));
-	const outputStrings = [];
-	let i = 0;
-	for (const row of markdownArrays) {
-		let col = 0;
-		const dataRow = paddedData[i > 1 ? i - 1 : 0];
-		for (let j = 0; j < row.length; j++) {
-			let content = markdownEscapeTableCell(dataRow[col] ?? "");
-			content = markdownEscapeInlineCode(content);
-			if (j % 2 === 1) {
-				if (i === 0) markdownArrays[i][j] = ` **${content.trim()}** `;
-				else if (i === 1) markdownArrays[i][j] = "---";
-				else markdownArrays[i][j] = ` ${content.trim()} `;
-				col += 1;
-			}
-		}
-		outputStrings.push(`${markdownArrays[i].join("")}\n`);
-		i += 1;
-	}
-	return outputStrings.join("");
+	const renderCells = (cells) => `|${cells.join("|")}|\n`;
+	const escaped = (value) => markdownEscapeInlineCode(markdownEscapeTableCell(value)).trim();
+	const lines = [renderCells((paddedData[0] ?? []).map((value) => ` **${escaped(value)}** `))];
+	lines.push(renderCells(Array.from({ length: maxCols }, () => "---")));
+	for (const row of paddedData.slice(1)) lines.push(renderCells(row.map((value) => ` ${escaped(value)} `)));
+	return lines.join("");
 }
 //#endregion
 //#region src/sections/update-inputs.ts
@@ -2405,24 +2392,28 @@ function updateInputs(sectionToken, inputs) {
 	const tI = vars ? Object.keys(vars).length : 0;
 	if (vars && tI > 0) {
 		log.start();
-		for (const key of Object.keys(vars)) {
-			const values = vars[key];
-			let description = values?.description ?? "";
-			description = description.trim().split("\n\n")[0] ?? "";
-			description = description.replaceAll("\n", "<br />");
-			const row = [
-				rowHeader(key),
-				description,
-				values?.default === void 0 || values.default === "" ? "" : `<code>${values.default}</code>`,
-				values?.required ? "**true**" : "__false__"
-			];
-			log.debug(JSON.stringify(row));
-			markdownArray.push(row);
+		try {
+			for (const key of Object.keys(vars)) {
+				const values = vars[key];
+				let description = values?.description ?? "";
+				description = description.trim().split("\n\n")[0] ?? "";
+				description = description.replaceAll("\n", "<br />");
+				const row = [
+					rowHeader(key),
+					description,
+					values?.default === void 0 || values.default === "" ? "" : `<code>${values.default}</code>`,
+					values?.required ? "**true**" : "__false__"
+				];
+				log.debug(JSON.stringify(row));
+				markdownArray.push(row);
+			}
+			content.push(ArrayOfArraysToMarkdownTable(markdownArray));
+			log.info(`Action has ${tI} total ${sectionToken}`);
+			inputs.readmeEditor.updateSection(sectionToken, content);
+			log.success();
+		} finally {
+			log.end();
 		}
-		content.push(ArrayOfArraysToMarkdownTable(markdownArray));
-		log.info(`Action has ${tI} total ${sectionToken}`);
-		inputs.readmeEditor.updateSection(sectionToken, content);
-		log.success();
 	} else {
 		log.debug(`Action has no ${sectionToken}`);
 		inputs.readmeEditor.updateSection(sectionToken, content);
@@ -2449,24 +2440,28 @@ function updateOutputs(sectionToken, inputs) {
 	const tI = vars ? Object.keys(vars).length : 0;
 	if (vars && tI > 0) {
 		log.start();
-		for (const key of Object.keys(vars)) {
-			const values = vars[key];
-			let description = values?.description ?? "";
-			description = description.trim().split("\n\n")[0] ?? "";
-			description = description.replaceAll("\n", "<br />");
-			const value = values?.value ? `\`${values.value}\`` : "";
-			const row = [
-				rowHeader(key),
-				description,
-				value
-			];
-			log.debug(JSON.stringify(row));
-			markdownArray.push(row);
+		try {
+			for (const key of Object.keys(vars)) {
+				const values = vars[key];
+				let description = values?.description ?? "";
+				description = description.trim().split("\n\n")[0] ?? "";
+				description = description.replaceAll("\n", "<br />");
+				const value = values?.value ? `\`${values.value}\`` : "";
+				const row = [
+					rowHeader(key),
+					description,
+					value
+				];
+				log.debug(JSON.stringify(row));
+				markdownArray.push(row);
+			}
+			content.push(ArrayOfArraysToMarkdownTable(markdownArray));
+			log.info(`Action has ${tI} total ${sectionToken}`);
+			inputs.readmeEditor.updateSection(sectionToken, content);
+			log.success();
+		} finally {
+			log.end();
 		}
-		content.push(ArrayOfArraysToMarkdownTable(markdownArray));
-		log.info(`Action has ${tI} total ${sectionToken}`);
-		inputs.readmeEditor.updateSection(sectionToken, content);
-		log.success();
 	} else {
 		log.debug(`Action has no ${sectionToken}`);
 		inputs.readmeEditor.updateSection(sectionToken, content);
@@ -2484,14 +2479,18 @@ function updateTitle(sectionToken, inputs) {
 	let svgInline = "";
 	if (inputs.action.name) {
 		log.start();
-		name = inputs.action.name;
-		if (inputs.config.get("branding_as_title_prefix")) svgInline = `${generateImgMarkup(inputs, "60px", inputs.readmeEditor.hasSection(sectionToken))} `;
-		log.info(`Writing ${name.length} characters to the title`);
-		const title = `# ${svgInline}${inputs.config.get("title_prefix")}${inputs.action.name}`;
-		log.info(`Title: ${title}`);
-		content.push(title);
-		inputs.readmeEditor.updateSection(sectionToken, content, true);
-		log.success();
+		try {
+			name = inputs.action.name;
+			if (inputs.config.get("branding_as_title_prefix")) svgInline = `${generateImgMarkup(inputs, "60px", inputs.readmeEditor.hasSection(sectionToken))} `;
+			log.info(`Writing ${name.length} characters to the title`);
+			const title = `# ${svgInline}${inputs.config.get("title_prefix")}${inputs.action.name}`;
+			log.info(`Title: ${title}`);
+			content.push(title);
+			inputs.readmeEditor.updateSection(sectionToken, content, true);
+			log.success();
+		} finally {
+			log.end();
+		}
 	}
 	const ret = {};
 	ret[sectionToken] = content.join("\n");
@@ -2508,11 +2507,8 @@ function updateTitle(sectionToken, inputs) {
 */
 async function updateUsage(sectionToken, inputs) {
 	const log = new LogTask(sectionToken);
-	log.start();
 	const actionName = `${inputs.owner}/${inputs.repo}`;
-	log.info(`Action name: ${actionName}`);
 	const versionString = getCurrentVersionString(inputs);
-	log.info(`Version string: ${versionString}`);
 	const actionReference = `${actionName}@${versionString}`;
 	const indent = "    # ";
 	const defaultLabel = "Default: ";
@@ -2522,25 +2518,28 @@ async function updateUsage(sectionToken, inputs) {
 	const inp = inputs.action.inputs;
 	let firstInput = true;
 	const descriptionPromises = {};
+	const descriptions = {};
 	if (inp) {
 		for (const key of Object.keys(inp)) {
 			const input = inp[key];
-			if (input !== void 0) descriptionPromises[key] = wrapDescription(`Description: ${input.description}`, [], indent);
+			if (input !== void 0) descriptionPromises[key] = wrapDescription(`Description: ${input.description ?? ""}`, [], indent);
 		}
-		const descriptions = {};
 		const kvArray = await Promise.all(Object.keys(descriptionPromises).map(async (key) => {
 			return {
 				key,
 				value: await descriptionPromises[key]
 			};
 		}));
-		for (const e of kvArray) {
-			descriptions[e.key] = e.value;
-			log.debug(`${e.key}: ${descriptions[e.key].join("\n")}`);
-		}
-		for (const key of Object.keys(inp)) {
+		for (const e of kvArray) descriptions[e.key] = e.value;
+	}
+	log.start();
+	try {
+		log.info(`Action name: ${actionName}`);
+		log.info(`Version string: ${versionString}`);
+		if (inp) for (const key of Object.keys(inp)) {
 			const input = inp[key];
 			if (input !== void 0) {
+				log.debug(`${key}: ${descriptions[key].join("\n")}`);
 				if (!firstInput) content.push("");
 				content.push(...descriptions[key]);
 				if (input.default !== void 0) {
@@ -2552,13 +2551,15 @@ async function updateUsage(sectionToken, inputs) {
 				firstInput = false;
 			}
 		}
+		content.push("```\n");
+		inputs.readmeEditor.updateSection(sectionToken, content);
+		log.success();
+		const ret = {};
+		ret[sectionToken] = content.join("\n");
+		return ret;
+	} finally {
+		log.end();
 	}
-	content.push("```\n");
-	inputs.readmeEditor.updateSection(sectionToken, content);
-	log.success();
-	const ret = {};
-	ret[sectionToken] = content.join("\n");
-	return ret;
 }
 //#endregion
 //#region src/sections/index.ts
@@ -2639,7 +2640,7 @@ var ReadmeGenerator = class {
 	* @param sections - The sections KV
 	*/
 	outputSections(sections) {
-		if (process.env.GITHUB_ACTIONS) {
+		if (process.env.GITHUB_ACTIONS === "true") {
 			this.log.debug("Outputting sections");
 			core.setOutput("sections", JSON.stringify(sections, null, 2));
 		} else this.log.debug("Not outputting sections");
@@ -2735,6 +2736,7 @@ async function save(inputs, log) {
 		await docsConfig.save(inputs.configPath);
 	} catch (error) {
 		log.error(`${String(error)}`);
+		throw error;
 	}
 }
 //#endregion

@@ -1,0 +1,29 @@
+[global]
+enable = [
+  "MD001", "MD011", "MD018", "MD022", "MD025", "MD026", "MD028", "MD030",
+  "MD033", "MD036", "MD037", "MD038", "MD039", "MD040", "MD042", "MD045",
+  "MD046", "MD048",
+]
+include = ["**/*.md"]
+exclude = [
+  "**/node_modules/**",
+  "**/CHANGELOG.md",
+  "tests/integration/fixtures/markdown/**",
+  "**/.*",
+  "**/.*/**",
+]
+respect-gitignore = false
+
+[MD026]
+punctuation = ".,;:!。，；：！？"
+
+[MD033]
+allowed-elements = [
+  "a", "img", "br", "sup", "h1", "p", "details", "summary", "code", "div", "b",
+]
+
+[MD046]
+style = "fenced"
+
+[MD048]
+style = "backtick"

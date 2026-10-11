@@ -38,7 +38,7 @@ const config: ReturnType<typeof defineConfig> = defineConfig({
 
   staged: {
     "{src,__tests__}/**/*.ts": "vp check --fix",
-    // Oxfmt formats Markdown/YAML; markdownlint does prose/structure linting
+    // Oxfmt formats Markdown/YAML; rumdl does prose/structure linting
     // separately. No Oxfmt equivalent exists for shell scripts or
     // package.json, so neither is reformatted on commit.
     "*.{md,yaml,yml}": "vp fmt --write",

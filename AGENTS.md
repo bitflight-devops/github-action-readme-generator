@@ -28,7 +28,7 @@ every change made here:
 
 - CLI + GitHub Action. Syncs README.md from action.yml (title, description, inputs, outputs, usage, badges).
 - TypeScript, Node `>=24.19.0 <30.0.0` (`package.json` `engines`).
-- Build: `vp pack` (tsdown, via Vite+). Test: `vp test` (Vitest, via Vite+). Lint/format: Oxlint + Oxfmt via Vite+'s `vp` CLI, plus markdownlint.
+- Build: `vp pack` (tsdown, via Vite+). Test: `vp test` (Vitest, via Vite+). Lint/format: Oxlint + Oxfmt via Vite+'s `vp` CLI, plus rumdl.
 - `semantic-release` and publishing sit outside Vite+ deliberately — leave them there.
 - Volta pins the dev version — check `.node-version`.
 
@@ -53,7 +53,7 @@ npm run test               # vp test (Vitest), __tests__/**/*.test.ts
 npm run coverage         # vp test --coverage -> ./out/
 npm run format            # vp fmt --write ./src ./__tests__
 npm run check              # vp check ./src/ ./__tests__/ - CI's actual gate, no side effects
-npm run lint:markdown  # markdownlint
+npm run lint:markdown  # rumdl
 npm run generate-docs  # regenerate README.md from action.yml
 ```
 
@@ -129,8 +129,7 @@ current step list.
   - On `push` only, also invokes `deploy.yml`.
 - **`push_code_linting.yml`** ("Code Linting Annotation")
   - Same bootstrap order as `test.yml`: `npm install` then `voidzero-dev/setup-vp`.
-  - `vp lint --format github` and a markdownlint problem-matcher post inline PR
-    annotations natively — no reviewdog involved.
+  - `vp lint --format github` and `RUMDL_OUTPUT_FORMAT=github npm run lint:markdown` post inline PR annotations natively.
 - **`deploy.yml`** ("NPM Release Workflow")
   - Not push-triggered directly: `workflow_call` (from `test.yml`) + `repository_dispatch`.
   - Runs `npm ci` → engine/signature checks → bootstraps `vp` → build → commit dist/ → `semantic-release`.
@@ -155,6 +154,7 @@ is repo housekeeping (stale bot, assignment, tag cleanup, version updater).
 | `action.yml`     | Action metadata — all inputs/outputs                                                                             |
 | `.ghadocs.json`  | generate-docs config                                                                                             |
 | `vite.config.ts` | Oxlint/Oxfmt rules, pre-commit staged-file config, `pack` (tsdown build), `test` (Vitest) — via Vite+'s `vp` CLI |
+| `.rumdl.toml`    | Markdown lint rules and file exclusions                                                                          |
 | `package.json`   | Deps, scripts, engines, volta                                                                                    |
 
 ## Pitfalls

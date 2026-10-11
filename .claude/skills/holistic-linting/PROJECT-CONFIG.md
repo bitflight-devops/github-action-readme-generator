@@ -14,7 +14,7 @@ This project uses **Oxlint + Oxfmt, via Vite+ (`vp`)** exclusively for linting a
 | Config File          | Tools                                                                           |
 | -------------------- | ------------------------------------------------------------------------------- |
 | `vite.config.ts`     | Oxlint (lint) + Oxfmt (format), via `vp` — `fmt`/`lint`/`check`/`staged` blocks |
-| `.markdownlint.json` | markdownlint                                                                    |
+| `.rumdl.toml`        | rumdl                                                                           |
 | `.husky/`            | Husky git hooks                                                                 |
 
 ## Running Formatters and Linters

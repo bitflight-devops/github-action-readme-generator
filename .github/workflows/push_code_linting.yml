@@ -55,6 +55,8 @@ jobs:
       - name: Run Oxlint
         run: vp lint --format github --type-aware --type-check ./src/ ./__tests__/
 
-      - uses: xt0rted/markdownlint-problem-matcher@v3.0.0
-      - run: npm run lint:markdown
+      - name: Run rumdl
+        run: npm run lint:markdown
+        env:
+          RUMDL_OUTPUT_FORMAT: github
         continue-on-error: true

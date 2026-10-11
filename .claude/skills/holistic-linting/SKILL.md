@@ -278,6 +278,7 @@ Linter detection is handled automatically by scanning project configuration file
 | `vite.config.ts`               | Oxlint (lint, type-aware) + Oxfmt (format) via Vite+'s `vp` CLI — `fmt`/`lint`/`check`/`staged` blocks |
 | `tsconfig.json`                | TypeScript compiler                                                                                    |
 | `package.json`, `.prettierrc*` | Prettier                                                                                               |
+| `.rumdl.toml`                  | rumdl                                                                                                  |
 | `.markdownlint.json/.yaml`     | markdownlint                                                                                           |
 | `.shellcheckrc`                | ShellCheck (shell scripts)                                                                             |
 
@@ -950,7 +951,7 @@ Sub-agent resolution:
 ## Troubleshooting
 
 **Problem**: "I don't know which linters this project uses"
-**Solution**: Linters are detected automatically by scanning config files (vite.config.ts, tsconfig.json, package.json, etc.). Check the Linter Detection section for supported tools. This project uses Oxlint (via Vite+'s `vp` CLI) for TypeScript and markdownlint for markdown.
+**Solution**: Linters are detected automatically by scanning config files (vite.config.ts, tsconfig.json, package.json, etc.). Check the Linter Detection section for supported tools. This project uses Oxlint (via Vite+'s `vp` CLI) for TypeScript and rumdl for Markdown.
 
 **Problem**: "Linting errors but I don't understand the rule"
 **Solution**: Look up the rule at https://oxc.rs/docs/guide/usage/linter/rules.html for Oxlint rules, or https://typescript.tv/errors/ for TypeScript errors.

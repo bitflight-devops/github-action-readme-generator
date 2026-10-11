@@ -23,20 +23,24 @@ export default function updateTitle(
 
   if (inputs.action.name) {
     log.start();
-    name = inputs.action.name;
-    if (inputs.config.get('branding_as_title_prefix') as boolean) {
-      svgInline = `${generateImgMarkup(inputs, '60px', inputs.readmeEditor.hasSection(sectionToken))} `;
-    }
-    log.info(`Writing ${name.length} characters to the title`);
-    const title = `# ${svgInline}${inputs.config.get('title_prefix') as string}${
-      inputs.action.name
-    }`;
-    log.info(`Title: ${title}`);
-    // Build the new usage section
-    content.push(title);
-    inputs.readmeEditor.updateSection(sectionToken, content, true);
+    try {
+      name = inputs.action.name;
+      if (inputs.config.get('branding_as_title_prefix') as boolean) {
+        svgInline = `${generateImgMarkup(inputs, '60px', inputs.readmeEditor.hasSection(sectionToken))} `;
+      }
+      log.info(`Writing ${name.length} characters to the title`);
+      const title = `# ${svgInline}${inputs.config.get('title_prefix') as string}${
+        inputs.action.name
+      }`;
+      log.info(`Title: ${title}`);
+      // Build the new usage section
+      content.push(title);
+      inputs.readmeEditor.updateSection(sectionToken, content, true);
 
-    log.success();
+      log.success();
+    } finally {
+      log.end();
+    }
   }
   const ret: Record<string, string> = {};
   ret[sectionToken] = content.join('\n');

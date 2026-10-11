@@ -81,7 +81,7 @@ export class ReadmeGenerator {
    * @param sections - The sections KV
    */
   outputSections(sections: SectionKV): void {
-    if (process.env.GITHUB_ACTIONS) {
+    if (process.env.GITHUB_ACTIONS === 'true') {
       this.log.debug('Outputting sections');
       core.setOutput('sections', JSON.stringify(sections, null, 2));
     } else {

@@ -34,34 +34,37 @@ export default function updateInputs(
 
   if (vars && tI > 0) {
     log.start();
+    try {
+      for (const key of Object.keys(vars)) {
+        const values = vars[key];
+        let description = values?.description ?? '';
 
-    for (const key of Object.keys(vars)) {
-      const values = vars[key];
-      let description = values?.description ?? '';
+        // Keep the complete first paragraph, including soft line breaks.
+        description = description.trim().split('\n\n')[0] ?? '';
 
-      // Keep the complete first paragraph, including soft line breaks.
-      description = description.trim().split('\n\n')[0] ?? '';
+        // Convert every soft break in the first paragraph to the table's HTML form.
+        description = description.replaceAll('\n', '<br />');
 
-      // Convert every soft break in the first paragraph to the table's HTML form.
-      description = description.replaceAll('\n', '<br />');
-
-      const row: string[] = [
-        rowHeader(key),
-        description,
-        // Declared `false` and `0` defaults reach the column; undefined and an
-        // empty string render as blank.
-        values?.default === undefined || values.default === ''
-          ? ''
-          : `<code>${values.default}</code>`,
-        values?.required ? '**true**' : '__false__',
-      ];
-      log.debug(JSON.stringify(row));
-      markdownArray.push(row);
+        const row: string[] = [
+          rowHeader(key),
+          description,
+          // Declared `false` and `0` defaults reach the column; undefined and an
+          // empty string render as blank.
+          values?.default === undefined || values.default === ''
+            ? ''
+            : `<code>${values.default}</code>`,
+          values?.required ? '**true**' : '__false__',
+        ];
+        log.debug(JSON.stringify(row));
+        markdownArray.push(row);
+      }
+      content.push(markdowner(markdownArray));
+      log.info(`Action has ${tI} total ${sectionToken}`);
+      inputs.readmeEditor.updateSection(sectionToken, content);
+      log.success();
+    } finally {
+      log.end();
     }
-    content.push(markdowner(markdownArray));
-    log.info(`Action has ${tI} total ${sectionToken}`);
-    inputs.readmeEditor.updateSection(sectionToken, content);
-    log.success();
   } else {
     log.debug(`Action has no ${sectionToken}`);
     inputs.readmeEditor.updateSection(sectionToken, content);

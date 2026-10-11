@@ -32,26 +32,30 @@ export default function updateOutputs(
   const tI = vars ? Object.keys(vars).length : 0;
   if (vars && tI > 0) {
     log.start();
-    for (const key of Object.keys(vars)) {
-      const values = vars[key];
+    try {
+      for (const key of Object.keys(vars)) {
+        const values = vars[key];
 
-      let description = values?.description ?? '';
+        let description = values?.description ?? '';
 
-      // Keep the complete first paragraph, including soft line breaks.
-      description = description.trim().split('\n\n')[0] ?? '';
+        // Keep the complete first paragraph, including soft line breaks.
+        description = description.trim().split('\n\n')[0] ?? '';
 
-      // Convert every soft break in the first paragraph to the table's HTML form.
-      description = description.replaceAll('\n', '<br />');
-      const value = values?.value ? `\`${values.value}\`` : '';
-      const row: string[] = [rowHeader(key), description, value];
+        // Convert every soft break in the first paragraph to the table's HTML form.
+        description = description.replaceAll('\n', '<br />');
+        const value = values?.value ? `\`${values.value}\`` : '';
+        const row: string[] = [rowHeader(key), description, value];
 
-      log.debug(JSON.stringify(row));
-      markdownArray.push(row);
+        log.debug(JSON.stringify(row));
+        markdownArray.push(row);
+      }
+      content.push(markdowner(markdownArray));
+      log.info(`Action has ${tI} total ${sectionToken}`);
+      inputs.readmeEditor.updateSection(sectionToken, content);
+      log.success();
+    } finally {
+      log.end();
     }
-    content.push(markdowner(markdownArray));
-    log.info(`Action has ${tI} total ${sectionToken}`);
-    inputs.readmeEditor.updateSection(sectionToken, content);
-    log.success();
   } else {
     log.debug(`Action has no ${sectionToken}`);
     inputs.readmeEditor.updateSection(sectionToken, content);

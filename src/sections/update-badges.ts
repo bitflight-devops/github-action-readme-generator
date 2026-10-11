@@ -95,15 +95,19 @@ export default function updateBadges(
   log.info(`Versioning badge: ${enableVersioning}`);
 
   log.start();
-  let content = '';
-  // Add GitHub badges
-  if (enableVersioning) {
-    const badges: IBadge[] = githubBadges(inputs.owner, inputs.repo);
-    content = generateBadges(badges, log).join('');
-    inputs.readmeEditor.updateSection(sectionToken, content);
+  try {
+    let content = '';
+    // Add GitHub badges
+    if (enableVersioning) {
+      const badges: IBadge[] = githubBadges(inputs.owner, inputs.repo);
+      content = generateBadges(badges, log).join('');
+      inputs.readmeEditor.updateSection(sectionToken, content);
+    }
+    log.success();
+    const ret: Record<string, string> = {};
+    ret[sectionToken] = content;
+    return ret;
+  } finally {
+    log.end();
   }
-  log.success();
-  const ret: Record<string, string> = {};
-  ret[sectionToken] = content;
-  return ret;
 }

@@ -163,21 +163,25 @@ export default function updateBranding(
   log.info(`Brand details: ${JSON.stringify(inputs.action.branding)}`);
 
   log.start();
-  /** create <img  /> markup with an image width of 15% */
-  const imageWidth = '15%';
-  const content = generateImgMarkup(
-    inputs,
-    imageWidth,
-    inputs.readmeEditor.hasSection(sectionToken),
-  );
-  inputs.readmeEditor.updateSection(sectionToken, content);
-  if (content && content !== '') {
-    log.success('branding svg successfully created');
-  } else {
-    log.fail('branding svg failed to be created');
-  }
+  try {
+    /** create <img  /> markup with an image width of 15% */
+    const imageWidth = '15%';
+    const content = generateImgMarkup(
+      inputs,
+      imageWidth,
+      inputs.readmeEditor.hasSection(sectionToken),
+    );
+    inputs.readmeEditor.updateSection(sectionToken, content);
+    if (content && content !== '') {
+      log.success('branding svg successfully created');
+    } else {
+      log.fail('branding svg failed to be created');
+    }
 
-  const ret: Record<string, string> = {};
-  ret[sectionToken] = content;
-  return ret;
+    const ret: Record<string, string> = {};
+    ret[sectionToken] = content;
+    return ret;
+  } finally {
+    log.end();
+  }
 }

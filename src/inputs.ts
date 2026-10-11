@@ -723,7 +723,7 @@ export function loadConfig(
 ): ProviderInstance {
   log.debug('Loading config from env and argv');
   const config = providedConfig ?? new nconf.Provider();
-  if (process.env.GITHUB_ACTION === 'true') {
+  if (process.env.GITHUB_ACTIONS === 'true') {
     log.info('Running in GitHub action');
   }
 
@@ -977,7 +977,7 @@ export default class Inputs {
     /**
      * Output the readme path that is being parsed
      */
-    if (process.env.GITHUB_ACTIONS) {
+    if (process.env.GITHUB_ACTIONS === 'true') {
       core.setOutput('readme', this.readmePath);
     }
     /**

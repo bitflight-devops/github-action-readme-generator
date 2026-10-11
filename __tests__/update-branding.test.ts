@@ -12,7 +12,7 @@ import updateTitle from '../src/sections/update-title.js';
 import SVGEditor from '../src/svg-editor.mjs';
 
 describe('branding generation', () => {
-  it('generates the branding SVG on the first run', async () => {
+  it('returns only after the complete branding SVG has been written', () => {
     const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'ghadocs-branding-'));
     const svgPath = path.join(tempDirectory, 'branding.svg');
     const values = new Map<string, unknown>([['branding_svg_path', svgPath]]);
@@ -26,7 +26,9 @@ describe('branding generation', () => {
     try {
       generateImgMarkup(inputs);
 
-      await vi.waitFor(() => expect(fs.readFileSync(svgPath, 'utf8')).toContain('<svg'));
+      const svg = fs.readFileSync(svgPath, 'utf8');
+      expect(svg).toMatch(/^<\?xml[^>]+>\s*<svg\b/);
+      expect(svg.trim()).toMatch(/<\/svg>$/);
       expect(inputs.config.set).toHaveBeenCalledWith('image_generated', 'book-openyellow');
     } finally {
       fs.rmSync(tempDirectory, { recursive: true, force: true });

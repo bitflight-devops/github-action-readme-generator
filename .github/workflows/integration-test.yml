@@ -361,3 +361,82 @@ jobs:
         run: |
           echo "✅ Integration test passed for ${{ matrix.repo }}"
           echo "The action successfully generated README from ${{ matrix.action_path }}"
+
+
+  pre-commit-hook:
+    name: Test published pre-commit hook
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout hook provider
+        uses: actions/checkout@v7.0.1
+        with:
+          path: hook-source
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install pre-commit
+        run: python -m pip install pre-commit==4.6.2
+
+      - name: Create consumer fixture
+        run: |
+          mkdir consumer
+          cd consumer
+          git init
+          git config user.name "pre-commit smoke test"
+          git config user.email "pre-commit-smoke@example.invalid"
+
+          cat > action.yml <<'YAML'
+          name: Consumer Action
+          description: Generated through the published pre-commit hook
+          runs:
+            using: composite
+            steps: []
+          YAML
+
+          cat > README.md <<'MARKDOWN'
+          # Consumer
+
+          <!-- start description -->
+          stale description
+          <!-- end description -->
+          MARKDOWN
+
+          cat > .ghadocs.json <<'JSON'
+          {
+            "owner": "example",
+            "repo": "consumer-action",
+            "paths": {
+              "action": "action.yml",
+              "readme": "README.md"
+            },
+            "sections": ["description"],
+            "prettier": false
+          }
+          JSON
+
+          git add action.yml README.md .ghadocs.json
+          git commit -m "test: add consumer fixture"
+
+      - name: Install and run hook through pre-commit
+        working-directory: consumer
+        run: |
+          set +e
+          pre-commit try-repo ../hook-source github-action-readme-generator --all-files --verbose
+          first_status=$?
+          set -e
+
+          if [ "$first_status" -eq 0 ]; then
+            echo "::error::first run should report the README modification"
+            exit 1
+          fi
+
+          grep -F "Generated through the published pre-commit hook" README.md
+          cp README.md README.after-first-run.md
+          git add README.md
+
+          pre-commit try-repo ../hook-source github-action-readme-generator --all-files --verbose
+          cmp README.after-first-run.md README.md

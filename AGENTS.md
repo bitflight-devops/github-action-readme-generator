@@ -37,7 +37,8 @@ Load the narrow source that owns the task instead of relying on cached repositor
 - **Generation, README ownership, versioning, convergence, formatting, or bundles:** read `docs/tool-contract.md`.
 - **Build, test, lint, or package-script behavior:** read `package.json` and `vite.config.ts`.
 - **Git-hook behavior:** read the matching file under `.husky/` and the script it invokes in `package.json`.
-- **CI or release behavior:** read the relevant file under `.github/workflows/`; workflow display names are not the source of truth.
+- **CI behavior:** read the relevant file under `.github/workflows/`; workflow display names are not the source of truth.
+- **Release behavior:** read the relevant workflow and the `release` configuration in `package.json`.
 - **Before declaring a fix, review finding, or your own diff settled:** read `.claude/skills/checker-principle/SKILL.md`.
 - **When handling PR feedback or deciding review readiness:** read `.claude/skills/pr-review-workflow/SKILL.md`.
 - **When editing agent-facing instructions such as this file, `CLAUDE.md`, skills, or `docs/tool-contract.md`:** read `.claude/skills/writing-for-agents/SKILL.md`.
@@ -47,7 +48,7 @@ Load the narrow source that owns the task instead of relying on cached repositor
 
 Use Conventional Commits. The commit header that lands on `main` drives semantic-release.
 
-For a breaking change, put `!` in the Conventional Commit header, for example `fix(scope)!: ...`. Do not rely on a `BREAKING CHANGE:` footer surviving the merge path.
+For a breaking change, put `!` in both the PR title and the Conventional Commit header, for example `fix(scope)!: ...`, so the header that lands on `main` carries the marker. Do not rely on a `BREAKING CHANGE:` footer surviving the merge path.
 
 Treat `dist/` as release-owned output. Do not force-add it during ordinary development. If a build changes tracked release artifacts, distinguish those generated changes from the source change before committing.
 
@@ -58,7 +59,7 @@ Treat `dist/` as release-owned output. Do not force-add it during ordinary devel
 - Bundled runtime code must work without this repository's `node_modules`. When touching bundling, `vite.config.ts`, runtime dependency externalization, or `src/prettier.ts`, run the isolated packaged-binary coverage in `__tests__/integration-bundled-binary.test.ts`.
 - `pull_request_target` evaluates the workflow definition from the base branch. When changing a workflow that uses it, do not treat a green pre-merge run as evidence that the changed workflow definition executed.
 
-## Repository documentation discipline
+## Working discipline
 
 Keep durable repository files about current rules and invariants, not transient defect state.
 

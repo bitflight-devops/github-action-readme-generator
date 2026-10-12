@@ -2,7 +2,8 @@
   name: Generate GitHub Action README
   description: Sync generated README sections from action.yml.
   entry: scripts/pre-commit-hook.sh
-  language: script
+  language: unsupported_script
+  minimum_pre_commit_version: 4.4.0
   always_run: true
   pass_filenames: false
   stages: [pre-commit]

@@ -65,7 +65,6 @@ npm run generate-docs  # regenerate README.md from action.yml
 ## Pre-commit hooks (husky)
 
 - **pre-commit**: `vp staged && npm run build && npm run generate-docs && npm run lint:markdown`.
-  - Verify your staged files reached the commit with `git show --stat HEAD` (#671).
 - **commit-msg**: runs commitlint.
 - **pre-push**: a no-op (commented out).
 

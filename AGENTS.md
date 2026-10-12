@@ -1,211 +1,67 @@
 # AGENTS.md
 
-Instructions for AI agents working in this repository.
+Instructions for agents working in this repository.
 
-## What this tool is for
+## Project contract
 
-An action's interface lives in `action.yml`; the README users read is
-hand-maintained, so it drifts. This is a one-way projector: it renders fixed
-views of `action.yml` and splices each into the matching
-`<!-- start X -->…<!-- end X -->` pair of a README. It runs against **arbitrary
-third-party repositories**, not just this one — that is the contract that
-matters when judging any change.
+This project is a CLI and GitHub Action that projects `action.yml` metadata into marked sections of a README. Judge changes against arbitrary third-party repositories, not only this repository.
 
-**Read [`docs/tool-contract.md`](docs/tool-contract.md) before changing
-generation behaviour, touching bundling, or writing a test that asserts what the
-output should look like.** It holds what the tool guarantees, what is prettier's
-doing, how version resolution falls back, why convergence takes two passes, and
-the defect class this project has paid for repeatedly. Two of its rules govern
-every change made here:
+**Before changing generation behavior, version resolution, markers, formatting, bundling, or tests that assert README output, read [`docs/tool-contract.md`](docs/tool-contract.md).**
 
-- **Text outside the markers is the user's.** Rewriting any of it is a breaking
-  change even when every test passes.
-- **Most of what makes the output look tidy is prettier, not this tool.**
-  Column padding, `**false**`, `key: ""` — all prettier. Asserting them against
-  a third-party README proves nothing about this tool.
+Keep these invariants in view:
 
-## Project facts
+- Text outside generated marker pairs belongs to the README author. Rewriting it is a breaking change.
+- Formatting behavior is not generator behavior unless the generator owns it. `docs/tool-contract.md` defines that boundary.
+- `semantic-release` and publishing deliberately remain outside Vite+. Do not fold them into the Vite+ toolchain.
 
-- CLI + GitHub Action. Syncs README.md from action.yml (title, description, inputs, outputs, usage, badges).
-- TypeScript, Node `>=24.19.0 <30.0.0` (`package.json` `engines`).
-- Build: `vp pack` (tsdown, via Vite+). Test: `vp test` (Vitest, via Vite+). Lint/format: Oxlint + Oxfmt via Vite+'s `vp` CLI, plus rumdl.
-- `semantic-release` and publishing sit outside Vite+ deliberately — leave them there.
-- Volta pins the dev version — check `.node-version`.
+## Working commands
 
-## Commit format
+Run `npm install` after a checkout or pull before diagnosing missing modules.
 
-Conventional Commits — the `commit-msg` hook runs commitlint (see Pre-commit hooks).
-
-The headers of the commits that land on `main` decide the release. A squash
-merge lands one commit; GitHub fills its header from the PR title, or from the
-commit's own header when the PR has one commit. Mark a breaking change with `!`
-after its type (`fix(scope)!: …`) in the PR title and in the header of the
-commit that breaks, so the mark reaches `main` from either source. Keep the mark
-in the header: the merger can rewrite the squash body, and a `BREAKING CHANGE:`
-footer goes with it.
-
-## Build & validation commands
+For ordinary code changes:
 
 ```bash
-npm install              # first step after any checkout/pull
-npm run build             # prebuild (tsc check) -> vp pack (tsdown: dist/bin + dist/mjs)
-npm run test               # vp test (Vitest), __tests__/**/*.test.ts
-npm run coverage         # vp test --coverage -> ./out/
-npm run format            # vp fmt --write ./src ./__tests__
-npm run check              # vp check ./src/ ./__tests__/ - CI's actual gate, no side effects
-npm run lint:markdown  # rumdl
-npm run generate-docs  # regenerate README.md from action.yml
+npm run check
+npm run build
+npm run test
 ```
 
-`npm run lint` runs `vp lint --type-aware --type-check ./src/ ./__tests__/` (Oxlint +
-`tsgolint` type-checking, no format side effects) then `npm run lint:markdown`.
-`lint:fix` is the `--fix` variant plus `lint:markdown:fix`. `check`/`check:fix` run
-`vp check`, which bundles format + lint + type-check in one pass — CI's actual gate.
+Use `npm run lint:markdown` for Markdown. Use `package.json` for the complete script list and `vite.config.ts` for Vite+/Oxlint/Oxfmt/build/test configuration.
 
-## Pre-commit hooks (husky)
+When source changes affect generated docs, build before `npm run generate-docs`; that command executes the built CLI.
 
-- **pre-commit**: `vp staged && npm run build && npm run generate-docs && npm run lint:markdown`.
-- **commit-msg**: runs commitlint.
-- **pre-push**: a no-op (commented out).
+## Task routes
 
-## dist/ files
+Load the narrow source that owns the task instead of relying on cached repository summaries here:
 
-- Gitignored, but a past release's snapshot may still be **tracked**.
-- Check with `git ls-files dist/`.
-- If tracked, a local rebuild shows as a _modification_, not an untracked file.
-- If dist/ shows modified, `git restore dist/` — don't hand-commit it.
-- Never `git add -f dist/` yourself — `deploy.yml` does that, releases only.
+- **Generation, README ownership, versioning, convergence, formatting, or bundles:** read `docs/tool-contract.md`.
+- **Build, test, lint, or package-script behavior:** read `package.json` and `vite.config.ts`.
+- **Git-hook behavior:** read the matching file under `.husky/` and the script it invokes in `package.json`.
+- **CI behavior:** read the relevant file under `.github/workflows/`; workflow display names are not the source of truth.
+- **Release behavior:** read the relevant workflow and the `release` configuration in `package.json`.
+- **Before declaring a fix, review finding, or your own diff settled:** read `.claude/skills/checker-principle/SKILL.md`.
+- **When handling PR feedback or deciding review readiness:** read `.claude/skills/pr-review-workflow/SKILL.md`.
+- **When editing agent-facing instructions such as this file, `CLAUDE.md`, skills, or `docs/tool-contract.md`:** read `.claude/skills/writing-for-agents/SKILL.md`.
+- **When planning substantial multi-step or repeated work:** read `.claude/skills/planning-multi-step-work/SKILL.md`.
 
-## Where to look
+## Release and commit semantics
 
-```text
-src/
-  cli.ts                  CLI error-reporting entry point (dist/bin/index.js)
-  index.ts                library entry point (dist/mjs/index.js); retains import-time generation
-  Action.ts                action.yml metadata parsing
-  inputs.ts                 Inputs class: CLI args -> .ghadocs.json -> action.yml cascade
-  readme-generator.ts   ReadmeGenerator class - generate()/updateSections()/outputSections()
-  readme-editor.ts        reads/writes README.md's <!-- start X --> markers
-  save.ts                    conditionally persists .ghadocs.json, not the README
-  helpers.ts                utilities: git-tag version resolution, repo detection, table formatting
-  prettier.ts                formatMarkdown/wrapDescription + the bundled plugin list
-  svg-editor.mts          SVGEditor class - branding SVG generation
-  config.ts                  GHActionDocsConfig class - reads/saves .ghadocs.json
-  constants.ts             Feather icon names + other constants
-  util.ts                     shared TS type utilities (e.g. Nullable<T>)
-  unicode-word-match.ts  ES5-compatible unicode word-match regex
-  working-directory.ts   path resolution
-  sections/                  one updater per README section, see index.ts
-  markdowner/               markdown processing utilities
-  logtask/                    LogTask logger, see bracket-padding pitfall
-  errors/                     custom error types
-__tests__/          vitest specs - loose match to src/, not 1:1 (see below)
-__mocks__/          node:fs.ts - the only mock
-scripts/               release.sh, latest_valid_node_version.sh,
-                       verify-readme-contract.mjs (run by integration-test.yml)
-.github/workflows/  CI - file names differ from GitHub-displayed name: (see below)
-docs/                    tool-contract.md
-```
+Use Conventional Commits. The commit header that lands on `main` drives semantic-release.
 
-- `__tests__/` loosely follows `src/`'s file naming, not always nested.
-- Example: `helpers.ts` → `helpers.test.ts`, but `src/markdowner/` → flat `markdowner.test.ts`.
-- `src/errors/*` has no tests — search for a file's test, don't assume a path exists.
+For a breaking change, put `!` in both the PR title and the Conventional Commit header, for example `fix(scope)!: ...`, so the header that lands on `main` carries the marker. Do not rely on a `BREAKING CHANGE:` footer surviving the merge path.
 
-Root config files: see "Config files" table below.
+Treat `dist/` as release-owned output. Local builds can modify tracked snapshots even though `dist/` is gitignored. Before an ordinary commit, discard those build changes with `git restore dist/`; the release workflow owns committing `dist/`.
 
-## CI (`.github/workflows/`)
+## High-value gotchas
 
-Display names differ from file names. Read the file directly for the exact
-current step list.
-
-- **`test.yml`** ("Tag and Release Updated NPM Package")
-  - Triggers: `pull_request_target` + `push` (main/next/beta/\*.x) + `repository_dispatch`.
-  - No plain `pull_request` trigger.
-  - `pull_request_target` evaluates the workflow _definition_ from the base branch, not the PR head —
-    a PR changing `test.yml` itself (or removing a tool it still requires) can't show green pre-merge.
-  - Bootstraps `vp` via `voidzero-dev/setup-vp` (pinned tag), then runs `vp check` before tests.
-    Node versions tested: a dynamic matrix resolved from `.node-version` (see `node-version-matrix` job).
-  - On `push` only, also invokes `deploy.yml`.
-- **`push_code_linting.yml`** ("Code Linting Annotation")
-  - Same bootstrap order as `test.yml`: `npm install` then `voidzero-dev/setup-vp`.
-  - `vp lint --format github` and `RUMDL_OUTPUT_FORMAT=github npm run lint:markdown` post inline PR annotations natively.
-- **`deploy.yml`** ("NPM Release Workflow")
-  - Not push-triggered directly: `workflow_call` (from `test.yml`) + `repository_dispatch`.
-  - Runs `npm ci` → engine/signature checks → bootstraps `vp` → build → commit dist/ → `semantic-release`.
-- **`integration-test.yml`** ("Integration Tests - Real World Repositories")
-  - The only workflow that runs the built action against **third-party**
-    repositories. `__tests__/` enforces the output contract against fixtures;
-    this is the only thing that enforces it against a repository nobody here
-    controls. If you change generation behaviour, this is what catches it.
-  - Has a plain `pull_request` trigger, unlike `test.yml` — so a PR changing
-    this file does show its own effect pre-merge.
-  - Runs `scripts/verify-readme-contract.mjs` against each target's own
-    `action.yml`, then generates three times and asserts passes 2 and 3 match.
-    See `docs/tool-contract.md` for why it is 2-vs-3 and not 1-vs-2.
-
-These four are the ones that matter for a code change. The rest of the directory
-is repo housekeeping (stale bot, assignment, tag cleanup, version updater).
-
-## Config files
-
-| File             | Purpose                                                                                                          |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `action.yml`     | Action metadata — all inputs/outputs                                                                             |
-| `.ghadocs.json`  | generate-docs config                                                                                             |
-| `vite.config.ts` | Oxlint/Oxfmt rules, pre-commit staged-file config, `pack` (tsdown build), `test` (Vitest) — via Vite+'s `vp` CLI |
-| `.rumdl.toml`    | Markdown lint rules and file exclusions                                                                          |
-| `package.json`   | Deps, scripts, engines, volta                                                                                    |
-
-## Pitfalls
-
-1. "Cannot find module" → `npm install` first.
-2. Tests fail after a change → `npm run build` first.
-3. README.md changed after your commit → expected, pre-commit runs generate-docs.
-4. `generate-docs` output brackets step types outside a log group (e.g. `[ERROR  ]`).
-   - Padded to a shared width — grep the type, not a fixed-width string.
-5. Run `git fetch origin --tags` before `generate-docs`, and check the version it
-   resolved in the README diff.
-   - An incomplete tag set resolves to a real but older tag and reports nothing
-     (#667). `actions/checkout` gives you exactly that by default.
-6. Touching bundling (`vite.config.ts`, `src/prettier.ts`, externals) → run the
-   built binary from a directory with no `node_modules` before believing it works.
-   - `__tests__/integration-bundled-binary.test.ts` is the guard. A green
-     `npm run build` and a green suite have repeatedly not caught this class.
-   - `deps.alwaysBundle` entries match the **specifier**, not the package:
-     `"prettier"` does not cover `prettier/standalone`.
-7. `git restore dist/` reverts your build. `npm run generate-docs` runs
-   `node dist/bin/index.js`, so anything after a restore uses the last released
-   binary, not your change. Rebuild before every probe.
-8. Generation converges on the **second** pass, not the first — see
-   `docs/tool-contract.md`. Compare run 2 against run 3.
-
-## Key details
-
-- README markers: `<!-- start inputs -->...<!-- end inputs -->`.
-- Dual-purpose: GitHub Action (action.yml inputs) and CLI (`.ghadocs.json`/args).
-- Versioning: latest git tag, falls back to `package.json` — must match pitfall 5.
+- `generate-docs` uses the built CLI. Rebuild after source changes and after any operation that restores or replaces `dist/`.
+- Version output is tag-sensitive. Before trusting generated version text, fetch tags and inspect the version reported by generation; an incomplete tag set can resolve an older valid tag. See #667 and `docs/tool-contract.md`.
+- Bundled runtime code must work without this repository's `node_modules`. When touching bundling, `vite.config.ts`, runtime dependency externalization, or `src/prettier.ts`, run the isolated packaged-binary coverage in `__tests__/integration-bundled-binary.test.ts`.
+- `pull_request_target` evaluates the workflow definition from the base branch. When changing a workflow that uses it, do not treat a green pre-merge run as evidence that the changed workflow definition executed.
 
 ## Working discipline
 
-- **Never write a defect into a repo file. Fix it, or open a GitHub Issue.**
-  A bug is transient state — committing it guarantees a file that is wrong the
-  day it is fixed, plus a second copy to maintain. This applies to every tracked
-  file: docs, code comments, this one. The only permitted form is a rule you
-  must code against today plus a link to its issue, never a description of the
-  bug.
-- **Never write a measured number into a repo file.** Test counts, file counts,
-  site counts, percentages, byte sizes, survey tallies — each is a reading taken
-  once, wrong after the next commit, and it convinces a reader precisely because
-  it looks precise. Write the rule the number was evidence for. "Investigated 26
-  sites, zero exceptions" becomes the reason the exceptions do not exist; "cost
-  3.6 MB" becomes "every plugin is weight in a binary that ships to every
-  consumer". If a reader needs the number, they can measure it — and theirs will
-  be right.
-- `.claude/skills/checker-principle/SKILL.md`: verify before trusting any fix, bot finding, or your own diff.
-- `.claude/skills/pr-review-workflow/SKILL.md`: handling PR review comments, judging draft-readiness.
-- `.claude/skills/writing-for-agents/SKILL.md`: writing or editing this file, `docs/tool-contract.md`, or any skill.
-- `.claude/skills/planning-multi-step-work/SKILL.md`: planning ahead, judging when a loop is warranted.
-- Delegate large reads (logs, search results, big docs) to a fresh, cheap-model subagent — cheaper per call.
-  - The checker-principle still applies to what it reports back.
-- Deferred work goes in GitHub Issues. This file carries the facts and
-  conventions every agent needs.
+Keep durable repository files about current rules and invariants, not transient defect state.
+
+- Keep live defect narratives out of durable agent instructions and design docs. Fix the defect now; if it must be deferred and repository mutation is authorized, track it in a GitHub Issue. Otherwise report it to the user.
+- Do not cache measurements such as test counts, file counts, percentages, or byte sizes as durable guidance unless the number itself is a contractual threshold. Prefer the invariant or the authoritative lookup.

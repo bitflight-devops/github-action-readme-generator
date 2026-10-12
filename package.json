@@ -59,7 +59,7 @@
     "format": "vp fmt --write ./src ./__tests__",
     "format:check": "vp fmt --check ./src ./__tests__",
     "generate-docs": "echo 'Generating docs' && node dist/bin/index.js && (git add README.md ./.github/ghadocs .ghadocs.json || true)",
-    "postinstall": "echo '✨ Successfully Installed' && { [ -n \"${GITHUB_ACTIONS:-}\" ] || [ \"${npm_config_global:-false}\" = \"true\" ] || [ \"${INIT_CWD:-}\" != \"$PWD\" ] || { husky install; command -v vp >/dev/null 2>&1 || curl -fsSL https://viteplus.dev/install.sh | VP_NODE_MANAGER=no bash; }; }",
+    "postinstall": "echo '✨ Successfully Installed'",
     "lint": "vp lint --type-aware --type-check ./src/ ./__tests__/ && npm run lint:markdown",
     "lint:fix": "vp lint --type-aware --type-check --fix ./src/ ./__tests__/ && npm run lint:markdown:fix",
     "check": "vp check ./src/ ./__tests__/",
@@ -67,6 +67,7 @@
     "lint:markdown": "rumdl check --config .rumdl.toml .",
     "lint:markdown:fix": "npm run lint:markdown -- --fix",
     "pre-commit": "vp staged && npm run build && npm run generate-docs && npm run lint:markdown",
+    "prepare": "[ -n \"${GITHUB_ACTIONS:-}\" ] || { husky install; command -v vp >/dev/null 2>&1 || curl -fsSL https://viteplus.dev/install.sh | VP_NODE_MANAGER=no bash; }",
     "semantic-release": "semantic-release",
     "test": "vp test",
     "coverage": "vp test --coverage"

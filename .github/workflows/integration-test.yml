@@ -423,9 +423,14 @@ jobs:
 
       - name: Install and run hook through pre-commit
         working-directory: consumer
+        env:
+          HOOK_REPO: ${{ github.event.pull_request.head.repo.clone_url || format('https://github.com/{0}', github.repository) }}
+          HOOK_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
+          pre-commit validate-manifest ../hook-source/.pre-commit-hooks.yaml
+
           set +e
-          pre-commit try-repo ../hook-source github-action-readme-generator --all-files --verbose
+          pre-commit try-repo "$HOOK_REPO" --ref "$HOOK_REF" github-action-readme-generator --all-files --verbose
           first_status=$?
           set -e
 
@@ -438,5 +443,5 @@ jobs:
           cp README.md README.after-first-run.md
           git add README.md
 
-          pre-commit try-repo ../hook-source github-action-readme-generator --all-files --verbose
+          pre-commit try-repo "$HOOK_REPO" --ref "$HOOK_REF" github-action-readme-generator --all-files --verbose
           cmp README.after-first-run.md README.md

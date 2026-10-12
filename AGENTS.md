@@ -50,7 +50,7 @@ Use Conventional Commits. The commit header that lands on `main` drives semantic
 
 For a breaking change, put `!` in both the PR title and the Conventional Commit header, for example `fix(scope)!: ...`, so the header that lands on `main` carries the marker. Do not rely on a `BREAKING CHANGE:` footer surviving the merge path.
 
-Treat `dist/` as release-owned output. Do not force-add it during ordinary development. If a build changes tracked release artifacts, distinguish those generated changes from the source change before committing.
+Treat `dist/` as release-owned output. Local builds can modify tracked snapshots even though `dist/` is gitignored. Before an ordinary commit, discard those build changes with `git restore dist/`; the release workflow owns committing `dist/`.
 
 ## High-value gotchas
 

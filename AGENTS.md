@@ -56,9 +56,7 @@ Treat `dist/` as release-owned output. Do not force-add it during ordinary devel
 - `generate-docs` uses the built CLI. Rebuild after source changes and after any operation that restores or replaces `dist/`.
 - Version output is tag-sensitive. Before trusting generated version text, fetch tags and inspect the version reported by generation; an incomplete tag set can resolve an older valid tag. See #667 and `docs/tool-contract.md`.
 - Bundled runtime code must work without this repository's `node_modules`. When touching bundling, `vite.config.ts`, runtime dependency externalization, or `src/prettier.ts`, run the isolated packaged-binary coverage in `__tests__/integration-bundled-binary.test.ts`.
-- `deps.alwaysBundle` entries match import specifiers. A bare package entry does not automatically cover its subpath imports.
 - `pull_request_target` evaluates the workflow definition from the base branch. When changing a workflow that uses it, do not treat a green pre-merge run as evidence that the changed workflow definition executed.
-- Generation convergence compares the later stable passes defined in `docs/tool-contract.md`; do not replace that contract with a first-run diff assumption.
 
 ## Repository documentation discipline
 

@@ -22,8 +22,8 @@ For ordinary code changes:
 
 ```bash
 npm run check
-npm run test
 npm run build
+npm run test
 ```
 
 Use `npm run lint:markdown` for Markdown. Use `package.json` for the complete script list and `vite.config.ts` for Vite+/Oxlint/Oxfmt/build/test configuration.

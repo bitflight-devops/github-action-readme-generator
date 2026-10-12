@@ -3,7 +3,7 @@
   description: Sync generated README sections from action.yml.
   entry: github-action-readme-generator
   language: node
-  language_version: 24.19.0
+  language_version: 26.7.0
   minimum_pre_commit_version: 4.6.2
   always_run: true
   pass_filenames: false

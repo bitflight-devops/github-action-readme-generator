@@ -387,8 +387,11 @@ jobs:
         run: python -m pip install pre-commit==4.6.2
 
       - name: Create consumer fixture
+        env:
+          HOOK_REPO: ${{ github.event.pull_request.head.repo.clone_url || format('https://github.com/{0}', github.repository) }}
+          HOOK_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          mkdir consumer
+          mkdir -p consumer/docs
           cd consumer
           git init
           git config user.name "pre-commit smoke test"
@@ -403,6 +406,14 @@ jobs:
           YAML
 
           cat > README.md <<'MARKDOWN'
+          # Default README
+
+          <!-- start description -->
+          default README must stay stale
+          <!-- end description -->
+          MARKDOWN
+
+          cat > docs/ACTION.md <<'MARKDOWN'
           # Consumer
 
           <!-- start description -->
@@ -423,30 +434,38 @@ jobs:
           }
           JSON
 
-          git add action.yml README.md .ghadocs.json
+          cat > .pre-commit-config.yaml <<YAML
+          repos:
+            - repo: $HOOK_REPO
+              rev: $HOOK_REF
+              hooks:
+                - id: github-action-readme-generator
+                  args: [--readme, docs/ACTION.md]
+          YAML
+
+          git add action.yml README.md docs/ACTION.md .ghadocs.json .pre-commit-config.yaml
           git commit -m "test: add consumer fixture"
 
       - name: Install and run hook through pre-commit
         working-directory: consumer
-        env:
-          HOOK_REPO: ${{ github.event.pull_request.head.repo.clone_url || format('https://github.com/{0}', github.repository) }}
-          HOOK_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           pre-commit validate-manifest ../hook-source/.pre-commit-hooks.yaml
+          pre-commit validate-config .pre-commit-config.yaml
 
           set +e
-          pre-commit try-repo "$HOOK_REPO" --ref "$HOOK_REF" github-action-readme-generator --all-files --verbose
+          pre-commit run github-action-readme-generator --all-files --verbose
           first_status=$?
           set -e
 
           if [ "$first_status" -eq 0 ]; then
-            echo "::error::first run should report the README modification"
+            echo "::error::first run should report the target README modification"
             exit 1
           fi
 
-          grep -F "Generated through the published pre-commit hook" README.md
-          cp README.md README.after-first-run.md
-          git add README.md
+          grep -F "Generated through the published pre-commit hook" docs/ACTION.md
+          grep -F "default README must stay stale" README.md
+          cp docs/ACTION.md ACTION.after-first-run.md
+          git add docs/ACTION.md
 
-          pre-commit try-repo "$HOOK_REPO" --ref "$HOOK_REF" github-action-readme-generator --all-files --verbose
-          cmp README.after-first-run.md README.md
+          pre-commit run github-action-readme-generator --all-files --verbose
+          cmp ACTION.after-first-run.md docs/ACTION.md

@@ -35,7 +35,8 @@ When source changes affect generated docs, build before `npm run generate-docs`;
 Load the narrow source that owns the task instead of relying on cached repository summaries here:
 
 - **Generation, README ownership, versioning, convergence, formatting, or bundles:** read `docs/tool-contract.md`.
-- **Build, test, lint, staged-file, or package-script behavior:** read `package.json` and `vite.config.ts`.
+- **Build, test, lint, or package-script behavior:** read `package.json` and `vite.config.ts`.
+- **Git-hook behavior:** read the matching file under `.husky/` and the script it invokes in `package.json`.
 - **CI or release behavior:** read the relevant file under `.github/workflows/`; workflow display names are not the source of truth.
 - **Before declaring a fix, review finding, or your own diff settled:** read `.claude/skills/checker-principle/SKILL.md`.
 - **When handling PR feedback or deciding review readiness:** read `.claude/skills/pr-review-workflow/SKILL.md`.
@@ -63,6 +64,5 @@ Treat `dist/` as release-owned output. Do not force-add it during ordinary devel
 
 Keep durable repository files about current rules and invariants, not transient defect state.
 
-- Fix a defect or track it in an issue; do not copy a live bug narrative into durable agent instructions or design docs.
+- Keep live defect narratives out of durable agent instructions and design docs. Fix the defect now; if it must be deferred and repository mutation is authorized, track it in a GitHub Issue. Otherwise report it to the user.
 - Do not cache measurements such as test counts, file counts, percentages, or byte sizes as durable guidance unless the number itself is a contractual threshold. Prefer the invariant or the authoritative lookup.
-- When deferred work needs durable tracking and repository mutation is authorized, use GitHub Issues. Otherwise report the deferred item to the user instead of silently creating repository state.

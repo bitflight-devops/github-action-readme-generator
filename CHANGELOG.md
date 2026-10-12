@@ -1,3 +1,9 @@
+## [2.0.7](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.6...v2.0.7) (2026-10-12)
+
+### Bug Fixes
+
+* **deps:** update vulnerable development dependencies ([#742](https://github.com/bitflight-devops/github-action-readme-generator/issues/742)) ([54d3c12](https://github.com/bitflight-devops/github-action-readme-generator/commit/54d3c12301eb3260f70b2d06174e6dd8f117d02a)), closes [#740](https://github.com/bitflight-devops/github-action-readme-generator/issues/740)
+
 ## [2.0.6](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.5...v2.0.6) (2026-10-11)
 
 ### Bug Fixes

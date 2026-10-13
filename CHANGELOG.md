@@ -1,3 +1,9 @@
+## [2.1.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.7...v2.1.0) (2026-10-13)
+
+### Features
+
+* **pre-commit:** publish README generator hook ([#745](https://github.com/bitflight-devops/github-action-readme-generator/issues/745)) ([b76647c](https://github.com/bitflight-devops/github-action-readme-generator/commit/b76647c1b8ba2793181b51bcdd3d1dff1a877084))
+
 ## [2.0.7](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.6...v2.0.7) (2026-10-12)
 
 ### Bug Fixes

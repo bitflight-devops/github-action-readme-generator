@@ -166,7 +166,7 @@ repos:
       - id: github-action-readme-generator
 ```
 
-The hook runs on every commit so custom action, README, and config paths are covered. It uses the consumer's Node/npm installation, requires a Node version supported by this package, and executes the npm release matching the selected repository revision. Staged filenames are not passed to the generator.
+The hook runs on every commit so configurable action and README paths are covered. It uses the consumer's Node/npm installation, requires a Node version supported by this package, and executes the npm release matching the selected repository revision. Staged filenames are not passed to the generator.
 
 ## Configuration
 

@@ -372,6 +372,7 @@ jobs:
         uses: actions/checkout@v7.0.1
         with:
           path: hook-source
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v6

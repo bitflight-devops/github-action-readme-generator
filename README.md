@@ -161,7 +161,7 @@ Add it to your `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/bitflight-devops/github-action-readme-generator
-    rev: v2
+    rev: v2.1.0
     hooks:
       - id: github-action-readme-generator
 ```

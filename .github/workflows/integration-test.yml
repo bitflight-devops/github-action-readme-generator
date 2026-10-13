@@ -470,3 +470,39 @@ jobs:
 
           pre-commit run github-action-readme-generator --all-files --verbose
           cmp ACTION.after-first-run.md docs/ACTION.md
+
+      - name: Verify documented release hook
+        working-directory: consumer
+        run: |
+          cat > docs/ACTION.md <<'MARKDOWN'
+          # Consumer
+
+          <!-- start description -->
+          stale published description
+          <!-- end description -->
+          MARKDOWN
+
+          cat > .pre-commit-config.yaml <<'YAML'
+          repos:
+            - repo: https://github.com/bitflight-devops/github-action-readme-generator
+              rev: v2.1.0
+              hooks:
+                - id: github-action-readme-generator
+                  args: [--readme, docs/ACTION.md]
+          YAML
+
+          git add docs/ACTION.md .pre-commit-config.yaml
+          pre-commit validate-config .pre-commit-config.yaml
+
+          set +e
+          pre-commit run github-action-readme-generator --all-files --verbose
+          published_status=$?
+          set -e
+
+          if [ "$published_status" -eq 0 ]; then
+            echo "::error::published hook should report the target README modification"
+            exit 1
+          fi
+
+          grep -F "Generated through the published pre-commit hook" docs/ACTION.md
+          grep -F "default README must stay stale" README.md

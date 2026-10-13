@@ -154,33 +154,28 @@ You can modify the script below to include any extra variables you like or use n
 
 ### Using as a Pre-commit Hook
 
-You can automate README generation on every commit by using this tool as a pre-commit hook. This ensures your documentation stays up-to-date automatically.
+This repository publishes a pre-commit hook. Consumers need a supported Node.js/npm installation, but do not need to install this package separately.
 
-1. **Install the tool locally** (if you haven't already):
-
-```sh
-npm install --save-dev github-action-readme-generator
-# or
-yarn add -D github-action-readme-generator
-```
-
-2. **Configure pre-commit**:
-
-Add the following to your `.pre-commit-config.yaml` file:
+Add the hook to `.pre-commit-config.yaml` using an immutable release tag:
 
 ```yaml
 repos:
-  - repo: local
+  - repo: https://github.com/bitflight-devops/github-action-readme-generator
+    rev: v2.1.0
     hooks:
       - id: github-action-readme-generator
-        name: Generate README from action.yml
-        entry: npx github-action-readme-generator
-        language: system
-        files: ^(action\.yml|\.ghadocs\.json)$
-        pass_filenames: false
 ```
 
-This configuration will automatically regenerate your README whenever `action.yml` or `.ghadocs.json` changes.
+Use `pre-commit autoupdate` to move to newer releases. Do not use the moving `v2` alias as `rev`: pre-commit caches repositories by repository and revision string, so moving that tag does not reliably update an existing hook environment.
+
+The hook runs on every commit because the action and README paths are configurable. Staged filenames are not passed to the generator. Pass CLI options through `args` when needed:
+
+```yaml
+      - id: github-action-readme-generator
+        args: [--readme, docs/ACTION.md]
+```
+
+Configuration is still read from the consumer repository's `.ghadocs.json`; there is no separate configuration-file path option.
 
 ## Configuration
 

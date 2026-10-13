@@ -491,6 +491,7 @@ jobs:
                   args: [--readme, docs/ACTION.md]
           YAML
 
+          git add docs/ACTION.md .pre-commit-config.yaml
           pre-commit validate-config .pre-commit-config.yaml
 
           set +e

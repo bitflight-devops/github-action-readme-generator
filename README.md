@@ -264,7 +264,7 @@ value replaced by `***REDACTED***`. Keys whose names look sensitive (`auth`,
 <!-- start usage -->
 
 ```yaml
-- uses: bitflight-devops/github-action-readme-generator@v2.0.7
+- uses: bitflight-devops/github-action-readme-generator@v2.1.0
   with:
     # Description: The absolute or relative path to the `action.yml` file to read in
     # from.

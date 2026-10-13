@@ -361,3 +361,112 @@ jobs:
         run: |
           echo "✅ Integration test passed for ${{ matrix.repo }}"
           echo "The action successfully generated README from ${{ matrix.action_path }}"
+
+
+  pre-commit-hook:
+    name: Test published pre-commit hook
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout hook provider
+        uses: actions/checkout@v7.0.1
+        with:
+          path: hook-source
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Setup Node.js for hook consumer
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24.19.0'
+
+      - name: Install pre-commit
+        run: python -m pip install pre-commit==4.6.2
+
+      - name: Create consumer fixture
+        env:
+          HOOK_REPO: ${{ github.event.pull_request.head.repo.clone_url || format('https://github.com/{0}', github.repository) }}
+          HOOK_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          mkdir -p consumer/docs
+          cd consumer
+          git init
+          git config user.name "pre-commit smoke test"
+          git config user.email "pre-commit-smoke@example.invalid"
+
+          cat > action.yml <<'YAML'
+          name: Consumer Action
+          description: Generated through the published pre-commit hook
+          runs:
+            using: composite
+            steps: []
+          YAML
+
+          cat > README.md <<'MARKDOWN'
+          # Default README
+
+          <!-- start description -->
+          default README must stay stale
+          <!-- end description -->
+          MARKDOWN
+
+          cat > docs/ACTION.md <<'MARKDOWN'
+          # Consumer
+
+          <!-- start description -->
+          stale description
+          <!-- end description -->
+          MARKDOWN
+
+          cat > .ghadocs.json <<'JSON'
+          {
+            "owner": "example",
+            "repo": "consumer-action",
+            "paths": {
+              "action": "action.yml",
+              "readme": "README.md"
+            },
+            "sections": ["description"],
+            "prettier": false
+          }
+          JSON
+
+          cat > .pre-commit-config.yaml <<YAML
+          repos:
+            - repo: $HOOK_REPO
+              rev: $HOOK_REF
+              hooks:
+                - id: github-action-readme-generator
+                  args: [--readme, docs/ACTION.md]
+          YAML
+
+          git add action.yml README.md docs/ACTION.md .ghadocs.json .pre-commit-config.yaml
+          git commit -m "test: add consumer fixture"
+
+      - name: Install and run hook through pre-commit
+        working-directory: consumer
+        run: |
+          pre-commit validate-manifest ../hook-source/.pre-commit-hooks.yaml
+          pre-commit validate-config .pre-commit-config.yaml
+
+          set +e
+          pre-commit run github-action-readme-generator --all-files --verbose
+          first_status=$?
+          set -e
+
+          if [ "$first_status" -eq 0 ]; then
+            echo "::error::first run should report the target README modification"
+            exit 1
+          fi
+
+          grep -F "Generated through the published pre-commit hook" docs/ACTION.md
+          grep -F "default README must stay stale" README.md
+          cp docs/ACTION.md ACTION.after-first-run.md
+          git add docs/ACTION.md
+
+          pre-commit run github-action-readme-generator --all-files --verbose
+          cmp ACTION.after-first-run.md docs/ACTION.md

@@ -57,7 +57,7 @@ jobs:
         run: npm ci
 
       - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1.21.2
+        uses: voidzero-dev/setup-vp@v1.22.0
         with:
           node-manager: false
           working-directory: action-under-test
@@ -375,7 +375,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7.1.0
         with:
           python-version: '3.13'
 

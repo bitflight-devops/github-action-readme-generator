@@ -1,3 +1,9 @@
+## [2.1.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.1.1...v2.1.2) (2026-10-28)
+
+### Bug Fixes
+
+* **deps:** update github action versions ([#750](https://github.com/bitflight-devops/github-action-readme-generator/issues/750)) ([bf80e03](https://github.com/bitflight-devops/github-action-readme-generator/commit/bf80e03a0105b92fefcceceed30e04cb0bbae784))
+
 ## [2.1.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.1.0...v2.1.1) (2026-10-13)
 
 ### Bug Fixes

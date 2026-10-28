@@ -1,3 +1,9 @@
+## [2.1.1](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.1.0...v2.1.1) (2026-10-13)
+
+### Bug Fixes
+
+* **pre-commit:** run bundled CLI directly ([#747](https://github.com/bitflight-devops/github-action-readme-generator/issues/747)) ([8050260](https://github.com/bitflight-devops/github-action-readme-generator/commit/8050260c977114b1783006114b8b25b270089328))
+
 ## [2.1.0](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.0.7...v2.1.0) (2026-10-13)
 
 ### Features

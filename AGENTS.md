@@ -36,7 +36,7 @@ Load the narrow source that owns the task instead of relying on cached repositor
 
 - **Generation, README ownership, versioning, convergence, formatting, or bundles:** read `docs/tool-contract.md`.
 - **Build, test, lint, or package-script behavior:** read `package.json` and `vite.config.ts`.
-- **Git-hook behavior:** read the matching file under `.husky/` and the script it invokes in `package.json`.
+- **Git-hook behavior:** for this repository's local hooks, read `.husky/` and the invoked `package.json` script; for the published consumer hook, read `.pre-commit-hooks.yaml` and `scripts/pre-commit-hook.sh`.
 - **CI behavior:** read the relevant file under `.github/workflows/`; workflow display names are not the source of truth.
 - **Release behavior:** read the relevant workflow and the `release` configuration in `package.json`.
 - **Before declaring a fix, review finding, or your own diff settled:** read `.claude/skills/checker-principle/SKILL.md`.

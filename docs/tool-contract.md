@@ -141,6 +141,14 @@ This is the case the tool exists for and the case least covered by unit tests;
 - Zero-input and zero-output actions are ordinary third-party shapes, not edge
   cases.
 
+## Published pre-commit hook
+
+The pre-commit manifest is an adapter to the released CLI, not a second installation of this development repository. `.pre-commit-hooks.yaml` uses `unsupported_script`; `scripts/pre-commit-hook.sh` requires the consumer's Node.js runtime and executes `dist/bin/index.js` from the selected repository revision directly. It does not invoke npm/npx or install the development repository.
+
+Consumer `args` are forwarded to the CLI. Staged filenames are not: `pass_filenames: false` keeps arbitrary staged paths from becoming CLI arguments. Action and README paths may therefore be supplied through the generator's normal CLI/config inputs, while configuration itself remains the consumer repository's `.ghadocs.json`.
+
+A published pre-commit `rev` must be an immutable release tag containing the built `dist/bin/index.js` bundle. Do not document a moving major tag such as `v2`: pre-commit caches hook repositories by repository and revision string, so moving the same ref does not reliably refresh an existing consumer. Use exact release tags and let `pre-commit autoupdate` select newer ones.
+
 ## Published bundles are self-contained
 
 A GitHub Actions runner gives this action no `node_modules` of its own. Every

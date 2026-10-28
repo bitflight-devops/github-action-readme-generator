@@ -154,24 +154,30 @@ You can modify the script below to include any extra variables you like or use n
 
 ### Using as a Pre-commit Hook
 
-This repository publishes a pre-commit hook. The consuming environment needs Node.js and npm/npx compatible with this package's supported Node range.
+This repository publishes a pre-commit hook. Consumers need pre-commit 4.4.0 or newer and Node.js >=24.19.0 <30.0.0 on `PATH`. The hook runs the bundled CLI from the selected release directly; npm/npx and a separate package installation are not required.
 
-Add it to your `.pre-commit-config.yaml`:
+Configure the generator in your repository's [`.ghadocs.json`](#configuration), including the action and README paths. Add the hook to `.pre-commit-config.yaml` using an immutable release tag:
 
 ```yaml
 repos:
   - repo: https://github.com/bitflight-devops/github-action-readme-generator
-    rev: v2.1.0
+    rev: v2.1.1
     hooks:
       - id: github-action-readme-generator
 ```
 
-The hook runs on every commit and does not receive staged filenames. Use ordinary pre-commit `args:` to pass generator options such as custom action or README paths:
+Run `pre-commit install` to enable the hook, then `pre-commit run github-action-readme-generator --all-files` to generate the README. If the hook modifies files, review and stage the changes before committing again.
+
+Use `pre-commit autoupdate` to move to newer releases. Do not use the moving `v2` alias as `rev`: pre-commit caches repositories by repository and revision string, so moving that tag does not reliably update an existing hook environment.
+
+The hook runs on every commit because the action and README paths are configurable. Staged filenames are not passed to the generator. Pass CLI options through `args` when needed:
 
 ```yaml
       - id: github-action-readme-generator
-        args: [--action, path/to/action.yml, --readme, docs/ACTION.md]
+        args: [--readme, docs/ACTION.md]
 ```
+
+Configuration is still read from the consumer repository's `.ghadocs.json`; there is no separate configuration-file path option.
 
 ## Configuration
 
@@ -260,7 +266,7 @@ value replaced by `***REDACTED***`. Keys whose names look sensitive (`auth`,
 <!-- start usage -->
 
 ```yaml
-- uses: bitflight-devops/github-action-readme-generator@v2.0.7
+- uses: bitflight-devops/github-action-readme-generator@v2.1.0
   with:
     # Description: The absolute or relative path to the `action.yml` file to read in
     # from.

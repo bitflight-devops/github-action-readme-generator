@@ -154,17 +154,19 @@ You can modify the script below to include any extra variables you like or use n
 
 ### Using as a Pre-commit Hook
 
-This repository publishes a pre-commit hook. Consumers need a supported Node.js/npm installation, but do not need to install this package separately.
+This repository publishes a pre-commit hook. Consumers need pre-commit 4.4.0 or newer and Node.js >=24.19.0 <30.0.0 on `PATH`. The hook runs the bundled CLI from the selected release directly; npm/npx and a separate package installation are not required.
 
-Add the hook to `.pre-commit-config.yaml` using an immutable release tag:
+Configure the generator in your repository's [`.ghadocs.json`](#configuration), including the action and README paths. Add the hook to `.pre-commit-config.yaml` using an immutable release tag:
 
 ```yaml
 repos:
   - repo: https://github.com/bitflight-devops/github-action-readme-generator
-    rev: v2.1.0
+    rev: v2.1.1
     hooks:
       - id: github-action-readme-generator
 ```
+
+Run `pre-commit install` to enable the hook, then `pre-commit run github-action-readme-generator --all-files` to generate the README. If the hook modifies files, review and stage the changes before committing again.
 
 Use `pre-commit autoupdate` to move to newer releases. Do not use the moving `v2` alias as `rev`: pre-commit caches repositories by repository and revision string, so moving that tag does not reliably update an existing hook environment.
 

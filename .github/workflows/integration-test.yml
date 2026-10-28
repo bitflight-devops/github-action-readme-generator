@@ -485,7 +485,7 @@ jobs:
           cat > .pre-commit-config.yaml <<'YAML'
           repos:
             - repo: https://github.com/bitflight-devops/github-action-readme-generator
-              rev: v2.1.0
+              rev: v2.1.1
               hooks:
                 - id: github-action-readme-generator
                   args: [--readme, docs/ACTION.md]

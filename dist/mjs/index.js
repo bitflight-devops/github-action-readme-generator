@@ -1,7 +1,6 @@
 import * as fs from "node:fs";
 import { accessSync, existsSync, promises, readFileSync } from "node:fs";
-import * as path$1 from "node:path";
-import path from "node:path";
+import path, * as path$1 from "node:path";
 import * as core from "@actions/core";
 import { context } from "@actions/github";
 import nconf from "nconf";

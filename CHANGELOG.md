@@ -1,3 +1,9 @@
+## [2.1.3](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.1.2...v2.1.3) (2026-10-29)
+
+### Bug Fixes
+
+* **deps:** refresh npm bundle to patched selector parser ([#756](https://github.com/bitflight-devops/github-action-readme-generator/issues/756)) ([146f2de](https://github.com/bitflight-devops/github-action-readme-generator/commit/146f2ded5e95dbf3ea499ecb4bc3c6c5ca0ff229))
+
 ## [2.1.2](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.1.1...v2.1.2) (2026-10-28)
 
 ### Bug Fixes

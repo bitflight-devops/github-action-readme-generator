@@ -163,7 +163,7 @@
     "husky": "^9.1.7",
     "is-ci": "^4.1.0",
     "rimraf": "^6.1.2",
-    "rumdl": "^0.2.79",
+    "rumdl": "^0.3.2",
     "run-script-os": "^1.1.6",
     "semantic-release": "^25.0.2",
     "types-package-json": "^2.0.39",

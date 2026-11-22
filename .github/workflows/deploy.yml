@@ -48,15 +48,26 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       SKIP_PREFLIGHT_CHECK: true
+      RELEASE_NODE_VERSION: '26.13.1'
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.sha }}
           token: ${{ secrets.RELEASE_TOKEN }}
 
-      - name: Install compatible Nodejs version
-        id: setup-node
+      - name: Install minimum supported Node for package smoke
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+
+      - name: Retain minimum Node for package smoke
+        run: echo "RELEASE_COMPAT_NODE=$(command -v node)" >> "$GITHUB_ENV"
+
+      - name: Install Node for build and publication
         uses: ./.github/actions/setup-node
+        with:
+          version: ${{ env.RELEASE_NODE_VERSION }}
 
       - name: Configure PATH
         run: |
@@ -92,7 +103,10 @@ jobs:
           # step against the runner's actual npm version.
           run-install: false
 
-      - run: npm run build --if-present
+      - name: Build with the publisher runtime
+        run: |
+          test "$(node --version)" = "v$RELEASE_NODE_VERSION"
+          npm run build --if-present
 
       - run: |
           git add -f dist

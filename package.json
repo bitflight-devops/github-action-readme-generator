@@ -125,6 +125,12 @@
           "provenance": true
         }
       ],
+      [
+        "@semantic-release/exec",
+        {
+          "prepareCmd": "bash scripts/verify-release-package.sh ${nextRelease.version}"
+        }
+      ],
       "@semantic-release/github",
       "@semantic-release/git"
     ],

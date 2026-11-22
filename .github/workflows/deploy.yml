@@ -99,4 +99,4 @@ jobs:
           npm run generate-docs
           git commit -n -m 'build(release): bundle distribution files'
 
-      - run: npx --yes semantic-release@latest
+      - run: npm run semantic-release

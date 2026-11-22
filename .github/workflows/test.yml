@@ -1,7 +1,7 @@
 name: Tag and Release Updated NPM Package
 
 on:
-  pull_request_target:
+  pull_request:
   push:
     branches:
       - main
@@ -16,13 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  issues: write
-  pull-requests: write
-  statuses: write
-  checks: write
-  actions: write
-  id-token: write
-  contents: write
+  contents: read
 
 jobs:
   node-version-matrix:
@@ -35,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ github.head_ref || github.ref }}
+          persist-credentials: false
       - id: set-matrix
         run: |
           pinned="$(cat .node-version)"
@@ -54,7 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ github.head_ref || github.ref }}
+          persist-credentials: false
 
       - name: Install compatible Nodejs version
         id: setup-node
@@ -91,6 +85,7 @@ jobs:
         continue-on-error: true
         uses: davelosert/vitest-coverage-report-action@v2.13.1
         with:
+          comment-on: none
           json-summary-path: './out/coverage-summary.json'
           json-final-path: ./out/coverage-final.json
       - run: npm run build

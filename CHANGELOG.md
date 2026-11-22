@@ -1,3 +1,9 @@
+## [2.1.5](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.1.4...v2.1.5) (2026-11-22)
+
+### Bug Fixes
+
+* **release:** restore and verify npm publication ([ee1a023](https://github.com/bitflight-devops/github-action-readme-generator/commit/ee1a0236d49ed0601656a55e559dae22bbcbf8e4))
+
 ## [2.1.4](https://github.com/bitflight-devops/github-action-readme-generator/compare/v2.1.3...v2.1.4) (2026-11-01)
 
 ### Bug Fixes

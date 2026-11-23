@@ -83,7 +83,7 @@ jobs:
       - name: 'Report Coverage'
         if: always()
         continue-on-error: true
-        uses: davelosert/vitest-coverage-report-action@v2.13.1
+        uses: davelosert/vitest-coverage-report-action@v2.13.2
         with:
           comment-on: none
           json-summary-path: './out/coverage-summary.json'
